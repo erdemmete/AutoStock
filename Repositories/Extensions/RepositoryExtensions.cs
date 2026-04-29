@@ -24,6 +24,8 @@ namespace AutoStock.Repositories.Extensions
             
             services.AddScoped<ICustomerRepository, CustomerRepository>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+
 
             return services;
 

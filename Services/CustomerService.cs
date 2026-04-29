@@ -8,6 +8,6 @@ namespace AutoStock.Services
 {
     public class CustomerService(ICustomerRepository customerRepository): ICustomerService
     {
-
+        
     }
 }
