@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="App.API/AutoStock.API.csproj" />
+  <Project Path="AutoStockAPI/AutoStock.API.csproj" />
   <Project Path="Repositories/AutoStock.Repositories.csproj" />
   <Project Path="Services/AutoStock.Services.csproj" />
 </Solution>
