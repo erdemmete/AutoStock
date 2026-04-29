@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoStock.Repositories.Entities;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace AutoStock.Repositories
+namespace AutoStock.Repositories.Configurations
 {
     public class CustomerConfiguration:IEntityTypeConfiguration<Customer>
     {
