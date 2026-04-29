@@ -5,7 +5,7 @@ using System.Text;
 
 namespace AutoStock.Repositories
 {
-    public interface ICustomerRepository<T> where T : class
+    public interface IGenericRepository<T> where T : class
     {
          IQueryable<T> GetAll();
          IQueryable<T> Where(Expression<Func<T, bool>> predicate);

@@ -6,7 +6,7 @@ using System.Text;
 
 namespace AutoStock.Services
 {
-    public class CustomerService(ICustomerRepository<Customer> customerRepository)
+    public class CustomerService(ICustomerRepository customerRepository): ICustomerService
     {
 
     }

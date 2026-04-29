@@ -6,7 +6,7 @@ using System.Text;
 
 namespace AutoStock.Repositories
 {
-    public class GenericRepository<T>(AppDbContext context) : ICustomerRepository<T> where T : class
+    public class GenericRepository<T>(AppDbContext context) : IGenericRepository<T> where T : class
     {
         private readonly DbSet<T> _dbSet = context.Set<T>();
 
