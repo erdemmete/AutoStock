@@ -12,5 +12,10 @@ namespace AutoStock.Repositories
         {
             return await context.Customers.Include(c => c.Vehicles).ToListAsync();
         }
+
+        public Task<List<Customer>> GetCustomersWithVehicles(int count)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

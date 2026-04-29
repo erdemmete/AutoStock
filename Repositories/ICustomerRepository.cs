@@ -7,6 +7,6 @@ namespace AutoStock.Repositories
 {
     public interface ICustomerRepository:IGenericRepository<Customer>
     {
-        public Task<IEnumerable<Customer>> GetCustomersWithVehicles();
+        public Task<List<Customer>> GetCustomersWithVehicles(int count);
     }
 }

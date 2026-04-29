@@ -4,7 +4,7 @@ using System.Text;
 
 namespace AutoStock.Services
 {
-    public interface ICustomerService
+    public class CustomerDto
     {
 
     }
