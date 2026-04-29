@@ -21,13 +21,13 @@ namespace AutoStock.Repositories.Extensions
                 
                 });
             });
+            
+            services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped(typeof(ICustomerRepository<>), typeof(GenericRepository<>));
 
             return services;
 
-            /*services.AddScoped<IVehicleRepository, VehicleRepository>();
-            services.AddScoped<IEmployeeRepository, EmployeeRepository>();
-            services.AddScoped<IServiceRecordRepository, ServiceRecordRepository>();
-            services.AddScoped<IRepairRecordRepository, RepairRecordRepository>();*/
+            
         }
     }
 }
