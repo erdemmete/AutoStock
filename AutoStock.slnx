@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="AutoStock.WEB/AutoStock.WEB.csproj" Id="5d605832-e16b-4abd-baf3-abfbe06e2303" />
   <Project Path="AutoStockAPI/AutoStock.API.csproj" />
   <Project Path="Repositories/AutoStock.Repositories.csproj" />
   <Project Path="Services/AutoStock.Services.csproj" />

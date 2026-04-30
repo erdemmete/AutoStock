@@ -18,6 +18,15 @@ builder.Services.AddOpenApi();
 builder.Services.AddRepositories(builder.Configuration).AddServices(builder.Configuration);
 builder.Services.AddScoped<IPdfService, PdfService>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowWeb", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
@@ -29,7 +38,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
+
 app.UseHttpsRedirection();
+
+app.UseCors("AllowWeb");
 
 app.UseAuthorization();
 
