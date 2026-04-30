@@ -1,44 +1,257 @@
 ﻿@{
-    ViewData["Title"] = "Servis Fişi";
+    ViewData["Title"] = "Servis Fişi Oluştur";
 }
 
-<h1>Servis Fişi Oluştur</h1>
+<div class="page">
+    <div class="card">
+        <div class="header">
+            <div>
+                <h1>Servix</h1>
+                <p>Servis fişi ve PDF oluşturma paneli</p>
+            </div>
+            <span class="badge">V1 Demo</span>
+        </div>
 
-<h3>Müşteri</h3>
-<input id="customerName" placeholder="Müşteri adı" />
-<input id="customerPhone" placeholder="Telefon" />
+        <div class="grid">
+            <section>
+                <h2>Müşteri Bilgileri</h2>
+                <div class="form-grid">
+                    <input id="customerName" placeholder="Müşteri adı" />
+                    <input id="customerPhone" placeholder="Telefon" />
+                </div>
+            </section>
 
-<h3>Araç</h3>
-<input id="plateNumber" placeholder="Plaka" />
-<input id="vehicleBrand" placeholder="Marka" />
-<input id="vehicleModel" placeholder="Model" />
+            <section>
+                <h2>Araç Bilgileri</h2>
+                <div class="form-grid three">
+                    <input id="plateNumber" placeholder="Plaka" />
+                    <input id="vehicleBrand" placeholder="Marka" />
+                    <input id="vehicleModel" placeholder="Model" />
+                </div>
+            </section>
 
-<h3>İşlem Ekle</h3>
+            <section>
+                <h2>İşlem Ekle</h2>
+                <div class="repair-row">
+                    <select id="defaultItem">
+                        <option value="">Menüden seç</option>
+                        <option value="Fren balatası değişimi">Fren balatası değişimi</option>
+                        <option value="Yağ değişimi">Yağ değişimi</option>
+                        <option value="Hava filtresi değişimi">Hava filtresi değişimi</option>
+                        <option value="Polen filtresi değişimi">Polen filtresi değişimi</option>
+                        <option value="Disk değişimi">Disk değişimi</option>
+                    </select>
 
-<select id="defaultItem">
-    <option value="">Menüden seç</option>
-    <option value="Fren balatası">Fren balatası</option>
-    <option value="Yağ değişimi">Yağ değişimi</option>
-    <option value="Hava filtresi">Hava filtresi</option>
-</select>
+                    <input id="description" placeholder="İşlem adı" />
+                    <input id="price" type="number" placeholder="Fiyat" />
+                    <input id="quantity" type="number" value="1" min="1" />
 
-<input id="description" placeholder="İşlem adı" />
-<input id="price" type="number" placeholder="Fiyat" />
-<input id="quantity" type="number" value="1" />
+                    <button class="btn secondary" onclick="addItem()">Ekle</button>
+                </div>
+            </section>
 
-<button onclick="addItem()">Ekle</button>
+            <section>
+                <div class="section-title">
+                    <h2>Eklenen İşlemler</h2>
+                    <strong><span id="total">0</span> TL</strong>
+                </div>
 
-<h3>İşlemler</h3>
-<ul id="itemsList"></ul>
+                <div id="itemsList" class="items-empty">
+                    Henüz işlem eklenmedi.
+                </div>
+            </section>
 
-<h3>Toplam: <span id="total">0</span> TL</h3>
+            <section>
+                <h2>Not</h2>
+                <textarea id="note" placeholder="Müşteriye veya servis işlemine ait not..."></textarea>
+            </section>
 
-<textarea id="note" placeholder="Not"></textarea>
+            <div class="actions">
+                <button class="btn primary" onclick="createPdf()">PDF Oluştur</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-<br />
-<br />
+<style>
+    body {
+        background: #f4f6f8;
+        font-family: Arial, sans-serif;
+        color: #1f2937;
+    }
 
-<button onclick="createPdf()">PDF Oluştur</button>
+    .page {
+        max-width: 1100px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+        padding: 32px;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 20px;
+        margin-bottom: 28px;
+    }
+
+    .header h1 {
+        margin: 0;
+        font-size: 34px;
+        font-weight: 800;
+    }
+
+    .header p {
+        margin: 6px 0 0;
+        color: #6b7280;
+    }
+
+    .badge {
+        background: #e0f2fe;
+        color: #0369a1;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+
+    section {
+        margin-bottom: 26px;
+    }
+
+    h2 {
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .form-grid.three {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    input, select, textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        font-size: 15px;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+
+    textarea {
+        min-height: 90px;
+        resize: vertical;
+    }
+
+    .repair-row {
+        display: grid;
+        grid-template-columns: 1.4fr 1.6fr 0.8fr 0.6fr auto;
+        gap: 12px;
+    }
+
+    .section-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .section-title strong {
+        font-size: 22px;
+        color: #16a34a;
+    }
+
+    .item-card {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 14px;
+        align-items: center;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        padding: 14px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+    }
+
+    .item-title {
+        font-weight: 700;
+    }
+
+    .item-sub {
+        color: #6b7280;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+
+    .items-empty {
+        color: #9ca3af;
+        background: #f9fafb;
+        border: 1px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 18px;
+    }
+
+    .btn {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 18px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .btn.primary {
+        background: #2563eb;
+        color: white;
+        font-size: 16px;
+        padding: 14px 24px;
+    }
+
+    .btn.secondary {
+        background: #111827;
+        color: white;
+    }
+
+    .btn.danger {
+        background: #fee2e2;
+        color: #b91c1c;
+        padding: 9px 12px;
+    }
+
+    .actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    @@media (max-width: 800px) {
+        .form-grid,
+        .form-grid.three,
+        .repair-row {
+            grid-template-columns: 1fr;
+        }
+
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+    }
+</style>
 
 <script>
     const items = [];
@@ -48,16 +261,21 @@
     });
 
     function addItem() {
-        const description = document.getElementById("description").value;
+        const description = document.getElementById("description").value.trim();
         const price = Number(document.getElementById("price").value);
         const quantity = Number(document.getElementById("quantity").value);
 
-        if (!description || !price || quantity <= 0) {
-            alert("Eksik bilgi");
+        if (!description || price <= 0 || quantity <= 0) {
+            alert("Lütfen işlem adı, fiyat ve adet bilgilerini doğru gir.");
             return;
         }
 
         items.push({ description, price, quantity });
+
+        document.getElementById("description").value = "";
+        document.getElementById("price").value = "";
+        document.getElementById("quantity").value = 1;
+        document.getElementById("defaultItem").value = "";
 
         renderItems();
     }
@@ -68,16 +286,30 @@
 
         let total = 0;
 
+        if (items.length === 0) {
+            list.className = "items-empty";
+            list.innerText = "Henüz işlem eklenmedi.";
+            document.getElementById("total").innerText = "0";
+            return;
+        }
+
+        list.className = "";
+
         items.forEach((item, index) => {
             const itemTotal = item.price * item.quantity;
             total += itemTotal;
 
-            const li = document.createElement("li");
-            li.innerHTML = `
-                ${item.description} - ${item.price} TL x ${item.quantity} = ${itemTotal} TL
-                <button onclick="removeItem(${index})">Sil</button>
+            const div = document.createElement("div");
+            div.className = "item-card";
+            div.innerHTML = `
+                <div>
+                    <div class="item-title">${item.description}</div>
+                    <div class="item-sub">${item.price} TL x ${item.quantity} adet</div>
+                </div>
+                <strong>${itemTotal} TL</strong>
+                <button class="btn danger" onclick="removeItem(${index})">Sil</button>
             `;
-            list.appendChild(li);
+            list.appendChild(div);
         });
 
         document.getElementById("total").innerText = total;
@@ -87,8 +319,12 @@
         items.splice(index, 1);
         renderItems();
     }
-   
+
     async function createPdf() {
+        if (items.length === 0) {
+            alert("PDF oluşturmak için en az bir işlem ekle.");
+            return;
+        }
 
         const request = {
             customerName: document.getElementById("customerName").value,
@@ -100,13 +336,18 @@
             items: items
         };
 
-            const response = await fetch("http://localhost:5000/api/ServicePdfs", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(request)
-    });
+        const response = await fetch("https://localhost:7263/api/ServicePdfs", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(request)
+        });
+
+        if (!response.ok) {
+            alert("PDF oluşturulurken hata oluştu.");
+            return;
+        }
 
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
