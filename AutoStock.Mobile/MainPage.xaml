@@ -1,0 +1,420 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="AutoStock.Mobile.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="#F4F6F8">
+
+    <Grid RowDefinitions="*,Auto">
+
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="20,28,20,130" Spacing="18">
+
+                <!-- Header -->
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Servix"
+                           FontSize="36"
+                           FontAttributes="Bold"
+                           TextColor="#111827" />
+
+                    <Label Text="Servis formu oluştur"
+                           FontSize="15"
+                           TextColor="#6B7280" />
+                </VerticalStackLayout>
+
+                <!-- Customer Card -->
+                <Border BackgroundColor="White"
+                        Stroke="#E5E7EB"
+                        StrokeThickness="1"
+                        Padding="18">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="22" />
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Opacity="0.08" Offset="0,4" Radius="12" />
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="14">
+
+                        <Label Text="Müşteri Bilgileri"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="#111827" />
+
+                        <!-- Ad Soyad -->
+                        <Border BackgroundColor="#F9FAFB"
+                                Stroke="#E5E7EB"
+                                Padding="12,4">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14" />
+                            </Border.StrokeShape>
+
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Label Text="👤"
+                                       FontSize="18"
+                                       VerticalOptions="Center" />
+
+                                <Entry x:Name="CustomerNameEntry"
+                                       Grid.Column="1"
+                                       Placeholder="Ad Soyad"
+                                       PlaceholderColor="#9CA3AF"
+                                       TextColor="#111827"
+                                       BackgroundColor="Transparent" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Cep Numarası -->
+                        <Border BackgroundColor="#F9FAFB"
+                                Stroke="#E5E7EB"
+                                Padding="12,4">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14" />
+                            </Border.StrokeShape>
+
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Label Text="📞"
+                                       FontSize="18"
+                                       VerticalOptions="Center" />
+
+                                <Entry x:Name="CustomerPhoneEntry"
+                                       Grid.Column="1"
+                                       Placeholder="Cep numarası"
+                                       PlaceholderColor="#9CA3AF"
+                                       TextColor="#111827"
+                                       BackgroundColor="Transparent"
+                                       Keyboard="Telephone" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Mail -->
+                        <Border BackgroundColor="#F9FAFB"
+                                Stroke="#E5E7EB"
+                                Padding="12,4">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14" />
+                            </Border.StrokeShape>
+
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Label Text="✉️"
+                                       FontSize="18"
+                                       VerticalOptions="Center" />
+
+                                <Entry x:Name="CustomerEmailEntry"
+                                       Grid.Column="1"
+                                       Placeholder="Mail adresi"
+                                       PlaceholderColor="#9CA3AF"
+                                       TextColor="#111827"
+                                       BackgroundColor="Transparent"
+                                       Keyboard="Email" />
+                            </Grid>
+                        </Border>
+
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Vehicle Card -->
+                <Border BackgroundColor="White"
+                        Stroke="#E5E7EB"
+                        StrokeThickness="1"
+                        Padding="18">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="22" />
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Opacity="0.08" Offset="0,4" Radius="12" />
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="14">
+
+                        <Label Text="Araç Bilgileri"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="#111827" />
+
+                        <!-- Plaka -->
+                        <Border BackgroundColor="#F9FAFB"
+                                Stroke="#E5E7EB"
+                                Padding="12,4">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14" />
+                            </Border.StrokeShape>
+
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Label Text="🚘"
+                                       FontSize="18"
+                                       VerticalOptions="Center" />
+
+                                <Entry x:Name="PlateEntry"
+                                       Grid.Column="1"
+                                       Placeholder="Plaka"
+                                       PlaceholderColor="#9CA3AF"
+                                       TextColor="#111827"
+                                       BackgroundColor="Transparent" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Marka Model -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+
+                            <Border BackgroundColor="#F9FAFB"
+                                    Stroke="#E5E7EB"
+                                    Padding="12,4">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="14" />
+                                </Border.StrokeShape>
+
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                    <Label Text="🏷️"
+                                           FontSize="18"
+                                           VerticalOptions="Center" />
+
+                                    <Entry x:Name="BrandEntry"
+                                           Grid.Column="1"
+                                           Placeholder="Marka"
+                                           PlaceholderColor="#9CA3AF"
+                                           TextColor="#111827"
+                                           BackgroundColor="Transparent" />
+                                </Grid>
+                            </Border>
+
+                            <Border Grid.Column="1"
+                                    BackgroundColor="#F9FAFB"
+                                    Stroke="#E5E7EB"
+                                    Padding="12,4">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="14" />
+                                </Border.StrokeShape>
+
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                    <Label Text="🔧"
+                                           FontSize="18"
+                                           VerticalOptions="Center" />
+
+                                    <Entry x:Name="ModelEntry"
+                                           Grid.Column="1"
+                                           Placeholder="Model"
+                                           PlaceholderColor="#9CA3AF"
+                                           TextColor="#111827"
+                                           BackgroundColor="Transparent" />
+                                </Grid>
+                            </Border>
+
+                        </Grid>
+
+                        <!-- Model Yılı -->
+                        <Border BackgroundColor="#F9FAFB"
+                                Stroke="#E5E7EB"
+                                Padding="12,4">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14" />
+                            </Border.StrokeShape>
+
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Label Text="📅"
+                                       FontSize="18"
+                                       VerticalOptions="Center" />
+
+                                <Entry x:Name="ModelYearEntry"
+                                       Grid.Column="1"
+                                       Placeholder="Model yılı"
+                                       PlaceholderColor="#9CA3AF"
+                                       TextColor="#111827"
+                                       BackgroundColor="Transparent"
+                                       Keyboard="Numeric" />
+                            </Grid>
+                        </Border>
+
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Operations Card -->
+                <Border BackgroundColor="White"
+                        Stroke="#E5E7EB"
+                        StrokeThickness="1"
+                        Padding="18">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="22" />
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Opacity="0.08" Offset="0,4" Radius="12" />
+                    </Border.Shadow>
+
+                    <VerticalStackLayout Spacing="16">
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="İşlemler"
+                                       FontSize="18"
+                                       FontAttributes="Bold"
+                                       TextColor="#111827" />
+
+                                <Label Text="Hazır işlem seç veya manuel giriş yap"
+                                       FontSize="12"
+                                       TextColor="#9CA3AF" />
+                            </VerticalStackLayout>
+
+                            <Button Text="+ Ekle"
+                                    Grid.Column="1"
+                                    BackgroundColor="#2563EB"
+                                    TextColor="White"
+                                    CornerRadius="14"
+                                    Padding="16,8"
+                                    Clicked="OnAddOperationClicked" />
+                        </Grid>
+
+                        <!-- Hazır işlem seçimi -->
+                        <Border BackgroundColor="#F9FAFB"
+                                Stroke="#E5E7EB"
+                                StrokeThickness="1"
+                                Padding="12,4">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14" />
+                            </Border.StrokeShape>
+
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Label Text="📋"
+                                       FontSize="18"
+                                       VerticalOptions="Center" />
+
+                                <Picker x:Name="OperationPicker"
+                                        Grid.Column="1"
+                                        Title="İşlem seç"
+                                        TitleColor="#9CA3AF"
+                                        TextColor="#111827"
+                                        BackgroundColor="Transparent"
+                                        SelectedIndexChanged="OnOperationPickerChanged">
+                                    <Picker.Items>
+                                        <x:String>Fren disk değişimi</x:String>
+                                        <x:String>Yağ değişimi</x:String>
+                                        <x:String>Filtre değişimi</x:String>
+                                        <x:String>Balata değişimi</x:String>
+                                        <x:String>Lastik değişimi</x:String>
+                                        <x:String>Akü değişimi</x:String>
+                                        <x:String>Genel bakım</x:String>
+                                        <x:String>Diğer</x:String>
+                                    </Picker.Items>
+                                </Picker>
+                            </Grid>
+                        </Border>
+
+                        
+
+                        <!-- Adet ve fiyat -->
+                        <Grid ColumnDefinitions="80,*" ColumnSpacing="12">
+
+                            <Border BackgroundColor="#F9FAFB"
+                                    Stroke="#E5E7EB"
+                                    StrokeThickness="1"
+                                    Padding="12,4">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="14" />
+                                </Border.StrokeShape>
+
+                                <Grid ColumnDefinitions="100" ColumnSpacing="8">
+                                    <Label 
+                                           FontSize="18"
+                                           VerticalOptions="Center" />
+
+                                    <Entry x:Name="OperationQuantityEntry"
+                                           Grid.Column="1"
+                                           Placeholder="Adet"
+                                           PlaceholderColor="#9CA3AF"
+                                           TextColor="#111827"
+                                           BackgroundColor="Transparent"
+                                           Keyboard="Numeric" />
+                                </Grid>
+                            </Border>
+
+                            <Border Grid.Column="1"
+                                    BackgroundColor="#F9FAFB"
+                                    Stroke="#E5E7EB"
+                                    StrokeThickness="1"
+                                    Padding="12,4">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="14" />
+                                </Border.StrokeShape>
+
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                    <Label Text="₺"
+                                           FontSize="18"
+                                           FontAttributes="Bold"
+                                           TextColor="#111827"
+                                           VerticalOptions="Center" />
+
+                                    <Entry x:Name="OperationPriceEntry"
+                                           Grid.Column="1"
+                                           Placeholder="Birim fiyat"
+                                           PlaceholderColor="#9CA3AF"
+                                           TextColor="#111827"
+                                           BackgroundColor="Transparent"
+                                           Keyboard="Numeric" />
+                                </Grid>
+                            </Border>
+
+                        </Grid>
+
+                        <!-- Eklenen işlemler -->
+                        <VerticalStackLayout x:Name="OperationsContainer"
+                                             Spacing="12" />
+
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label x:Name="ResultLabel"
+                       TextColor="#6B7280"
+                       FontSize="14" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Sticky Footer -->
+        <Border Grid.Row="1"
+                BackgroundColor="White"
+                Stroke="#E5E7EB"
+                StrokeThickness="1"
+                Padding="18,14">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="24,24,0,0" />
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow Brush="Black" Opacity="0.12" Offset="0,-4" Radius="18" />
+            </Border.Shadow>
+
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Toplam Tutar"
+                               FontSize="13"
+                               TextColor="#6B7280" />
+
+                        <Label Text="PDF’e yansıtılacak toplam"
+                               FontSize="11"
+                               TextColor="#9CA3AF" />
+                    </VerticalStackLayout>
+
+                    <Label x:Name="TotalLabel"
+                           Grid.Column="1"
+                           Text="₺0,00"
+                           FontSize="28"
+                           FontAttributes="Bold"
+                           TextColor="#111827"
+                           VerticalOptions="Center" />
+                </Grid>
+
+                <Button Grid.Row="1"
+                        Text="PDF Oluştur"
+                        HeightRequest="56"
+                        FontSize="17"
+                        FontAttributes="Bold"
+                        BackgroundColor="#16A34A"
+                        TextColor="White"
+                        CornerRadius="18"
+                        Clicked="OnCreatePdfClicked" />
+
+            </Grid>
+        </Border>
+
+    </Grid>
+</ContentPage>

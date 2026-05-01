@@ -1,4 +1,7 @@
 <Solution>
+  <Project Path="AutoStock.Mobile/AutoStock.Mobile.csproj" Id="848a6427-3a49-408e-95ca-e170832ecdc6">
+    <Deploy Solution="Debug|*" />
+  </Project>
   <Project Path="AutoStock.WEB/AutoStock.WEB.csproj" Id="5d605832-e16b-4abd-baf3-abfbe06e2303" />
   <Project Path="AutoStockAPI/AutoStock.API.csproj" />
   <Project Path="Repositories/AutoStock.Repositories.csproj" />
