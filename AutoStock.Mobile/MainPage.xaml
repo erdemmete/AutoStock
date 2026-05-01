@@ -317,7 +317,7 @@
                                            VerticalOptions="Center" />
 
                                     <Entry x:Name="OperationQuantityEntry"
-                                           Grid.Column="1"
+                                          
                                            Placeholder="Adet"
                                            PlaceholderColor="#9CA3AF"
                                            TextColor="#111827"

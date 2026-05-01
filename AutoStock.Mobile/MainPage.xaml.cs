@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Storage;
+using Microsoft.Maui.ApplicationModel.DataTransfer;
 
 namespace AutoStock.Mobile;
 
@@ -264,6 +265,12 @@ public partial class MainPage : ContentPage
                 await File.WriteAllBytesAsync(filePath, pdfBytes);
 
                 ResultLabel.Text = "PDF oluşturuldu.";
+
+                await Share.RequestAsync(new ShareFileRequest
+                {
+                    Title = "Servix Servis Formu",
+                    File = new ShareFile(filePath)
+                });
 
                 await Launcher.OpenAsync(new OpenFileRequest
                 {

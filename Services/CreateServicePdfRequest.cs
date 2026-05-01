@@ -8,13 +8,14 @@ namespace AutoStock.Services
     {
         public string? CustomerName { get; set; }
         public string? CustomerPhone { get; set; }
+        public string? CustomerEmail { get; set; }
 
-        public string? PlateNumber { get; set; }
-        public string? VehicleBrand { get; set; }
-        public string? VehicleModel { get; set; }
+        public string? Plate { get; set; }
+        public string? Brand { get; set; }
+        public string? Model { get; set; }
+        public string? ModelYear { get; set; }
 
+        public List<ServicePdfItemDto> Operations { get; set; } = new();
         public string? Note { get; set; }
-
-        public List<ServicePdfItemDto> Items { get; set; } = new();
     }
 }
