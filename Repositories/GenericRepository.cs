@@ -1,8 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Text;
 
 namespace AutoStock.Repositories
 {
@@ -15,20 +12,20 @@ namespace AutoStock.Repositories
         public IQueryable<T> Where(Expression<Func<T, bool>> predicate) => _dbSet.Where(predicate);
         public ValueTask<T> GetByIdAsync(int id) => _dbSet.FindAsync(id);
 
-        public async ValueTask AddAsync(T entity)=> await _dbSet.AddAsync(entity);
+        public async ValueTask AddAsync(T entity) => await _dbSet.AddAsync(entity);
 
         public void Update(T entity) => _dbSet.Update(entity);
 
 
         public void Delete(T entity) => _dbSet.Remove(entity);
-        
 
-        
 
-       
 
-        
 
-        
+
+
+
+
+
     }
 }

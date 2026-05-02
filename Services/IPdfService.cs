@@ -1,9 +1,4 @@
-﻿using AutoStock.Repositories.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace AutoStock.Services
+﻿namespace AutoStock.Services
 {
     public interface IPdfService
     {

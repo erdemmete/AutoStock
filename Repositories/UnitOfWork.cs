@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace AutoStock.Repositories
+﻿namespace AutoStock.Repositories
 {
-    public class UnitOfWork(AppDbContext context): IUnitOfWork
-    {   
-        private readonly AppDbContext _context;
+    public class UnitOfWork(AppDbContext context) : IUnitOfWork
+    {
 
-        
-        public Task<int> SaveChangesAsync()=> _context.SaveChangesAsync();
-        
+
+
+        public Task<int> SaveChangesAsync() => context.SaveChangesAsync();
+
     }
 }

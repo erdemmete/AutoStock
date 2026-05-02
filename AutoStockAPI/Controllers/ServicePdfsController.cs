@@ -15,11 +15,14 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create(CreateServicePdfRequest request)
+        public IActionResult Create([FromBody] CreateServicePdfRequest request)
         {
+            if (request is null)
+                return BadRequest("PDF isteği boş olamaz.");
+
             var fileBytes = pdfService.CreateServicePdf(request);
 
-            return File(fileBytes, "application/pdf", "servis-fisi.pdf");
+            return File(fileBytes, "application/pdf", $"servis-fisi-{DateTime.Now:yyyyMMddHHmm}.pdf");
         }
     }
 }

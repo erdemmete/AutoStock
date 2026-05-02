@@ -1,10 +1,7 @@
-﻿using System.Globalization;
+﻿using Microsoft.Maui.Controls.Shapes;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Maui.ApplicationModel;
-using Microsoft.Maui.Controls.Shapes;
-using Microsoft.Maui.Storage;
-using Microsoft.Maui.ApplicationModel.DataTransfer;
 
 namespace AutoStock.Mobile;
 
@@ -16,7 +13,7 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
 
-        
+
         TotalLabel.Text = 0.ToString("C2", new CultureInfo("tr-TR"));
     }
 

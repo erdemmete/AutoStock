@@ -1,7 +1,7 @@
-﻿using QuestPDF.Fluent;
+﻿using QRCoder;
+using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using QRCoder;
 
 namespace AutoStock.Services;
 
@@ -159,7 +159,7 @@ public class PdfService : IPdfService
                  });
             });
 
-            
+
 
             if (!string.IsNullOrWhiteSpace(request.Note))
             {
@@ -212,7 +212,7 @@ public class PdfService : IPdfService
                     .FontSize(9)
                     .FontColor(Colors.Grey.Darken1);
 
-                
+
             });
         });
     }
@@ -250,7 +250,7 @@ public class PdfService : IPdfService
             });
     }
 
-    
+
 
     private static void HeaderCell(IContainer container, string text)
     {

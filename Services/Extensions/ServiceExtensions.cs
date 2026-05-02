@@ -1,9 +1,5 @@
-﻿using AutoStock.Repositories;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AutoStock.Services.Extensions
 {
@@ -12,6 +8,7 @@ namespace AutoStock.Services.Extensions
         public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<ICustomerService, CustomerService>();
+            services.AddScoped<IPdfService, PdfService>();
 
             return services;
 

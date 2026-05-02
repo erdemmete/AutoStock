@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-namespace AutoStock.Mobile
+﻿namespace AutoStock.Mobile
 {
     public partial class App : Application
     {

@@ -1,8 +1,5 @@
-using AutoStock.Repositories;
 using AutoStock.Repositories.Extensions;
-using AutoStock.Services;
 using AutoStock.Services.Extensions;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +13,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 
 builder.Services.AddRepositories(builder.Configuration).AddServices(builder.Configuration);
-builder.Services.AddScoped<IPdfService, PdfService>();
+
 
 builder.Services.AddCors(options =>
 {
@@ -31,15 +28,14 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-/*if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
-}*/
+}
 
-app.UseSwagger();
-app.UseSwaggerUI();
+
 
 
 

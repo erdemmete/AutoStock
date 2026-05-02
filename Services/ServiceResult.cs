@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
+﻿using System.Net;
 
 namespace AutoStock.Services
 {
@@ -23,7 +20,7 @@ namespace AutoStock.Services
         }
         public static ServiceResult<T> Fail(string errorMessage, HttpStatusCode statusCode = HttpStatusCode.BadRequest)
         {
-            return new ServiceResult<T> { ErrorMessage =   [errorMessage], StatusCode = statusCode  };
+            return new ServiceResult<T> { ErrorMessage = [errorMessage], StatusCode = statusCode };
         }
 
         public static ServiceResult<T> Fail(List<string> errorMessages, HttpStatusCode statusCode = HttpStatusCode.BadRequest)

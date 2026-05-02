@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AutoStock.Repositories.Extensions
 {
@@ -13,15 +10,16 @@ namespace AutoStock.Repositories.Extensions
         {
             services.AddDbContext<AppDbContext>(options =>
             {
-                var connectionStrings =configuration.GetSection(ConnectionStringOption.Key).Get<ConnectionStringOption>();
+                var connectionStrings = configuration.GetSection(ConnectionStringOption.Key).Get<ConnectionStringOption>();
 
-                options.UseSqlServer(connectionStrings!.SqlServer, sqlServerOptionsAction => {
+                options.UseSqlServer(connectionStrings!.SqlServer, sqlServerOptionsAction =>
+                {
 
-                sqlServerOptionsAction.MigrationsAssembly(typeof(RepositoryAssembly).Assembly.FullName);
-                
+                    sqlServerOptionsAction.MigrationsAssembly(typeof(RepositoryAssembly).Assembly.FullName);
+
                 });
             });
-            
+
             services.AddScoped<ICustomerRepository, CustomerRepository>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -29,7 +27,7 @@ namespace AutoStock.Repositories.Extensions
 
             return services;
 
-            
+
         }
     }
 }
