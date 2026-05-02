@@ -1,6 +1,7 @@
 using AutoStock.Repositories;
 using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Extensions;
+using AutoStock.Services;
 using AutoStock.Services.Extensions;
 using Microsoft.AspNetCore.Identity;
 
