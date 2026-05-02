@@ -250,8 +250,12 @@ public partial class MainPage : ContentPage
             ResultLabel.Text = "PDF oluşturuluyor...";
 
             var response = await _httpClient.PostAsync(
-                "http://10.0.2.2:5122/api/ServicePdfs",
+                "https://feeble-clang-opossum.ngrok-free.dev/api/ServicePdfs",
                 content);
+
+            /*var response = await _httpClient.PostAsync(
+                "http://10.0.2.2:5122/api/ServicePdfs",
+                content);*/
 
             if (response.IsSuccessStatusCode)
             {
