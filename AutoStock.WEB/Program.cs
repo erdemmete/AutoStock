@@ -3,7 +3,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddHttpClient();
+
 var app = builder.Build();
+
+//app.Urls.Add("http://0.0.0.0:5018");
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -13,7 +17,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+
+
+//app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseAuthorization();

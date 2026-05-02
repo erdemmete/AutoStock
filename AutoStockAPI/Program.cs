@@ -17,15 +17,18 @@ builder.Services.AddRepositories(builder.Configuration).AddServices(builder.Conf
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowWeb", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+    options.AddPolicy("AllowAll",
+        policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 });
 
 var app = builder.Build();
+
+app.UseCors("AllowAll");
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
