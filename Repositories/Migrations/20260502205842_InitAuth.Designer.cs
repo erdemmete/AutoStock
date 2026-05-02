@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AutoStock.Repositories.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260429112459_initial")]
-    partial class initial
+    [Migration("20260502205842_InitAuth")]
+    partial class InitAuth
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace AutoStock.Repositories.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("AutoStock.Repositories.Customer", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.Customer", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -60,7 +60,7 @@ namespace AutoStock.Repositories.Migrations
                     b.ToTable("Customers");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.Employee", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.Employee", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -95,7 +95,7 @@ namespace AutoStock.Repositories.Migrations
                     b.ToTable("Employee");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.RepairRecord", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.RepairRecord", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -130,7 +130,7 @@ namespace AutoStock.Repositories.Migrations
                     b.ToTable("RepairRecord");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.ServiceRecord", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.ServiceRecord", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -178,7 +178,7 @@ namespace AutoStock.Repositories.Migrations
                     b.ToTable("ServiceRecord");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.Vehicle", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.Vehicle", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -223,9 +223,9 @@ namespace AutoStock.Repositories.Migrations
                     b.ToTable("Vehicle");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.RepairRecord", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.RepairRecord", b =>
                 {
-                    b.HasOne("AutoStock.Repositories.ServiceRecord", "ServiceRecord")
+                    b.HasOne("AutoStock.Repositories.Entities.ServiceRecord", "ServiceRecord")
                         .WithMany("RepairRecords")
                         .HasForeignKey("ServiceRecordId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -234,13 +234,13 @@ namespace AutoStock.Repositories.Migrations
                     b.Navigation("ServiceRecord");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.ServiceRecord", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.ServiceRecord", b =>
                 {
-                    b.HasOne("AutoStock.Repositories.Employee", "Employee")
+                    b.HasOne("AutoStock.Repositories.Entities.Employee", "Employee")
                         .WithMany("ServiceRecords")
                         .HasForeignKey("EmployeeId");
 
-                    b.HasOne("AutoStock.Repositories.Vehicle", "Vehicle")
+                    b.HasOne("AutoStock.Repositories.Entities.Vehicle", "Vehicle")
                         .WithMany("ServiceRecords")
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -251,9 +251,9 @@ namespace AutoStock.Repositories.Migrations
                     b.Navigation("Vehicle");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.Vehicle", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.Vehicle", b =>
                 {
-                    b.HasOne("AutoStock.Repositories.Customer", "Customer")
+                    b.HasOne("AutoStock.Repositories.Entities.Customer", "Customer")
                         .WithMany("Vehicles")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -262,22 +262,22 @@ namespace AutoStock.Repositories.Migrations
                     b.Navigation("Customer");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.Customer", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.Customer", b =>
                 {
                     b.Navigation("Vehicles");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.Employee", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.Employee", b =>
                 {
                     b.Navigation("ServiceRecords");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.ServiceRecord", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.ServiceRecord", b =>
                 {
                     b.Navigation("RepairRecords");
                 });
 
-            modelBuilder.Entity("AutoStock.Repositories.Vehicle", b =>
+            modelBuilder.Entity("AutoStock.Repositories.Entities.Vehicle", b =>
                 {
                     b.Navigation("ServiceRecords");
                 });

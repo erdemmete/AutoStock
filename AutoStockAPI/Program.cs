@@ -1,5 +1,8 @@
+using AutoStock.Repositories;
+using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Extensions;
 using AutoStock.Services.Extensions;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +15,7 @@ builder.Services.AddSwaggerGen();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.Services.AddRepositories(builder.Configuration).AddServices(builder.Configuration);
+builder.Services.AddRepositories(builder.Configuration).AddServices(builder.Configuration).AddIdentityServices();
 
 
 builder.Services.AddCors(options =>
@@ -23,6 +26,8 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod()
             .AllowAnyHeader());
 });
+
+
 
 var app = builder.Build();
 
