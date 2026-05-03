@@ -19,14 +19,26 @@ namespace AutoStock.WEB.Controllers
         [HttpGet]
         public IActionResult Login()
         {
+            var token = HttpContext.Session.GetString("AuthToken");
+
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                return RedirectToAction("Index", "Dashboard");
+            }
+
             return View();
         }
 
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
             var apiBaseUrl = _configuration["ApiSettings:BaseUrl"]
-                        ?? throw new Exception("ApiSettings:BaseUrl missing!");
+                ?? throw new Exception("ApiSettings:BaseUrl missing!");
 
             var client = _httpClientFactory.CreateClient();
 
@@ -37,15 +49,28 @@ namespace AutoStock.WEB.Controllers
 
             if (!response.IsSuccessStatusCode)
             {
-                ViewBag.Error = "Email veya şifre hatalı.";
+                ViewBag.Error = "E-posta veya şifre hatalı.";
                 return View(model);
             }
 
-            var responseText = await response.Content.ReadAsStringAsync();
+            var token = await response.Content.ReadAsStringAsync();
 
-            HttpContext.Session.SetString("AuthToken", responseText);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                ViewBag.Error = "Token alınamadı.";
+                return View(model);
+            }
 
-            return RedirectToAction("Index", "Home");
+            HttpContext.Session.SetString("AuthToken", token);
+
+            return RedirectToAction("Index", "Dashboard");
+        }
+
+        [HttpPost]
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Remove("AuthToken");
+            return RedirectToAction("Login", "Auth");
         }
     }
 }
