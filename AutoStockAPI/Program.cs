@@ -1,4 +1,5 @@
 using AutoStock.API.Extensions;
+using AutoStock.API.Middlewares;
 using AutoStock.Repositories.Extensions;
 using AutoStock.Services.Extensions;
 
@@ -25,6 +26,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

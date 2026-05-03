@@ -72,7 +72,7 @@ public class AuthService : IAuthService
         var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
 
         if (!passwordValid)
-            throw new Exception("Email veya şifre hatalı.");
+            throw new UnauthorizedAccessException("Email veya şifre hatalı.");
 
         var workshopUser = await _context.WorkshopUsers
             .FirstOrDefaultAsync(x => x.UserId == user.Id);

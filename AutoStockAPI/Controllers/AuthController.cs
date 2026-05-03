@@ -25,18 +25,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequestDto request)
     {
-        try
-        {
-            var token = await _authService.LoginAsync(request);
-            return Ok(token);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Sunucu hatası: {ex.Message}");
-        }
+        var token = await _authService.LoginAsync(request);
+        return Ok(token);
     }
 }
