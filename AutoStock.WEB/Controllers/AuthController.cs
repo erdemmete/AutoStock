@@ -29,7 +29,7 @@ namespace AutoStock.WEB.Controllers
 
             return View();
         }
-
+        
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
@@ -40,12 +40,7 @@ namespace AutoStock.WEB.Controllers
 
             try
             {
-                var apiBaseUrl = _configuration["ApiSettings:BaseUrl"];
-
-                // "http://localhost:5000";
-
-
-
+                var apiBaseUrl = _configuration["ApiSettings:BaseUrl"];// "http://localhost:5000";
 
                 if (string.IsNullOrWhiteSpace(apiBaseUrl))
                 {
@@ -64,7 +59,7 @@ namespace AutoStock.WEB.Controllers
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    ViewBag.Error = "E-posta veya şifre hatalı.";
+                    ViewBag.Error = "Kullanıcı adı/e-posta veya şifre hatalı.";
                     return View(model);
                 }
 
@@ -85,11 +80,33 @@ namespace AutoStock.WEB.Controllers
 
                 if (string.IsNullOrWhiteSpace(responseText))
                 {
-                    ViewBag.Error = "Token alınamadı. API boş cevap döndü.";
+                    ViewBag.Error = "API boş cevap döndü.";
                     return View(model);
                 }
 
-                HttpContext.Session.SetString("AuthToken", responseText);
+                var loginResult = JsonSerializer.Deserialize<AuthResponseViewModel>(
+                    responseText,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                if (loginResult == null || string.IsNullOrWhiteSpace(loginResult.AccessToken))
+                {
+                    ViewBag.Error = "Token alınamadı.";
+                    return View(model);
+                }
+
+                HttpContext.Session.SetString("AuthToken", loginResult.AccessToken);
+                HttpContext.Session.SetString("UserRole", loginResult.Role);
+                HttpContext.Session.SetString("FullName", loginResult.FullName);
+                HttpContext.Session.SetInt32("UserId", loginResult.UserId);
+                HttpContext.Session.SetInt32("WorkshopId", loginResult.WorkshopId);
+
+                if (loginResult.Role == "Admin")
+                {
+                    return RedirectToAction("Index", "Admin");
+                }
 
                 return RedirectToAction("Index", "Dashboard");
             }

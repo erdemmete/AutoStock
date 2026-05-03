@@ -99,7 +99,8 @@ public class AuthService : IAuthService
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email ?? string.Empty,
-            WorkshopId = request.WorkshopId
+            WorkshopId = request.WorkshopId,
+            Role = AppRoles.User
         };
     }
 
@@ -131,25 +132,34 @@ public class AuthService : IAuthService
         if (!passwordValid)
             throw new UnauthorizedAccessException("Kullanıcı adı/e-posta veya şifre hatalı.");
 
-        // Workshop bağlantısı
-        var workshopUser = await _context.WorkshopUsers
-            .FirstOrDefaultAsync(x => x.UserId == user.Id);
-
-        if (workshopUser is null)
-            throw new Exception("Kullanıcı herhangi bir servise bağlı değil.");
-
-        // Role al (Identity kullanıyorsan)
         var roles = await _userManager.GetRolesAsync(user);
         var role = roles.FirstOrDefault() ?? "User";
 
+        int workshopId = 0;
+
+        // Workshop bağlantısı
+        if (role != AppRoles.Admin)
+        {
+            var workshopUser = await _context.WorkshopUsers
+                .FirstOrDefaultAsync(x => x.UserId == user.Id);
+
+            if (workshopUser is null)
+                throw new Exception("Kullanıcı herhangi bir servise bağlı değil.");
+
+            workshopId = workshopUser.WorkshopId;
+        }
+
+
+
+
         // Token üret
         var token = _jwtService.GenerateToken(
-            user.Id,
-            user.Email ?? string.Empty,
-            user.FullName,
-            workshopUser.WorkshopId,
-            role
-        );
+                    user.Id,
+                    user.Email ?? string.Empty,
+                    user.FullName,
+                    workshopId,
+                    role
+            );
 
         return new AuthResponseDto
         {
@@ -157,7 +167,8 @@ public class AuthService : IAuthService
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email ?? string.Empty,
-            WorkshopId = workshopUser.WorkshopId
+            WorkshopId = workshopId,
+            Role = role
         };
     }
 }

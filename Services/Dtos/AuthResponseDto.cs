@@ -7,4 +7,5 @@ public class AuthResponseDto
     public string FullName { get; set; } = null!;
     public string Email { get; set; } = null!;
     public int WorkshopId { get; set; }
+    public string Role { get; set; } = string.Empty;
 }
