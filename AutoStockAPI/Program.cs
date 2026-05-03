@@ -4,20 +4,16 @@ using AutoStock.Services.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 builder.Services.AddRepositories(builder.Configuration)
     .AddServices(builder.Configuration)
     .AddIdentityServices()
     .AddJwtAuth(builder.Configuration);
-
 
 builder.Services.AddCors(options =>
 {
@@ -28,15 +24,8 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader());
 });
 
-
-
 var app = builder.Build();
 
-app.UseCors("AllowAll");
-
-
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -44,13 +33,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// app.UseHttpsRedirection();
 
-
-
-
-//app.UseHttpsRedirection();
-
-app.UseCors("AllowWeb");
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();

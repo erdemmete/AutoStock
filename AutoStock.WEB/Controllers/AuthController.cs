@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
+using static System.Net.WebRequestMethods;
 
 namespace AutoStock.WEB.Controllers
 {
@@ -37,33 +38,76 @@ namespace AutoStock.WEB.Controllers
                 return View(model);
             }
 
-            var apiBaseUrl = _configuration["ApiSettings:BaseUrl"]
-                ?? throw new Exception("ApiSettings:BaseUrl missing!");
-
-            var client = _httpClientFactory.CreateClient();
-
-            var json = JsonSerializer.Serialize(model);
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync($"{apiBaseUrl}/api/Auth/login", content);
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                ViewBag.Error = "E-posta veya şifre hatalı.";
+                var apiBaseUrl = _configuration["ApiSettings:BaseUrl"];
+
+                // "http://localhost:5000";
+
+
+
+
+                if (string.IsNullOrWhiteSpace(apiBaseUrl))
+                {
+                    ViewBag.Error = "API adresi yapılandırılmamış. Lütfen sistem yöneticisiyle iletişime geçin.";
+                    return View(model);
+                }
+
+                var client = _httpClientFactory.CreateClient();
+
+                var json = JsonSerializer.Serialize(model);
+                using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await client.PostAsync($"{apiBaseUrl}/api/Auth/login", content);
+
+                var responseText = await response.Content.ReadAsStringAsync();
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    ViewBag.Error = "E-posta veya şifre hatalı.";
+                    return View(model);
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    ViewBag.Error = string.IsNullOrWhiteSpace(responseText)
+                        ? "Giriş bilgileri eksik veya hatalı."
+                        : responseText;
+
+                    return View(model);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    ViewBag.Error = $"API hatası oluştu. Status: {(int)response.StatusCode} - {response.ReasonPhrase}";
+                    return View(model);
+                }
+
+                if (string.IsNullOrWhiteSpace(responseText))
+                {
+                    ViewBag.Error = "Token alınamadı. API boş cevap döndü.";
+                    return View(model);
+                }
+
+                HttpContext.Session.SetString("AuthToken", responseText);
+
+                return RedirectToAction("Index", "Dashboard");
+            }
+            catch (HttpRequestException)
+            {
+                ViewBag.Error = "API sunucusuna ulaşılamıyor. API çalışıyor mu kontrol et.";
                 return View(model);
             }
-
-            var token = await response.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(token))
+            catch (TaskCanceledException)
             {
-                ViewBag.Error = "Token alınamadı.";
+                ViewBag.Error = "API isteği zaman aşımına uğradı.";
                 return View(model);
             }
-
-            HttpContext.Session.SetString("AuthToken", token);
-
-            return RedirectToAction("Index", "Dashboard");
+            catch (Exception ex)
+            {
+                ViewBag.Error = $"Beklenmeyen hata: {ex.Message}";
+                return View(model);
+            }
         }
 
         [HttpPost]

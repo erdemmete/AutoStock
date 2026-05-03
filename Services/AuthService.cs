@@ -67,7 +67,7 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(request.Email);
 
         if (user is null)
-            throw new Exception("Email veya şifre hatalı.");
+            throw new UnauthorizedAccessException("Email veya şifre hatalı.");
 
         var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
 
