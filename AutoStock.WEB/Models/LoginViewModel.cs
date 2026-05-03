@@ -1,8 +1,13 @@
-﻿namespace AutoStock.WEB.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AutoStock.WEB.Models
 {
     public class LoginViewModel
     {
-        public string Email { get; set; } = null!;
-        public string Password { get; set; } = null!;
+        [Required(ErrorMessage = "Kullanıcı adı veya e-posta zorunludur.")]
+        public string LoginName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Şifre zorunludur.")]
+        public string Password { get; set; } = string.Empty;
     }
 }

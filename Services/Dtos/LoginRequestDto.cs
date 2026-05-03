@@ -1,7 +1,8 @@
-﻿namespace AutoStock.Services.Dtos.Auth;
-
-public class LoginRequestDto
+﻿namespace AutoStock.Services.Dtos.Auth
 {
-    public string Email { get; set; } = null!;
-    public string Password { get; set; } = null!;
+    public class LoginRequestDto
+    {
+        public string LoginName { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
 }

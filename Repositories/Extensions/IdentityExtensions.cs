@@ -15,8 +15,7 @@ public static class IdentityExtensions
             options.Password.RequireUppercase = true;
             options.Password.RequireLowercase = true;
             options.Password.RequireNonAlphanumeric = false;
-
-            options.User.RequireUniqueEmail = true;
+            options.User.RequireUniqueEmail = false;
         })
         .AddEntityFrameworkStores<AppDbContext>();
 
