@@ -10,6 +10,7 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IPdfService, PdfService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<JwtService>();
 
             return services;
 

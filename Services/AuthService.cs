@@ -11,10 +11,13 @@ public class AuthService : IAuthService
     private readonly UserManager<AppUser> _userManager;
     private readonly AppDbContext _context;
 
-    public AuthService(UserManager<AppUser> userManager, AppDbContext context)
+    private readonly JwtService _jwtService;
+
+    public AuthService(UserManager<AppUser> userManager, AppDbContext context, JwtService jwtService)
     {
         _userManager = userManager;
         _context = context;
+        _jwtService = jwtService;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
@@ -51,7 +54,7 @@ public class AuthService : IAuthService
 
         return new AuthResponseDto
         {
-            AccessToken = "TEMP_TOKEN",
+            AccessToken = _jwtService.GenerateToken(user.Id, user.Email!),
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email!,
@@ -79,7 +82,7 @@ public class AuthService : IAuthService
 
         return new AuthResponseDto
         {
-            AccessToken = "TEMP_TOKEN",
+            AccessToken = _jwtService.GenerateToken(user.Id, user.Email!),
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email!,
