@@ -54,7 +54,12 @@ public class AuthService : IAuthService
 
         return new AuthResponseDto
         {
-            AccessToken = _jwtService.GenerateToken(user.Id, user.Email!),
+            AccessToken = _jwtService.GenerateToken(
+                                user.Id,
+                                user.Email!,
+                                user.FullName,
+                                workshop.Id,
+                                "Admin"),
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email!,
@@ -82,7 +87,12 @@ public class AuthService : IAuthService
 
         return new AuthResponseDto
         {
-            AccessToken = _jwtService.GenerateToken(user.Id, user.Email!),
+            AccessToken = _jwtService.GenerateToken(
+                                user.Id,
+                                user.Email!,
+                                user.FullName,
+                                workshopUser.WorkshopId,
+                                "User"),
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email!,
