@@ -27,6 +27,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+await app.SeedRolesAsync();
+
+
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())

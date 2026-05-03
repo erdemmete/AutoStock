@@ -1,5 +1,6 @@
 ﻿using AutoStock.Repositories;
 using AutoStock.Repositories.Entities;
+using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -80,15 +81,17 @@ public class AuthService : IAuthService
             WorkshopId = request.WorkshopId
         };
 
+        await _userManager.AddToRoleAsync(user, AppRoles.User);
+
         await _context.WorkshopUsers.AddAsync(workshopUser);
         await _context.SaveChangesAsync();
 
         var token = _jwtService.GenerateToken(
-            user.Id,
-            user.Email ?? string.Empty,
-            user.FullName,
-            request.WorkshopId,
-            "User");
+    user.Id,
+    user.Email ?? string.Empty,
+    user.FullName,
+    request.WorkshopId,
+    AppRoles.User);
 
         return new AuthResponseDto
         {
