@@ -27,6 +27,11 @@ namespace AutoStock.Repositories.Configurations
             builder.HasOne(x => x.Employee)
                    .WithMany(x => x.ServiceRecords)
                    .HasForeignKey(x => x.EmployeeId);
+            builder.Property(x => x.LaborCost)
+                    .HasPrecision(18, 2);
+
+            builder.Property(x => x.TotalCost)
+                    .HasPrecision(18, 2);
         }
     }
 }
