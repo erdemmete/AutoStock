@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using AutoStock.Services.Interfaces;
+using AutoStock.Services.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AutoStock.Services.Extensions
@@ -11,6 +13,7 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<IPdfService, PdfService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<JwtService>();
+            services.AddScoped<IServiceRecordService, ServiceRecordService>();
 
             return services;
 

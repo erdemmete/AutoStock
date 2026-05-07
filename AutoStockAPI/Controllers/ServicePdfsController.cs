@@ -1,6 +1,7 @@
-﻿using AutoStock.Services;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using AutoStock.Services.Interfaces;
+using AutoStock.Services.Dtos.Pdfs;
 
 namespace AutoStock.API.Controllers
 {

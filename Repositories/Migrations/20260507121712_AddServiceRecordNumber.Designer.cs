@@ -4,6 +4,7 @@ using AutoStock.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AutoStock.Repositories.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260507121712_AddServiceRecordNumber")]
+    partial class AddServiceRecordNumber
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -422,68 +425,6 @@ namespace AutoStock.Repositories.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("VehicleBrands");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            IsActive = true,
-                            Name = "Toyota"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            IsActive = true,
-                            Name = "Honda"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            IsActive = true,
-                            Name = "Volkswagen"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            IsActive = true,
-                            Name = "BMW"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            IsActive = true,
-                            Name = "Mercedes-Benz"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            IsActive = true,
-                            Name = "Ford"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            IsActive = true,
-                            Name = "Renault"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            IsActive = true,
-                            Name = "Fiat"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            IsActive = true,
-                            Name = "Hyundai"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            IsActive = true,
-                            Name = "Peugeot"
-                        });
                 });
 
             modelBuilder.Entity("AutoStock.Repositories.Entities.VehicleModel", b =>
@@ -509,218 +450,6 @@ namespace AutoStock.Repositories.Migrations
                     b.HasIndex("VehicleBrandId");
 
                     b.ToTable("VehicleModels");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            IsActive = true,
-                            Name = "Corolla",
-                            VehicleBrandId = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            IsActive = true,
-                            Name = "Yaris",
-                            VehicleBrandId = 1
-                        },
-                        new
-                        {
-                            Id = 3,
-                            IsActive = true,
-                            Name = "C-HR",
-                            VehicleBrandId = 1
-                        },
-                        new
-                        {
-                            Id = 4,
-                            IsActive = true,
-                            Name = "Civic",
-                            VehicleBrandId = 2
-                        },
-                        new
-                        {
-                            Id = 5,
-                            IsActive = true,
-                            Name = "Jazz",
-                            VehicleBrandId = 2
-                        },
-                        new
-                        {
-                            Id = 6,
-                            IsActive = true,
-                            Name = "CR-V",
-                            VehicleBrandId = 2
-                        },
-                        new
-                        {
-                            Id = 7,
-                            IsActive = true,
-                            Name = "Golf",
-                            VehicleBrandId = 3
-                        },
-                        new
-                        {
-                            Id = 8,
-                            IsActive = true,
-                            Name = "Passat",
-                            VehicleBrandId = 3
-                        },
-                        new
-                        {
-                            Id = 9,
-                            IsActive = true,
-                            Name = "Polo",
-                            VehicleBrandId = 3
-                        },
-                        new
-                        {
-                            Id = 10,
-                            IsActive = true,
-                            Name = "3 Series",
-                            VehicleBrandId = 4
-                        },
-                        new
-                        {
-                            Id = 11,
-                            IsActive = true,
-                            Name = "5 Series",
-                            VehicleBrandId = 4
-                        },
-                        new
-                        {
-                            Id = 12,
-                            IsActive = true,
-                            Name = "X5",
-                            VehicleBrandId = 4
-                        },
-                        new
-                        {
-                            Id = 13,
-                            IsActive = true,
-                            Name = "C-Class",
-                            VehicleBrandId = 5
-                        },
-                        new
-                        {
-                            Id = 14,
-                            IsActive = true,
-                            Name = "E-Class",
-                            VehicleBrandId = 5
-                        },
-                        new
-                        {
-                            Id = 15,
-                            IsActive = true,
-                            Name = "Sprinter",
-                            VehicleBrandId = 5
-                        },
-                        new
-                        {
-                            Id = 16,
-                            IsActive = true,
-                            Name = "Focus",
-                            VehicleBrandId = 6
-                        },
-                        new
-                        {
-                            Id = 17,
-                            IsActive = true,
-                            Name = "Fiesta",
-                            VehicleBrandId = 6
-                        },
-                        new
-                        {
-                            Id = 18,
-                            IsActive = true,
-                            Name = "Transit",
-                            VehicleBrandId = 6
-                        },
-                        new
-                        {
-                            Id = 19,
-                            IsActive = true,
-                            Name = "Clio",
-                            VehicleBrandId = 7
-                        },
-                        new
-                        {
-                            Id = 20,
-                            IsActive = true,
-                            Name = "Megane",
-                            VehicleBrandId = 7
-                        },
-                        new
-                        {
-                            Id = 21,
-                            IsActive = true,
-                            Name = "Fluence",
-                            VehicleBrandId = 7
-                        },
-                        new
-                        {
-                            Id = 22,
-                            IsActive = true,
-                            Name = "Egea",
-                            VehicleBrandId = 8
-                        },
-                        new
-                        {
-                            Id = 23,
-                            IsActive = true,
-                            Name = "Linea",
-                            VehicleBrandId = 8
-                        },
-                        new
-                        {
-                            Id = 24,
-                            IsActive = true,
-                            Name = "Doblo",
-                            VehicleBrandId = 8
-                        },
-                        new
-                        {
-                            Id = 25,
-                            IsActive = true,
-                            Name = "i20",
-                            VehicleBrandId = 9
-                        },
-                        new
-                        {
-                            Id = 26,
-                            IsActive = true,
-                            Name = "i30",
-                            VehicleBrandId = 9
-                        },
-                        new
-                        {
-                            Id = 27,
-                            IsActive = true,
-                            Name = "Tucson",
-                            VehicleBrandId = 9
-                        },
-                        new
-                        {
-                            Id = 28,
-                            IsActive = true,
-                            Name = "208",
-                            VehicleBrandId = 10
-                        },
-                        new
-                        {
-                            Id = 29,
-                            IsActive = true,
-                            Name = "308",
-                            VehicleBrandId = 10
-                        },
-                        new
-                        {
-                            Id = 30,
-                            IsActive = true,
-                            Name = "2008",
-                            VehicleBrandId = 10
-                        });
                 });
 
             modelBuilder.Entity("AutoStock.Repositories.Entities.Workshop", b =>

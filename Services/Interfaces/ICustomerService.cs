@@ -1,4 +1,4 @@
-﻿namespace AutoStock.Services
+﻿namespace AutoStock.Services.Interfaces
 {
     public interface ICustomerService
     {

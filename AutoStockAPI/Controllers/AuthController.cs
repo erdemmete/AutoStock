@@ -1,5 +1,5 @@
-﻿using AutoStock.Services;
-using AutoStock.Services.Dtos.Auth;
+﻿using AutoStock.Services.Dtos.Auth;
+using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AutoStock.API.Controllers;

@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace AutoStock.Services
+namespace AutoStock.Services.Dtos.Common
 {
     public class ServiceResult<T>
     {

@@ -1,6 +1,6 @@
 ﻿using AutoStock.Services.Dtos.Auth;
 
-namespace AutoStock.Services;
+namespace AutoStock.Services.Interfaces;
 
 public interface IAuthService
 {

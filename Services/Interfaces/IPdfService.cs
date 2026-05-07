@@ -1,4 +1,6 @@
-﻿namespace AutoStock.Services
+﻿using AutoStock.Services.Dtos.Pdfs;
+
+namespace AutoStock.Services.Interfaces
 {
     public interface IPdfService
     {

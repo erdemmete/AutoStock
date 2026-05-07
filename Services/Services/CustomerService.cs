@@ -1,8 +1,10 @@
 ﻿using AutoStock.Repositories;
 using AutoStock.Repositories.Entities;
+using AutoStock.Services.Dtos.Common;
+using AutoStock.Services.Interfaces;
 using System.Net;
 
-namespace AutoStock.Services
+namespace AutoStock.Services.Services
 {
     public class CustomerService(ICustomerRepository customerRepository) : ICustomerService
     {

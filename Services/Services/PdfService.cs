@@ -1,9 +1,11 @@
-﻿using QRCoder;
+﻿using AutoStock.Services.Dtos.Pdfs;
+using AutoStock.Services.Interfaces;
+using QRCoder;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
-namespace AutoStock.Services;
+namespace AutoStock.Services.Services;
 
 public class PdfService : IPdfService
 {

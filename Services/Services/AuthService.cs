@@ -2,6 +2,8 @@
 using AutoStock.Repositories.Entities;
 using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Auth;
+using AutoStock.Services.Interfaces;
+using AutoStock.Services.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 

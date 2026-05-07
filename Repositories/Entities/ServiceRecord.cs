@@ -5,6 +5,7 @@ namespace AutoStock.Repositories.Entities
     public class ServiceRecord
     {
         public int Id { get; set; }
+        public string RecordNumber { get; set; } = null!;
 
         public int WorkshopId { get; set; }
 

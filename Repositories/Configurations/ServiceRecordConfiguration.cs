@@ -9,6 +9,11 @@ public class ServiceRecordConfiguration : IEntityTypeConfiguration<ServiceRecord
     public void Configure(EntityTypeBuilder<ServiceRecord> builder)
     {
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.RecordNumber)
+            .IsRequired()
+            .HasMaxLength(50);
+        builder.HasIndex(x => x.RecordNumber)
+            .IsUnique();
 
         builder.Property(x => x.CustomerNameSnapshot)
             .IsRequired()
@@ -49,5 +54,7 @@ public class ServiceRecordConfiguration : IEntityTypeConfiguration<ServiceRecord
             .WithMany(x => x.ServiceRecords)
             .HasForeignKey(x => x.VehicleId)
             .OnDelete(DeleteBehavior.Restrict);
+
+
     }
 }
