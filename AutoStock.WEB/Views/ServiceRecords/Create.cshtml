@@ -1,0 +1,555 @@
+﻿@model AutoStock.WEB.Models.ServiceRecords.CreateServiceRecordViewModel
+
+@{
+    ViewData["Title"] = "Yeni Servis Girişi";
+}
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 28rem), radial-gradient(circle at top right, rgba(22, 163, 74, .10), transparent 28rem), #f3f6fb;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #0f172a;
+    }
+
+    .page {
+        width: min(1420px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 36px 0 60px;
+    }
+
+    .premium-header {
+        margin-bottom: 28px;
+        padding: 32px 36px;
+        border-radius: 32px;
+        background: radial-gradient(circle at 92% 35%, rgba(255,255,255,.16), transparent 18rem), linear-gradient(135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
+        color: white;
+        box-shadow: 0 28px 80px rgba(15, 23, 42, .24);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .premium-brand {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+    }
+
+    .premium-logo {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #2563eb, #16a34a);
+        color: white;
+        font-weight: 950;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .premium-eyebrow {
+        display: inline-flex;
+        margin-bottom: 7px;
+        padding: 6px 11px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.13);
+        border: 1px solid rgba(255,255,255,.18);
+        color: rgba(255,255,255,.80);
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .premium-header h1 {
+        margin: 0;
+        font-size: 36px;
+        line-height: 1;
+        letter-spacing: -1.7px;
+    }
+
+    .premium-header p {
+        margin: 12px 0 0;
+        max-width: 700px;
+        color: rgba(255,255,255,.72);
+        font-size: 15px;
+        line-height: 1.55;
+    }
+
+    .premium-home {
+        width: 54px;
+        height: 54px;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        background: rgba(255,255,255,.12);
+        border: 1px solid rgba(255,255,255,.18);
+        color: white;
+        text-decoration: none;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 390px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .panel {
+        background: rgba(255,255,255,.92);
+        border: 1px solid #e2e8f0;
+        border-radius: 30px;
+        padding: 24px;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, .08);
+        backdrop-filter: blur(18px);
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        padding: 22px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .045);
+    }
+
+        .card.full {
+            grid-column: 1 / -1;
+        }
+
+        .card h3,
+        .summary h3 {
+            margin: 0 0 18px;
+            font-size: 21px;
+            letter-spacing: -0.5px;
+            color: #0f172a;
+        }
+
+    .fields {
+        display: grid;
+        gap: 15px;
+    }
+
+    .two {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        min-height: 52px;
+        border: 1px solid #dbe3ef;
+        border-radius: 16px;
+        background: #f8fafc;
+        padding: 13px 15px;
+        font: inherit;
+        font-size: 15px;
+        color: #0f172a;
+        outline: none;
+        transition: .18s ease;
+    }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #2563eb;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, .11);
+        }
+
+    textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .form-field {
+        position: relative;
+    }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            padding-top: 20px;
+        }
+
+        .form-field label {
+            position: absolute;
+            top: 16px;
+            left: 15px;
+            margin: 0;
+            padding: 0 6px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 700;
+            pointer-events: none;
+            transition: .18s ease;
+            border-radius: 8px;
+        }
+
+        .form-field input:focus + label,
+        .form-field input:not(:placeholder-shown) + label,
+        .form-field textarea:focus + label,
+        .form-field textarea:not(:placeholder-shown) + label,
+        .form-field select + label {
+            top: -8px;
+            left: 12px;
+            background: white;
+            color: #2563eb;
+            font-size: 11px;
+        }
+
+    .summary {
+        position: sticky;
+        top: 24px;
+    }
+
+    .summary-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 0;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 14px;
+    }
+
+        .summary-line span {
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .summary-line strong {
+            text-align: right;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+    .total {
+        margin: 22px 0;
+        padding: 22px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+        color: white;
+    }
+
+        .total span {
+            color: rgba(255,255,255,.66);
+            font-weight: 700;
+        }
+
+        .total strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 30px;
+            letter-spacing: -1.2px;
+        }
+
+    .btn-green {
+        width: 100%;
+        min-height: 56px;
+        border: none;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        color: white;
+        font: inherit;
+        font-size: 16px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 14px 28px rgba(22, 163, 74, .22);
+        transition: .18s ease;
+    }
+
+        .btn-green:hover {
+            background: linear-gradient(135deg, #15803d, #166534);
+            transform: translateY(-2px);
+        }
+
+    .alert-success {
+        margin-bottom: 20px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+        font-weight: 800;
+    }
+
+    .field-error {
+        display: block;
+        margin-top: 6px;
+        color: #dc2626;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    @@media (max-width: 1200px) {
+        .layout {
+            grid-template-columns: 1fr;
+        }
+
+        .summary {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .page {
+            width: min(100% - 28px, 1420px);
+            padding-top: 20px;
+        }
+
+        .premium-header {
+            padding: 24px;
+            border-radius: 26px;
+            align-items: flex-start;
+        }
+
+        .premium-brand {
+            align-items: flex-start;
+        }
+
+        .premium-header h1 {
+            font-size: 28px;
+        }
+
+        .grid,
+        .two {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .page {
+            width: 100%;
+            padding: 14px;
+        }
+
+        .premium-header {
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+
+        .premium-brand {
+            gap: 14px;
+        }
+
+        .premium-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+        }
+
+        .premium-home {
+            width: 44px;
+            height: 44px;
+            border-radius: 15px;
+            font-size: 18px;
+        }
+
+        .panel {
+            padding: 16px;
+            border-radius: 22px;
+        }
+
+        .card {
+            padding: 18px;
+            border-radius: 20px;
+        }
+
+            .card h3,
+            .summary h3 {
+                font-size: 20px;
+            }
+    }
+</style>
+
+<div class="page">
+    <div class="premium-header">
+        <div class="premium-brand">
+            <div class="premium-logo">S</div>
+            <div>
+                <span class="premium-eyebrow">SERVİS KABUL</span>
+                <h1>Yeni Servis Girişi</h1>
+                <p>Müşteri şikayeti, araç bilgisi ve servis kabul notlarını kaydedin.</p>
+            </div>
+        </div>
+
+        <a href="/Dashboard" class="premium-home">⌂</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] is not null)
+    {
+        <div class="alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <form asp-action="Create" method="post">
+        <div class="layout">
+            <div class="panel">
+                <div class="grid">
+
+                    <div class="card">
+                        <h3>Müşteri Bilgileri</h3>
+
+                        <div class="fields">
+                            <div class="form-field">
+                                <input asp-for="CustomerPhoneNumber" placeholder=" " />
+                                <label>Telefon Numarası</label>
+                                <span asp-validation-for="CustomerPhoneNumber" class="field-error"></span>
+                            </div>
+
+                            <div class="form-field">
+                                <input asp-for="CustomerName" placeholder=" " />
+                                <label>Ad Soyad / Firma Adı</label>
+                                <span asp-validation-for="CustomerName" class="field-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Araç Bilgileri</h3>
+
+                        <div class="fields">
+                            <div class="form-field">
+                                <input asp-for="Plate" placeholder=" " />
+                                <label>Plaka</label>
+                                <span asp-validation-for="Plate" class="field-error"></span>
+                            </div>
+
+                            <div class="two">
+                                <div class="form-field">
+                                    <select asp-for="VehicleBrandId" id="brandSelect">
+                                        <option value="">Marka seçiniz</option>
+                                        @foreach (var brand in Model.Brands)
+                                        {
+                                            <option value="@brand.Id">@brand.Name</option>
+                                        }
+                                    </select>
+                                    <label>Marka</label>
+                                </div>
+
+                                <div class="form-field">
+                                    <select asp-for="VehicleModelId" id="modelSelect">
+                                        <option value="">Önce marka seçiniz</option>
+                                    </select>
+                                    <label>Model</label>
+                                </div>
+                            </div>
+
+                            <div class="two">
+                                <div class="form-field">
+                                    <input asp-for="ModelYear" placeholder=" " />
+                                    <label>Model Yılı</label>
+                                </div>
+
+                                <div class="form-field">
+                                    <input asp-for="Mileage" placeholder=" " />
+                                    <label>Kilometre</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card full">
+                        <h3>Şikayet / Servis Notu</h3>
+
+                        <div class="fields">
+                            <div class="form-field">
+                                <textarea asp-for="CustomerComplaint" placeholder=" "></textarea>
+                                <label>Müşteri Şikayeti</label>
+                            </div>
+
+                            <div class="form-field">
+                                <textarea asp-for="ServiceReceptionNote" placeholder=" "></textarea>
+                                <label>Servis Kabul Notu</label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="panel summary">
+                <h3>Kayıt Özeti</h3>
+
+                <div class="summary-line">
+                    <span>Belge tipi</span>
+                    <strong>Servis Kabul</strong>
+                </div>
+
+                <div class="summary-line">
+                    <span>Durum</span>
+                    <strong>Açık Kayıt</strong>
+                </div>
+
+                <div class="summary-line">
+                    <span>Fiyat bilgisi</span>
+                    <strong>Sonradan girilecek</strong>
+                </div>
+
+                <div class="total">
+                    <span>İlk aşama</span>
+                    <strong>Giriş Kaydı</strong>
+                </div>
+
+                <button type="submit" class="btn-green">
+                    Kaydet
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        const brandSelect = document.getElementById("brandSelect");
+        const modelSelect = document.getElementById("modelSelect");
+
+        brandSelect.addEventListener("change", async function () {
+            const brandId = this.value;
+
+            modelSelect.innerHTML = '<option value="">Model yükleniyor...</option>';
+
+            if (!brandId) {
+                modelSelect.innerHTML = '<option value="">Önce marka seçiniz</option>';
+                return;
+            }
+
+            const response = await fetch(`/ServiceRecords/GetModels?brandId=${brandId}`);
+
+            if (!response.ok) {
+                modelSelect.innerHTML = '<option value="">Model bulunamadı</option>';
+                return;
+            }
+
+            const models = await response.json();
+
+            modelSelect.innerHTML = '<option value="">Model seçiniz</option>';
+
+            models.forEach(model => {
+                const option = document.createElement("option");
+                option.value = model.id;
+                option.textContent = model.name;
+                modelSelect.appendChild(option);
+            });
+        });
+    </script>
+}
