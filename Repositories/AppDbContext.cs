@@ -15,10 +15,15 @@ namespace AutoStock.Repositories
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Vehicle> Vehicles { get; set; }
         public DbSet<ServiceRecord> ServiceRecords { get; set; }
-        public DbSet<RepairRecord> RepairRecords { get; set; }
-
+        
         public DbSet<Workshop> Workshops { get; set; }
         public DbSet<WorkshopUser> WorkshopUsers { get; set; }
+        public DbSet<VehicleBrand> VehicleBrands { get; set; }
+
+        public DbSet<VehicleModel> VehicleModels { get; set; }
+        public DbSet<ServiceOperation> ServiceOperations { get; set; }
+
+        public DbSet<ServiceRecordImage> ServiceRecordImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

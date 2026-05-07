@@ -1,34 +1,51 @@
-﻿namespace AutoStock.Repositories.Entities
+﻿using AutoStock.Repositories.Enums;
+
+namespace AutoStock.Repositories.Entities
 {
     public class ServiceRecord
     {
         public int Id { get; set; }
 
+        public int WorkshopId { get; set; }
+
+        public int CustomerId { get; set; }
+
+        public Customer Customer { get; set; } = null!;
+
         public int VehicleId { get; set; }
+
         public Vehicle Vehicle { get; set; } = null!;
 
-        public int? EmployeeId { get; set; }
-        public Employee? Employee { get; set; }
+        public ServiceRecordStatus Status { get; set; } = ServiceRecordStatus.Open;
 
-        public DateTime ServiceDate { get; set; } = DateTime.UtcNow;
+        public string CustomerNameSnapshot { get; set; } = null!;
 
-        public string Complaint { get; set; } = null!; // Müşteri şikayeti
-        public string? Diagnosis { get; set; } // Tespit
-        public string? Notes { get; set; }
+        public string CustomerPhoneSnapshot { get; set; } = null!;
 
-        public ServiceStatus Status { get; set; } = ServiceStatus.Pending;
+        public string VehiclePlateSnapshot { get; set; } = null!;
 
-        public decimal? LaborCost { get; set; }
-        public decimal? TotalCost { get; set; }
+        public string? VehicleBrandNameSnapshot { get; set; }
 
-        public ICollection<RepairRecord> RepairRecords { get; set; } = new List<RepairRecord>();
-    }
+        public string? VehicleModelNameSnapshot { get; set; }
 
-    public enum ServiceStatus
-    {
-        Pending = 1,
-        InProgress = 2,
-        Completed = 3,
-        Cancelled = 4
+        public int? MileageSnapshot { get; set; }
+
+        public string? CustomerComplaint { get; set; }
+
+        public string? ServiceReceptionNote { get; set; }
+
+        public string? RepairNote { get; set; }
+
+        public decimal TotalAmount { get; set; }
+
+        public bool ShowPricesOnPdf { get; set; } = true;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime? CompletedAt { get; set; }
+
+        public ICollection<ServiceOperation> Operations { get; set; } = new List<ServiceOperation>();
+
+        public ICollection<ServiceRecordImage> Images { get; set; } = new List<ServiceRecordImage>();
     }
 }
