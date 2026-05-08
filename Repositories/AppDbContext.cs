@@ -25,6 +25,7 @@ namespace AutoStock.Repositories
         public DbSet<ServiceOperation> ServiceOperations { get; set; }
 
         public DbSet<ServiceRecordImage> ServiceRecordImages { get; set; }
+        public DbSet<ServiceRequestItem> ServiceRequestItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

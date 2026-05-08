@@ -23,5 +23,10 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public string? CustomerComplaint { get; set; }
 
         public string? ServiceReceptionNote { get; set; }
+        public decimal? EstimatedAmount { get; set; }
+
+        public string? EstimatedAmountNote { get; set; }
+
+        public List<CreateServiceRequestItemDto> RequestItems { get; set; } = new();
     }
 }

@@ -104,10 +104,21 @@ public class ServiceRecordService : IServiceRecordService
 
             CustomerComplaint = request.CustomerComplaint?.Trim(),
             ServiceReceptionNote = request.ServiceReceptionNote?.Trim(),
-
+            EstimatedAmount = request.EstimatedAmount,
+            EstimatedAmountNote = request.EstimatedAmountNote?.Trim(),
             TotalAmount = 0,
             ShowPricesOnPdf = true
         };
+
+        foreach (var item in request.RequestItems.Where(x => !string.IsNullOrWhiteSpace(x.Title)))
+        {
+            serviceRecord.RequestItems.Add(new ServiceRequestItem
+            {
+                Title = item.Title.Trim(),
+                Note = item.Note?.Trim(),
+                EstimatedAmount = item.EstimatedAmount
+            });
+        }
 
         _context.ServiceRecords.Add(serviceRecord);
 
@@ -120,6 +131,90 @@ public class ServiceRecordService : IServiceRecordService
             ServiceRecordId = serviceRecord.Id,
             RecordNumber = serviceRecord.RecordNumber
         });
+    }
+
+    public async Task<ServiceResult<ServiceRecordDetailDto>> GetDetailAsync(
+    int serviceRecordId,
+    int workshopId)
+    {
+        var serviceRecord = await _context.ServiceRecords
+            .Include(x => x.Operations)
+            .FirstOrDefaultAsync(x =>
+                x.Id == serviceRecordId &&
+                x.WorkshopId == workshopId);
+
+        if (serviceRecord is null)
+        {
+            return ServiceResult<ServiceRecordDetailDto>
+                .Fail("Servis kaydı bulunamadı.");
+        }
+
+        var dto = new ServiceRecordDetailDto
+        {
+            Id = serviceRecord.Id,
+            RecordNumber = serviceRecord.RecordNumber,
+            Status = serviceRecord.Status,
+
+            CustomerName = serviceRecord.CustomerNameSnapshot,
+            CustomerPhone = serviceRecord.CustomerPhoneSnapshot,
+
+            VehiclePlate = serviceRecord.VehiclePlateSnapshot,
+            VehicleBrandName = serviceRecord.VehicleBrandNameSnapshot,
+            VehicleModelName = serviceRecord.VehicleModelNameSnapshot,
+
+            Mileage = serviceRecord.MileageSnapshot,
+
+            CustomerComplaint = serviceRecord.CustomerComplaint,
+            ServiceReceptionNote = serviceRecord.ServiceReceptionNote,
+            RepairNote = serviceRecord.RepairNote,
+
+            TotalAmount = serviceRecord.TotalAmount,
+
+            CreatedAt = serviceRecord.CreatedAt,
+            CompletedAt = serviceRecord.CompletedAt,
+
+            Operations = serviceRecord.Operations
+                .OrderBy(x => x.Id)
+                .Select(x => new ServiceOperationDto
+                {
+                    Id = x.Id,
+                    Type = x.Type,
+                    Description = x.Description,
+                    Quantity = x.Quantity,
+                    UnitPrice = x.UnitPrice,
+                    TotalPrice = x.TotalPrice,
+                    Note = x.Note
+                })
+                .ToList()
+        };
+
+        return ServiceResult<ServiceRecordDetailDto>.Success(dto);
+    }
+
+    public async Task<ServiceResult<List<ServiceRecordListItemDto>>> GetListAsync(int workshopId)
+    {
+        var records = await _context.ServiceRecords
+            .Where(x => x.WorkshopId == workshopId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new ServiceRecordListItemDto
+            {
+                Id = x.Id,
+                RecordNumber = x.RecordNumber,
+                Status = x.Status,
+
+                CustomerName = x.CustomerNameSnapshot,
+                CustomerPhone = x.CustomerPhoneSnapshot,
+
+                VehiclePlate = x.VehiclePlateSnapshot,
+                VehicleBrandName = x.VehicleBrandNameSnapshot,
+                VehicleModelName = x.VehicleModelNameSnapshot,
+
+                TotalAmount = x.TotalAmount,
+                CreatedAt = x.CreatedAt
+            })
+            .ToListAsync();
+
+        return ServiceResult<List<ServiceRecordListItemDto>>.Success(records);
     }
 
     private async Task<string?> GetBrandNameAsync(int? brandId)

@@ -44,9 +44,15 @@ namespace AutoStock.Repositories.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? CompletedAt { get; set; }
+        public decimal? EstimatedAmount { get; set; }
+
+        public string? EstimatedAmountNote { get; set; }
 
         public ICollection<ServiceOperation> Operations { get; set; } = new List<ServiceOperation>();
 
         public ICollection<ServiceRecordImage> Images { get; set; } = new List<ServiceRecordImage>();
+       
+
+        public ICollection<ServiceRequestItem> RequestItems { get; set; } = new List<ServiceRequestItem>();
     }
 }

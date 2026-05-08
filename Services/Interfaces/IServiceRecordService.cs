@@ -11,5 +11,8 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<CreateServiceRecordResponse>> CreateAsync(
             CreateServiceRecordRequest request,
             int workshopId);
+        Task<ServiceResult<ServiceRecordDetailDto>> GetDetailAsync(int serviceRecordId, int workshopId);
+        Task<ServiceResult<List<ServiceRecordListItemDto>>> GetListAsync(
+        int workshopId);
     }
 }

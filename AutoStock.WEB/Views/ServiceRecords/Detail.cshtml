@@ -1,0 +1,443 @@
+﻿@model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
+
+@{
+    ViewData["Title"] = "Servis Detayı";
+}
+
+<div class="page">
+
+    <div class="premium-header">
+        <div class="premium-brand">
+            <div class="premium-logo">S</div>
+
+            <div>
+                <span class="premium-eyebrow">SERVİS DETAYI</span>
+
+                <h1>@Model.RecordNumber</h1>
+
+                <p>
+                    @Model.CustomerName -
+                    @Model.VehiclePlate
+                </p>
+            </div>
+        </div>
+
+        <a href="/ServiceRecords" class="premium-home">
+            ←
+        </a>
+    </div>
+
+    <div class="detail-layout">
+
+        <div class="detail-main">
+
+            <div class="panel">
+
+                <div class="section-title">
+                    Müşteri / Araç Bilgileri
+                </div>
+
+                <div class="info-grid">
+
+                    <div class="info-card">
+                        <label>Müşteri</label>
+                        <strong>@Model.CustomerName</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <label>Telefon</label>
+                        <strong>@Model.CustomerPhone</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <label>Plaka</label>
+                        <strong>@Model.VehiclePlate</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <label>Araç</label>
+                        <strong>
+                            @Model.VehicleBrandName
+                            @Model.VehicleModelName
+                        </strong>
+                    </div>
+
+                    <div class="info-card">
+                        <label>Kilometre</label>
+                        <strong>@Model.Mileage</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <label>Kayıt Tarihi</label>
+                        <strong>
+                            @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                        </strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="panel">
+
+                <div class="section-title">
+                    Müşteri Şikayeti
+                </div>
+
+                <div class="note-box">
+                    @(string.IsNullOrWhiteSpace(Model.CustomerComplaint)
+                        ? "Şikayet girilmemiş."
+                        : Model.CustomerComplaint)
+                </div>
+
+            </div>
+
+            <div class="panel">
+
+                <div class="section-title">
+                    Servis Kabul Notu
+                </div>
+
+                <div class="note-box">
+                    @(string.IsNullOrWhiteSpace(Model.ServiceReceptionNote)
+                        ? "Not girilmemiş."
+                        : Model.ServiceReceptionNote)
+                </div>
+
+            </div>
+
+            <div class="panel">
+
+                <div class="section-header">
+                    <div class="section-title">
+                        İşlemler
+                    </div>
+
+                    <button class="btn-primary">
+                        + İşlem Ekle
+                    </button>
+                </div>
+
+                @if (Model.Operations.Any())
+                {
+                    <div class="operation-list">
+
+                        @foreach (var operation in Model.Operations)
+                        {
+                            <div class="operation-card">
+
+                                <div>
+                                    <strong>
+                                        @operation.Description
+                                    </strong>
+
+                                    <span>
+                                        @(operation.Type == 1
+                                            ? "Parça"
+                                            : "İşçilik")
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        @operation.Quantity Adet
+                                    </strong>
+
+                                    <span>
+                                        Birim:
+                                        @operation.UnitPrice.ToString("N2") ₺
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        @operation.TotalPrice.ToString("N2") ₺
+                                    </strong>
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        Henüz işlem eklenmedi.
+                    </div>
+                }
+
+            </div>
+
+        </div>
+
+        <div class="detail-sidebar">
+
+            <div class="summary-card">
+
+                <div class="summary-label">
+                    Toplam Tutar
+                </div>
+
+                <div class="summary-total">
+                    @Model.TotalAmount.ToString("N2") ₺
+                </div>
+
+                <div class="summary-status">
+                    Açık Kayıt
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+
+    .page {
+        width: min(1450px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 36px 0 60px;
+    }
+
+    .premium-header {
+        margin-bottom: 28px;
+        padding: 32px 36px;
+        border-radius: 32px;
+        background: linear-gradient( 135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
+        color: white;
+        box-shadow: 0 28px 80px rgba(15, 23, 42, .24);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .premium-brand {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+    }
+
+    .premium-logo {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient( 135deg, #2563eb, #16a34a);
+        color: white;
+        font-weight: 950;
+        font-size: 22px;
+    }
+
+    .premium-eyebrow {
+        display: inline-flex;
+        margin-bottom: 7px;
+        padding: 6px 11px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.13);
+        border: 1px solid rgba(255,255,255,.18);
+        color: rgba(255,255,255,.80);
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .premium-header h1 {
+        margin: 0;
+        font-size: 36px;
+        letter-spacing: -1.5px;
+    }
+
+    .premium-header p {
+        margin: 10px 0 0;
+        color: rgba(255,255,255,.72);
+    }
+
+    .premium-home {
+        width: 54px;
+        height: 54px;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        background: rgba(255,255,255,.12);
+        border: 1px solid rgba(255,255,255,.18);
+        color: white;
+        text-decoration: none;
+        font-size: 28px;
+        font-weight: 900;
+    }
+
+    .detail-layout {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .detail-main {
+        display: grid;
+        gap: 20px;
+    }
+
+    .panel {
+        padding: 24px;
+        border-radius: 30px;
+        background: rgba(255,255,255,.92);
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, .08);
+    }
+
+    .section-title {
+        margin-bottom: 18px;
+        font-size: 24px;
+        font-weight: 900;
+        color: #0f172a;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+    }
+
+    .btn-primary {
+        border: none;
+        border-radius: 16px;
+        background: #2563eb;
+        color: white;
+        padding: 12px 18px;
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .info-card {
+        padding: 18px;
+        border-radius: 20px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+        .info-card label {
+            display: block;
+            margin-bottom: 8px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .info-card strong {
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+    .note-box {
+        padding: 18px;
+        border-radius: 20px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #0f172a;
+        line-height: 1.7;
+        font-weight: 600;
+    }
+
+    .operation-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .operation-card {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr 150px;
+        gap: 18px;
+        align-items: center;
+        padding: 18px;
+        border-radius: 20px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+        .operation-card strong {
+            display: block;
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .operation-card span {
+            display: block;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+    .summary-card {
+        position: sticky;
+        top: 24px;
+        padding: 28px;
+        border-radius: 30px;
+        background: linear-gradient( 180deg, #0f172a, #111827);
+        color: white;
+        box-shadow: 0 25px 60px rgba(15, 23, 42, .24);
+    }
+
+    .summary-label {
+        color: rgba(255,255,255,.70);
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .summary-total {
+        margin-top: 14px;
+        font-size: 42px;
+        font-weight: 950;
+        letter-spacing: -2px;
+    }
+
+    .summary-status {
+        margin-top: 18px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.08);
+        text-align: center;
+        font-weight: 800;
+    }
+
+    .empty-state {
+        padding: 30px;
+        border-radius: 22px;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        text-align: center;
+        color: #64748b;
+        font-weight: 800;
+    }
+
+    @@media (max-width: 1100px) {
+
+        .detail-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .operation-card {
+            grid-template-columns: 1fr;
+        }
+    }
+
+</style>

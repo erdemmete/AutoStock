@@ -33,4 +33,32 @@ public class ServiceRecordsController : ControllerBase
 
         return Ok(result);
     }
+    [HttpGet]
+    public async Task<IActionResult> GetList()
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized("Workshop bilgisi bulunamadı.");
+
+        var result = await _serviceRecordService.GetListAsync(workshopId);
+
+        return Ok(result);
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetDetail(int id)
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized("Workshop bilgisi bulunamadı.");
+
+        var result = await _serviceRecordService.GetDetailAsync(id, workshopId);
+
+        if (!result.IsSuccess)
+            return NotFound(result);
+
+        return Ok(result);
+    }
 }

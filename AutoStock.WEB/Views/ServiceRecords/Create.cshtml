@@ -144,7 +144,7 @@
 
     .two {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         gap: 14px;
     }
 
@@ -375,6 +375,85 @@
             .summary h3 {
                 font-size: 20px;
             }
+
+        .request-builder {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .request-builder {
+        display: grid;
+        grid-template-columns: 1.5fr 220px 160px;
+        gap: 14px;
+        align-items: center;
+    }
+
+    .btn-add-request {
+        min-height: 52px;
+        border: none;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: white;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .request-items {
+        display: grid;
+        gap: 12px;
+    }
+
+    .request-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #dbe3ef;
+    }
+
+        .request-item strong {
+            color: #0f172a;
+            font-size: 15px;
+        }
+
+    .request-remove {
+        border: none;
+        background: #ef4444;
+        color: white;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 900;
+    }
+
+    .request-item span,
+    .request-item small {
+        display: block;
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .form-field select {
+        min-width: 0;
+    }
+
+    .form-field {
+        min-width: 0;
+    }
+
+    .request-note-field {
+        margin-top: 16px;
+    }
+    .request-note-field textarea {
+        min-height: 120px;
+        resize: vertical;
     }
 </style>
 
@@ -467,20 +546,63 @@
                     </div>
 
                     <div class="card full">
-                        <h3>Şikayet / Servis Notu</h3>
+
+                        <h3>Şikayet / Talepler</h3>
 
                         <div class="fields">
-                            <div class="form-field">
-                                <textarea asp-for="CustomerComplaint" placeholder=" "></textarea>
-                                <label>Müşteri Şikayeti</label>
+
+                            <div class="request-builder">
+
+                                <div class="form-field">
+                                    <input type="text"
+                                           id="requestInput"
+                                           list="requestSuggestions"
+                                           placeholder=" " />
+                                    <label>Şikayet / İşlem Talebi</label>
+
+                                    <datalist id="requestSuggestions">
+                                        <option value="Genel bakım"></option>
+                                        <option value="Yağ değişimi"></option>
+                                        <option value="Fren kontrolü"></option>
+                                        <option value="Klima arızası"></option>
+                                        <option value="Motordan ses geliyor"></option>
+                                        <option value="Su eksiltme"></option>
+                                    </datalist>
+                                </div>
+
+                                
+                               
+
+                                <div class="form-field">
+                                    <input type="number"
+                                           id="requestEstimatedInput"
+                                           placeholder=" " />
+                                    <label>Tahmini Fiyat</label>
+                                </div>
+
+                                <button type="button"
+                                        class="btn-add-request"
+                                        onclick="addRequestItem()">
+                                    + Ekle
+                                </button>
+
                             </div>
 
-                            <div class="form-field">
-                                <textarea asp-for="ServiceReceptionNote" placeholder=" "></textarea>
-                                <label>Servis Kabul Notu</label>
+                            <div class="form-field request-note-field">
+                                <textarea id="requestNoteInput" placeholder=" "></textarea>
+                                <label>Ön Not</label>
                             </div>
+                            <div id="requestItemsContainer"
+                                 class="request-items">
+                            </div>
+
+                            
+
                         </div>
+
                     </div>
+
+                    
 
                 </div>
             </div>
@@ -499,8 +621,8 @@
                 </div>
 
                 <div class="summary-line">
-                    <span>Fiyat bilgisi</span>
-                    <strong>Sonradan girilecek</strong>
+                    <span>Talep fiyatları</span>
+                    <strong>Opsiyonel</strong>
                 </div>
 
                 <div class="total">
@@ -520,7 +642,7 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
-        const brandSelect = document.getElementById("brandSelect");
+               const brandSelect = document.getElementById("brandSelect");
         const modelSelect = document.getElementById("modelSelect");
 
         brandSelect.addEventListener("change", async function () {
@@ -551,5 +673,52 @@
                 modelSelect.appendChild(option);
             });
         });
+
+        let requestIndex = 0;
+
+        function addRequestItem() {
+            const titleInput = document.getElementById("requestInput");
+            const noteInput = document.getElementById("requestNoteInput");
+            const estimatedInput = document.getElementById("requestEstimatedInput");
+            const container = document.getElementById("requestItemsContainer");
+
+            const title = titleInput.value.trim();
+            const note = noteInput.value.trim();
+            const estimatedAmount = estimatedInput.value.trim();
+
+            if (!title) {
+                return;
+            }
+
+            const item = document.createElement("div");
+            item.className = "request-item";
+
+            item.innerHTML = `
+                <div>
+                    <strong>${title}</strong>
+                    ${note ? `<span>${note}</span>` : ""}
+                    ${estimatedAmount ? `<small>Tahmini: ${estimatedAmount} ₺</small>` : ""}
+
+                    <input type="hidden" name="RequestItems[${requestIndex}].Title" value="${title}" />
+                    <input type="hidden" name="RequestItems[${requestIndex}].Note" value="${note}" />
+                    <input type="hidden" name="RequestItems[${requestIndex}].EstimatedAmount" value="${estimatedAmount}" />
+                </div>
+
+                <button type="button" class="request-remove">✕</button>
+            `;
+
+            item.querySelector(".request-remove").addEventListener("click", () => {
+                item.remove();
+            });
+
+            container.appendChild(item);
+
+            requestIndex++;
+
+            titleInput.value = "";
+            noteInput.value = "";
+            estimatedInput.value = "";
+        }
+
     </script>
 }

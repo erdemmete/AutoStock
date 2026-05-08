@@ -54,7 +54,11 @@ public class ServiceRecordConfiguration : IEntityTypeConfiguration<ServiceRecord
             .WithMany(x => x.ServiceRecords)
             .HasForeignKey(x => x.VehicleId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.Property(x => x.EstimatedAmount)
+    .HasPrecision(18, 2);
 
+        builder.Property(x => x.EstimatedAmountNote)
+            .HasMaxLength(500);
 
     }
 }

@@ -1,4 +1,5 @@
-﻿using AutoStock.WEB.Models.Common;
+﻿using AutoStock.Web.Models.ServiceRecords;
+using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.ServiceRecords;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,29 @@ public class ServiceRecordsController : Controller
     {
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
+
+    }
+
+    [HttpGet("ServiceRecords")]
+    public async Task<IActionResult> Index()
+    {
+        var client = CreateApiClient();
+
+        var response = await client.GetAsync("/api/ServiceRecords");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            ViewBag.ErrorMessage = "Servis kayıtları getirilemedi.";
+            return View(new List<ServiceRecordListItemViewModel>());
+        }
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        var result = JsonSerializer.Deserialize<ApiResponse<List<ServiceRecordListItemViewModel>>>(
+            json,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        return View(result?.Data ?? new List<ServiceRecordListItemViewModel>());
     }
 
     [HttpGet]
@@ -89,6 +113,33 @@ public class ServiceRecordsController : Controller
 
         return Json(models ?? new List<VehicleModelViewModel>());
     }
+    [HttpGet("ServiceRecords/Detail/{id:int}")]
+    public async Task<IActionResult> Detail(int id)
+    {
+        var client = CreateApiClient();
+
+        var response = await client.GetAsync($"/api/ServiceRecords/{id}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            TempData["ErrorMessage"] = "Servis kaydı bulunamadı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        var result = JsonSerializer.Deserialize<ApiResponse<ServiceRecordDetailViewModel>>(
+            json,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        if (result?.Data is null)
+        {
+            TempData["ErrorMessage"] = "Servis kaydı okunamadı.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(result.Data);
+    }
 
     private async Task<List<VehicleBrandViewModel>> GetBrandsAsync()
     {
@@ -122,4 +173,6 @@ public class ServiceRecordsController : Controller
 
         return client;
     }
+
+    
 }

@@ -20,6 +20,11 @@
         public string? CustomerComplaint { get; set; }
 
         public string? ServiceReceptionNote { get; set; }
+        public decimal? EstimatedAmount { get; set; }
+
+        public string? EstimatedAmountNote { get; set; }
+
+        public List<CreateServiceRequestItemViewModel> RequestItems { get; set; } = new();
 
         public List<VehicleBrandViewModel> Brands { get; set; } = new();
     }

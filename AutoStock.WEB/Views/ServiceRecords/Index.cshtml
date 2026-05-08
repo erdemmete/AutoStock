@@ -1,0 +1,227 @@
+﻿@model List<AutoStock.Web.Models.ServiceRecords.ServiceRecordListItemViewModel>
+
+@{
+    ViewData["Title"] = "Servis Kayıtları";
+}
+
+<div class="page">
+    <div class="premium-header">
+        <div class="premium-brand">
+            <div class="premium-logo">S</div>
+            <div>
+                <span class="premium-eyebrow">SERVİS KAYITLARI</span>
+                <h1>Servis Kayıtları</h1>
+                <p>Açık ve tamamlanan servis kayıtlarını buradan takip edin.</p>
+            </div>
+        </div>
+
+        <a href="/ServiceRecords/Create" class="premium-home">+</a>
+    </div>
+
+    @if (ViewBag.ErrorMessage is not null)
+    {
+        <div class="alert-error">@ViewBag.ErrorMessage</div>
+    }
+
+    <div class="panel">
+        <div class="record-list">
+            @foreach (var record in Model)
+            {
+                <a class="record-card" href="/ServiceRecords/Detail/@record.Id">
+                    <div>
+                        <strong>@(string.IsNullOrWhiteSpace(record.RecordNumber) ? $"SR-{record.Id}" : record.RecordNumber)</strong>
+                        <span>@record.CustomerName - @record.CustomerPhone</span>
+                    </div>
+
+                    <div>
+                        <strong>@record.VehiclePlate</strong>
+                        <span>@record.VehicleBrandName @record.VehicleModelName</span>
+                    </div>
+
+                    <div>
+                        <strong>@record.TotalAmount.ToString("N2") ₺</strong>
+                        <span>@record.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                    </div>
+
+                    <div>
+                        <span class="status status-open">Açık</span>
+                    </div>
+                </a>
+            }
+
+            @if (!Model.Any())
+            {
+                <div class="empty-state">
+                    Henüz servis kaydı bulunmuyor.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .page {
+        width: min(1420px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 36px 0 60px;
+    }
+
+    .premium-header {
+        margin-bottom: 28px;
+        padding: 32px 36px;
+        border-radius: 32px;
+        background: linear-gradient(135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
+        color: white;
+        box-shadow: 0 28px 80px rgba(15, 23, 42, .24);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .premium-brand {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+    }
+
+    .premium-logo {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #2563eb, #16a34a);
+        color: white;
+        font-weight: 950;
+        font-size: 22px;
+    }
+
+    .premium-eyebrow {
+        display: inline-flex;
+        margin-bottom: 7px;
+        padding: 6px 11px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.13);
+        border: 1px solid rgba(255,255,255,.18);
+        color: rgba(255,255,255,.80);
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .premium-header h1 {
+        margin: 0;
+        font-size: 36px;
+        letter-spacing: -1.5px;
+    }
+
+    .premium-header p {
+        margin: 10px 0 0;
+        color: rgba(255,255,255,.72);
+    }
+
+    .premium-home {
+        width: 54px;
+        height: 54px;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        background: rgba(255,255,255,.12);
+        border: 1px solid rgba(255,255,255,.18);
+        color: white;
+        text-decoration: none;
+        font-size: 30px;
+        font-weight: 900;
+    }
+
+    .panel {
+        background: rgba(255,255,255,.92);
+        border: 1px solid #e2e8f0;
+        border-radius: 30px;
+        padding: 24px;
+        box-shadow: 0 22px 55px rgba(15, 23, 42, .08);
+    }
+
+    .record-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .record-card {
+        display: grid;
+        grid-template-columns: 1.5fr 1.2fr 1fr 100px;
+        gap: 18px;
+        align-items: center;
+        padding: 18px;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #0f172a;
+        text-decoration: none;
+        transition: .18s ease;
+    }
+
+        .record-card:hover {
+            background: white;
+            border-color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, .08);
+        }
+
+        .record-card strong {
+            display: block;
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+        .record-card span {
+            display: block;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+    .status {
+        display: inline-flex;
+        justify-content: center;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 12px !important;
+        font-weight: 900 !important;
+    }
+
+    .status-open {
+        background: #dbeafe;
+        color: #1d4ed8 !important;
+    }
+
+    .empty-state {
+        padding: 40px;
+        border-radius: 22px;
+        background: #f8fafc;
+        color: #64748b;
+        text-align: center;
+        font-weight: 800;
+    }
+
+    .alert-error {
+        margin-bottom: 20px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        font-weight: 800;
+    }
+
+    @@media (max-width: 900px) {
+        .record-card {
+            grid-template-columns: 1fr;
+        }
+
+        .page {
+            width: min(100% - 28px, 1420px);
+            padding-top: 20px;
+        }
+    }
+</style>
