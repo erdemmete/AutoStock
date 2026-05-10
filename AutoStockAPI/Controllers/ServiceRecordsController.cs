@@ -82,4 +82,46 @@ public class ServiceRecordsController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPost("{serviceRecordId:int}/request-items")]
+    public async Task<IActionResult> AddRequestItem(
+    int serviceRecordId,
+    CreateServiceRequestItemDto request)
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized("Workshop bilgisi bulunamadı.");
+
+        var result = await _serviceRecordService.AddRequestItemAsync(
+            serviceRecordId,
+            request,
+            workshopId);
+
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
+    [HttpPost("{serviceRecordId:int}/operations")]
+    public async Task<IActionResult> AddOperation(
+    int serviceRecordId,
+    AddServiceOperationRequest request)
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized("Workshop bilgisi bulunamadı.");
+
+        var result = await _serviceRecordService.AddOperationAsync(
+            serviceRecordId,
+            request,
+            workshopId);
+
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
 }

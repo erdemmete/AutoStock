@@ -24,5 +24,8 @@ namespace AutoStock.Repositories.Entities
         public decimal TotalPrice { get; set; }
 
         public string? Note { get; set; }
+        public int? ServiceRequestItemId { get; set; }
+
+        public ServiceRequestItem? ServiceRequestItem { get; set; }
     }
 }

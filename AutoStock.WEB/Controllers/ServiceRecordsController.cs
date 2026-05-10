@@ -219,4 +219,65 @@ public class ServiceRecordsController : Controller
         return RedirectToAction(nameof(Detail), new { id = model.ServiceRecordId });
     }
 
+    [HttpPost("ServiceRecords/AddRequestItem")]
+    public async Task<IActionResult> AddRequestItem(CreateServiceRequestItemViewModel model, int serviceRecordId)
+    {
+        var client = CreateApiClient();
+
+        var requestBody = new
+        {
+            title = model.Title,
+            note = model.Note,
+            estimatedAmount = model.EstimatedAmount
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync(
+            $"/api/ServiceRecords/{serviceRecordId}/request-items",
+            content);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            TempData["ErrorMessage"] = "Talep eklenirken hata oluştu.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Yeni talep eklendi.";
+        }
+
+        return RedirectToAction(nameof(Detail), new { id = serviceRecordId });
+    }
+
+    [HttpPost("ServiceRecords/AddOperation")]
+    public async Task<IActionResult> AddOperation(AddServiceOperationViewModel model)
+    {
+        var client = CreateApiClient();
+
+        var requestBody = new
+        {
+            serviceRequestItemId = model.ServiceRequestItemId,
+            type = model.Type,
+            description = model.Description,
+            quantity = model.Quantity,
+            unitPrice = model.UnitPrice,
+            note = model.Note
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync(
+            $"/api/ServiceRecords/{model.ServiceRecordId}/operations",
+            content);
+
+        if (!response.IsSuccessStatusCode)
+            TempData["ErrorMessage"] = "İşlem eklenirken hata oluştu.";
+        else
+            TempData["SuccessMessage"] = "İşlem eklendi.";
+
+        return RedirectToAction(nameof(Detail), new { id = model.ServiceRecordId });
+    }
+
 }

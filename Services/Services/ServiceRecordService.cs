@@ -186,7 +186,8 @@ public class ServiceRecordService : IServiceRecordService
                     Quantity = x.Quantity,
                     UnitPrice = x.UnitPrice,
                     TotalPrice = x.TotalPrice,
-                    Note = x.Note
+                    Note = x.Note,
+                    ServiceRequestItemId = x.ServiceRequestItemId,
                 })
                 .ToList(),
 
@@ -266,6 +267,85 @@ public class ServiceRecordService : IServiceRecordService
         return ServiceResult<bool>.Success(true);
     }
 
+    public async Task<ServiceResult<bool>> AddRequestItemAsync(int serviceRecordId, CreateServiceRequestItemDto request, int workshopId)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title))
+            return ServiceResult<bool>.Fail("Talep başlığı zorunludur.");
+
+        var serviceRecord = await _context.ServiceRecords
+            .FirstOrDefaultAsync(x =>
+                x.Id == serviceRecordId &&
+                x.WorkshopId == workshopId);
+
+        if (serviceRecord is null)
+            return ServiceResult<bool>.Fail("Servis kaydı bulunamadı.");
+
+        serviceRecord.RequestItems.Add(new ServiceRequestItem
+        {
+            Title = request.Title.Trim(),
+            Note = request.Note?.Trim(),
+            EstimatedAmount = request.EstimatedAmount
+        });
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult<bool>.Success(true);
+    }
+
+    public async Task<ServiceResult<bool>> AddOperationAsync(
+    int serviceRecordId,
+    AddServiceOperationRequest request,
+    int workshopId)
+    {
+        if (string.IsNullOrWhiteSpace(request.Description))
+            return ServiceResult<bool>.Fail("İşlem açıklaması zorunludur.");
+
+        if (request.Quantity <= 0)
+            return ServiceResult<bool>.Fail("Adet 1 veya daha büyük olmalıdır.");
+
+        if (request.UnitPrice < 0)
+            return ServiceResult<bool>.Fail("Birim fiyat negatif olamaz.");
+
+        var serviceRecord = await _context.ServiceRecords
+            .Include(x => x.Operations)
+            .FirstOrDefaultAsync(x =>
+                x.Id == serviceRecordId &&
+                x.WorkshopId == workshopId);
+
+        if (serviceRecord is null)
+            return ServiceResult<bool>.Fail("Servis kaydı bulunamadı.");
+
+        if (request.ServiceRequestItemId.HasValue)
+        {
+            var requestItemExists = await _context.ServiceRequestItems
+                .AnyAsync(x =>
+                    x.Id == request.ServiceRequestItemId.Value &&
+                    x.ServiceRecordId == serviceRecordId);
+
+            if (!requestItemExists)
+                return ServiceResult<bool>.Fail("Seçilen talep bu servis kaydına ait değil.");
+        }
+
+        var totalPrice = request.Quantity * request.UnitPrice;
+
+        serviceRecord.Operations.Add(new ServiceOperation
+        {
+            ServiceRequestItemId = request.ServiceRequestItemId,
+            Type = request.Type,
+            Description = request.Description.Trim(),
+            Quantity = request.Quantity,
+            UnitPrice = request.UnitPrice,
+            TotalPrice = totalPrice,
+            Note = request.Note?.Trim()
+        });
+
+        serviceRecord.TotalAmount = serviceRecord.Operations.Sum(x => x.TotalPrice) + totalPrice;
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult<bool>.Success(true);
+    }
+
     private async Task<string?> GetBrandNameAsync(int? brandId)
     {
         if (!brandId.HasValue)
@@ -300,4 +380,6 @@ public class ServiceRecordService : IServiceRecordService
     {
         return $"SR-{DateTime.UtcNow:yyyyMMddHHmmssfff}";
     }
+
+    
 }

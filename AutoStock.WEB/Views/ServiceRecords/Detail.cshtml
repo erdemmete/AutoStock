@@ -118,68 +118,118 @@
 
                         @foreach (var item in Model.RequestItems)
                         {
-                            <div class="request-detail-card">
+                            <div class="request-detail-card collapsed">
 
-                                <div class="request-detail-main">
-                                    <div>
-                                        <strong>@item.Title</strong>
+                                <button type="button"
+                                        class="request-accordion-header"
+                                        onclick="toggleRequestCard(this)">
 
-                                        @if (!string.IsNullOrWhiteSpace(item.Note))
-                                        {
-                                            <span>@item.Note</span>
-                                        }
+                                    <strong>@item.Title</strong>
+
+                                    <span class="accordion-arrow">›</span>
+
+                                </button>
+
+                                <div class="request-accordion-body">
+                                @{
+                                    var itemOperations = Model.Operations
+                                        .Where(x => x.ServiceRequestItemId == item.Id)
+                                        .ToList();
+
+                                    var itemTotal = itemOperations.Sum(x => x.TotalPrice);
+                                }
+
+                                <div class="request-operation-area">
+
+                                    <div class="request-operation-header">
+                                        <strong>Yapılan İşlemler</strong>
+                                        <span>Toplam: @itemTotal.ToString("N2") ₺</span>
                                     </div>
 
-                                    <div class="request-detail-meta">
-                                        @if (item.EstimatedAmount.HasValue)
-                                        {
-                                            <span>Tahmini: @item.EstimatedAmount.Value.ToString("N2") ₺</span>
-                                        }
+                                    @if (itemOperations.Any())
+                                    {
+                                        <div class="request-operation-list">
+                                            @foreach (var operation in itemOperations)
+                                            {
+                                                <div class="request-operation-item">
+                                                    <div>
+                                                        <strong>@operation.Description</strong>
+                                                        <span>@(operation.Type == 1 ? "Parça" : "İşçilik")</span>
+                                                    </div>
 
-                                        <span class="request-status @(item.IsResolved ? "resolved" : "open")">
-                                            @(item.IsResolved ? "Tamamlandı" : "Açık")
-                                        </span>
+                                                    <div>
+                                                        <strong>@operation.TotalPrice.ToString("N2") ₺</strong>
+                                                        <span>@operation.Quantity adet × @operation.UnitPrice.ToString("N2") ₺</span>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="mini-empty">
+                                            Bu talep için henüz işlem eklenmedi.
+                                        </div>
+                                    }
                                     </div>
                                 </div>
 
-                                <form asp-action="UpdateRequestItem"
+                                <form asp-action="AddOperation"
                                       method="post"
-                                      class="request-update-form">
+                                      class="add-operation-form">
 
-                                    <input type="hidden" name="RequestItemId" value="@item.Id" />
                                     <input type="hidden" name="ServiceRecordId" value="@Model.Id" />
+                                    <input type="hidden" name="ServiceRequestItemId" value="@item.Id" />
 
-                                    <div class="request-repair-area">
+                                    <div class="operation-form-row">
 
-                                        <div class="form-field">
-                                            <textarea name="RepairDetail"
-                                                      placeholder=" ">@item.RepairDetail</textarea>
-                                            <label>Onarım Detayı</label>
+                                        <div class="type-toggle">
+
+                                            <input type="radio"
+                                                   id="partType_@item.Id"
+                                                   name="Type"
+                                                   value="1"
+                                                   checked />
+
+                                            <label for="partType_@item.Id">
+                                                Parça
+                                            </label>
+
+                                            <input type="radio"
+                                                   id="laborType_@item.Id"
+                                                   name="Type"
+                                                   value="2" />
+
+                                            <label for="laborType_@item.Id">
+                                                İşçilik
+                                            </label>
+
                                         </div>
 
                                         <div class="form-field">
-                                            <input name="FinalAmount"
-                                                   type="number"
-                                                   step="0.01"
-                                                   value="@item.FinalAmount"
-                                                   placeholder=" " />
-                                            <label>Final Tutar</label>
+                                            <input name="Description" placeholder=" " />
+                                            <label>İşlem Açıklaması</label>
                                         </div>
+
+                                        <div class="form-field">
+                                            <input name="Quantity" type="number" value="1" min="1" placeholder=" " />
+                                            <label>Adet</label>
+                                        </div>
+
+                                        <div class="form-field">
+                                            <input name="UnitPrice" type="number" step="0.01" min="0" placeholder=" " />
+                                            <label>Birim Fiyat</label>
+                                        </div>
+
+                                        <button type="submit" class="btn-primary">
+                                            + İşlem
+                                        </button>
 
                                     </div>
 
-                                    <div class="request-actions">
-                                        <label class="resolved-check">
-                                            <input type="checkbox"
-                                                   name="IsResolved"
-                                                   value="true"
-                                            @(item.IsResolved ? "checked" : "") />
-                                            Tamamlandı
-                                        </label>
-
-                                        <button type="submit" class="btn-save-request">
-                                            Kaydet
-                                        </button>
+                                    <div class="form-field operation-note-field">
+                                        <textarea name="Note" placeholder=" "></textarea>
+                                        <label>İşlem Notu</label>
                                     </div>
 
                                 </form>
@@ -200,56 +250,84 @@
 
             <div class="panel">
 
-                <div class="section-header">
-                    <div class="section-title">
-                        İşlemler
+                <div class="section-title">
+                    Ek Talep / İşlem Ekle
+                </div>
+
+                <form asp-action="AddRequestItem"
+                      method="post"
+                      class="add-request-form">
+
+                    <input type="hidden" name="serviceRecordId" value="@Model.Id" />
+
+                    <div class="request-builder-detail">
+
+                        <div class="form-field">
+                            <input name="Title"
+                                   list="detailRequestSuggestions"
+                                   placeholder=" " />
+                            <label>Talep / İşlem</label>
+
+                            <datalist id="detailRequestSuggestions">
+                                <option value="Genel bakım"></option>
+                                <option value="Yağ değişimi"></option>
+                                <option value="Fren kontrolü"></option>
+                                <option value="Klima arızası"></option>
+                                <option value="Rot balans kontrolü"></option>
+                                <option value="Far ayarı"></option>
+                            </datalist>
+                        </div>
+
+                        <div class="form-field">
+                            <input name="EstimatedAmount"
+                                   type="number"
+                                   step="0.01"
+                                   placeholder=" " />
+                            <label>Tahmini Fiyat</label>
+                        </div>
+
+                        <button type="submit" class="btn-primary">
+                            + Talep Ekle
+                        </button>
+
                     </div>
 
-                    <button class="btn-primary">
-                        + İşlem Ekle
-                    </button>
+                    <div class="form-field add-request-note">
+                        <textarea name="Note" placeholder=" "></textarea>
+                        <label>Ön Not</label>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="panel">
+
+                <div class="section-title">
+                    İşlemler
                 </div>
 
                 @if (Model.Operations.Any())
                 {
                     <div class="operation-list">
-
                         @foreach (var operation in Model.Operations)
                         {
                             <div class="operation-card">
-
                                 <div>
-                                    <strong>
-                                        @operation.Description
-                                    </strong>
-
-                                    <span>
-                                        @(operation.Type == 1
-                                            ? "Parça"
-                                            : "İşçilik")
-                                    </span>
+                                    <strong>@operation.Description</strong>
+                                    <span>@(operation.Type == 1 ? "Parça" : "İşçilik")</span>
                                 </div>
 
                                 <div>
-                                    <strong>
-                                        @operation.Quantity Adet
-                                    </strong>
-
-                                    <span>
-                                        Birim:
-                                        @operation.UnitPrice.ToString("N2") ₺
-                                    </span>
+                                    <strong>@operation.Quantity Adet</strong>
+                                    <span>Birim: @operation.UnitPrice.ToString("N2") ₺</span>
                                 </div>
 
                                 <div>
-                                    <strong>
-                                        @operation.TotalPrice.ToString("N2") ₺
-                                    </strong>
+                                    <strong>@operation.TotalPrice.ToString("N2") ₺</strong>
                                 </div>
-
                             </div>
                         }
-
                     </div>
                 }
                 else
@@ -261,7 +339,7 @@
 
             </div>
 
-        </div>
+          
 
         <div class="detail-sidebar">
 
@@ -288,6 +366,16 @@
 </div>
 
 <style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 28rem), radial-gradient(circle at top right, rgba(22, 163, 74, .10), transparent 28rem), #f3f6fb;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #0f172a;
+    }
 
     .page {
         width: min(1450px, calc(100% - 48px));
@@ -299,12 +387,13 @@
         margin-bottom: 28px;
         padding: 32px 36px;
         border-radius: 32px;
-        background: linear-gradient( 135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
+        background: linear-gradient(135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
         color: white;
         box-shadow: 0 28px 80px rgba(15, 23, 42, .24);
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 20px;
     }
 
     .premium-brand {
@@ -319,10 +408,11 @@
         border-radius: 18px;
         display: grid;
         place-items: center;
-        background: linear-gradient( 135deg, #2563eb, #16a34a);
+        background: linear-gradient(135deg, #2563eb, #16a34a);
         color: white;
         font-weight: 950;
         font-size: 22px;
+        flex-shrink: 0;
     }
 
     .premium-eyebrow {
@@ -341,6 +431,7 @@
         margin: 0;
         font-size: 36px;
         letter-spacing: -1.5px;
+        line-height: 1.05;
     }
 
     .premium-header p {
@@ -360,14 +451,16 @@
         text-decoration: none;
         font-size: 28px;
         font-weight: 900;
+        flex-shrink: 0;
     }
 
     .detail-layout {
-        display: grid;
-        grid-template-columns: 1fr 340px;
-        gap: 24px;
-        align-items: start;
-    }
+    display: grid;
+    grid-template-columns: minmax(0, 980px) 340px;
+    gap: 24px;
+    align-items: start;
+    justify-content: center;
+            }
 
     .detail-main {
         display: grid;
@@ -377,47 +470,74 @@
     .panel {
         padding: 24px;
         border-radius: 30px;
-        background: rgba(255,255,255,.92);
+        background: rgba(255,255,255,.94);
         border: 1px solid #e2e8f0;
         box-shadow: 0 22px 55px rgba(15, 23, 42, .08);
     }
 
     .section-title {
-        margin-bottom: 18px;
+        margin: 0 0 18px;
         font-size: 24px;
         font-weight: 900;
         color: #0f172a;
+        letter-spacing: -.5px;
     }
 
     .section-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 16px;
         margin-bottom: 18px;
     }
 
-    .btn-primary {
+    .btn-primary,
+    .btn-save-request {
         border: none;
         border-radius: 16px;
-        background: #2563eb;
         color: white;
-        padding: 12px 18px;
+        padding: 13px 18px;
         font-size: 14px;
-        font-weight: 800;
+        font-weight: 900;
         cursor: pointer;
+        transition: .18s ease;
+        white-space: nowrap;
     }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        box-shadow: 0 12px 24px rgba(37, 99, 235, .18);
+    }
+
+    .btn-save-request {
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        box-shadow: 0 12px 24px rgba(22, 163, 74, .18);
+    }
+
+        .btn-primary:hover,
+        .btn-save-request:hover {
+            transform: translateY(-1px);
+            filter: brightness(.96);
+        }
 
     .info-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 16px;
+    }
+
+    .info-card,
+    .note-box,
+    .operation-card,
+    .request-detail-card,
+    .empty-state {
+        border-radius: 20px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
     }
 
     .info-card {
         padding: 18px;
-        border-radius: 20px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
     }
 
         .info-card label {
@@ -436,17 +556,172 @@
 
     .note-box {
         padding: 18px;
-        border-radius: 20px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
         color: #0f172a;
         line-height: 1.7;
         font-weight: 600;
     }
 
+    .form-field {
+        position: relative;
+        min-width: 0;
+    }
+
+        .form-field input,
+        .form-field textarea {
+            width: 100%;
+            min-height: 54px;
+            border: 1px solid #dbe3ef;
+            border-radius: 16px;
+            background: white;
+            padding: 20px 15px 10px;
+            font: inherit;
+            font-size: 15px;
+            color: #0f172a;
+            outline: none;
+            transition: .18s ease;
+        }
+
+        .form-field textarea {
+            min-height: 96px;
+            resize: vertical;
+            line-height: 1.45;
+        }
+
+            .form-field input:focus,
+            .form-field textarea:focus {
+                border-color: #2563eb;
+                background: white;
+                box-shadow: 0 0 0 4px rgba(37, 99, 235, .11);
+            }
+
+        .form-field label {
+            position: absolute;
+            top: 16px;
+            left: 15px;
+            padding: 0 6px;
+            border-radius: 8px;
+            background: white;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 800;
+            pointer-events: none;
+            transition: .18s ease;
+        }
+
+        .form-field input:focus + label,
+        .form-field input:not(:placeholder-shown) + label,
+        .form-field textarea:focus + label,
+        .form-field textarea:not(:placeholder-shown) + label {
+            top: -8px;
+            left: 12px;
+            color: #2563eb;
+            font-size: 11px;
+        }
+
+    .request-detail-list,
     .operation-list {
         display: grid;
-        gap: 12px;
+        gap: 14px;
+    }
+
+    .request-detail-card {
+        padding: 18px;
+    }
+
+    .request-detail-main {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+        .request-detail-main strong {
+            display: block;
+            font-size: 16px;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        .request-detail-main span {
+            display: block;
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+    .request-detail-meta {
+        text-align: right;
+        min-width: 170px;
+    }
+
+    .request-status {
+        display: inline-flex !important;
+        margin-top: 8px !important;
+        padding: 7px 11px;
+        border-radius: 999px;
+        font-size: 12px !important;
+        font-weight: 900 !important;
+    }
+
+        .request-status.open {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .request-status.resolved {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+    .request-update-form {
+        display: grid;
+        gap: 14px;
+    }
+
+    .request-repair-area {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 190px;
+        gap: 14px;
+    }
+
+    .request-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .resolved-check {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #334155;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+        .resolved-check input {
+            width: 18px;
+            height: 18px;
+            accent-color: #16a34a;
+        }
+
+    .add-request-form {
+        display: grid;
+        gap: 14px;
+    }
+
+    .request-builder-detail {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 220px 170px;
+        gap: 14px;
+        align-items: center;
+    }
+
+    .add-request-note textarea {
+        min-height: 110px;
     }
 
     .operation-card {
@@ -455,9 +730,6 @@
         gap: 18px;
         align-items: center;
         padding: 18px;
-        border-radius: 20px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
     }
 
         .operation-card strong {
@@ -474,12 +746,20 @@
             font-weight: 700;
         }
 
+    .empty-state {
+        padding: 30px;
+        border-style: dashed;
+        text-align: center;
+        color: #64748b;
+        font-weight: 800;
+    }
+
     .summary-card {
         position: sticky;
         top: 24px;
         padding: 28px;
         border-radius: 30px;
-        background: linear-gradient( 180deg, #0f172a, #111827);
+        background: linear-gradient(180deg, #0f172a, #111827);
         color: white;
         box-shadow: 0 25px 60px rgba(15, 23, 42, .24);
     }
@@ -507,20 +787,13 @@
         font-weight: 800;
     }
 
-    .empty-state {
-        padding: 30px;
-        border-radius: 22px;
-        background: #f8fafc;
-        border: 1px dashed #cbd5e1;
-        text-align: center;
-        color: #64748b;
-        font-weight: 800;
-    }
-
-    @@media (max-width: 1100px) {
-
+    @@media (max-width: 800px) {
         .detail-layout {
             grid-template-columns: 1fr;
+        }
+
+        .summary-card {
+            position: static;
         }
 
         .info-grid {
@@ -532,139 +805,292 @@
         }
     }
 
-    .request-detail-list {
-        display: grid;
-        gap: 14px;
-    }
-
-    .request-detail-card {
-        padding: 18px;
-        border-radius: 22px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-    }
-
-    .request-detail-main {
-        display: flex;
-        justify-content: space-between;
-        gap: 18px;
-        align-items: flex-start;
-    }
-
-        .request-detail-main strong {
-            display: block;
-            font-size: 16px;
-            font-weight: 900;
-            color: #0f172a;
-        }
-
-        .request-detail-main span {
-            display: block;
-            margin-top: 6px;
-            color: #64748b;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-    .request-detail-meta {
-        text-align: right;
-        min-width: 160px;
-    }
-
-    .request-status {
-        display: inline-flex !important;
-        margin-top: 8px !important;
-        padding: 7px 11px;
-        border-radius: 999px;
-        font-size: 12px !important;
-        font-weight: 900 !important;
-    }
-
-        .request-status.open {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .request-status.resolved {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-    .request-repair-area {
-        display: grid;
-        grid-template-columns: 1fr 180px;
-        gap: 14px;
-        margin-top: 16px;
-    }
-
-        .request-repair-area textarea {
-            min-height: 90px;
-        }
-
-        .request-repair-area input,
-        .request-repair-area textarea {
-            width: 100%;
-            min-height: 52px;
-            border: 1px solid #dbe3ef;
-            border-radius: 16px;
-            background: white;
-            padding: 14px 15px;
-            font: inherit;
-            color: #0f172a;
-        }
-
     @@media (max-width: 900px) {
-        .request-detail-main {
+        .page {
+            width: min(100% - 28px, 1450px);
+            padding-top: 20px;
+        }
+
+        .premium-header {
+            padding: 24px;
+            border-radius: 26px;
+            align-items: flex-start;
+        }
+
+            .premium-header h1 {
+                font-size: 28px;
+            }
+
+        .premium-brand {
+            align-items: flex-start;
+        }
+
+        .request-detail-main,
+        .request-actions {
             display: grid;
         }
 
         .request-detail-meta {
             text-align: left;
+            min-width: 0;
         }
 
-        .request-repair-area {
+        .request-repair-area,
+        .request-builder-detail {
             grid-template-columns: 1fr;
         }
     }
 
-    .request-update-form {
-        margin-top: 16px;
-    }
-
-    .request-actions {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-        margin-top: 14px;
-    }
-
-    .resolved-check {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: #334155;
-        font-size: 14px;
-        font-weight: 800;
-    }
-
-        .resolved-check input {
-            width: 18px;
-            height: 18px;
+    @@media (max-width: 600px) {
+        .page {
+            width: 100%;
+            padding: 14px;
         }
 
-    .btn-save-request {
-        border: none;
-        border-radius: 14px;
-        background: #16a34a;
-        color: white;
-        padding: 12px 18px;
-        font-weight: 900;
-        cursor: pointer;
+        .panel {
+            padding: 16px;
+            border-radius: 22px;
+        }
+
+        .premium-logo,
+        .premium-home {
+            width: 46px;
+            height: 46px;
+            border-radius: 15px;
+        }
+
+        .section-title {
+            font-size: 21px;
+        }
     }
 
-        .btn-save-request:hover {
-            background: #15803d;
-        }
+    .premium-header {
+        max-width: 1344px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .detail-main {
+        width: 100%;
+        max-width: 980px;
+    }
+
+    .detail-sidebar {
+        width: 340px;
+    }
+
+            .detail-layout {
+                width: min(980px, 100%);
+                margin: 0 auto;
+                display: block;
+            }
+
+            .request-operation-area {
+                margin-top: 16px;
+                padding: 16px;
+                border-radius: 18px;
+                background: white;
+                border: 1px solid #e2e8f0;
+            }
+
+            .request-operation-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 14px;
+                margin-bottom: 12px;
+            }
+
+                .request-operation-header strong {
+                    font-size: 14px;
+                    font-weight: 900;
+                    color: #0f172a;
+                }
+
+                .request-operation-header span {
+                    font-size: 13px;
+                    font-weight: 900;
+                    color: #16a34a;
+                }
+
+            .request-operation-list {
+                display: grid;
+                gap: 10px;
+            }
+
+            .request-operation-item {
+                display: flex;
+                justify-content: space-between;
+                gap: 16px;
+                padding: 13px 14px;
+                border-radius: 15px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+            }
+
+                .request-operation-item strong {
+                    display: block;
+                    font-size: 14px;
+                    font-weight: 900;
+                    color: #0f172a;
+                }
+
+                .request-operation-item span {
+                    display: block;
+                    margin-top: 4px;
+                    color: #64748b;
+                    font-size: 12px;
+                    font-weight: 700;
+                }
+
+            .mini-empty {
+                padding: 14px;
+                border-radius: 15px;
+                background: #f8fafc;
+                border: 1px dashed #cbd5e1;
+                color: #64748b;
+                font-size: 13px;
+                font-weight: 800;
+                text-align: center;
+            }
+
+            .add-operation-form {
+                margin-top: 16px;
+                display: grid;
+                gap: 12px;
+            }
+
+            .operation-form-row {
+                display: grid;
+                grid-template-columns: 180px minmax(0, 1fr) 100px 160px 120px;
+                gap: 12px;
+                align-items: center;
+            }
+
+            .operation-note-field textarea {
+                min-height: 80px;
+            }
+
+            .form-field select {
+                width: 100%;
+                min-height: 54px;
+                border: 1px solid #dbe3ef;
+                border-radius: 16px;
+                background: white;
+                padding: 20px 15px 10px;
+                font: inherit;
+                font-size: 15px;
+                color: #0f172a;
+                outline: none;
+            }
+
+                .form-field select + label {
+                    top: -8px;
+                    left: 12px;
+                    color: #2563eb;
+                    font-size: 11px;
+                }
+
+            @@media (max-width: 900px) {
+                .operation-form-row {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            .type-toggle {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                border-radius: 16px;
+                overflow: hidden;
+                border: 1px solid #dbe3ef;
+                min-height: 54px;
+                background: white;
+            }
+
+                .type-toggle input {
+                    display: none;
+                }
+
+                .type-toggle label {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 800;
+                    color: #64748b;
+                    transition: .2s ease;
+                    background: white;
+                }
+
+                .type-toggle input:checked + label {
+                    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+                    color: white;
+                }
+
+            .request-accordion-header {
+                width: 100%;
+                border: none;
+                background: transparent;
+                padding: 0;
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 18px;
+                align-items: center;
+                text-align: left;
+                cursor: pointer;
+            }
+
+                .request-accordion-header strong {
+                    display: block;
+                    font-size: 16px;
+                    font-weight: 900;
+                    color: #0f172a;
+                }
+
+                .request-accordion-header span {
+                    display: block;
+                    margin-top: 6px;
+                    color: #64748b;
+                    font-size: 13px;
+                    font-weight: 700;
+                }
+
+            .accordion-arrow {
+                display: inline-flex !important;
+                justify-content: center;
+                align-items: center;
+                width: 38px;
+                height: 38px;
+                border-radius: 14px;
+                background: #dbeafe;
+                color: #1d4ed8 !important;
+                font-size: 24px !important;
+                font-weight: 950 !important;
+                transition: .18s ease;
+            }
+
+            .request-detail-card:not(.collapsed) .accordion-arrow {
+                transform: rotate(90deg);
+            }
+
+            .request-detail-card.collapsed .request-accordion-body {
+                display: none;
+            }
+
+            .request-detail-card.collapsed .accordion-arrow {
+                transform: rotate(-90deg);
+            }
+
+            .request-detail-card.collapsed .request-accordion-body {
+                display: none;
+            }
 
 </style>
+
+    <script>
+            function toggleRequestCard(button) {
+                const card = button.closest(".request-detail-card");
+                card.classList.toggle("collapsed");
+            }
+    </script>
