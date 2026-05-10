@@ -36,6 +36,7 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public DateTime CreatedAt { get; set; }
 
         public DateTime? CompletedAt { get; set; }
+        public List<ServiceRequestItemDto> RequestItems { get; set; } = new();
 
         public List<ServiceOperationDto> Operations { get; set; } = new();
     }

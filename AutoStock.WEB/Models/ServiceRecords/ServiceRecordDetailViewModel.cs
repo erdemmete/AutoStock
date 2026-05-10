@@ -33,5 +33,6 @@
         public DateTime? CompletedAt { get; set; }
 
         public List<ServiceOperationViewModel> Operations { get; set; } = new();
+        public List<ServiceRequestItemViewModel> RequestItems { get; set; } = new();
     }
 }

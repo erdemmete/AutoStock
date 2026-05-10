@@ -41,12 +41,14 @@ public class ServiceRecordService : IServiceRecordService
 
         if (customer is null)
         {
+            
             customer = new Customer
             {
                 WorkshopId = workshopId,
                 Type = CustomerType.Individual,
                 PhoneNumber = phoneNumber,
-                FullName = request.CustomerName.Trim()
+                FullName = request.CustomerName.Trim(),
+                Email = request.CustomerEmail?.Trim()
             };
 
             _context.Customers.Add(customer);
@@ -139,6 +141,7 @@ public class ServiceRecordService : IServiceRecordService
     {
         var serviceRecord = await _context.ServiceRecords
             .Include(x => x.Operations)
+            .Include(x => x.RequestItems)
             .FirstOrDefaultAsync(x =>
                 x.Id == serviceRecordId &&
                 x.WorkshopId == workshopId);
@@ -185,7 +188,22 @@ public class ServiceRecordService : IServiceRecordService
                     TotalPrice = x.TotalPrice,
                     Note = x.Note
                 })
-                .ToList()
+                .ToList(),
+
+            RequestItems = serviceRecord.RequestItems
+            .OrderBy(x => x.Id)
+            .Select(x => new ServiceRequestItemDto
+            {
+                Id = x.Id,
+                Title = x.Title,
+                Note = x.Note,
+                RepairDetail = x.RepairDetail,
+                EstimatedAmount = x.EstimatedAmount,
+                FinalAmount = x.FinalAmount,
+                IsResolved = x.IsResolved
+            })
+            .ToList()
+
         };
 
         return ServiceResult<ServiceRecordDetailDto>.Success(dto);
@@ -215,6 +233,37 @@ public class ServiceRecordService : IServiceRecordService
             .ToListAsync();
 
         return ServiceResult<List<ServiceRecordListItemDto>>.Success(records);
+    }
+
+    public async Task<ServiceResult<bool>> UpdateRequestItemAsync(
+    int requestItemId,
+    UpdateServiceRequestItemRequest request,
+    int workshopId)
+    {
+        var requestItem = await _context.ServiceRequestItems
+            .Include(x => x.ServiceRecord)
+            .FirstOrDefaultAsync(x =>
+                x.Id == requestItemId &&
+                x.ServiceRecord.WorkshopId == workshopId);
+
+        if (requestItem is null)
+            return ServiceResult<bool>.Fail("Talep kaydı bulunamadı.");
+
+        requestItem.RepairDetail = request.RepairDetail?.Trim();
+        requestItem.FinalAmount = request.FinalAmount;
+        requestItem.IsResolved = request.IsResolved;
+
+        requestItem.ServiceRecord.TotalAmount = await _context.ServiceRequestItems
+            .Where(x =>
+                x.ServiceRecordId == requestItem.ServiceRecordId &&
+                x.Id != requestItem.Id)
+            .SumAsync(x => x.FinalAmount ?? 0);
+
+        requestItem.ServiceRecord.TotalAmount += request.FinalAmount ?? 0;
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult<bool>.Success(true);
     }
 
     private async Task<string?> GetBrandNameAsync(int? brandId)

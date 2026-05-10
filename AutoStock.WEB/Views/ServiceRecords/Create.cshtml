@@ -447,14 +447,96 @@
     .form-field {
         min-width: 0;
     }
-
     .request-note-field {
-        margin-top: 16px;
-    }
+    margin-top: 16px;
+}
     .request-note-field textarea {
         min-height: 120px;
         resize: vertical;
     }
+    .customer-search-panel {
+        margin-bottom: 22px;
+        padding: 18px;
+        border-radius: 24px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .045);
+    }
+
+    .customer-search-box {
+        position: relative;
+        max-width: 720px;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        font-size: 22px;
+        font-weight: 900;
+        z-index: 2;
+    }
+
+    .customer-search-box input {
+        width: 100%;
+        min-height: 58px;
+        padding: 14px 18px 14px 52px;
+        border-radius: 18px;
+        border: 1px solid #dbe3ef;
+        background: #f8fafc;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+        .customer-search-box input:focus {
+            border-color: #2563eb;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, .11);
+        }
+
+    .customer-search-results {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 10px);
+        background: white;
+        border: 1px solid #dbe2f0;
+        border-radius: 18px;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+        z-index: 100;
+        overflow: hidden;
+        display: none;
+    }
+
+    .customer-search-item {
+        padding: 15px 18px;
+        cursor: pointer;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+        .customer-search-item:hover {
+            background: #f8fafc;
+        }
+
+        .customer-search-item strong {
+            display: block;
+            font-size: 14px;
+            color: #0f172a;
+        }
+
+        .customer-search-item span {
+            display: block;
+            margin-top: 4px;
+            font-size: 12px;
+            color: #64748b;
+        }
+    
+    .form-field {
+        position: relative;
+    }
+
 </style>
 
 <div class="page">
@@ -481,23 +563,46 @@
     <form asp-action="Create" method="post">
         <div class="layout">
             <div class="panel">
+                <div class="customer-search-panel">
+                    <div class="customer-search-box">
+                        <span class="search-icon">⌕</span>
+
+                        <input type="text"
+                               id="customerSearchInput"
+                               placeholder="Müşteri ara: ad, firma, telefon veya mail"
+                               autocomplete="off" />
+
+                        <div id="customerSearchResults"
+                             class="customer-search-results"></div>
+                    </div>
+                </div>
+
+
                 <div class="grid">
 
                     <div class="card">
                         <h3>Müşteri Bilgileri</h3>
 
                         <div class="fields">
+
                             <div class="form-field">
-                                <input asp-for="CustomerPhoneNumber" placeholder=" " />
+                                <input asp-for="CustomerName" placeholder=" " autocomplete="off" />
+                                <label>Ad Soyad / Firma Adı</label>
+                                
+                                <span asp-validation-for="CustomerName" class="field-error"></span>
+                            </div>
+
+                            <div class="form-field">
+                                <input asp-for="CustomerPhoneNumber" placeholder=" " autocomplete="off" />
                                 <label>Telefon Numarası</label>
                                 <span asp-validation-for="CustomerPhoneNumber" class="field-error"></span>
                             </div>
 
                             <div class="form-field">
-                                <input asp-for="CustomerName" placeholder=" " />
-                                <label>Ad Soyad / Firma Adı</label>
-                                <span asp-validation-for="CustomerName" class="field-error"></span>
+                                <input asp-for="CustomerEmail" placeholder=" " autocomplete="off" />
+                                <label>Mail Adresi</label>
                             </div>
+
                         </div>
                     </div>
 
@@ -675,6 +780,82 @@
         });
 
         let requestIndex = 0;
+
+        const customerSearchInput = document.getElementById("customerSearchInput");
+        const customerNameInput = document.getElementById("CustomerName");
+        const customerPhoneInput = document.getElementById("CustomerPhoneNumber");
+        const customerEmailInput = document.getElementById("CustomerEmail");
+
+        const customerResults = document.getElementById("customerSearchResults");
+
+        let customerSearchTimeout;
+
+        customerSearchInput.addEventListener("input", function () {
+
+            clearTimeout(customerSearchTimeout);
+
+            const query = this.value.trim();
+
+            if (query.length < 2) {
+                customerResults.style.display = "none";
+                customerResults.innerHTML = "";
+                return;
+            }
+
+            customerSearchTimeout = setTimeout(async () => {
+
+                const response = await fetch(`/ServiceRecords/SearchCustomers?query=${encodeURIComponent(query)}`);
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const customers = await response.json();
+
+                customerResults.innerHTML = "";
+
+                if (!customers.length) {
+                    customerResults.style.display = "none";
+                    return;
+                }
+
+                customers.forEach(customer => {
+
+                    const item = document.createElement("div");
+
+                    item.className = "customer-search-item";
+
+                    item.innerHTML = `
+                        <strong>${customer.name}</strong>
+                        <span>${customer.phoneNumber ?? "-"} ${customer.email ?? ""}</span>
+                    `;
+
+                    item.addEventListener("click", () => {
+
+                        customerNameInput.value = customer.name ?? "";
+                        customerPhoneInput.value = customer.phoneNumber ?? "";
+                        customerEmailInput.value = customer.email ?? "";
+
+                         customerSearchInput.value = "";
+
+                        customerResults.style.display = "none";
+                    });
+
+                    customerResults.appendChild(item);
+                });
+
+                customerResults.style.display = "block";
+
+            }, 300);
+        });
+
+        document.addEventListener("click", function (e) {
+
+                    if (!customerResults.contains(e.target) &&
+            e.target !== customerSearchInput) {
+            customerResults.style.display = "none";
+        }
+        });
 
         function addRequestItem() {
             const titleInput = document.getElementById("requestInput");

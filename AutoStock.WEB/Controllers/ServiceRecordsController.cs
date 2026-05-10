@@ -141,6 +141,21 @@ public class ServiceRecordsController : Controller
         return View(result.Data);
     }
 
+    [HttpGet("ServiceRecords/SearchCustomers")]
+    public async Task<IActionResult> SearchCustomers(string query)
+    {
+        var client = CreateApiClient();
+
+        var response = await client.GetAsync($"/api/Customers/search?query={Uri.EscapeDataString(query)}");
+
+        if (!response.IsSuccessStatusCode)
+            return Json(new List<object>());
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        return Content(json, "application/json");
+    }
+
     private async Task<List<VehicleBrandViewModel>> GetBrandsAsync()
     {
         var client = CreateApiClient();
@@ -173,6 +188,35 @@ public class ServiceRecordsController : Controller
 
         return client;
     }
+    [HttpPost("ServiceRecords/UpdateRequestItem")]
+    public async Task<IActionResult> UpdateRequestItem(UpdateServiceRequestItemViewModel model)
+    {
+        var client = CreateApiClient();
 
-    
+        var requestBody = new
+        {
+            repairDetail = model.RepairDetail,
+            finalAmount = model.FinalAmount,
+            isResolved = model.IsResolved
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PutAsync(
+            $"/api/ServiceRecords/request-items/{model.RequestItemId}",
+            content);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            TempData["ErrorMessage"] = "Talep güncellenirken hata oluştu.";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Talep başarıyla güncellendi.";
+        }
+
+        return RedirectToAction(nameof(Detail), new { id = model.ServiceRecordId });
+    }
+
 }

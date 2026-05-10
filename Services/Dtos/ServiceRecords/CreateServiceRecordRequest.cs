@@ -9,6 +9,7 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public string CustomerPhoneNumber { get; set; } = null!;
 
         public string CustomerName { get; set; } = null!;
+        public string? CustomerEmail { get; set; }
 
         public string Plate { get; set; } = null!;
 

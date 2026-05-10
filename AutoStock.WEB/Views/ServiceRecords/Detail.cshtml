@@ -108,6 +108,98 @@
 
             <div class="panel">
 
+                <div class="section-title">
+                    Şikayet / Talepler
+                </div>
+
+                @if (Model.RequestItems.Any())
+                {
+                    <div class="request-detail-list">
+
+                        @foreach (var item in Model.RequestItems)
+                        {
+                            <div class="request-detail-card">
+
+                                <div class="request-detail-main">
+                                    <div>
+                                        <strong>@item.Title</strong>
+
+                                        @if (!string.IsNullOrWhiteSpace(item.Note))
+                                        {
+                                            <span>@item.Note</span>
+                                        }
+                                    </div>
+
+                                    <div class="request-detail-meta">
+                                        @if (item.EstimatedAmount.HasValue)
+                                        {
+                                            <span>Tahmini: @item.EstimatedAmount.Value.ToString("N2") ₺</span>
+                                        }
+
+                                        <span class="request-status @(item.IsResolved ? "resolved" : "open")">
+                                            @(item.IsResolved ? "Tamamlandı" : "Açık")
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <form asp-action="UpdateRequestItem"
+                                      method="post"
+                                      class="request-update-form">
+
+                                    <input type="hidden" name="RequestItemId" value="@item.Id" />
+                                    <input type="hidden" name="ServiceRecordId" value="@Model.Id" />
+
+                                    <div class="request-repair-area">
+
+                                        <div class="form-field">
+                                            <textarea name="RepairDetail"
+                                                      placeholder=" ">@item.RepairDetail</textarea>
+                                            <label>Onarım Detayı</label>
+                                        </div>
+
+                                        <div class="form-field">
+                                            <input name="FinalAmount"
+                                                   type="number"
+                                                   step="0.01"
+                                                   value="@item.FinalAmount"
+                                                   placeholder=" " />
+                                            <label>Final Tutar</label>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="request-actions">
+                                        <label class="resolved-check">
+                                            <input type="checkbox"
+                                                   name="IsResolved"
+                                                   value="true"
+                                            @(item.IsResolved ? "checked" : "") />
+                                            Tamamlandı
+                                        </label>
+
+                                        <button type="submit" class="btn-save-request">
+                                            Kaydet
+                                        </button>
+                                    </div>
+
+                                </form>
+
+                            </div>
+                        }
+
+                    </div>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        Bu servis kaydı için talep girilmemiş.
+                    </div>
+                }
+
+            </div>
+
+            <div class="panel">
+
                 <div class="section-header">
                     <div class="section-title">
                         İşlemler
@@ -439,5 +531,140 @@
             grid-template-columns: 1fr;
         }
     }
+
+    .request-detail-list {
+        display: grid;
+        gap: 14px;
+    }
+
+    .request-detail-card {
+        padding: 18px;
+        border-radius: 22px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .request-detail-main {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-start;
+    }
+
+        .request-detail-main strong {
+            display: block;
+            font-size: 16px;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        .request-detail-main span {
+            display: block;
+            margin-top: 6px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+    .request-detail-meta {
+        text-align: right;
+        min-width: 160px;
+    }
+
+    .request-status {
+        display: inline-flex !important;
+        margin-top: 8px !important;
+        padding: 7px 11px;
+        border-radius: 999px;
+        font-size: 12px !important;
+        font-weight: 900 !important;
+    }
+
+        .request-status.open {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .request-status.resolved {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+    .request-repair-area {
+        display: grid;
+        grid-template-columns: 1fr 180px;
+        gap: 14px;
+        margin-top: 16px;
+    }
+
+        .request-repair-area textarea {
+            min-height: 90px;
+        }
+
+        .request-repair-area input,
+        .request-repair-area textarea {
+            width: 100%;
+            min-height: 52px;
+            border: 1px solid #dbe3ef;
+            border-radius: 16px;
+            background: white;
+            padding: 14px 15px;
+            font: inherit;
+            color: #0f172a;
+        }
+
+    @@media (max-width: 900px) {
+        .request-detail-main {
+            display: grid;
+        }
+
+        .request-detail-meta {
+            text-align: left;
+        }
+
+        .request-repair-area {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .request-update-form {
+        margin-top: 16px;
+    }
+
+    .request-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-top: 14px;
+    }
+
+    .resolved-check {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #334155;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+        .resolved-check input {
+            width: 18px;
+            height: 18px;
+        }
+
+    .btn-save-request {
+        border: none;
+        border-radius: 14px;
+        background: #16a34a;
+        color: white;
+        padding: 12px 18px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+        .btn-save-request:hover {
+            background: #15803d;
+        }
 
 </style>

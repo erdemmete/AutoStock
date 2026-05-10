@@ -61,4 +61,25 @@ public class ServiceRecordsController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPut("request-items/{requestItemId:int}")]
+    public async Task<IActionResult> UpdateRequestItem(
+    int requestItemId,
+    UpdateServiceRequestItemRequest request)
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized("Workshop bilgisi bulunamadı.");
+
+        var result = await _serviceRecordService.UpdateRequestItemAsync(
+            requestItemId,
+            request,
+            workshopId);
+
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
 }
