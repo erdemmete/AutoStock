@@ -13,8 +13,10 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<List<ServiceRecordListItemDto>>> GetListAsync(int workshopId);
         Task<ServiceResult<bool>> UpdateRequestItemAsync(int requestItemId, UpdateServiceRequestItemRequest request, int workshopId);
         Task<ServiceResult<int>> AddRequestItemAsync(int serviceRecordId, CreateServiceRequestItemDto request, int workshopId);
-        Task<ServiceResult<bool>> AddOperationAsync(int serviceRecordId, AddServiceOperationRequest request, int workshopId);
+        Task<ServiceResult<ServiceOperationDto>> AddOperationAsync(int serviceRecordId, AddServiceOperationRequest request, int workshopId);
         Task<ServiceResult<bool>> CompleteAsync(int serviceRecordId, int workshopId);
         Task<ServiceResult<bool>> UpdateStatusAsync(int serviceRecordId, UpdateServiceRecordStatusRequest request, int workshopId);
+        Task<ServiceResult<DeleteServiceOperationResponse>> DeleteOperationAsync(int operationId, int workshopId);
+        Task<ServiceResult<DeleteServiceRequestItemResponse>> DeleteRequestItemAsync(int requestItemId, int workshopId);
     }
 }

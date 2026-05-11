@@ -294,19 +294,19 @@ public class ServiceRecordService : IServiceRecordService
         return ServiceResult<int>.Success(requestItem.Id);
     }
 
-    public async Task<ServiceResult<bool>> AddOperationAsync(
+    public async Task<ServiceResult<ServiceOperationDto>> AddOperationAsync(
     int serviceRecordId,
     AddServiceOperationRequest request,
     int workshopId)
     {
         if (string.IsNullOrWhiteSpace(request.Description))
-            return ServiceResult<bool>.Fail("İşlem açıklaması zorunludur.");
+            return ServiceResult<ServiceOperationDto>.Fail("İşlem açıklaması zorunludur.");
 
         if (request.Quantity <= 0)
-            return ServiceResult<bool>.Fail("Adet 1 veya daha büyük olmalıdır.");
+            return ServiceResult<ServiceOperationDto>.Fail("Adet 1 veya daha büyük olmalıdır.");
 
         if (request.UnitPrice < 0)
-            return ServiceResult<bool>.Fail("Birim fiyat negatif olamaz.");
+            return ServiceResult<ServiceOperationDto>.Fail("Birim fiyat negatif olamaz.");
 
         var serviceRecord = await _context.ServiceRecords
             .Include(x => x.Operations)
@@ -315,7 +315,7 @@ public class ServiceRecordService : IServiceRecordService
                 x.WorkshopId == workshopId);
 
         if (serviceRecord is null)
-            return ServiceResult<bool>.Fail("Servis kaydı bulunamadı.");
+            return ServiceResult<ServiceOperationDto>.Fail("Servis kaydı bulunamadı.");
 
         if (request.ServiceRequestItemId.HasValue)
         {
@@ -325,12 +325,12 @@ public class ServiceRecordService : IServiceRecordService
                     x.ServiceRecordId == serviceRecordId);
 
             if (!requestItemExists)
-                return ServiceResult<bool>.Fail("Seçilen talep bu servis kaydına ait değil.");
+                return ServiceResult<ServiceOperationDto>.Fail("Seçilen talep bu servis kaydına ait değil.");
         }
 
         var totalPrice = request.Quantity * request.UnitPrice;
 
-        serviceRecord.Operations.Add(new ServiceOperation
+        var operation = new ServiceOperation
         {
             ServiceRequestItemId = request.ServiceRequestItemId,
             Type = request.Type,
@@ -339,13 +339,25 @@ public class ServiceRecordService : IServiceRecordService
             UnitPrice = request.UnitPrice,
             TotalPrice = totalPrice,
             Note = request.Note?.Trim()
-        });
+        };
+
+        serviceRecord.Operations.Add(operation);
 
         serviceRecord.TotalAmount = serviceRecord.Operations.Sum(x => x.TotalPrice) + totalPrice;
 
         await _context.SaveChangesAsync();
 
-        return ServiceResult<bool>.Success(true);
+        return ServiceResult<ServiceOperationDto>.Success(new ServiceOperationDto
+        {
+            Id = operation.Id,
+            Type = operation.Type,
+            Description = operation.Description,
+            Quantity = operation.Quantity,
+            UnitPrice = operation.UnitPrice,
+            TotalPrice = operation.TotalPrice,
+            Note = operation.Note,
+            ServiceRequestItemId = operation.ServiceRequestItemId
+        });
     }
     public async Task<ServiceResult<bool>> CompleteAsync(int serviceRecordId, int workshopId)
     {
@@ -396,6 +408,111 @@ public class ServiceRecordService : IServiceRecordService
         await _context.SaveChangesAsync();
 
         return ServiceResult<bool>.Success(true);
+    }
+
+    public async Task<ServiceResult<DeleteServiceOperationResponse>> DeleteOperationAsync(
+    int operationId,
+    int workshopId)
+    {
+        var operation = await _context.ServiceOperations
+            .Include(x => x.ServiceRecord)
+            .FirstOrDefaultAsync(x =>
+                x.Id == operationId &&
+                x.ServiceRecord.WorkshopId == workshopId);
+
+        if (operation is null)
+            return ServiceResult<DeleteServiceOperationResponse>.Fail("İşlem bulunamadı.");
+
+        var serviceRecordId = operation.ServiceRecordId;
+        var serviceRequestItemId = operation.ServiceRequestItemId;
+
+        _context.ServiceOperations.Remove(operation);
+
+        await _context.SaveChangesAsync();
+
+        var recordTotal = await _context.ServiceOperations
+            .Where(x => x.ServiceRecordId == serviceRecordId)
+            .SumAsync(x => x.TotalPrice);
+
+        var requestItemTotal = serviceRequestItemId.HasValue
+            ? await _context.ServiceOperations
+                .Where(x =>
+                    x.ServiceRecordId == serviceRecordId &&
+                    x.ServiceRequestItemId == serviceRequestItemId.Value)
+                .SumAsync(x => x.TotalPrice)
+            : 0;
+
+        var serviceRecord = await _context.ServiceRecords
+            .FirstOrDefaultAsync(x =>
+                x.Id == serviceRecordId &&
+                x.WorkshopId == workshopId);
+
+        if (serviceRecord is null)
+            return ServiceResult<DeleteServiceOperationResponse>.Fail("Servis kaydı bulunamadı.");
+
+        serviceRecord.TotalAmount = recordTotal;
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult<DeleteServiceOperationResponse>.Success(
+            new DeleteServiceOperationResponse
+            {
+                ServiceRecordId = serviceRecordId,
+                ServiceRequestItemId = serviceRequestItemId,
+                RequestItemTotal = requestItemTotal,
+                RecordTotal = recordTotal
+            });
+    }
+
+    public async Task<ServiceResult<DeleteServiceRequestItemResponse>> DeleteRequestItemAsync(
+    int requestItemId,
+    int workshopId)
+    {
+        var requestItem = await _context.ServiceRequestItems
+            .Include(x => x.ServiceRecord)
+            .FirstOrDefaultAsync(x =>
+                x.Id == requestItemId &&
+                x.ServiceRecord.WorkshopId == workshopId);
+
+        if (requestItem is null)
+            return ServiceResult<DeleteServiceRequestItemResponse>.Fail("Talep bulunamadı.");
+
+        var serviceRecordId = requestItem.ServiceRecordId;
+
+        var relatedOperations = await _context.ServiceOperations
+            .Where(x =>
+                x.ServiceRecordId == serviceRecordId &&
+                x.ServiceRequestItemId == requestItemId)
+            .ToListAsync();
+
+        _context.ServiceOperations.RemoveRange(relatedOperations);
+        _context.ServiceRequestItems.Remove(requestItem);
+
+        await _context.SaveChangesAsync();
+
+        var recordTotal = await _context.ServiceOperations
+            .Where(x => x.ServiceRecordId == serviceRecordId)
+            .SumAsync(x => x.TotalPrice);
+
+        var serviceRecord = await _context.ServiceRecords
+            .FirstOrDefaultAsync(x =>
+                x.Id == serviceRecordId &&
+                x.WorkshopId == workshopId);
+
+        if (serviceRecord is null)
+            return ServiceResult<DeleteServiceRequestItemResponse>.Fail("Servis kaydı bulunamadı.");
+
+        serviceRecord.TotalAmount = recordTotal;
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult<DeleteServiceRequestItemResponse>.Success(
+            new DeleteServiceRequestItemResponse
+            {
+                ServiceRecordId = serviceRecordId,
+                ServiceRequestItemId = requestItemId,
+                RecordTotal = recordTotal
+            });
     }
 
     private async Task<string?> GetBrandNameAsync(int? brandId)

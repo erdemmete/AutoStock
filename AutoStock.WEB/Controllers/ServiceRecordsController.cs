@@ -1,4 +1,6 @@
-﻿using AutoStock.Web.Models.ServiceRecords;
+﻿using AutoStock.Services.Dtos.Common;
+using AutoStock.Services.Dtos.ServiceRecords;
+using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.ServiceRecords;
 using Microsoft.AspNetCore.Authorization;
@@ -278,20 +280,22 @@ public class ServiceRecordsController : Controller
             $"/api/ServiceRecords/{model.ServiceRecordId}/operations",
             content);
 
+        var responseJson = await response.Content.ReadAsStringAsync();
+
         if (!response.IsSuccessStatusCode)
-            return BadRequest();
+            return BadRequest(responseJson);
 
-        var totalPrice = model.Quantity * model.UnitPrice;
+        var result = JsonSerializer.Deserialize<ServiceResult<ServiceOperationDto>>(
+            responseJson,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
 
-        return Json(new
-        {
-            description = model.Description,
-            type = model.Type,
-            quantity = model.Quantity,
-            unitPrice = model.UnitPrice,
-            totalPrice = totalPrice,
-            serviceRequestItemId = model.ServiceRequestItemId
-        });
+        if (result == null || !result.IsSuccess || result.Data == null)
+            return BadRequest(responseJson);
+
+        return Json(result.Data);
     }
 
     [HttpPost("ServiceRecords/UpdateStatus")]
@@ -317,6 +321,38 @@ public class ServiceRecordsController : Controller
         }
 
         return Ok();
+    }
+
+    [HttpPost("ServiceRecords/DeleteOperation")]
+    public async Task<IActionResult> DeleteOperation(int operationId)
+    {
+        var client = CreateApiClient();
+
+        var response = await client.DeleteAsync(
+            $"/api/ServiceRecords/operations/{operationId}");
+
+        if (!response.IsSuccessStatusCode)
+            return BadRequest();
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        return Content(json, "application/json");
+    }
+
+    [HttpPost("ServiceRecords/DeleteRequestItem")]
+    public async Task<IActionResult> DeleteRequestItem(int requestItemId)
+    {
+        var client = CreateApiClient();
+
+        var response = await client.DeleteAsync(
+            $"/api/ServiceRecords/request-items/{requestItemId}");
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            return BadRequest(json);
+
+        return Content(json, "application/json");
     }
 
 }

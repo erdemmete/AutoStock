@@ -118,18 +118,29 @@
 
                         @foreach (var item in Model.RequestItems)
                         {
-                            <div class="request-detail-card collapsed" data-request-id="@item.Id">
+                            <div class="request-detail-card collapsed"
+                                 data-request-id="@item.Id"
+                                 id="request-item-@item.Id">
 
-                                <button type="button"
-                                        class="request-accordion-header"
-                                        onclick="toggleRequestCard(this)">
+                                <div class="request-card-top">
 
-                                    <strong>@item.Title</strong>
+                                    <button type="button"
+                                            class="request-accordion-header"
+                                            onclick="toggleRequestCard(this)">
 
-                                    <span class="accordion-arrow">›</span>
+                                        <strong>@item.Title</strong>
 
-                                </button>
+                                        <span class="accordion-arrow">›</span>
 
+                                    </button>
+
+                                    <button type="button"
+                                            class="request-delete-btn"
+                                            onclick="deleteRequestItem(@item.Id, this)">
+                                        Sil
+                                    </button>
+
+                                </div>
                                 <div class="request-accordion-body">
 
                                     @{
@@ -152,7 +163,7 @@
                                             <div class="request-operation-list">
                                                 @foreach (var operation in itemOperations)
                                                 {
-                                                    <div class="request-operation-item">
+                                                    <div class="request-operation-item" id="operation-item-@operation.Id">
                                                         <div>
                                                             <strong>@operation.Description</strong>
                                                             <span>@(operation.Type == 1 ? "Parça" : "İşçilik")</span>
@@ -162,6 +173,12 @@
                                                             <strong>@operation.TotalPrice.ToString("N2") ₺</strong>
                                                             <span>@operation.Quantity adet × @operation.UnitPrice.ToString("N2") ₺</span>
                                                         </div>
+
+                                                        <button type="button"
+                                                                class="operation-delete-btn"
+                                                                onclick="deleteOperation(@operation.Id, this)">
+                                                            Sil
+                                                        </button>
                                                     </div>
                                                 }
                                             </div>
@@ -352,9 +369,9 @@
                     Toplam Tutar
                 </div>
 
-                <div class="summary-total">
-                    @Model.TotalAmount.ToString("N2") ₺
-                </div>
+                    <div class="summary-total" data-total="@Model.TotalAmount">
+                        @Model.TotalAmount.ToString("N2") ₺
+                    </div>
 
                     <div class="summary-status status-@Model.Status">
                         @(Model.Status switch
@@ -959,8 +976,9 @@
             }
 
             .request-operation-item {
-                display: flex;
-                justify-content: space-between;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto auto;
+                align-items: center;
                 gap: 16px;
                 padding: 13px 14px;
                 border-radius: 15px;
@@ -1196,6 +1214,46 @@
                 transform: rotate(90deg);
             }
 
+            .operation-delete-btn {
+                border: none;
+                border-radius: 12px;
+                padding: 9px 12px;
+                background: #fee2e2;
+                color: #b91c1c;
+                font-size: 12px;
+                font-weight: 900;
+                cursor: pointer;
+                transition: .18s ease;
+            }
+
+                .operation-delete-btn:hover {
+                    background: #fecaca;
+                }
+
+            .request-card-top {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 12px;
+                align-items: center;
+            }
+
+            .request-delete-btn {
+                border: none;
+                border-radius: 14px;
+                padding: 11px 14px;
+                background: #fee2e2;
+                color: #b91c1c;
+                font-size: 13px;
+                font-weight: 900;
+                cursor: pointer;
+                transition: .18s ease;
+                flex-shrink: 0;
+            }
+
+                .request-delete-btn:hover {
+                    background: #fecaca;
+                }
+
 </style>
 
     <script>
@@ -1250,20 +1308,27 @@
 
                         const item = document.createElement("div");
                         item.className = "request-operation-item";
+                        item.id = `operation-item-${operation.id}`;
 
                         const typeText = operation.type == 1 ? "Parça" : "İşçilik";
 
-                        item.innerHTML = `
-                            <div>
-                                <strong>${operation.description}</strong>
-                                <span>${typeText}</span>
-                            </div>
+                                    item.innerHTML = `
+                <div>
+                    <strong>${operation.description}</strong>
+                    <span>${typeText}</span>
+                </div>
 
-                            <div>
-                                <strong>${formatMoney(operation.totalPrice)}</strong>
-                                <span>${operation.quantity} adet × ${formatMoney(operation.unitPrice)}</span>
-                            </div>
-                        `;
+                <div>
+                    <strong>${formatMoney(operation.totalPrice)}</strong>
+                    <span>${operation.quantity} adet × ${formatMoney(operation.unitPrice)}</span>
+                </div>
+
+                <button type="button"
+                        class="operation-delete-btn"
+                        onclick="deleteOperation(${operation.id}, this)">
+                    Sil
+                </button>
+            `;
 
                         operationList.appendChild(item);
 
@@ -1272,6 +1337,15 @@
 
                         totalText.dataset.total = newTotal;
                         totalText.textContent = `Toplam: ${formatMoney(newTotal)}`;
+                                    const summaryTotal = document.querySelector(".summary-total");
+
+            if (summaryTotal) {
+                const currentSummaryTotal = Number(summaryTotal.dataset.total || "0");
+                const newSummaryTotal = currentSummaryTotal + Number(operation.totalPrice || 0);
+
+                summaryTotal.dataset.total = newSummaryTotal;
+                summaryTotal.textContent = formatMoney(newSummaryTotal);
+            }
 
                         form.reset();
 
@@ -1411,6 +1485,75 @@
 
                 return "";
             }
+                        async function deleteOperation(operationId, button) {
+                const confirmed = confirm("Bu işlemi silmek istediğinize emin misiniz?");
+
+                if (!confirmed) {
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = "Siliniyor...";
+
+                const formData = new FormData();
+                formData.append("operationId", operationId);
+
+                const response = await fetch("/ServiceRecords/DeleteOperation", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    alert("İşlem silinirken hata oluştu.");
+                    button.disabled = false;
+                    button.textContent = "Sil";
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (!result.isSuccess) {
+                    alert(result.errorMessage || "İşlem silinemedi.");
+                    button.disabled = false;
+                    button.textContent = "Sil";
+                    return;
+                }
+
+                const item = document.getElementById(`operation-item-${operationId}`);
+                const card = button.closest(".request-detail-card");
+
+                if (item) {
+                    item.remove();
+                }
+
+                const totalText = card.querySelector(".request-operation-header span");
+
+                if (totalText) {
+                    totalText.dataset.total = result.data.requestItemTotal;
+                    totalText.textContent = `Toplam: ${formatMoney(result.data.requestItemTotal)}`;
+                }
+
+                const summaryTotal = document.querySelector(".summary-total");
+
+                if (summaryTotal) {
+                    summaryTotal.dataset.total = result.data.recordTotal;
+                    summaryTotal.textContent = formatMoney(result.data.recordTotal);
+                }
+
+                const operationList = card.querySelector(".request-operation-list");
+
+                if (operationList && operationList.children.length === 0) {
+                    operationList.remove();
+
+                    const area = card.querySelector(".request-operation-area");
+
+                    const empty = document.createElement("div");
+                    empty.className = "mini-empty";
+                    empty.textContent = "Bu talep için henüz işlem eklenmedi.";
+
+                    area.appendChild(empty);
+                }
+            }
 
             function bindStatusButtons() {
                 document.querySelectorAll(".status-btn").forEach(button => {
@@ -1453,4 +1596,64 @@
 
             bindOperationForms();
             bindStatusButtons();
+
+                        async function deleteRequestItem(requestItemId, button) {
+                const confirmed = confirm(
+                    "Bu talep ve bağlı işlemler silinecek. Devam etmek istiyor musunuz?"
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = "Siliniyor...";
+
+                const formData = new FormData();
+                formData.append("requestItemId", requestItemId);
+
+                const response = await fetch("/ServiceRecords/DeleteRequestItem", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    alert("Talep silinirken hata oluştu.");
+                    button.disabled = false;
+                    button.textContent = "Sil";
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (!result.isSuccess) {
+                    alert(result.errorMessage || "Talep silinemedi.");
+                    button.disabled = false;
+                    button.textContent = "Sil";
+                    return;
+                }
+
+                const card = document.getElementById(`request-item-${requestItemId}`);
+
+                if (card) {
+                    card.remove();
+                }
+
+                const summaryTotal = document.querySelector(".summary-total");
+
+                if (summaryTotal) {
+                    summaryTotal.dataset.total = result.data.recordTotal;
+                    summaryTotal.textContent = formatMoney(result.data.recordTotal);
+                }
+
+                const requestList = document.querySelector(".request-detail-list");
+
+                if (requestList && requestList.children.length === 0) {
+                    requestList.innerHTML = `
+                        <div class="empty-state">
+                            Bu servis kaydı için talep girilmemiş.
+                        </div>
+                    `;
+                }
+            }
     </script>

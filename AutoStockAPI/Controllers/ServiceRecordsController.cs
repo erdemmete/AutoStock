@@ -161,4 +161,40 @@ public class ServiceRecordsController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpDelete("operations/{operationId:int}")]
+    public async Task<IActionResult> DeleteOperation(int operationId)
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized("Workshop bilgisi bulunamadı.");
+
+        var result = await _serviceRecordService.DeleteOperationAsync(
+            operationId,
+            workshopId);
+
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
+    [HttpDelete("request-items/{requestItemId:int}")]
+    public async Task<IActionResult> DeleteRequestItem(int requestItemId)
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized("Workshop bilgisi bulunamadı.");
+
+        var result = await _serviceRecordService.DeleteRequestItemAsync(
+            requestItemId,
+            workshopId);
+
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
 }
