@@ -267,10 +267,10 @@ public class ServiceRecordService : IServiceRecordService
         return ServiceResult<bool>.Success(true);
     }
 
-    public async Task<ServiceResult<bool>> AddRequestItemAsync(int serviceRecordId, CreateServiceRequestItemDto request, int workshopId)
+    public async Task<ServiceResult<int>> AddRequestItemAsync(int serviceRecordId, CreateServiceRequestItemDto request, int workshopId)
     {
         if (string.IsNullOrWhiteSpace(request.Title))
-            return ServiceResult<bool>.Fail("Talep başlığı zorunludur.");
+            return ServiceResult<int>.Fail("Talep başlığı zorunludur.");
 
         var serviceRecord = await _context.ServiceRecords
             .FirstOrDefaultAsync(x =>
@@ -278,18 +278,20 @@ public class ServiceRecordService : IServiceRecordService
                 x.WorkshopId == workshopId);
 
         if (serviceRecord is null)
-            return ServiceResult<bool>.Fail("Servis kaydı bulunamadı.");
+            return ServiceResult<int>.Fail("Servis kaydı bulunamadı.");
 
-        serviceRecord.RequestItems.Add(new ServiceRequestItem
+        var requestItem = new ServiceRequestItem
         {
             Title = request.Title.Trim(),
             Note = request.Note?.Trim(),
             EstimatedAmount = request.EstimatedAmount
-        });
+        };
+
+        serviceRecord.RequestItems.Add(requestItem);
 
         await _context.SaveChangesAsync();
 
-        return ServiceResult<bool>.Success(true);
+        return ServiceResult<int>.Success(requestItem.Id);
     }
 
     public async Task<ServiceResult<bool>> AddOperationAsync(
@@ -340,6 +342,56 @@ public class ServiceRecordService : IServiceRecordService
         });
 
         serviceRecord.TotalAmount = serviceRecord.Operations.Sum(x => x.TotalPrice) + totalPrice;
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult<bool>.Success(true);
+    }
+    public async Task<ServiceResult<bool>> CompleteAsync(int serviceRecordId, int workshopId)
+    {
+        var serviceRecord = await _context.ServiceRecords
+            .FirstOrDefaultAsync(x =>
+                x.Id == serviceRecordId &&
+                x.WorkshopId == workshopId);
+
+        if (serviceRecord is null)
+            return ServiceResult<bool>.Fail("Servis kaydı bulunamadı.");
+
+        if (serviceRecord.Status == ServiceRecordStatus.Completed)
+            return ServiceResult<bool>.Fail("Bu servis kaydı zaten tamamlanmış.");
+
+        serviceRecord.Status = ServiceRecordStatus.Completed;
+        serviceRecord.CompletedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult<bool>.Success(true);
+    }
+
+    public async Task<ServiceResult<bool>> UpdateStatusAsync(
+    int serviceRecordId,
+    UpdateServiceRecordStatusRequest request,
+    int workshopId)
+    {
+        var serviceRecord = await _context.ServiceRecords
+            .FirstOrDefaultAsync(x =>
+                x.Id == serviceRecordId &&
+                x.WorkshopId == workshopId);
+
+        if (serviceRecord is null)
+            return ServiceResult<bool>.Fail("Servis kaydı bulunamadı.");
+
+        if (!Enum.IsDefined(typeof(ServiceRecordStatus), request.Status))
+            return ServiceResult<bool>.Fail("Geçersiz servis durumu.");
+
+        var newStatus = (ServiceRecordStatus)request.Status;
+
+        serviceRecord.Status = newStatus;
+
+        if (newStatus == ServiceRecordStatus.Completed)
+            serviceRecord.CompletedAt = DateTime.UtcNow;
+        else
+            serviceRecord.CompletedAt = null;
 
         await _context.SaveChangesAsync();
 

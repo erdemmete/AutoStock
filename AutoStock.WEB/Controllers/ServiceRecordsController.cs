@@ -239,15 +239,21 @@ public class ServiceRecordsController : Controller
             content);
 
         if (!response.IsSuccessStatusCode)
-        {
-            TempData["ErrorMessage"] = "Talep eklenirken hata oluştu.";
-        }
-        else
-        {
-            TempData["SuccessMessage"] = "Yeni talep eklendi.";
-        }
+            return BadRequest();
 
-        return RedirectToAction(nameof(Detail), new { id = serviceRecordId });
+        var responseJson = await response.Content.ReadAsStringAsync();
+
+        var apiResult = JsonSerializer.Deserialize<ApiResponse<int>>(
+            responseJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        return Json(new
+        {
+            id = apiResult?.Data,
+            title = model.Title,
+            note = model.Note,
+            estimatedAmount = model.EstimatedAmount
+        });
     }
 
     [HttpPost("ServiceRecords/AddOperation")]
@@ -273,11 +279,44 @@ public class ServiceRecordsController : Controller
             content);
 
         if (!response.IsSuccessStatusCode)
-            TempData["ErrorMessage"] = "İşlem eklenirken hata oluştu.";
-        else
-            TempData["SuccessMessage"] = "İşlem eklendi.";
+            return BadRequest();
 
-        return RedirectToAction(nameof(Detail), new { id = model.ServiceRecordId });
+        var totalPrice = model.Quantity * model.UnitPrice;
+
+        return Json(new
+        {
+            description = model.Description,
+            type = model.Type,
+            quantity = model.Quantity,
+            unitPrice = model.UnitPrice,
+            totalPrice = totalPrice,
+            serviceRequestItemId = model.ServiceRequestItemId
+        });
+    }
+
+    [HttpPost("ServiceRecords/UpdateStatus")]
+    public async Task<IActionResult> UpdateStatus(UpdateServiceRecordStatusViewModel model)
+    {
+        var client = CreateApiClient();
+
+        var requestBody = new
+        {
+            status = model.Status
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PutAsync(
+            $"/api/ServiceRecords/{model.ServiceRecordId}/status",
+            content);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return BadRequest();
+        }
+
+        return Ok();
     }
 
 }

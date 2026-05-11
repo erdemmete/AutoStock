@@ -118,7 +118,7 @@
 
                         @foreach (var item in Model.RequestItems)
                         {
-                            <div class="request-detail-card collapsed">
+                            <div class="request-detail-card collapsed" data-request-id="@item.Id">
 
                                 <button type="button"
                                         class="request-accordion-header"
@@ -131,108 +131,111 @@
                                 </button>
 
                                 <div class="request-accordion-body">
-                                @{
-                                    var itemOperations = Model.Operations
-                                        .Where(x => x.ServiceRequestItemId == item.Id)
-                                        .ToList();
 
-                                    var itemTotal = itemOperations.Sum(x => x.TotalPrice);
-                                }
+                                    @{
+                                        var itemOperations = Model.Operations
+                                            .Where(x => x.ServiceRequestItemId == item.Id)
+                                            .ToList();
 
-                                <div class="request-operation-area">
+                                        var itemTotal = itemOperations.Sum(x => x.TotalPrice);
+                                    }
 
-                                    <div class="request-operation-header">
-                                        <strong>Yapılan İşlemler</strong>
-                                        <span>Toplam: @itemTotal.ToString("N2") ₺</span>
+                                    <div class="request-operation-area">
+
+                                        <div class="request-operation-header">
+                                            <strong>Yapılan İşlemler</strong>
+                                            <span data-total="@itemTotal">Toplam: @itemTotal.ToString("N2") ₺</span>
+                                        </div>
+
+                                        @if (itemOperations.Any())
+                                        {
+                                            <div class="request-operation-list">
+                                                @foreach (var operation in itemOperations)
+                                                {
+                                                    <div class="request-operation-item">
+                                                        <div>
+                                                            <strong>@operation.Description</strong>
+                                                            <span>@(operation.Type == 1 ? "Parça" : "İşçilik")</span>
+                                                        </div>
+
+                                                        <div>
+                                                            <strong>@operation.TotalPrice.ToString("N2") ₺</strong>
+                                                            <span>@operation.Quantity adet × @operation.UnitPrice.ToString("N2") ₺</span>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="mini-empty">
+                                                Bu talep için henüz işlem eklenmedi.
+                                            </div>
+                                        }
+
                                     </div>
 
-                                    @if (itemOperations.Any())
-                                    {
-                                        <div class="request-operation-list">
-                                            @foreach (var operation in itemOperations)
-                                            {
-                                                <div class="request-operation-item">
-                                                    <div>
-                                                        <strong>@operation.Description</strong>
-                                                        <span>@(operation.Type == 1 ? "Parça" : "İşçilik")</span>
-                                                    </div>
+                                    <form asp-action="AddOperation"
+                                          method="post"
+                                          class="add-operation-form ajax-operation-form">
 
-                                                    <div>
-                                                        <strong>@operation.TotalPrice.ToString("N2") ₺</strong>
-                                                        <span>@operation.Quantity adet × @operation.UnitPrice.ToString("N2") ₺</span>
-                                                    </div>
-                                                </div>
-                                            }
+                                        <input type="hidden" name="ServiceRecordId" value="@Model.Id" />
+                                        <input type="hidden" name="ServiceRequestItemId" value="@item.Id" />
+
+                                        <div class="operation-form-row">
+
+                                            <div class="type-toggle">
+
+                                                <input type="radio"
+                                                       id="partType_@item.Id"
+                                                       name="Type"
+                                                       value="1"
+                                                       checked />
+
+                                                <label for="partType_@item.Id">
+                                                    Parça
+                                                </label>
+
+                                                <input type="radio"
+                                                       id="laborType_@item.Id"
+                                                       name="Type"
+                                                       value="2" />
+
+                                                <label for="laborType_@item.Id">
+                                                    İşçilik
+                                                </label>
+
+                                            </div>
+
+                                            <div class="form-field">
+                                                <input name="Description" placeholder=" " />
+                                                <label>İşlem Açıklaması</label>
+                                            </div>
+
+                                            <div class="form-field">
+                                                <input name="Quantity" type="number" value="1" min="1" placeholder=" " />
+                                                <label>Adet</label>
+                                            </div>
+
+                                            <div class="form-field">
+                                                <input name="UnitPrice" type="number" step="0.01" min="0" placeholder=" " />
+                                                <label>Birim Fiyat</label>
+                                            </div>
+
+                                            <button type="submit" class="btn-primary">
+                                                + İşlem
+                                            </button>
+
                                         </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="mini-empty">
-                                            Bu talep için henüz işlem eklenmedi.
+
+                                        <div class="form-field operation-note-field">
+                                            <textarea name="Note" placeholder=" "></textarea>
+                                            <label>İşlem Notu</label>
                                         </div>
-                                    }
-                                    </div>
+
+                                    </form>
+
                                 </div>
-
-                                <form asp-action="AddOperation"
-                                      method="post"
-                                      class="add-operation-form">
-
-                                    <input type="hidden" name="ServiceRecordId" value="@Model.Id" />
-                                    <input type="hidden" name="ServiceRequestItemId" value="@item.Id" />
-
-                                    <div class="operation-form-row">
-
-                                        <div class="type-toggle">
-
-                                            <input type="radio"
-                                                   id="partType_@item.Id"
-                                                   name="Type"
-                                                   value="1"
-                                                   checked />
-
-                                            <label for="partType_@item.Id">
-                                                Parça
-                                            </label>
-
-                                            <input type="radio"
-                                                   id="laborType_@item.Id"
-                                                   name="Type"
-                                                   value="2" />
-
-                                            <label for="laborType_@item.Id">
-                                                İşçilik
-                                            </label>
-
-                                        </div>
-
-                                        <div class="form-field">
-                                            <input name="Description" placeholder=" " />
-                                            <label>İşlem Açıklaması</label>
-                                        </div>
-
-                                        <div class="form-field">
-                                            <input name="Quantity" type="number" value="1" min="1" placeholder=" " />
-                                            <label>Adet</label>
-                                        </div>
-
-                                        <div class="form-field">
-                                            <input name="UnitPrice" type="number" step="0.01" min="0" placeholder=" " />
-                                            <label>Birim Fiyat</label>
-                                        </div>
-
-                                        <button type="submit" class="btn-primary">
-                                            + İşlem
-                                        </button>
-
-                                    </div>
-
-                                    <div class="form-field operation-note-field">
-                                        <textarea name="Note" placeholder=" "></textarea>
-                                        <label>İşlem Notu</label>
-                                    </div>
-
-                                </form>
 
                             </div>
                         }
@@ -256,7 +259,7 @@
 
                 <form asp-action="AddRequestItem"
                       method="post"
-                      class="add-request-form">
+                      class="add-request-form ajax-request-form">
 
                     <input type="hidden" name="serviceRecordId" value="@Model.Id" />
 
@@ -353,10 +356,47 @@
                     @Model.TotalAmount.ToString("N2") ₺
                 </div>
 
-                <div class="summary-status">
-                    Açık Kayıt
-                </div>
+                    <div class="summary-status status-@Model.Status">
+                        @(Model.Status switch
+                        {
+                            1 => "Açık Kayıt",
+                            2 => "İşlemde",
+                            3 => "Tamamlandı",
+                            4 => "İptal Edildi",
+                            _ => "Bilinmiyor"
+                        })
+                    </div>
 
+                    <div class="status-actions" data-record-id="@Model.Id">
+
+                        @if (Model.Status == 1)
+                        {
+                            <button type="button" class="status-btn warning" data-status="2">
+                                İşleme Al
+                            </button>
+
+                            <button type="button" class="status-btn danger" data-status="4">
+                                İptal Et
+                            </button>
+                        }
+                        else if (Model.Status == 2)
+                        {
+                            <button type="button" class="status-btn success" data-status="3">
+                                Tamamla
+                            </button>
+
+                            <button type="button" class="status-btn danger" data-status="4">
+                                İptal Et
+                            </button>
+                        }
+                        else if (Model.Status == 3 || Model.Status == 4)
+                        {
+                            <button type="button" class="status-btn primary" data-status="1">
+                                Tekrar Aç
+                            </button>
+                        }
+
+                    </div>
             </div>
 
         </div>
@@ -1086,6 +1126,76 @@
                 display: none;
             }
 
+            .summary-status.status-1 {
+                background: #dbeafe;
+                color: #1d4ed8;
+                border-color: #bfdbfe;
+            }
+
+            .summary-status.status-2 {
+                background: #fef3c7;
+                color: #b45309;
+                border-color: #fde68a;
+            }
+
+            .summary-status.status-3 {
+                background: #dcfce7;
+                color: #15803d;
+                border-color: #bbf7d0;
+            }
+
+            .summary-status.status-4 {
+                background: #fee2e2;
+                color: #b91c1c;
+                border-color: #fecaca;
+            }
+
+            .status-actions {
+                display: grid;
+                gap: 10px;
+                margin-top: 14px;
+            }
+
+            .status-btn {
+                border: none;
+                border-radius: 15px;
+                padding: 12px 14px;
+                font-weight: 900;
+                cursor: pointer;
+            }
+
+                .status-btn.primary {
+                    background: #dbeafe;
+                    color: #1d4ed8;
+                }
+
+                .status-btn.warning {
+                    background: #fef3c7;
+                    color: #b45309;
+                }
+
+                .status-btn.success {
+                    background: #dcfce7;
+                    color: #15803d;
+                }
+
+                .status-btn.danger {
+                    background: #fee2e2;
+                    color: #b91c1c;
+                }
+
+            .request-detail-card.collapsed .request-accordion-body {
+                display: none;
+            }
+
+            .request-detail-card.collapsed .accordion-arrow {
+                transform: rotate(0deg);
+            }
+
+            .request-detail-card:not(.collapsed) .accordion-arrow {
+                transform: rotate(90deg);
+            }
+
 </style>
 
     <script>
@@ -1093,4 +1203,254 @@
                 const card = button.closest(".request-detail-card");
                 card.classList.toggle("collapsed");
             }
+
+            function formatMoney(value) {
+                return Number(value || 0).toLocaleString("tr-TR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) + " ₺";
+            }
+
+            function bindOperationForms() {
+                document.querySelectorAll(".ajax-operation-form").forEach(form => {
+                    if (form.dataset.bound === "true") return;
+                    form.dataset.bound = "true";
+
+                    form.addEventListener("submit", async function (e) {
+                        e.preventDefault();
+
+                        const formData = new FormData(form);
+
+                        const response = await fetch(form.action, {
+                            method: "POST",
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            alert("İşlem eklenemedi.");
+                            return;
+                        }
+
+                        const operation = await response.json();
+
+                        const card = form.closest(".request-detail-card");
+                        const empty = card.querySelector(".mini-empty");
+                        const totalText = card.querySelector(".request-operation-header span");
+
+                        if (empty) empty.remove();
+
+                        let operationList = card.querySelector(".request-operation-list");
+
+                        if (!operationList) {
+                            const area = card.querySelector(".request-operation-area");
+                            operationList = document.createElement("div");
+                            operationList.className = "request-operation-list";
+                            area.appendChild(operationList);
+                        }
+
+                        const item = document.createElement("div");
+                        item.className = "request-operation-item";
+
+                        const typeText = operation.type == 1 ? "Parça" : "İşçilik";
+
+                        item.innerHTML = `
+                            <div>
+                                <strong>${operation.description}</strong>
+                                <span>${typeText}</span>
+                            </div>
+
+                            <div>
+                                <strong>${formatMoney(operation.totalPrice)}</strong>
+                                <span>${operation.quantity} adet × ${formatMoney(operation.unitPrice)}</span>
+                            </div>
+                        `;
+
+                        operationList.appendChild(item);
+
+                        const currentTotal = Number(totalText.dataset.total || "0");
+                        const newTotal = currentTotal + Number(operation.totalPrice || 0);
+
+                        totalText.dataset.total = newTotal;
+                        totalText.textContent = `Toplam: ${formatMoney(newTotal)}`;
+
+                        form.reset();
+
+                        const quantityInput = form.querySelector('input[name="Quantity"]');
+                        if (quantityInput) quantityInput.value = 1;
+                    });
+                });
+            }
+
+            document.addEventListener("submit", async function (e) {
+                const form = e.target;
+
+                if (!form.classList.contains("ajax-request-form")) {
+                    return;
+                }
+
+                e.preventDefault();
+
+                const formData = new FormData(form);
+
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    alert("Talep eklenemedi.");
+                    return;
+                }
+
+                const requestItem = await response.json();
+
+                const list = document.querySelector(".request-detail-list");
+
+                const card = document.createElement("div");
+                card.className = "request-detail-card collapsed";
+                card.dataset.requestId = requestItem.id;
+
+                const estimatedText = requestItem.estimatedAmount
+                    ? `Tahmini: ${formatMoney(requestItem.estimatedAmount)}`
+                    : "";
+
+                card.innerHTML = `
+                    <button type="button"
+                            class="request-accordion-header"
+                            onclick="toggleRequestCard(this)">
+                        <strong>${requestItem.title}</strong>
+                        <span class="accordion-arrow">›</span>
+                    </button>
+
+                    <div class="request-accordion-body">
+                        <div class="request-info-line">
+                            ${requestItem.note ? `<span>${requestItem.note}</span>` : ""}
+                            ${estimatedText ? `<strong>${estimatedText}</strong>` : ""}
+                        </div>
+
+                        <div class="request-operation-area">
+                            <div class="request-operation-header">
+                                <strong>Yapılan İşlemler</strong>
+                                <span data-total="0">Toplam: 0,00 ₺</span>
+                            </div>
+
+                            <div class="mini-empty">
+                                Bu talep için henüz işlem eklenmedi.
+                            </div>
+                        </div>
+
+                        <form action="/ServiceRecords/AddOperation"
+                              method="post"
+                              class="add-operation-form ajax-operation-form">
+
+                            <input type="hidden" name="ServiceRecordId" value="${formData.get("serviceRecordId")}" />
+                            <input type="hidden" name="ServiceRequestItemId" value="${requestItem.id}" />
+
+                            <div class="operation-form-row">
+                                <div class="type-toggle">
+                                    <input type="radio" id="partType_${requestItem.id}" name="Type" value="1" checked />
+                                    <label for="partType_${requestItem.id}">Parça</label>
+
+                                    <input type="radio" id="laborType_${requestItem.id}" name="Type" value="2" />
+                                    <label for="laborType_${requestItem.id}">İşçilik</label>
+                                </div>
+
+                                <div class="form-field">
+                                    <input name="Description" placeholder=" " />
+                                    <label>İşlem Açıklaması</label>
+                                </div>
+
+                                <div class="form-field">
+                                    <input name="Quantity" type="number" value="1" min="1" placeholder=" " />
+                                    <label>Adet</label>
+                                </div>
+
+                                <div class="form-field">
+                                    <input name="UnitPrice" type="number" step="0.01" min="0" placeholder=" " />
+                                    <label>Birim Fiyat</label>
+                                </div>
+
+                                <button type="submit" class="btn-primary">
+                                    + İşlem
+                                </button>
+                            </div>
+
+                            <div class="form-field operation-note-field">
+                                <textarea name="Note" placeholder=" "></textarea>
+                                <label>İşlem Notu</label>
+                            </div>
+                        </form>
+                    </div>
+                `;
+
+                list.appendChild(card);
+                form.reset();
+                bindOperationForms();
+            });
+
+            function getStatusButtons(status) {
+                if (status == "1") {
+                    return `
+                        <button type="button" class="status-btn warning" data-status="2">İşleme Al</button>
+                        <button type="button" class="status-btn danger" data-status="4">İptal Et</button>
+                    `;
+                }
+
+                if (status == "2") {
+                    return `
+                        <button type="button" class="status-btn success" data-status="3">Tamamla</button>
+                        <button type="button" class="status-btn danger" data-status="4">İptal Et</button>
+                    `;
+                }
+
+                if (status == "3" || status == "4") {
+                    return `
+                        <button type="button" class="status-btn primary" data-status="1">Tekrar Aç</button>
+                    `;
+                }
+
+                return "";
+            }
+
+            function bindStatusButtons() {
+                document.querySelectorAll(".status-btn").forEach(button => {
+                    button.onclick = async function () {
+                        const statusActions = this.closest(".status-actions");
+                        const serviceRecordId = statusActions.dataset.recordId;
+                        const status = this.dataset.status;
+
+                        const formData = new FormData();
+                        formData.append("ServiceRecordId", serviceRecordId);
+                        formData.append("Status", status);
+
+                        const response = await fetch("/ServiceRecords/UpdateStatus", {
+                            method: "POST",
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            alert("Durum güncellenirken hata oluştu.");
+                            return;
+                        }
+
+                        const summaryStatus = document.querySelector(".summary-status");
+
+                        const statusMap = {
+                            "1": "Açık Kayıt",
+                            "2": "İşlemde",
+                            "3": "Tamamlandı",
+                            "4": "İptal Edildi"
+                        };
+
+                        summaryStatus.className = `summary-status status-${status}`;
+                        summaryStatus.textContent = statusMap[status] ?? "Bilinmiyor";
+
+                        statusActions.innerHTML = getStatusButtons(status);
+                        bindStatusButtons();
+                    };
+                });
+            }
+
+            bindOperationForms();
+            bindStatusButtons();
     </script>

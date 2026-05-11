@@ -124,4 +124,41 @@ public class ServiceRecordsController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpPut("{id:int}/complete")]
+    public async Task<IActionResult> Complete(int id)
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized("Workshop bilgisi bulunamadı.");
+
+        var result = await _serviceRecordService.CompleteAsync(id, workshopId);
+
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
+    [HttpPut("{id:int}/status")]
+    public async Task<IActionResult> UpdateStatus(
+    int id,
+    UpdateServiceRecordStatusRequest request)
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized("Workshop bilgisi bulunamadı.");
+
+        var result = await _serviceRecordService.UpdateStatusAsync(
+            id,
+            request,
+            workshopId);
+
+        if (!result.IsSuccess)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
 }
