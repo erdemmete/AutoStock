@@ -1269,88 +1269,134 @@
                 }) + " ₺";
             }
 
+            function setButtonLoading(button, isLoading, loadingText) {
+                if (!button) return;
+
+                if (isLoading) {
+                    button.dataset.originalText = button.textContent;
+                    button.disabled = true;
+                    button.textContent = loadingText;
+                    return;
+                }
+
+                button.disabled = false;
+                button.textContent = button.dataset.originalText || button.textContent;
+            }
+
+            function updateSummaryTotal(value) {
+                const summaryTotal = document.querySelector(".summary-total");
+
+                if (!summaryTotal) return;
+
+                summaryTotal.dataset.total = value;
+                summaryTotal.textContent = formatMoney(value);
+            }
+
             function bindOperationForms() {
                 document.querySelectorAll(".ajax-operation-form").forEach(form => {
                     if (form.dataset.bound === "true") return;
+
                     form.dataset.bound = "true";
 
                     form.addEventListener("submit", async function (e) {
                         e.preventDefault();
 
-                        const formData = new FormData(form);
-
-                        const response = await fetch(form.action, {
-                            method: "POST",
-                            body: formData
-                        });
-
-                        if (!response.ok) {
-                            alert("İşlem eklenemedi.");
+                        if (form.dataset.submitting === "true") {
                             return;
                         }
 
-                        const operation = await response.json();
+                        form.dataset.submitting = "true";
 
-                        const card = form.closest(".request-detail-card");
-                        const empty = card.querySelector(".mini-empty");
-                        const totalText = card.querySelector(".request-operation-header span");
+                        const submitButton = form.querySelector('button[type="submit"]');
+                        setButtonLoading(submitButton, true, "Ekleniyor...");
 
-                        if (empty) empty.remove();
+                        try {
+                            const formData = new FormData(form);
 
-                        let operationList = card.querySelector(".request-operation-list");
+                            const response = await fetch(form.action, {
+                                method: "POST",
+                                body: formData
+                            });
 
-                        if (!operationList) {
-                            const area = card.querySelector(".request-operation-area");
-                            operationList = document.createElement("div");
-                            operationList.className = "request-operation-list";
-                            area.appendChild(operationList);
+                            if (!response.ok) {
+                                alert("İşlem eklenemedi.");
+                                return;
+                            }
+
+                            const operation = await response.json();
+
+                            const card = form.closest(".request-detail-card");
+                            const empty = card.querySelector(".mini-empty");
+                            const totalText = card.querySelector(".request-operation-header span");
+
+                            if (empty) {
+                                empty.remove();
+                            }
+
+                            let operationList = card.querySelector(".request-operation-list");
+
+                            if (!operationList) {
+                                const area = card.querySelector(".request-operation-area");
+
+                                operationList = document.createElement("div");
+                                operationList.className = "request-operation-list";
+
+                                area.appendChild(operationList);
+                            }
+
+                            const item = document.createElement("div");
+                            item.className = "request-operation-item";
+                            item.id = `operation-item-${operation.id}`;
+
+                            const typeText = operation.type == 1 ? "Parça" : "İşçilik";
+
+                            item.innerHTML = `
+                                <div>
+                                    <strong>${operation.description}</strong>
+                                    <span>${typeText}</span>
+                                </div>
+
+                                <div>
+                                    <strong>${formatMoney(operation.totalPrice)}</strong>
+                                    <span>${operation.quantity} adet × ${formatMoney(operation.unitPrice)}</span>
+                                </div>
+
+                                <button type="button"
+                                        class="operation-delete-btn"
+                                        onclick="deleteOperation(${operation.id}, this)">
+                                    Sil
+                                </button>
+                            `;
+
+                            operationList.appendChild(item);
+
+                            const currentTotal = Number(totalText.dataset.total || "0");
+                            const newTotal = currentTotal + Number(operation.totalPrice || 0);
+
+                            totalText.dataset.total = newTotal;
+                            totalText.textContent = `Toplam: ${formatMoney(newTotal)}`;
+
+                            const summaryTotal = document.querySelector(".summary-total");
+
+                            if (summaryTotal) {
+                                const currentSummaryTotal = Number(summaryTotal.dataset.total || "0");
+                                const newSummaryTotal = currentSummaryTotal + Number(operation.totalPrice || 0);
+
+                                updateSummaryTotal(newSummaryTotal);
+                            }
+
+                            form.reset();
+
+                            const quantityInput = form.querySelector('input[name="Quantity"]');
+
+                            if (quantityInput) {
+                                quantityInput.value = 1;
+                            }
                         }
-
-                        const item = document.createElement("div");
-                        item.className = "request-operation-item";
-                        item.id = `operation-item-${operation.id}`;
-
-                        const typeText = operation.type == 1 ? "Parça" : "İşçilik";
-
-                                    item.innerHTML = `
-                <div>
-                    <strong>${operation.description}</strong>
-                    <span>${typeText}</span>
-                </div>
-
-                <div>
-                    <strong>${formatMoney(operation.totalPrice)}</strong>
-                    <span>${operation.quantity} adet × ${formatMoney(operation.unitPrice)}</span>
-                </div>
-
-                <button type="button"
-                        class="operation-delete-btn"
-                        onclick="deleteOperation(${operation.id}, this)">
-                    Sil
-                </button>
-            `;
-
-                        operationList.appendChild(item);
-
-                        const currentTotal = Number(totalText.dataset.total || "0");
-                        const newTotal = currentTotal + Number(operation.totalPrice || 0);
-
-                        totalText.dataset.total = newTotal;
-                        totalText.textContent = `Toplam: ${formatMoney(newTotal)}`;
-                                    const summaryTotal = document.querySelector(".summary-total");
-
-            if (summaryTotal) {
-                const currentSummaryTotal = Number(summaryTotal.dataset.total || "0");
-                const newSummaryTotal = currentSummaryTotal + Number(operation.totalPrice || 0);
-
-                summaryTotal.dataset.total = newSummaryTotal;
-                summaryTotal.textContent = formatMoney(newSummaryTotal);
-            }
-
-                        form.reset();
-
-                        const quantityInput = form.querySelector('input[name="Quantity"]');
-                        if (quantityInput) quantityInput.value = 1;
+                        finally {
+                            form.dataset.submitting = "false";
+                            setButtonLoading(submitButton, false);
+                        }
                     });
                 });
             }
@@ -1364,103 +1410,267 @@
 
                 e.preventDefault();
 
-                const formData = new FormData(form);
-
-                const response = await fetch(form.action, {
-                    method: "POST",
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    alert("Talep eklenemedi.");
+                if (form.dataset.submitting === "true") {
                     return;
                 }
 
-                const requestItem = await response.json();
+                form.dataset.submitting = "true";
 
-                const list = document.querySelector(".request-detail-list");
+                const submitButton = form.querySelector('button[type="submit"]');
+                setButtonLoading(submitButton, true, "Ekleniyor...");
 
-                const card = document.createElement("div");
-                card.className = "request-detail-card collapsed";
-                card.dataset.requestId = requestItem.id;
+                try {
+                    const formData = new FormData(form);
 
-                const estimatedText = requestItem.estimatedAmount
-                    ? `Tahmini: ${formatMoney(requestItem.estimatedAmount)}`
-                    : "";
+                    const response = await fetch(form.action, {
+                        method: "POST",
+                        body: formData
+                    });
 
-                card.innerHTML = `
-                    <button type="button"
-                            class="request-accordion-header"
-                            onclick="toggleRequestCard(this)">
-                        <strong>${requestItem.title}</strong>
-                        <span class="accordion-arrow">›</span>
-                    </button>
+                    if (!response.ok) {
+                        alert("Talep eklenemedi.");
+                        return;
+                    }
 
-                    <div class="request-accordion-body">
-                        <div class="request-info-line">
-                            ${requestItem.note ? `<span>${requestItem.note}</span>` : ""}
-                            ${estimatedText ? `<strong>${estimatedText}</strong>` : ""}
+                    const requestItem = await response.json();
+
+                    let list = document.querySelector(".request-detail-list");
+
+                    const emptyState = document.querySelector(".empty-state");
+
+                    if (!list) {
+                        const panel = form.closest(".panel").previousElementSibling;
+
+                        list = document.createElement("div");
+                        list.className = "request-detail-list";
+
+                        if (emptyState) {
+                            emptyState.replaceWith(list);
+                        }
+                    }
+
+                    const card = document.createElement("div");
+                    card.className = "request-detail-card collapsed";
+                    card.dataset.requestId = requestItem.id;
+                    card.id = `request-item-${requestItem.id}`;
+
+                    const estimatedText = requestItem.estimatedAmount
+                        ? `Tahmini: ${formatMoney(requestItem.estimatedAmount)}`
+                        : "";
+
+                    card.innerHTML = `
+                        <div class="request-card-top">
+                            <button type="button"
+                                    class="request-accordion-header"
+                                    onclick="toggleRequestCard(this)">
+                                <strong>${requestItem.title}</strong>
+                                <span class="accordion-arrow">›</span>
+                            </button>
+
+                            <button type="button"
+                                    class="request-delete-btn"
+                                    onclick="deleteRequestItem(${requestItem.id}, this)">
+                                Sil
+                            </button>
                         </div>
 
-                        <div class="request-operation-area">
-                            <div class="request-operation-header">
-                                <strong>Yapılan İşlemler</strong>
-                                <span data-total="0">Toplam: 0,00 ₺</span>
+                        <div class="request-accordion-body">
+                            <div class="request-info-line">
+                                ${requestItem.note ? `<span>${requestItem.note}</span>` : ""}
+                                ${estimatedText ? `<strong>${estimatedText}</strong>` : ""}
                             </div>
 
-                            <div class="mini-empty">
-                                Bu talep için henüz işlem eklenmedi.
+                            <div class="request-operation-area">
+                                <div class="request-operation-header">
+                                    <strong>Yapılan İşlemler</strong>
+                                    <span data-total="0">Toplam: 0,00 ₺</span>
+                                </div>
+
+                                <div class="mini-empty">
+                                    Bu talep için henüz işlem eklenmedi.
+                                </div>
                             </div>
+
+                            <form action="/ServiceRecords/AddOperation"
+                                  method="post"
+                                  class="add-operation-form ajax-operation-form">
+
+                                <input type="hidden" name="ServiceRecordId" value="${formData.get("serviceRecordId")}" />
+                                <input type="hidden" name="ServiceRequestItemId" value="${requestItem.id}" />
+
+                                <div class="operation-form-row">
+                                    <div class="type-toggle">
+                                        <input type="radio" id="partType_${requestItem.id}" name="Type" value="1" checked />
+                                        <label for="partType_${requestItem.id}">Parça</label>
+
+                                        <input type="radio" id="laborType_${requestItem.id}" name="Type" value="2" />
+                                        <label for="laborType_${requestItem.id}">İşçilik</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input name="Description" placeholder=" " />
+                                        <label>İşlem Açıklaması</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input name="Quantity" type="number" value="1" min="1" placeholder=" " />
+                                        <label>Adet</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input name="UnitPrice" type="number" step="0.01" min="0" placeholder=" " />
+                                        <label>Birim Fiyat</label>
+                                    </div>
+
+                                    <button type="submit" class="btn-primary">
+                                        + İşlem
+                                    </button>
+                                </div>
+
+                                <div class="form-field operation-note-field">
+                                    <textarea name="Note" placeholder=" "></textarea>
+                                    <label>İşlem Notu</label>
+                                </div>
+                            </form>
                         </div>
+                    `;
 
-                        <form action="/ServiceRecords/AddOperation"
-                              method="post"
-                              class="add-operation-form ajax-operation-form">
+                    if (list) {
+                        list.appendChild(card);
+                    }
 
-                            <input type="hidden" name="ServiceRecordId" value="${formData.get("serviceRecordId")}" />
-                            <input type="hidden" name="ServiceRequestItemId" value="${requestItem.id}" />
-
-                            <div class="operation-form-row">
-                                <div class="type-toggle">
-                                    <input type="radio" id="partType_${requestItem.id}" name="Type" value="1" checked />
-                                    <label for="partType_${requestItem.id}">Parça</label>
-
-                                    <input type="radio" id="laborType_${requestItem.id}" name="Type" value="2" />
-                                    <label for="laborType_${requestItem.id}">İşçilik</label>
-                                </div>
-
-                                <div class="form-field">
-                                    <input name="Description" placeholder=" " />
-                                    <label>İşlem Açıklaması</label>
-                                </div>
-
-                                <div class="form-field">
-                                    <input name="Quantity" type="number" value="1" min="1" placeholder=" " />
-                                    <label>Adet</label>
-                                </div>
-
-                                <div class="form-field">
-                                    <input name="UnitPrice" type="number" step="0.01" min="0" placeholder=" " />
-                                    <label>Birim Fiyat</label>
-                                </div>
-
-                                <button type="submit" class="btn-primary">
-                                    + İşlem
-                                </button>
-                            </div>
-
-                            <div class="form-field operation-note-field">
-                                <textarea name="Note" placeholder=" "></textarea>
-                                <label>İşlem Notu</label>
-                            </div>
-                        </form>
-                    </div>
-                `;
-
-                list.appendChild(card);
-                form.reset();
-                bindOperationForms();
+                    form.reset();
+                    bindOperationForms();
+                }
+                finally {
+                    form.dataset.submitting = "false";
+                    setButtonLoading(submitButton, false);
+                }
             });
+
+            async function deleteOperation(operationId, button) {
+                const confirmed = confirm("Bu işlemi silmek istediğinize emin misiniz?");
+
+                if (!confirmed) {
+                    return;
+                }
+
+                setButtonLoading(button, true, "Siliniyor...");
+
+                try {
+                    const formData = new FormData();
+                    formData.append("operationId", operationId);
+
+                    const response = await fetch("/ServiceRecords/DeleteOperation", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        alert("İşlem silinirken hata oluştu.");
+                        return;
+                    }
+
+                    const result = await response.json();
+
+                    if (!result.isSuccess) {
+                        alert(result.errorMessage || "İşlem silinemedi.");
+                        return;
+                    }
+
+                    const item = document.getElementById(`operation-item-${operationId}`);
+                    const card = button.closest(".request-detail-card");
+
+                    if (item) {
+                        item.remove();
+                    }
+
+                    const totalText = card.querySelector(".request-operation-header span");
+
+                    if (totalText) {
+                        totalText.dataset.total = result.data.requestItemTotal;
+                        totalText.textContent = `Toplam: ${formatMoney(result.data.requestItemTotal)}`;
+                    }
+
+                    updateSummaryTotal(result.data.recordTotal);
+
+                    const operationList = card.querySelector(".request-operation-list");
+
+                    if (operationList && operationList.children.length === 0) {
+                        operationList.remove();
+
+                        const area = card.querySelector(".request-operation-area");
+
+                        const empty = document.createElement("div");
+                        empty.className = "mini-empty";
+                        empty.textContent = "Bu talep için henüz işlem eklenmedi.";
+
+                        area.appendChild(empty);
+                    }
+                }
+                finally {
+                    if (document.body.contains(button)) {
+                        setButtonLoading(button, false);
+                    }
+                }
+            }
+
+            async function deleteRequestItem(requestItemId, button) {
+                const confirmed = confirm(
+                    "Bu talep ve bağlı işlemler silinecek. Devam etmek istiyor musunuz?"
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                setButtonLoading(button, true, "Siliniyor...");
+
+                try {
+                    const formData = new FormData();
+                    formData.append("requestItemId", requestItemId);
+
+                    const response = await fetch("/ServiceRecords/DeleteRequestItem", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        alert("Talep silinirken hata oluştu.");
+                        return;
+                    }
+
+                    const result = await response.json();
+
+                    if (!result.isSuccess) {
+                        alert(result.errorMessage || "Talep silinemedi.");
+                        return;
+                    }
+
+                    const card = document.getElementById(`request-item-${requestItemId}`);
+
+                    if (card) {
+                        card.remove();
+                    }
+
+                    updateSummaryTotal(result.data.recordTotal);
+
+                    const requestList = document.querySelector(".request-detail-list");
+
+                    if (requestList && requestList.children.length === 0) {
+                        requestList.innerHTML = `
+                            <div class="empty-state">
+                                Bu servis kaydı için talep girilmemiş.
+                            </div>
+                        `;
+                    }
+                }
+                finally {
+                    if (document.body.contains(button)) {
+                        setButtonLoading(button, false);
+                    }
+                }
+            }
 
             function getStatusButtons(status) {
                 if (status == "1") {
@@ -1485,175 +1695,61 @@
 
                 return "";
             }
-                        async function deleteOperation(operationId, button) {
-                const confirmed = confirm("Bu işlemi silmek istediğinize emin misiniz?");
-
-                if (!confirmed) {
-                    return;
-                }
-
-                button.disabled = true;
-                button.textContent = "Siliniyor...";
-
-                const formData = new FormData();
-                formData.append("operationId", operationId);
-
-                const response = await fetch("/ServiceRecords/DeleteOperation", {
-                    method: "POST",
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    alert("İşlem silinirken hata oluştu.");
-                    button.disabled = false;
-                    button.textContent = "Sil";
-                    return;
-                }
-
-                const result = await response.json();
-
-                if (!result.isSuccess) {
-                    alert(result.errorMessage || "İşlem silinemedi.");
-                    button.disabled = false;
-                    button.textContent = "Sil";
-                    return;
-                }
-
-                const item = document.getElementById(`operation-item-${operationId}`);
-                const card = button.closest(".request-detail-card");
-
-                if (item) {
-                    item.remove();
-                }
-
-                const totalText = card.querySelector(".request-operation-header span");
-
-                if (totalText) {
-                    totalText.dataset.total = result.data.requestItemTotal;
-                    totalText.textContent = `Toplam: ${formatMoney(result.data.requestItemTotal)}`;
-                }
-
-                const summaryTotal = document.querySelector(".summary-total");
-
-                if (summaryTotal) {
-                    summaryTotal.dataset.total = result.data.recordTotal;
-                    summaryTotal.textContent = formatMoney(result.data.recordTotal);
-                }
-
-                const operationList = card.querySelector(".request-operation-list");
-
-                if (operationList && operationList.children.length === 0) {
-                    operationList.remove();
-
-                    const area = card.querySelector(".request-operation-area");
-
-                    const empty = document.createElement("div");
-                    empty.className = "mini-empty";
-                    empty.textContent = "Bu talep için henüz işlem eklenmedi.";
-
-                    area.appendChild(empty);
-                }
-            }
 
             function bindStatusButtons() {
                 document.querySelectorAll(".status-btn").forEach(button => {
                     button.onclick = async function () {
-                        const statusActions = this.closest(".status-actions");
-                        const serviceRecordId = statusActions.dataset.recordId;
-                        const status = this.dataset.status;
-
-                        const formData = new FormData();
-                        formData.append("ServiceRecordId", serviceRecordId);
-                        formData.append("Status", status);
-
-                        const response = await fetch("/ServiceRecords/UpdateStatus", {
-                            method: "POST",
-                            body: formData
-                        });
-
-                        if (!response.ok) {
-                            alert("Durum güncellenirken hata oluştu.");
+                        if (button.dataset.loading === "true") {
                             return;
                         }
 
-                        const summaryStatus = document.querySelector(".summary-status");
+                        button.dataset.loading = "true";
+                        setButtonLoading(button, true, "Güncelleniyor...");
 
-                        const statusMap = {
-                            "1": "Açık Kayıt",
-                            "2": "İşlemde",
-                            "3": "Tamamlandı",
-                            "4": "İptal Edildi"
-                        };
+                        try {
+                            const statusActions = button.closest(".status-actions");
+                            const serviceRecordId = statusActions.dataset.recordId;
+                            const status = button.dataset.status;
 
-                        summaryStatus.className = `summary-status status-${status}`;
-                        summaryStatus.textContent = statusMap[status] ?? "Bilinmiyor";
+                            const formData = new FormData();
+                            formData.append("ServiceRecordId", serviceRecordId);
+                            formData.append("Status", status);
 
-                        statusActions.innerHTML = getStatusButtons(status);
-                        bindStatusButtons();
+                            const response = await fetch("/ServiceRecords/UpdateStatus", {
+                                method: "POST",
+                                body: formData
+                            });
+
+                            if (!response.ok) {
+                                alert("Durum güncellenirken hata oluştu.");
+                                return;
+                            }
+
+                            const summaryStatus = document.querySelector(".summary-status");
+
+                            const statusMap = {
+                                "1": "Açık Kayıt",
+                                "2": "İşlemde",
+                                "3": "Tamamlandı",
+                                "4": "İptal Edildi"
+                            };
+
+                            summaryStatus.className = `summary-status status-${status}`;
+                            summaryStatus.textContent = statusMap[status] ?? "Bilinmiyor";
+
+                            statusActions.innerHTML = getStatusButtons(status);
+                            bindStatusButtons();
+                        }
+                        finally {
+                            if (document.body.contains(button)) {
+                                button.dataset.loading = "false";
+                                setButtonLoading(button, false);
+                            }
+                        }
                     };
                 });
             }
 
             bindOperationForms();
             bindStatusButtons();
-
-                        async function deleteRequestItem(requestItemId, button) {
-                const confirmed = confirm(
-                    "Bu talep ve bağlı işlemler silinecek. Devam etmek istiyor musunuz?"
-                );
-
-                if (!confirmed) {
-                    return;
-                }
-
-                button.disabled = true;
-                button.textContent = "Siliniyor...";
-
-                const formData = new FormData();
-                formData.append("requestItemId", requestItemId);
-
-                const response = await fetch("/ServiceRecords/DeleteRequestItem", {
-                    method: "POST",
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    alert("Talep silinirken hata oluştu.");
-                    button.disabled = false;
-                    button.textContent = "Sil";
-                    return;
-                }
-
-                const result = await response.json();
-
-                if (!result.isSuccess) {
-                    alert(result.errorMessage || "Talep silinemedi.");
-                    button.disabled = false;
-                    button.textContent = "Sil";
-                    return;
-                }
-
-                const card = document.getElementById(`request-item-${requestItemId}`);
-
-                if (card) {
-                    card.remove();
-                }
-
-                const summaryTotal = document.querySelector(".summary-total");
-
-                if (summaryTotal) {
-                    summaryTotal.dataset.total = result.data.recordTotal;
-                    summaryTotal.textContent = formatMoney(result.data.recordTotal);
-                }
-
-                const requestList = document.querySelector(".request-detail-list");
-
-                if (requestList && requestList.children.length === 0) {
-                    requestList.innerHTML = `
-                        <div class="empty-state">
-                            Bu servis kaydı için talep girilmemiş.
-                        </div>
-                    `;
-                }
-            }
     </script>
