@@ -31,6 +31,7 @@
         public DateTime CreatedAt { get; set; }
 
         public DateTime? CompletedAt { get; set; }
+        public int VehicleId { get; set; }
 
         public List<ServiceOperationViewModel> Operations { get; set; } = new();
         public List<ServiceRequestItemViewModel> RequestItems { get; set; } = new();

@@ -158,6 +158,33 @@ public class ServiceRecordsController : Controller
         return Content(json, "application/json");
     }
 
+    [HttpPost("ServiceRecords/AssignQrCode")]
+    public async Task<IActionResult> AssignQrCode(int vehicleId, string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+            return BadRequest("QR kod zorunludur.");
+
+        var client = CreateApiClient();
+
+        var requestBody = new
+        {
+            vehicleId,
+            code = code.Trim()
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync("/api/VehicleQrCodes/assign", content);
+
+        var responseText = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            return BadRequest(responseText);
+
+        return Content(responseText, "application/json");
+    }
+
     private async Task<List<VehicleBrandViewModel>> GetBrandsAsync()
     {
         var client = CreateApiClient();

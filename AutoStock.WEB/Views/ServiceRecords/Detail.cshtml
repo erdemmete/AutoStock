@@ -414,6 +414,26 @@
                         }
 
                     </div>
+
+                    <a href="/service-pdf/create/@Model.Id"
+                           class="pdf-btn"
+                           target="_blank">
+                        PDF Oluştur
+                    </a>
+
+                    <div class="qr-assign-box">
+                        <div class="qr-title">Araç QR Kodu</div>
+
+                        <button type="button"
+                                id="start-qr-scan-btn"
+                                onclick="startQrScanner(@Model.VehicleId, this)">
+                            QR Kod Tara
+                        </button>
+
+                        <div id="qr-reader" style="display:none;"></div>
+
+                        <div id="qr-scan-result" class="qr-scan-result"></div>
+                    </div>
             </div>
 
         </div>
@@ -1254,6 +1274,77 @@
                     background: #fecaca;
                 }
 
+            .pdf-btn {
+                display: block;
+                margin-top: 14px;
+                padding: 13px 14px;
+                border-radius: 15px;
+                background: white;
+                color: #0f172a;
+                text-align: center;
+                text-decoration: none;
+                font-weight: 900;
+            }
+
+                .pdf-btn:hover {
+                    background: #f8fafc;
+                }
+
+            .qr-assign-box {
+                margin-top: 14px;
+                padding: 14px;
+                border-radius: 18px;
+                background: rgba(255,255,255,.08);
+                border: 1px solid rgba(255,255,255,.12);
+            }
+
+            .qr-title {
+                margin-bottom: 10px;
+                color: rgba(255,255,255,.75);
+                font-size: 13px;
+                font-weight: 900;
+            }
+
+            .qr-assign-box {
+                margin-top: 14px;
+                padding: 14px;
+                border-radius: 18px;
+                background: rgba(255,255,255,.08);
+                border: 1px solid rgba(255,255,255,.12);
+            }
+
+            .qr-title {
+                margin-bottom: 10px;
+                color: rgba(255,255,255,.75);
+                font-size: 13px;
+                font-weight: 900;
+            }
+
+            #start-qr-scan-btn {
+                width: 100%;
+                border: none;
+                border-radius: 13px;
+                padding: 12px;
+                background: #dbeafe;
+                color: #1d4ed8;
+                font-weight: 950;
+                cursor: pointer;
+            }
+
+            #qr-reader {
+                margin-top: 12px;
+                overflow: hidden;
+                border-radius: 16px;
+                background: white;
+            }
+
+            .qr-scan-result {
+                margin-top: 10px;
+                color: rgba(255,255,255,.78);
+                font-size: 12px;
+                font-weight: 800;
+            }
+
 </style>
 
     <script>
@@ -1290,6 +1381,42 @@
 
                 summaryTotal.dataset.total = value;
                 summaryTotal.textContent = formatMoney(value);
+            }
+
+                        async function assignQrCode(vehicleId, button) {
+                const input = document.getElementById("qr-code-input");
+                const code = input?.value?.trim();
+
+                if (!code) {
+                    alert("QR kod giriniz.");
+                    return;
+                }
+
+                button.disabled = true;
+                button.textContent = "Atanıyor...";
+
+                const formData = new FormData();
+                formData.append("vehicleId", vehicleId);
+                formData.append("code", code);
+
+                const response = await fetch("/ServiceRecords/AssignQrCode", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    alert(errorText || "QR atanırken hata oluştu.");
+
+                    button.disabled = false;
+                    button.textContent = "QR Ata";
+                    return;
+                }
+
+                alert("QR kod araca başarıyla atandı.");
+
+                button.textContent = "Atandı";
+                input.disabled = true;
             }
 
             function bindOperationForms() {
@@ -1752,4 +1879,118 @@
 
             bindOperationForms();
             bindStatusButtons();
+
+        <script src="https://unpkg.com/html5-qrcode"></script>
+
+        <script>
+                let qrScanner = null;
+                let qrScanLocked = false;
+
+                async function startQrScanner(vehicleId, button) {
+                    if (qrScanLocked) {
+                        return;
+                    }
+
+                    const reader = document.getElementById("qr-reader");
+                    const resultBox = document.getElementById("qr-scan-result");
+
+                    reader.style.display = "block";
+                    resultBox.textContent = "Kamera açılıyor...";
+
+                    button.disabled = true;
+                    button.textContent = "Taranıyor...";
+
+                                    
+
+               
+
+                    
+
+                    
+
+               try {
+
+                    await navigator.mediaDevices.getUserMedia({
+                    video: true
+                });
+                const cameras = await Html5Qrcode.getCameras();
+
+                if (!cameras || cameras.length === 0) {
+                    resultBox.textContent = "Kamera bulunamadı.";
+                    button.disabled = false;
+                    button.textContent = "QR Kod Tara";
+                    qrScanLocked = false;
+                    return;
+                }
+
+                qrScanner = new Html5Qrcode("qr-reader"); 
+                                await qrScanner.start(
+                    selectedCamera.id,
+                    {
+                        fps: 10,
+                        qrbox: {
+                            width: 220,
+                            height: 220
+                        }
+                    },
+                    async function (decodedText) {
+                        if (qrScanLocked) {
+                            return;
+                        }
+
+                        qrScanLocked = true;
+
+                        resultBox.textContent = `QR okundu: ${decodedText}`;
+
+                        await qrScanner.stop();
+
+                        reader.style.display = "none";
+
+                        await assignScannedQrCode(
+                            vehicleId,
+                            decodedText,
+                            button,
+                            resultBox
+                        );
+                    }
+                );
+                    } catch (error) {
+                        resultBox.textContent = "Kamera açılamadı. Tarayıcı iznini kontrol edin.";
+                        button.disabled = false;
+                        button.textContent = "QR Kod Tara";
+                        qrScanLocked = false;
+                    }
+                }
+
+                async function assignScannedQrCode(vehicleId, code, button, resultBox) {
+                    button.textContent = "Atanıyor...";
+
+                    const formData = new FormData();
+                    formData.append("vehicleId", vehicleId);
+                    formData.append("code", code.trim());
+
+                    const response = await fetch("/ServiceRecords/AssignQrCode", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+
+                        resultBox.textContent = errorText || "QR atanırken hata oluştu.";
+
+                        button.disabled = false;
+                        button.textContent = "Tekrar Tara";
+                        qrScanLocked = false;
+
+                        return;
+                    }
+
+                    resultBox.textContent = "QR kod araca başarıyla atandı.";
+                    button.textContent = "QR Atandı";
+                }
+        </script>
+
     </script>
+
+   

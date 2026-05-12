@@ -1,0 +1,286 @@
+﻿@model AutoStock.WEB.Models.Qr.PublicQrViewModel
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Servis Geçmişi</title>
+
+    <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                background: #f3f6fb;
+                font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                color: #0f172a;
+            }
+
+            .page {
+                width: min(900px, calc(100% - 32px));
+                margin: 0 auto;
+                padding: 28px 0 50px;
+            }
+
+            .hero {
+                padding: 28px;
+                border-radius: 28px;
+                background: linear-gradient(135deg, #0f172a, #1d4ed8);
+                color: white;
+                box-shadow: 0 22px 55px rgba(15, 23, 42, .18);
+            }
+
+            .hero h1 {
+                margin: 0;
+                font-size: 30px;
+                letter-spacing: -.8px;
+            }
+
+            .hero p {
+                margin: 8px 0 0;
+                color: rgba(255,255,255,.72);
+                font-weight: 600;
+            }
+
+            .vehicle-card {
+                margin-top: 20px;
+                padding: 22px;
+                border-radius: 24px;
+                background: white;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
+            }
+
+            .vehicle-title {
+                display: flex;
+                justify-content: space-between;
+                gap: 16px;
+                align-items: flex-start;
+            }
+
+            .vehicle-title h2 {
+                margin: 0;
+                font-size: 24px;
+            }
+
+            .plate {
+                padding: 9px 13px;
+                border-radius: 14px;
+                background: #dbeafe;
+                color: #1d4ed8;
+                font-weight: 900;
+                white-space: nowrap;
+            }
+
+            .vehicle-meta {
+                margin-top: 14px;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+            }
+
+            .meta-box {
+                padding: 14px;
+                border-radius: 16px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+            }
+
+            .meta-box label {
+                display: block;
+                color: #64748b;
+                font-size: 12px;
+                font-weight: 800;
+            }
+
+            .meta-box strong {
+                display: block;
+                margin-top: 5px;
+                font-size: 15px;
+                font-weight: 900;
+            }
+
+            .section-title {
+                margin: 28px 0 14px;
+                font-size: 22px;
+                font-weight: 950;
+            }
+
+            .record-list {
+                display: grid;
+                gap: 14px;
+            }
+
+            .record-card {
+                padding: 18px;
+                border-radius: 20px;
+                background: white;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 14px 35px rgba(15, 23, 42, .06);
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 14px;
+                align-items: center;
+            }
+
+            .record-card strong {
+                display: block;
+                font-size: 16px;
+                font-weight: 900;
+            }
+
+            .record-card span {
+                display: block;
+                margin-top: 5px;
+                color: #64748b;
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            .status {
+                display: inline-flex;
+                padding: 8px 11px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 900;
+            }
+
+            .status-1 {
+                background: #dbeafe;
+                color: #1d4ed8;
+            }
+
+            .status-2 {
+                background: #fef3c7;
+                color: #b45309;
+            }
+
+            .status-3 {
+                background: #dcfce7;
+                color: #15803d;
+            }
+
+            .status-4 {
+                background: #fee2e2;
+                color: #b91c1c;
+            }
+
+            .empty {
+                padding: 28px;
+                border-radius: 22px;
+                background: white;
+                border: 1px dashed #cbd5e1;
+                color: #64748b;
+                text-align: center;
+                font-weight: 800;
+            }
+
+            .footer {
+                margin-top: 26px;
+                text-align: center;
+                color: #64748b;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            @@media (max-width: 640px) {
+                .vehicle-title,
+                .record-card {
+                    grid-template-columns: 1fr;
+                    display: grid;
+                }
+
+                .vehicle-meta {
+                    grid-template-columns: 1fr;
+                }
+
+                .hero h1 {
+                    font-size: 25px;
+                }
+            }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <h1>Servis Geçmişi</h1>
+            <p>Bu araç için kayıtlı servis hareketleri</p>
+        </section>
+
+        <section class="vehicle-card">
+            <div class="vehicle-title">
+                <div>
+                    <h2>@Model.Vehicle.Brand @Model.Vehicle.Model</h2>
+                    <p>@Model.Vehicle.ModelYear</p>
+                </div>
+
+                <div class="plate">
+                    @Model.Vehicle.Plate
+                </div>
+            </div>
+
+            <div class="vehicle-meta">
+                <div class="meta-box">
+                    <label>Marka</label>
+                    <strong>@Model.Vehicle.Brand</strong>
+                </div>
+
+                <div class="meta-box">
+                    <label>Model</label>
+                    <strong>@Model.Vehicle.Model</strong>
+                </div>
+
+                <div class="meta-box">
+                    <label>Model Yılı</label>
+                    <strong>@Model.Vehicle.ModelYear</strong>
+                </div>
+            </div>
+        </section>
+
+        <h3 class="section-title">Servis Kayıtları</h3>
+
+        @if (Model.Records.Any())
+        {
+            <div class="record-list">
+                @foreach (var record in Model.Records)
+                {
+                    <div class="record-card">
+                        <div>
+                            <strong>@record.RecordNumber</strong>
+                            <span>@record.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+
+                        <div class="status status-@record.Status">
+                            @(record.Status switch
+                            {
+                                1 => "Açık Kayıt",
+                                2 => "İşlemde",
+                                3 => "Tamamlandı",
+                                4 => "İptal Edildi",
+                                _ => "Bilinmiyor"
+                            })
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty">
+                Bu araç için henüz servis kaydı bulunmuyor.
+            </div>
+        }
+
+        <div class="footer">
+            AutoStock servis takip sistemi
+        </div>
+    </main>
+</body>
+</html>

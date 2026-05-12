@@ -13,8 +13,13 @@ public class PdfService : IPdfService
     {
         QuestPDF.Settings.License = LicenseType.Community;
 
-        var total = request.Operations.Sum(x => x.Quantity * x.UnitPrice);
-        var documentNo = $"SVX-{DateTime.Now:yyyyMMdd-HHmm}";
+        var total = request.RequestGroups
+    .SelectMany(x => x.Operations)
+    .Sum(x => x.Quantity * x.UnitPrice);
+
+        var documentNo = string.IsNullOrWhiteSpace(request.RecordNumber)
+            ? $"SVX-{DateTime.Now:yyyyMMdd-HHmm}"
+            : request.RecordNumber;
 
         var pdf = Document.Create(container =>
         {
@@ -24,7 +29,7 @@ public class PdfService : IPdfService
                 page.Margin(36);
                 page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
 
-                page.Header().Element(c => BuildHeader(c, documentNo));
+                page.Header().Element(c => BuildHeader(c, documentNo, request));
                 page.Content().Element(c => BuildContent(c, request, total));
                 page.Footer().Element(BuildFooter);
             });
@@ -33,9 +38,13 @@ public class PdfService : IPdfService
         return pdf.GeneratePdf();
     }
 
-    private static void BuildHeader(IContainer container, string documentNo)
+    private static void BuildHeader(IContainer container, string documentNo, CreateServicePdfRequest request)
     {
-        var qrText = $"Servix | Belge No: {documentNo} | Tarih: {DateTime.Now:dd.MM.yyyy HH:mm}";
+        var brandName = string.IsNullOrWhiteSpace(request.WorkshopName)
+            ? "Servix"
+            : request.WorkshopName;
+
+        var qrText = $"{brandName} | Belge No: {documentNo} | Tarih: {DateTime.Now:dd.MM.yyyy HH:mm}";
         var qrBytes = GenerateQrCode(qrText);
 
         container.Column(column =>
@@ -44,14 +53,20 @@ public class PdfService : IPdfService
             {
                 row.RelativeItem().Column(left =>
                 {
-                    left.Item().Text("Servix")
+                    left.Item().Text(brandName)
                         .FontSize(30)
                         .Bold()
                         .FontColor(Colors.Blue.Darken4);
 
-                    left.Item().Text("Profesyonel Servis Formu")
-                        .FontSize(11)
-                        .FontColor(Colors.Grey.Darken1);
+                    
+
+                    if (!string.IsNullOrWhiteSpace(request.StatusText))
+                    {
+                        left.Item().PaddingTop(8).Text(request.StatusText)
+                         .FontSize(10)
+                         .Bold()
+                         .FontColor(GetStatusColor(request.StatusText));
+                    }
                 });
 
                 row.ConstantItem(155).AlignRight().Column(right =>
@@ -104,43 +119,53 @@ public class PdfService : IPdfService
                     ("Model Yılı", request.ModelYear)));
             });
 
-            column.Item().Element(BuildSectionTitle);
-
-            column.Item().Table(table =>
+            if (!string.IsNullOrWhiteSpace(request.Note))
             {
-                table.ColumnsDefinition(columns =>
+                column.Item().Element(c =>
                 {
-                    columns.RelativeColumn(4);
-                    columns.ConstantColumn(55);
-                    columns.ConstantColumn(95);
-                    columns.ConstantColumn(95);
+                    c.Background(Colors.Grey.Lighten4)
+                     .Border(1)
+                     .BorderColor(Colors.Grey.Lighten2)
+                     .Padding(12)
+                     .Column(note =>
+                     {
+                         note.Item().Text("Servis Kabul Notu")
+                             .Bold()
+                             .FontSize(11)
+                             .FontColor(Colors.Grey.Darken4);
+
+                         note.Item().PaddingTop(4).Text(request.Note)
+                             .FontSize(10)
+                             .FontColor(Colors.Grey.Darken2);
+                     });
                 });
+            }
 
-                table.Header(header =>
+            column.Item().Text("Şikayet / Talepler ve Yapılan İşlemler")
+                .FontSize(16)
+                .Bold()
+                .FontColor(Colors.Grey.Darken4);
+
+            if (request.RequestGroups.Count == 0)
+            {
+                column.Item().Element(c =>
                 {
-                    HeaderCell(header.Cell(), "İşlem");
-                    HeaderCell(header.Cell(), "Adet");
-                    HeaderCell(header.Cell(), "Birim Fiyat");
-                    HeaderCell(header.Cell(), "Toplam");
+                    c.Background(Colors.Grey.Lighten5)
+                     .Border(1)
+                     .BorderColor(Colors.Grey.Lighten2)
+                     .Padding(14)
+                     .Text("Bu servis kaydı için talep girilmemiş.")
+                     .FontSize(10)
+                     .FontColor(Colors.Grey.Darken2);
                 });
-
-                if (request.Operations.Count == 0)
+            }
+            else
+            {
+                foreach (var group in request.RequestGroups)
                 {
-                    BodyCell(table.Cell().ColumnSpan(4), "İşlem eklenmedi.");
+                    column.Item().Element(c => BuildRequestGroup(c, group));
                 }
-                else
-                {
-                    foreach (var item in request.Operations)
-                    {
-                        var itemTotal = item.Quantity * item.UnitPrice;
-
-                        BodyCell(table.Cell(), GetValue(item.Name));
-                        BodyCell(table.Cell(), item.Quantity.ToString());
-                        BodyCell(table.Cell(), FormatMoney(item.UnitPrice));
-                        BodyCell(table.Cell(), FormatMoney(itemTotal));
-                    }
-                }
-            });
+            }
 
             column.Item().AlignRight().Width(220).Element(c =>
             {
@@ -160,31 +185,118 @@ public class PdfService : IPdfService
                          .FontColor(Colors.Blue.Darken4);
                  });
             });
-
-
-
-            if (!string.IsNullOrWhiteSpace(request.Note))
-            {
-                column.Item().Element(c =>
-                {
-                    c.Background(Colors.Grey.Lighten4)
-                     .Border(1)
-                     .BorderColor(Colors.Grey.Lighten2)
-                     .Padding(12)
-                     .Column(note =>
-                     {
-                         note.Item().Text("Not")
-                             .Bold()
-                             .FontSize(11)
-                             .FontColor(Colors.Grey.Darken4);
-
-                         note.Item().PaddingTop(4).Text(request.Note)
-                             .FontSize(10)
-                             .FontColor(Colors.Grey.Darken2);
-                     });
-                });
-            }
         });
+    }
+    private static void BuildRequestGroup(IContainer container, ServicePdfRequestGroupDto group)
+    {
+        var groupTotal = group.Operations.Sum(x => x.Quantity * x.UnitPrice);
+
+        container
+            .Border(1)
+            .BorderColor(Colors.Grey.Lighten2)
+            .Background(Colors.White)
+            .Padding(12)
+            .Column(column =>
+            {
+                column.Item().Row(row =>
+                {
+                    row.RelativeItem().Column(left =>
+                    {
+                        left.Item().Text(GetValue(group.Title))
+                            .FontSize(12)
+                            .Bold()
+                            .FontColor(Colors.Blue.Darken4);
+
+                        if (!string.IsNullOrWhiteSpace(group.Note))
+                        {
+                            left.Item().PaddingTop(3).Text(group.Note)
+                                .FontSize(9)
+                                .Italic()
+                                .FontColor(Colors.Grey.Darken1);
+                        }
+                    });
+
+                    row.ConstantItem(120).AlignRight().Text(FormatMoney(groupTotal))
+                        .FontSize(11)
+                        .Bold()
+                        .FontColor(Colors.Grey.Darken4);
+                });
+
+                column.Item().PaddingTop(10);
+
+                column.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(55);
+                        columns.RelativeColumn(4);
+                        columns.ConstantColumn(55);
+                        columns.ConstantColumn(90);
+                        columns.ConstantColumn(90);
+                    });
+
+                    table.Header(header =>
+                    {
+                        HeaderCell(header.Cell(), "Tür");
+                        HeaderCell(header.Cell(), "İşlem");
+                        HeaderCell(header.Cell(), "Adet");
+                        HeaderCell(header.Cell(), "Birim Fiyat");
+                        HeaderCell(header.Cell(), "Toplam");
+                    });
+
+                    if (group.Operations.Count == 0)
+                    {
+                        BodyCell(table.Cell().ColumnSpan(5), "Bu talep için işlem eklenmedi.");
+                    }
+                    else
+                    {
+                        foreach (var item in group.Operations)
+                        {
+                            var itemTotal = item.Quantity * item.UnitPrice;
+
+                            BodyCell(table.Cell(), GetValue(item.TypeText));
+
+                            table.Cell().Element(c =>
+                            {
+                                c.BorderBottom(1)
+                                 .BorderColor(Colors.Grey.Lighten2)
+                                 .PaddingVertical(9)
+                                 .PaddingHorizontal(7)
+                                 .Column(col =>
+                                 {
+                                     col.Item().Text(GetValue(item.Name))
+                                         .FontSize(10)
+                                         .FontColor(Colors.Grey.Darken3);
+
+                                     if (!string.IsNullOrWhiteSpace(item.Note))
+                                     {
+                                         col.Item().PaddingTop(3).Text(item.Note)
+                                             .FontSize(8)
+                                             .Italic()
+                                             .FontColor(Colors.Grey.Darken1);
+                                     }
+                                 });
+                            });
+
+                            BodyCell(table.Cell(), item.Quantity.ToString());
+                            BodyCell(table.Cell(), FormatMoney(item.UnitPrice));
+                            BodyCell(table.Cell(), FormatMoney(itemTotal));
+                        }
+                    }
+                });
+            });
+    }
+
+    private static string GetStatusColor(string? statusText)
+    {
+        return statusText switch
+        {
+            "Açık Kayıt" => Colors.Blue.Darken3,
+            "İşlemde" => Colors.Orange.Darken3,
+            "Tamamlandı" => Colors.Green.Darken3,
+            "İptal Edildi" => Colors.Red.Darken3,
+            _ => Colors.Grey.Darken2
+        };
     }
 
     private static void BuildSectionTitle(IContainer container)
@@ -208,13 +320,15 @@ public class PdfService : IPdfService
         {
             column.Item().LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
 
-            column.Item().PaddingTop(8).AlignCenter().Text(text =>
+            column.Item().PaddingTop(8).Row(row =>
             {
-                text.Span("Bu belge Servix tarafından bilgilendirme amacıyla oluşturulmuştur. ")
-                    .FontSize(9)
+                row.RelativeItem().Text("Bu belge AutoStock tarafından otomatik oluşturulmuştur.")
+                    .FontSize(8)
                     .FontColor(Colors.Grey.Darken1);
 
-
+                row.ConstantItem(120).AlignRight().Text(DateTime.Now.ToString("dd.MM.yyyy HH:mm"))
+                    .FontSize(8)
+                    .FontColor(Colors.Grey.Darken1);
             });
         });
     }

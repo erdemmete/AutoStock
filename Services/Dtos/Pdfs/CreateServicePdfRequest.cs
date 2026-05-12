@@ -13,5 +13,10 @@
 
         public List<ServicePdfItemDto> Operations { get; set; } = new();
         public string? Note { get; set; }
+        public string? WorkshopName { get; set; }
+        public string? RecordNumber { get; set; }
+        public string? StatusText { get; set; }
+
+        public List<ServicePdfRequestGroupDto> RequestGroups { get; set; } = new();
     }
 }

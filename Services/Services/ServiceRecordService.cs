@@ -156,6 +156,7 @@ public class ServiceRecordService : IServiceRecordService
         {
             Id = serviceRecord.Id,
             RecordNumber = serviceRecord.RecordNumber,
+            VehicleId = serviceRecord.VehicleId,
             Status = serviceRecord.Status,
 
             CustomerName = serviceRecord.CustomerNameSnapshot,

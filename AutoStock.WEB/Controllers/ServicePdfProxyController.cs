@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 
 namespace AutoStock.WEB.Controllers
 {
@@ -19,49 +17,35 @@ namespace AutoStock.WEB.Controllers
             _configuration = configuration;
         }
 
-        [HttpPost("create")]
-        public async Task<IActionResult> Create([FromBody] object request)
+        [HttpGet("create/{serviceRecordId:int}")]
+        public async Task<IActionResult> Create(int serviceRecordId)
         {
-            try
-            {
-                var token = HttpContext.Session.GetString("AuthToken");
+            var token = HttpContext.Session.GetString("AuthToken");
 
-                if (string.IsNullOrWhiteSpace(token))
-                {
-                    return Unauthorized("Oturum bulunamadı. Lütfen tekrar giriş yapın.");
-                }
+            if (string.IsNullOrWhiteSpace(token))
+                return Unauthorized("Oturum bulunamadı. Lütfen tekrar giriş yapın.");
 
-                var apiBaseUrl = _configuration["ApiSettings:BaseUrl"];
+            var apiBaseUrl = _configuration["ApiSettings:BaseUrl"];
 
-                if (string.IsNullOrWhiteSpace(apiBaseUrl))
-                {
-                    return StatusCode(500, "ApiSettings:BaseUrl bulunamadı.");
-                }
+            var client = _httpClientFactory.CreateClient();
 
-                var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
 
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
+            var response = await client.GetAsync(
+                $"{apiBaseUrl}/api/ServicePdfs/{serviceRecordId}");
 
-                var json = JsonSerializer.Serialize(request);
-                using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var fileBytes = await response.Content.ReadAsByteArrayAsync();
 
-                var response = await client.PostAsync($"{apiBaseUrl}/api/ServicePdfs", content);
+            if (!response.IsSuccessStatusCode)
+                return StatusCode((int)response.StatusCode);
+            var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+    ?? response.Content.Headers.ContentDisposition?.FileName
+    ?? $"servis-formu-{serviceRecordId}.pdf";
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    var responseText = await response.Content.ReadAsStringAsync();
-                    return StatusCode((int)response.StatusCode, responseText);
-                }
+            fileName = fileName.Trim('"');
 
-                var pdfBytes = await response.Content.ReadAsByteArrayAsync();
-
-                return File(pdfBytes, "application/pdf", "servis-formu.pdf");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.ToString());
-            }
+            return File(fileBytes, "application/pdf", fileName); return File(fileBytes, "application/pdf", $"servis-formu-{serviceRecordId}.pdf");
         }
     }
 }
