@@ -71,7 +71,8 @@ public class ServiceRecordService : IServiceRecordService
                 VehicleBrandId = request.VehicleBrandId,
                 VehicleModelId = request.VehicleModelId,
                 ModelYear = request.ModelYear,
-                Mileage = request.Mileage
+                Mileage = request.Mileage,
+                ChassisNumber = request.ChassisNumber?.Trim()
             };
 
             _context.Vehicles.Add(vehicle);
@@ -83,6 +84,9 @@ public class ServiceRecordService : IServiceRecordService
             vehicle.VehicleModelId = request.VehicleModelId ?? vehicle.VehicleModelId;
             vehicle.ModelYear = request.ModelYear ?? vehicle.ModelYear;
             vehicle.Mileage = request.Mileage ?? vehicle.Mileage;
+
+            if (!string.IsNullOrWhiteSpace(request.ChassisNumber))
+                vehicle.ChassisNumber = request.ChassisNumber.Trim();
         }
 
         var brandName = await GetBrandNameAsync(request.VehicleBrandId);

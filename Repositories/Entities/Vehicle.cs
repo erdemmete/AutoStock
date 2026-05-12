@@ -27,6 +27,7 @@
         public string? VinNumber { get; set; }
 
         public bool IsActive { get; set; } = true;
+        public string? ChassisNumber { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

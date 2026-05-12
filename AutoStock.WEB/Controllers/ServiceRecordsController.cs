@@ -69,7 +69,24 @@ public class ServiceRecordsController : Controller
         model.ServiceAdvisorName = HttpContext.Session.GetString("FullName") ?? "Oturum Bilgisi Yok";
 
         if (!ModelState.IsValid)
+        {
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                var errors = ModelState
+                    .Where(x => x.Value.Errors.Count > 0)
+                    .SelectMany(x => x.Value.Errors.Select(e => e.ErrorMessage))
+                    .ToList();
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = errors.FirstOrDefault() ?? "Lütfen zorunlu alanları kontrol edin."
+                });
+            }
+
             return View(model);
+        }
+            
 
         var client = CreateApiClient();
 
@@ -96,6 +113,16 @@ public class ServiceRecordsController : Controller
             return View(model);
         }
 
+        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+        {
+            return Json(new
+            {
+                success = true,
+                message = "Servis kaydı başarıyla oluşturuldu.",
+                serviceRecordId = result.Data.ServiceRecordId,
+                recordNumber = result.Data.RecordNumber
+            });
+        }
         TempData["SuccessMessage"] = $"Servis kaydı oluşturuldu. Kayıt No: {result.Data.RecordNumber}";
 
         return RedirectToAction(nameof(Create));

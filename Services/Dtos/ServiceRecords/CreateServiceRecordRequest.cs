@@ -20,6 +20,7 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public int? ModelYear { get; set; }
 
         public int? Mileage { get; set; }
+        public string? ChassisNumber { get; set; }
 
         public string? CustomerComplaint { get; set; }
 

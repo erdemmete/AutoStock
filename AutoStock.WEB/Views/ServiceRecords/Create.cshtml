@@ -788,8 +788,12 @@
                 <p>Müşteri, araç ve servis taleplerini hızlıca kaydedin. Gerekirse servis formunu PDF olarak oluşturun.</p>
             </div>
         </div>
-
-        <a href="/Dashboard" class="premium-home" title="Ana sayfa">⌂</a>
+        <a asp-controller="Dashboard"
+               asp-action="Index"
+               class="premium-home"
+               title="Ana sayfa">
+            ⌂
+        </a>
     </section>
 
     @if (TempData["SuccessMessage"] is not null)
@@ -894,7 +898,7 @@
                         </div>
 
                         <div class="form-field">
-                            <input type="text" id="chassisNumber" name="ChassisNumber" placeholder=" " autocomplete="off" />
+                            <input asp-for="ChassisNumber" placeholder=" " autocomplete="off" />
                             <label>Şasi No</label>
                         </div>
                     </div>
@@ -997,34 +1001,18 @@
 
                 <div class="quick-actions">
                     <h4 class="quick-title">Hızlı İşlemler</h4>
-                    <button type="button" class="quick-action" onclick="openVehicleHistory()">
-                        <span class="quick-action-icon">🕘</span>
-                        <span>
-                            <strong>Araç Geçmişini Görüntüle</strong>
-                            <span>Bu araca ait servis kayıtlarını incele</span>
-                        </span>
-                    </button>
-
-                    <button type="button" class="quick-action" onclick="openQrAssign()">
-                        <span class="quick-action-icon">▦</span>
-                        <span>
-                            <strong>QR Kod Eşleştir</strong>
-                            <span>Araca QR kod oluştur / eşleştir</span>
-                        </span>
-                    </button>
 
                     <button type="button" class="quick-action" onclick="createPdfDraft()">
                         <span class="quick-action-icon">📄</span>
                         <span>
                             <strong>PDF Oluştur</strong>
-                            <span>Servis kabul formunu PDF olarak oluştur</span>
+                            <span>Hızlı teklif formunu PDF olarak oluştur</span>
                         </span>
                     </button>
-                    
                 </div>
 
                 <div class="summary-buttons">
-                    <button type="submit" class="btn-primary">
+                    <button type="button" class="btn-primary" onclick="saveServiceRecord()">
                         Kaydı Oluştur
                     </button>
 
@@ -1047,12 +1035,22 @@
         const customerNameInput = document.getElementById("CustomerName");
         const customerPhoneInput = document.getElementById("CustomerPhoneNumber");
         const customerEmailInput = document.getElementById("CustomerEmail");
+        const chassisNumberInput = document.getElementById("ChassisNumber");
         const customerResults = document.getElementById("customerSearchResults");
 
         const requestItemsContainer = document.getElementById("requestItemsContainer");
         const requestCountText = document.getElementById("requestCountText");
         const estimatedTotalText = document.getElementById("estimatedTotalText");
         const estimatedTotalBox = document.getElementById("estimatedTotalBox");
+       
+                if (chassisNumberInput) {
+            chassisNumberInput.addEventListener("input", function () {
+                this.value = this.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 17);
+            });
+        }
 
         let customerSearchTimeout;
         let requestIndex = 0;
@@ -1436,20 +1434,40 @@
             const digits = this.value.replace(/\D/g, "").slice(0, 8);
             this.value = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         });
+                const serviceCreateForm = document.getElementById("serviceCreateForm");
 
-        const chassisNumberInput = document.getElementById("chassisNumber");
-
-        if (chassisNumberInput) {
-            chassisNumberInput.addEventListener("input", function () {
-                this.value = this.value
-                    .toUpperCase()
-                    .replace(/[^A-Z0-9]/g, "")
-                    .slice(0, 17);
-            });
-        }
-
-        
+       
 
         updateRequestSummary();
+
+
+                async function saveServiceRecord() {
+            const form = document.getElementById("serviceCreateForm");
+            const formData = new FormData(form);
+
+            const mileageInput = document.getElementById("Mileage");
+
+            if (mileageInput) {
+                formData.set("Mileage", mileageInput.value.replace(/\D/g, ""));
+            }
+
+            const response = await fetch(form.action, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                alert(result.message || "Servis kaydı oluşturulurken hata oluştu.");
+                return;
+            }
+
+            alert(`${result.message} Kayıt No: ${result.recordNumber}`);
+        }
+
     </script>
 }

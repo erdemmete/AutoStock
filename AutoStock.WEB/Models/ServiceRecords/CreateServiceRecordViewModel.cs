@@ -17,6 +17,7 @@
         public int? ModelYear { get; set; }
 
         public int? Mileage { get; set; }
+        public string? ChassisNumber { get; set; }
 
         public string? CustomerComplaint { get; set; }
 
@@ -24,7 +25,7 @@
         public decimal? EstimatedAmount { get; set; }
 
         public string? EstimatedAmountNote { get; set; }
-        public string ServiceAdvisorName { get; set; } = string.Empty;
+        public string? ServiceAdvisorName { get; set; } = string.Empty;
 
         public List<CreateServiceRequestItemViewModel> RequestItems { get; set; } = new();
 
