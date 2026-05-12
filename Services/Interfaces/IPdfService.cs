@@ -5,5 +5,6 @@ namespace AutoStock.Services.Interfaces
     public interface IPdfService
     {
         byte[] CreateServicePdf(CreateServicePdfRequest request);
+        byte[] CreateQuickOfferPdf(CreateQuickOfferPdfRequest request);
     }
 }

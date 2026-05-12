@@ -53,7 +53,9 @@ public class ServiceRecordsController : Controller
     {
         var model = new CreateServiceRecordViewModel
         {
-            Brands = await GetBrandsAsync()
+            Brands = await GetBrandsAsync(),
+
+            ServiceAdvisorName = HttpContext.Session.GetString("FullName") ?? "Oturum Bilgisi Yok"
         };
 
         return View(model);
@@ -63,6 +65,8 @@ public class ServiceRecordsController : Controller
     public async Task<IActionResult> Create(CreateServiceRecordViewModel model)
     {
         model.Brands = await GetBrandsAsync();
+
+        model.ServiceAdvisorName = HttpContext.Session.GetString("FullName") ?? "Oturum Bilgisi Yok";
 
         if (!ModelState.IsValid)
             return View(model);

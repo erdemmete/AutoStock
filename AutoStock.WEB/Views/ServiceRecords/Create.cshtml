@@ -11,34 +11,35 @@
 
     body {
         margin: 0;
-        background: radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 28rem), radial-gradient(circle at top right, rgba(22, 163, 74, .10), transparent 28rem), #f3f6fb;
+        background: radial-gradient(circle at top left, rgba(37, 99, 235, .08), transparent 30rem), radial-gradient(circle at top right, rgba(22, 163, 74, .07), transparent 28rem), #f3f6fb;
         font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: #0f172a;
     }
 
     .page {
-        width: min(1420px, calc(100% - 48px));
+        width: min(1280px, calc(100% - 44px));
         margin: 0 auto;
-        padding: 36px 0 60px;
+        padding: 30px 0 56px;
     }
 
     .premium-header {
-        margin-bottom: 28px;
-        padding: 32px 36px;
-        border-radius: 32px;
-        background: radial-gradient(circle at 92% 35%, rgba(255,255,255,.16), transparent 18rem), linear-gradient(135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
+        margin-bottom: 26px;
+        padding: 30px 34px;
+        border-radius: 30px;
+        background: radial-gradient(circle at 88% 30%, rgba(255,255,255,.18), transparent 18rem), linear-gradient(135deg, #07111f 0%, #111827 44%, #2554d8 100%);
         color: white;
-        box-shadow: 0 28px 80px rgba(15, 23, 42, .24);
+        box-shadow: 0 26px 70px rgba(15, 23, 42, .22);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 20px;
+        gap: 22px;
     }
 
     .premium-brand {
         display: flex;
         align-items: center;
-        gap: 22px;
+        gap: 18px;
+        min-width: 0;
     }
 
     .premium-logo {
@@ -52,6 +53,7 @@
         font-weight: 950;
         font-size: 22px;
         flex-shrink: 0;
+        box-shadow: 0 18px 40px rgba(37, 99, 235, .28);
     }
 
     .premium-eyebrow {
@@ -61,221 +63,44 @@
         border-radius: 999px;
         background: rgba(255,255,255,.13);
         border: 1px solid rgba(255,255,255,.18);
-        color: rgba(255,255,255,.80);
+        color: rgba(255,255,255,.82);
         font-size: 12px;
-        font-weight: 800;
+        font-weight: 850;
+        letter-spacing: .2px;
     }
 
     .premium-header h1 {
         margin: 0;
-        font-size: 36px;
-        line-height: 1;
-        letter-spacing: -1.7px;
+        font-size: 34px;
+        line-height: 1.04;
+        letter-spacing: -1.4px;
     }
 
     .premium-header p {
-        margin: 12px 0 0;
-        max-width: 700px;
+        margin: 10px 0 0;
+        max-width: 720px;
         color: rgba(255,255,255,.72);
         font-size: 15px;
         line-height: 1.55;
     }
 
     .premium-home {
-        width: 54px;
-        height: 54px;
+        width: 52px;
+        height: 52px;
         display: grid;
         place-items: center;
-        border-radius: 18px;
+        border-radius: 17px;
         background: rgba(255,255,255,.12);
         border: 1px solid rgba(255,255,255,.18);
         color: white;
         text-decoration: none;
-        font-size: 22px;
+        font-size: 21px;
         flex-shrink: 0;
-    }
-
-    .layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 390px;
-        gap: 24px;
-        align-items: start;
-    }
-
-    .panel {
-        background: rgba(255,255,255,.92);
-        border: 1px solid #e2e8f0;
-        border-radius: 30px;
-        padding: 24px;
-        box-shadow: 0 22px 55px rgba(15, 23, 42, .08);
-        backdrop-filter: blur(18px);
-    }
-
-    .grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 18px;
-    }
-
-    .card {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        padding: 22px;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, .045);
-    }
-
-        .card.full {
-            grid-column: 1 / -1;
-        }
-
-        .card h3,
-        .summary h3 {
-            margin: 0 0 18px;
-            font-size: 21px;
-            letter-spacing: -0.5px;
-            color: #0f172a;
-        }
-
-    .fields {
-        display: grid;
-        gap: 15px;
-    }
-
-    .two {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: 14px;
-    }
-
-    input,
-    select,
-    textarea {
-        width: 100%;
-        min-height: 52px;
-        border: 1px solid #dbe3ef;
-        border-radius: 16px;
-        background: #f8fafc;
-        padding: 13px 15px;
-        font: inherit;
-        font-size: 15px;
-        color: #0f172a;
-        outline: none;
         transition: .18s ease;
     }
 
-        input:focus,
-        select:focus,
-        textarea:focus {
-            border-color: #2563eb;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, .11);
-        }
-
-    textarea {
-        min-height: 120px;
-        resize: vertical;
-    }
-
-    .form-field {
-        position: relative;
-    }
-
-        .form-field input,
-        .form-field select,
-        .form-field textarea {
-            padding-top: 20px;
-        }
-
-        .form-field label {
-            position: absolute;
-            top: 16px;
-            left: 15px;
-            margin: 0;
-            padding: 0 6px;
-            background: #f8fafc;
-            color: #64748b;
-            font-size: 14px;
-            font-weight: 700;
-            pointer-events: none;
-            transition: .18s ease;
-            border-radius: 8px;
-        }
-
-        .form-field input:focus + label,
-        .form-field input:not(:placeholder-shown) + label,
-        .form-field textarea:focus + label,
-        .form-field textarea:not(:placeholder-shown) + label,
-        .form-field select + label {
-            top: -8px;
-            left: 12px;
-            background: white;
-            color: #2563eb;
-            font-size: 11px;
-        }
-
-    .summary {
-        position: sticky;
-        top: 24px;
-    }
-
-    .summary-line {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 12px 0;
-        border-bottom: 1px solid #e2e8f0;
-        font-size: 14px;
-    }
-
-        .summary-line span {
-            color: #64748b;
-            font-weight: 700;
-        }
-
-        .summary-line strong {
-            text-align: right;
-            font-weight: 900;
-            color: #0f172a;
-        }
-
-    .total {
-        margin: 22px 0;
-        padding: 22px;
-        border-radius: 22px;
-        background: linear-gradient(135deg, #0f172a, #1e293b);
-        color: white;
-    }
-
-        .total span {
-            color: rgba(255,255,255,.66);
-            font-weight: 700;
-        }
-
-        .total strong {
-            display: block;
-            margin-top: 8px;
-            font-size: 30px;
-            letter-spacing: -1.2px;
-        }
-
-    .btn-green {
-        width: 100%;
-        min-height: 56px;
-        border: none;
-        border-radius: 18px;
-        background: linear-gradient(135deg, #16a34a, #15803d);
-        color: white;
-        font: inherit;
-        font-size: 16px;
-        font-weight: 900;
-        cursor: pointer;
-        box-shadow: 0 14px 28px rgba(22, 163, 74, .22);
-        transition: .18s ease;
-    }
-
-        .btn-green:hover {
-            background: linear-gradient(135deg, #15803d, #166534);
+        .premium-home:hover {
+            background: rgba(255,255,255,.22);
             transform: translateY(-2px);
         }
 
@@ -286,186 +111,87 @@
         background: #dcfce7;
         border: 1px solid #bbf7d0;
         color: #166534;
-        font-weight: 800;
+        font-weight: 850;
     }
 
-    .field-error {
-        display: block;
-        margin-top: 6px;
-        color: #dc2626;
-        font-size: 12px;
-        font-weight: 700;
-    }
-
-    @@media (max-width: 1200px) {
-        .layout {
-            grid-template-columns: 1fr;
-        }
-
-        .summary {
-            position: static;
-        }
-    }
-
-    @@media (max-width: 900px) {
-        .page {
-            width: min(100% - 28px, 1420px);
-            padding-top: 20px;
-        }
-
-        .premium-header {
-            padding: 24px;
-            border-radius: 26px;
-            align-items: flex-start;
-        }
-
-        .premium-brand {
-            align-items: flex-start;
-        }
-
-        .premium-header h1 {
-            font-size: 28px;
-        }
-
-        .grid,
-        .two {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @@media (max-width: 600px) {
-        .page {
-            width: 100%;
-            padding: 14px;
-        }
-
-        .premium-header {
-            padding: 20px;
-            margin-bottom: 18px;
-        }
-
-        .premium-brand {
-            gap: 14px;
-        }
-
-        .premium-logo {
-            width: 48px;
-            height: 48px;
-            border-radius: 16px;
-        }
-
-        .premium-home {
-            width: 44px;
-            height: 44px;
-            border-radius: 15px;
-            font-size: 18px;
-        }
-
-        .panel {
-            padding: 16px;
-            border-radius: 22px;
-        }
-
-        .card {
-            padding: 18px;
-            border-radius: 20px;
-        }
-
-            .card h3,
-            .summary h3 {
-                font-size: 20px;
-            }
-
-        .request-builder {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .request-builder {
+    .layout {
         display: grid;
-        grid-template-columns: 1.5fr 220px 160px;
-        gap: 14px;
-        align-items: center;
+        grid-template-columns: minmax(0, 1fr) 350px;
+        gap: 24px;
+        align-items: start;
     }
 
-    .btn-add-request {
-        min-height: 52px;
-        border: none;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        color: white;
-        font-size: 15px;
-        font-weight: 800;
-        cursor: pointer;
-    }
-
-    .request-items {
+    .main-flow {
         display: grid;
-        gap: 12px;
+        gap: 18px;
     }
 
-    .request-item {
+    .card,
+    .summary {
+        background: rgba(255,255,255,.94);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 18px 46px rgba(15, 23, 42, .07);
+        backdrop-filter: blur(18px);
+    }
+
+    .card {
+        padding: 22px;
+    }
+
+    .section-title {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 14px;
-        padding: 16px 18px;
-        border-radius: 18px;
-        background: #f8fafc;
-        border: 1px solid #dbe3ef;
+        gap: 12px;
+        margin-bottom: 20px;
     }
 
-        .request-item strong {
-            color: #0f172a;
-            font-size: 15px;
+    .section-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+        .section-icon.customer {
+            background: #e0e7ff;
+            color: #2563eb;
         }
 
-    .request-remove {
-        border: none;
-        background: #ef4444;
-        color: white;
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        cursor: pointer;
-        font-weight: 900;
+        .section-icon.vehicle {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .section-icon.request {
+            background: #f3e8ff;
+            color: #9333ea;
+        }
+
+    .section-title h3,
+    .summary h3 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: -.45px;
+        color: #0f172a;
     }
 
-    .request-item span,
-    .request-item small {
-        display: block;
-        margin-top: 5px;
+    .section-title p {
+        margin: 3px 0 0;
         color: #64748b;
         font-size: 13px;
-        font-weight: 700;
+        font-weight: 650;
     }
 
-    .form-field select {
-        min-width: 0;
-    }
-
-    .form-field {
-        min-width: 0;
-    }
-    .request-note-field {
-    margin-top: 16px;
-}
-    .request-note-field textarea {
-        min-height: 120px;
-        resize: vertical;
-    }
-    .customer-search-panel {
-        margin-bottom: 22px;
+    .customer-search-card {
         padding: 18px;
-        border-radius: 24px;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, .045);
     }
 
     .customer-search-box {
         position: relative;
-        max-width: 720px;
     }
 
     .search-icon {
@@ -479,21 +205,41 @@
         z-index: 2;
     }
 
+    .search-shortcut {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 6px 10px;
+        border-radius: 10px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 850;
+        box-shadow: 0 8px 18px rgba(15,23,42,.06);
+        pointer-events: none;
+    }
+
     .customer-search-box input {
         width: 100%;
         min-height: 58px;
-        padding: 14px 18px 14px 52px;
+        padding: 14px 86px 14px 54px;
         border-radius: 18px;
         border: 1px solid #dbe3ef;
         background: #f8fafc;
+        color: #0f172a;
+        font: inherit;
         font-size: 15px;
-        font-weight: 700;
+        font-weight: 750;
+        outline: none;
+        transition: .18s ease;
     }
 
         .customer-search-box input:focus {
             border-color: #2563eb;
             background: white;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, .11);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, .10);
         }
 
     .customer-search-results {
@@ -531,27 +277,520 @@
             margin-top: 4px;
             font-size: 12px;
             color: #64748b;
+            font-weight: 650;
         }
-    
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .vehicle-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .request-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 220px 116px;
+        gap: 14px;
+        align-items: end;
+    }
+
     .form-field {
         position: relative;
+        min-width: 0;
+    }
+
+        .form-field.full {
+            grid-column: 1 / -1;
+        }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        min-height: 52px;
+        border: 1px solid #dbe3ef;
+        border-radius: 16px;
+        background: #f8fafc;
+        padding: 18px 15px 9px;
+        font: inherit;
+        font-size: 15px;
+        color: #0f172a;
+        outline: none;
+        transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+
+    textarea {
+        min-height: 118px;
+        resize: vertical;
+        line-height: 1.5;
+    }
+
+        input:hover,
+        select:hover,
+        textarea:hover {
+            border-color: #cbd5e1;
+            background: white;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #2563eb;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, .10);
+        }
+
+    .form-field label {
+        position: absolute;
+        top: 15px;
+        left: 14px;
+        margin: 0;
+        padding: 0 6px;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 780;
+        pointer-events: none;
+        transition: .18s ease;
+        max-width: calc(100% - 28px);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .form-field input:focus + label,
+    .form-field input:not(:placeholder-shown) + label,
+    .form-field textarea:focus + label,
+    .form-field textarea:not(:placeholder-shown) + label,
+    .form-field select + label {
+        top: -8px;
+        left: 12px;
+        background: white;
+        color: #2563eb;
+        font-size: 11px;
+        font-weight: 850;
+    }
+
+    .required {
+        color: #ef4444;
+    }
+
+    .field-error {
+        display: block;
+        margin-top: 6px;
+        color: #dc2626;
+        font-size: 12px;
+        font-weight: 750;
+    }
+
+    .input-invalid {
+        border-color: #ef4444 !important;
+        background: #fff7f7 !important;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, .10) !important;
+    }
+
+    .btn-add-request {
+        width: 100%;
+        min-height: 52px;
+        border: none;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: white;
+        font: inherit;
+        font-size: 15px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 14px 28px rgba(37, 99, 235, .20);
+        transition: .18s ease;
+    }
+
+        .btn-add-request:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 34px rgba(37, 99, 235, .26);
+        }
+
+    .request-items {
+        display: grid;
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .request-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        padding: 15px 16px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #dbe3ef;
+    }
+
+        .request-item strong {
+            display: block;
+            color: #0f172a;
+            font-size: 15px;
+        }
+
+        .request-item span,
+        .request-item small {
+            display: block;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+    .request-remove {
+        border: none;
+        background: #fee2e2;
+        color: #b91c1c;
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 950;
+        flex-shrink: 0;
+    }
+
+    .summary {
+        position: sticky;
+        top: 24px;
+        padding: 22px;
+    }
+
+    .summary-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .summary-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: #ffedd5;
+        color: #f97316;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .summary-subtitle {
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 650;
+    }
+
+    .summary-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 13px 0;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 14px;
+    }
+
+        .summary-line span {
+            color: #64748b;
+            font-weight: 760;
+        }
+
+        .summary-line strong {
+            text-align: right;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    .total {
+        margin: 20px 0;
+        padding: 20px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, rgba(37,99,235,.08), rgba(37,99,235,.02));
+        border: 1px solid rgba(37,99,235,.40);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
+
+        .total span {
+            color: #1d4ed8;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .total strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 30px;
+            line-height: 1;
+            letter-spacing: -1.1px;
+            color: #0f172a;
+        }
+
+    .quick-actions {
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid #e2e8f0;
+        display: grid;
+        gap: 10px;
+    }
+
+    .quick-title {
+        margin: 0 0 2px;
+        font-size: 16px;
+        font-weight: 950;
+        letter-spacing: -.3px;
+        color: #0f172a;
+    }
+
+    .quick-action {
+        width: 100%;
+        min-height: 62px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid #dbe3ef;
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-align: left;
+        cursor: pointer;
+        transition: .18s ease;
+        color: inherit;
+        text-decoration: none;
+    }
+
+        .quick-action:hover {
+            background: white;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+
+    .quick-action-icon {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border-radius: 13px;
+        background: #eef2ff;
+        color: #2563eb;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .quick-action strong {
+        display: block;
+        font-size: 14px;
+        font-weight: 950;
+        color: #0f172a;
+    }
+
+    .quick-action span {
+        display: block;
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .summary-buttons {
+        display: grid;
+        gap: 12px;
+        margin-top: 18px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        min-height: 54px;
+        border-radius: 16px;
+        font: inherit;
+        font-size: 15px;
+        font-weight: 950;
+        cursor: pointer;
+        transition: .18s ease;
+    }
+
+    .btn-primary {
+        border: none;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: white;
+        box-shadow: 0 14px 28px rgba(37, 99, 235, .24);
+    }
+
+    .btn-secondary {
+        border: 1px solid #dbe3ef;
+        background: white;
+        color: #334155;
+    }
+
+        .btn-primary:hover,
+        .btn-secondary:hover {
+            transform: translateY(-1px);
+        }
+
+    @@media (max-width: 1180px) {
+        .layout {
+            grid-template-columns: 1fr;
+        }
+
+        .summary {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .page {
+            width: min(100% - 28px, 1280px);
+            padding-top: 18px;
+        }
+
+        .premium-header {
+            padding: 24px;
+            border-radius: 26px;
+            align-items: flex-start;
+        }
+
+        .premium-brand {
+            align-items: flex-start;
+        }
+
+        .premium-header h1 {
+            font-size: 28px;
+        }
+
+        .premium-header p {
+            font-size: 14px;
+        }
+
+        .form-grid,
+        .vehicle-grid,
+        .request-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .search-shortcut {
+            display: none;
+        }
+
+        .customer-search-box input {
+            padding-right: 18px;
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .page {
+            width: 100%;
+            padding: 14px;
+        }
+
+        .premium-header {
+            margin-bottom: 18px;
+            padding: 20px;
+        }
+
+        .premium-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+        }
+
+        .premium-home {
+            width: 44px;
+            height: 44px;
+            border-radius: 15px;
+            font-size: 18px;
+        }
+
+        .card,
+        .summary {
+            border-radius: 22px;
+            padding: 18px;
+        }
+
+        .customer-search-card {
+            padding: 14px;
+        }
+
+        .section-title h3,
+        .summary h3 {
+            font-size: 19px;
+        }
+
+        input,
+        select,
+        textarea {
+            min-height: 52px;
+            font-size: 15px;
+        }
+
+        .total strong {
+            font-size: 28px;
+        }
+    }
+
+    .customer-search-card {
+        padding: 18px;
+        position: relative;
+        z-index: 50;
+        overflow: visible;
+    }
+
+    .customer-search-box {
+        position: relative;
+        z-index: 60;
+    }
+
+    .customer-search-results {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 10px);
+        background: white;
+        border: 1px solid #dbe2f0;
+        border-radius: 18px;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+        z-index: 9999;
+        overflow: hidden;
+        display: none;
     }
 
 </style>
 
 <div class="page">
-    <div class="premium-header">
+
+    <section class="premium-header">
         <div class="premium-brand">
             <div class="premium-logo">S</div>
+
             <div>
-                <span class="premium-eyebrow">SERVİS KABUL</span>
+                <span class="premium-eyebrow">SERVİS KAYITLARI</span>
                 <h1>Yeni Servis Girişi</h1>
-                <p>Müşteri şikayeti, araç bilgisi ve servis kabul notlarını kaydedin.</p>
+                <p>Müşteri, araç ve servis taleplerini hızlıca kaydedin. Gerekirse servis formunu PDF olarak oluşturun.</p>
             </div>
         </div>
 
-        <a href="/Dashboard" class="premium-home">⌂</a>
-    </div>
+        <a href="/Dashboard" class="premium-home" title="Ana sayfa">⌂</a>
+    </section>
 
     @if (TempData["SuccessMessage"] is not null)
     {
@@ -560,10 +799,12 @@
         </div>
     }
 
-    <form asp-action="Create" method="post">
+    <form asp-action="Create" method="post" id="serviceCreateForm">
         <div class="layout">
-            <div class="panel">
-                <div class="customer-search-panel">
+
+            <main class="main-flow">
+
+                <section class="card customer-search-card">
                     <div class="customer-search-box">
                         <span class="search-icon">⌕</span>
 
@@ -572,173 +813,225 @@
                                placeholder="Müşteri ara: ad, firma, telefon veya mail"
                                autocomplete="off" />
 
+                        <span class="search-shortcut">Ctrl + K</span>
+
                         <div id="customerSearchResults"
                              class="customer-search-results"></div>
                     </div>
+                </section>
+
+                <section class="card">
+                    <div class="section-title">
+                        <div class="section-icon customer">♙</div>
+                        <div>
+                            <h3>Müşteri Bilgileri</h3>
+                            <p>Müşteri iletişim bilgilerini girin.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <input asp-for="CustomerName" placeholder=" " autocomplete="off" />
+                            <label>Ad Soyad / Firma Adı <span class="required">*</span></label>
+                            <span asp-validation-for="CustomerName" class="field-error"></span>
+                        </div>
+
+                        <div class="form-field">
+                            <input asp-for="CustomerPhoneNumber" placeholder=" " autocomplete="off" inputmode="numeric" />
+                            <label>Telefon Numarası <span class="required">*</span></label>
+                            <span asp-validation-for="CustomerPhoneNumber" class="field-error"></span>
+                        </div>
+
+                        <div class="form-field">
+                            <input asp-for="CustomerEmail" placeholder=" " autocomplete="off" />
+                            <label>Mail Adresi</label>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="section-title">
+                        <div class="section-icon vehicle">▣</div>
+                        <div>
+                            <h3>Araç Bilgileri</h3>
+                            <p>Araç detaylarını ve kilometre bilgisini girin.</p>
+                        </div>
+                    </div>
+
+                    <div class="vehicle-grid">
+                        <div class="form-field">
+                            <input asp-for="Plate" placeholder=" " autocomplete="off" />
+                            <label>Plaka <span class="required">*</span></label>
+                            <span asp-validation-for="Plate" class="field-error"></span>
+                        </div>
+
+                        <div class="form-field">
+                            <select asp-for="VehicleBrandId" id="brandSelect">
+                                <option value="">Marka seçiniz</option>
+                                @foreach (var brand in Model.Brands)
+                                {
+                                    <option value="@brand.Id">@brand.Name</option>
+                                }
+                            </select>
+                            <label>Marka <span class="required">*</span></label>
+                        </div>
+
+                        <div class="form-field">
+                            <select asp-for="VehicleModelId" id="modelSelect">
+                                <option value="">Önce marka seçiniz</option>
+                            </select>
+                            <label>Model <span class="required">*</span></label>
+                        </div>
+
+                        <div class="form-field">
+                            <input asp-for="ModelYear" placeholder=" " autocomplete="off" inputmode="numeric" />
+                            <label>Model Yılı</label>
+                        </div>
+
+                        <div class="form-field">
+                            <input asp-for="Mileage" placeholder=" " autocomplete="off" inputmode="numeric" />
+                            <label>Kilometre</label>
+                        </div>
+
+                        <div class="form-field">
+                            <input type="text" id="chassisNumber" name="ChassisNumber" placeholder=" " autocomplete="off" />
+                            <label>Şasi No</label>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="section-title">
+                        <div class="section-icon request">☷</div>
+                        <div>
+                            <h3>Şikayet / Talepler</h3>
+                            <p>Müşteri talebini ve varsa tahmini fiyatı ekleyin.</p>
+                        </div>
+                    </div>
+
+                    <div class="request-grid">
+                        <div class="form-field">
+                            <input type="text"
+                                   id="requestInput"
+                                   list="requestSuggestions"
+                                   placeholder=" "
+                                   autocomplete="off" />
+                            <label>Şikayet / İşlem Talebi</label>
+
+                            <datalist id="requestSuggestions">
+                                <option value="Genel bakım"></option>
+                                <option value="Yağ değişimi"></option>
+                                <option value="Fren kontrolü"></option>
+                                <option value="Klima arızası"></option>
+                                <option value="Motordan ses geliyor"></option>
+                                <option value="Su eksiltme"></option>
+                            </datalist>
+                        </div>
+
+                        <div class="form-field">
+                            <input type="number"
+                                   id="requestEstimatedInput"
+                                   placeholder=" "
+                                   min="0"
+                                   step="0.01" />
+                            <label>Tahmini Fiyat</label>
+                        </div>
+
+                        <button type="button"
+                                class="btn-add-request"
+                                onclick="addRequestItem()">
+                            + Ekle
+                        </button>
+
+                        <div class="form-field full">
+                            <textarea id="requestNoteInput" placeholder=" " maxlength="500"></textarea>
+                            <label>Ön Not</label>
+                        </div>
+                    </div>
+
+                    <div id="requestItemsContainer"
+                         class="request-items">
+                    </div>
+                </section>
+
+            </main>
+
+            <aside class="summary">
+                <div class="summary-head">
+                    <div class="summary-icon">▤</div>
+                    <div>
+                        <h3>Servis Özeti</h3>
+                        <div class="summary-subtitle">Kaydetmeden önce bilgileri kontrol edin.</div>
+                    </div>
                 </div>
 
-
-                <div class="grid">
-
-                    <div class="card">
-                        <h3>Müşteri Bilgileri</h3>
-
-                        <div class="fields">
-
-                            <div class="form-field">
-                                <input asp-for="CustomerName" placeholder=" " autocomplete="off" />
-                                <label>Ad Soyad / Firma Adı</label>
-                                
-                                <span asp-validation-for="CustomerName" class="field-error"></span>
-                            </div>
-
-                            <div class="form-field">
-                                <input asp-for="CustomerPhoneNumber" placeholder=" " autocomplete="off" />
-                                <label>Telefon Numarası</label>
-                                <span asp-validation-for="CustomerPhoneNumber" class="field-error"></span>
-                            </div>
-
-                            <div class="form-field">
-                                <input asp-for="CustomerEmail" placeholder=" " autocomplete="off" />
-                                <label>Mail Adresi</label>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>Araç Bilgileri</h3>
-
-                        <div class="fields">
-                            <div class="form-field">
-                                <input asp-for="Plate" placeholder=" " />
-                                <label>Plaka</label>
-                                <span asp-validation-for="Plate" class="field-error"></span>
-                            </div>
-
-                            <div class="two">
-                                <div class="form-field">
-                                    <select asp-for="VehicleBrandId" id="brandSelect">
-                                        <option value="">Marka seçiniz</option>
-                                        @foreach (var brand in Model.Brands)
-                                        {
-                                            <option value="@brand.Id">@brand.Name</option>
-                                        }
-                                    </select>
-                                    <label>Marka</label>
-                                </div>
-
-                                <div class="form-field">
-                                    <select asp-for="VehicleModelId" id="modelSelect">
-                                        <option value="">Önce marka seçiniz</option>
-                                    </select>
-                                    <label>Model</label>
-                                </div>
-                            </div>
-
-                            <div class="two">
-                                <div class="form-field">
-                                    <input asp-for="ModelYear" placeholder=" " />
-                                    <label>Model Yılı</label>
-                                </div>
-
-                                <div class="form-field">
-                                    <input asp-for="Mileage" placeholder=" " />
-                                    <label>Kilometre</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card full">
-
-                        <h3>Şikayet / Talepler</h3>
-
-                        <div class="fields">
-
-                            <div class="request-builder">
-
-                                <div class="form-field">
-                                    <input type="text"
-                                           id="requestInput"
-                                           list="requestSuggestions"
-                                           placeholder=" " />
-                                    <label>Şikayet / İşlem Talebi</label>
-
-                                    <datalist id="requestSuggestions">
-                                        <option value="Genel bakım"></option>
-                                        <option value="Yağ değişimi"></option>
-                                        <option value="Fren kontrolü"></option>
-                                        <option value="Klima arızası"></option>
-                                        <option value="Motordan ses geliyor"></option>
-                                        <option value="Su eksiltme"></option>
-                                    </datalist>
-                                </div>
-
-                                
-                               
-
-                                <div class="form-field">
-                                    <input type="number"
-                                           id="requestEstimatedInput"
-                                           placeholder=" " />
-                                    <label>Tahmini Fiyat</label>
-                                </div>
-
-                                <button type="button"
-                                        class="btn-add-request"
-                                        onclick="addRequestItem()">
-                                    + Ekle
-                                </button>
-
-                            </div>
-
-                            <div class="form-field request-note-field">
-                                <textarea id="requestNoteInput" placeholder=" "></textarea>
-                                <label>Ön Not</label>
-                            </div>
-                            <div id="requestItemsContainer"
-                                 class="request-items">
-                            </div>
-
-                            
-
-                        </div>
-
-                    </div>
-
-                    
-
+                <div class="summary-line">
+                    <span>Servis danışmanı</span>
+                    <strong>@Model.ServiceAdvisorName</strong>
                 </div>
-            </div>
-
-            <div class="panel summary">
-                <h3>Kayıt Özeti</h3>
 
                 <div class="summary-line">
                     <span>Belge tipi</span>
-                    <strong>Servis Kabul</strong>
+                    <strong>Servis Formu</strong>
                 </div>
 
                 <div class="summary-line">
                     <span>Durum</span>
-                    <strong>Açık Kayıt</strong>
+                    <strong><span class="status-pill">Açık Kayıt</span></strong>
                 </div>
 
                 <div class="summary-line">
-                    <span>Talep fiyatları</span>
-                    <strong>Opsiyonel</strong>
+                    <span>Talep / İşlem Sayısı</span>
+                    <strong id="requestCountText">0</strong>
+                </div>
+
+                <div class="summary-line">
+                    <span>Tahmini Toplam</span>
+                    <strong id="estimatedTotalText">0,00 ₺</strong>
                 </div>
 
                 <div class="total">
-                    <span>İlk aşama</span>
-                    <strong>Giriş Kaydı</strong>
+                    <span>Tahmini Toplam (TRY)</span>
+                    <strong id="estimatedTotalBox">0,00 ₺</strong>
                 </div>
 
-                <button type="submit" class="btn-green">
-                    Kaydet
-                </button>
-            </div>
+                <div class="quick-actions">
+                    <h4 class="quick-title">Hızlı İşlemler</h4>
+                    <button type="button" class="quick-action" onclick="openVehicleHistory()">
+                        <span class="quick-action-icon">🕘</span>
+                        <span>
+                            <strong>Araç Geçmişini Görüntüle</strong>
+                            <span>Bu araca ait servis kayıtlarını incele</span>
+                        </span>
+                    </button>
+
+                    <button type="button" class="quick-action" onclick="openQrAssign()">
+                        <span class="quick-action-icon">▦</span>
+                        <span>
+                            <strong>QR Kod Eşleştir</strong>
+                            <span>Araca QR kod oluştur / eşleştir</span>
+                        </span>
+                    </button>
+
+                    <button type="button" class="quick-action" onclick="createPdfDraft()">
+                        <span class="quick-action-icon">📄</span>
+                        <span>
+                            <strong>PDF Oluştur</strong>
+                            <span>Servis kabul formunu PDF olarak oluştur</span>
+                        </span>
+                    </button>
+                    
+                </div>
+
+                <div class="summary-buttons">
+                    <button type="submit" class="btn-primary">
+                        Kaydı Oluştur
+                    </button>
+
+                    
+                </div>
+            </aside>
+
         </div>
     </form>
 </div>
@@ -747,8 +1040,195 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
-               const brandSelect = document.getElementById("brandSelect");
+        const brandSelect = document.getElementById("brandSelect");
         const modelSelect = document.getElementById("modelSelect");
+
+        const customerSearchInput = document.getElementById("customerSearchInput");
+        const customerNameInput = document.getElementById("CustomerName");
+        const customerPhoneInput = document.getElementById("CustomerPhoneNumber");
+        const customerEmailInput = document.getElementById("CustomerEmail");
+        const customerResults = document.getElementById("customerSearchResults");
+
+        const requestItemsContainer = document.getElementById("requestItemsContainer");
+        const requestCountText = document.getElementById("requestCountText");
+        const estimatedTotalText = document.getElementById("estimatedTotalText");
+        const estimatedTotalBox = document.getElementById("estimatedTotalBox");
+
+        let customerSearchTimeout;
+        let requestIndex = 0;
+
+        const formatter = new Intl.NumberFormat("tr-TR", {
+            style: "currency",
+            currency: "TRY"
+        });
+
+        function get(id) {
+            return document.getElementById(id);
+        }
+
+        function setInputError(input, hasError) {
+            if (!input) return;
+
+            if (hasError) {
+                input.classList.add("input-invalid");
+            } else {
+                input.classList.remove("input-invalid");
+            }
+        }
+
+        function showTemporaryInvalid(input) {
+            if (!input) return;
+
+            input.classList.add("input-invalid");
+
+            setTimeout(() => {
+                input.classList.remove("input-invalid");
+            }, 1500);
+        }
+
+        function formatPhone(digits) {
+            if (digits.length > 9) {
+                return digits.replace(/(\d{4})(\d{3})(\d{2})(\d{0,2})/, "$1 $2 $3 $4").trim();
+            }
+
+            if (digits.length > 7) {
+                return digits.replace(/(\d{4})(\d{3})(\d{0,2})/, "$1 $2 $3").trim();
+            }
+
+            if (digits.length > 4) {
+                return digits.replace(/(\d{4})(\d{0,3})/, "$1 $2").trim();
+            }
+
+            return digits;
+        }
+
+        function updateRequestSummary() {
+            const requestItems = requestItemsContainer.querySelectorAll(".request-item");
+            let total = 0;
+
+            requestItems.forEach(item => {
+                const amount = Number(item.dataset.estimatedAmount || 0);
+                total += amount;
+            });
+
+            requestCountText.innerText = requestItems.length;
+            estimatedTotalText.innerText = formatter.format(total);
+            estimatedTotalBox.innerText = formatter.format(total);
+        }
+
+                function getPlateValue() {
+            const plateInput = document.getElementById("Plate");
+            return plateInput ? plateInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "") : "";
+        }
+
+        function requirePlate() {
+            const plate = getPlateValue();
+
+            if (!plate) {
+                const plateInput = document.getElementById("Plate");
+                showTemporaryInvalid(plateInput);
+                plateInput?.focus();
+                alert("Bu işlem için önce plaka girmelisin.");
+                return null;
+            }
+
+            return plate;
+        }
+
+        function openVehicleHistory() {
+            const plate = requirePlate();
+            if (!plate) return;
+
+            window.location.href = `/ServiceRecords/VehicleHistory?plate=${encodeURIComponent(plate)}`;
+        }
+
+        function openQrAssign() {
+            const plate = requirePlate();
+            if (!plate) return;
+
+            window.location.href = `/VehicleQr/Assign?plate=${encodeURIComponent(plate)}`;
+        }
+
+                async function createPdfDraft() {
+            const requestItems = [];
+
+            document.querySelectorAll("#requestItemsContainer .request-item").forEach(item => {
+                requestItems.push({
+                    title: item.dataset.title || "",
+                    note: item.dataset.note || "",
+                    estimatedAmount: Number(item.dataset.estimatedAmount || 0)
+                });
+            });
+
+            const request = {
+                workshopName: "Sente360",
+
+                serviceAdvisorName:
+                    document.querySelector(".summary-value")?.innerText || "",
+
+                customerName: get("CustomerName")?.value?.trim() || "",
+                customerPhone: get("CustomerPhoneNumber")?.value?.trim() || "",
+                customerEmail: get("CustomerEmail")?.value?.trim() || "",
+
+                plate: get("Plate")?.value?.trim()?.toUpperCase() || "",
+
+                brand: brandSelect.options[brandSelect.selectedIndex]?.text || "",
+                model: modelSelect.options[modelSelect.selectedIndex]?.text || "",
+
+                modelYear: get("ModelYear")?.value?.trim() || "",
+                mileage: get("Mileage")?.value?.trim() || "",
+                chassisNumber: get("ChassisNumber")?.value?.trim() || "",
+
+                note: get("requestNoteInput")?.value?.trim() || "",
+
+                requestItems: requestItems
+            };
+
+            const response = await fetch("/quick-offer-pdf/create", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(request)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+
+                alert("PDF oluşturulurken hata oluştu:\n" + errorText);
+
+                return;
+            }
+
+                    const blob = await response.blob();
+
+        const disposition = response.headers.get("Content-Disposition");
+
+        let fileName = "hizli-teklif.pdf";
+
+        if (disposition && disposition.includes("filename")) {
+            const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+
+            if (match?.[1]) {
+                fileName = decodeURIComponent(match[1].replace(/"/g, ""));
+            }
+        }
+
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+
+        a.href = url;
+        a.download = fileName;
+
+            document.body.appendChild(a);
+
+            a.click();
+
+            a.remove();
+
+            window.URL.revokeObjectURL(url);
+        }
 
         brandSelect.addEventListener("change", async function () {
             const brandId = this.value;
@@ -779,19 +1259,7 @@
             });
         });
 
-        let requestIndex = 0;
-
-        const customerSearchInput = document.getElementById("customerSearchInput");
-        const customerNameInput = document.getElementById("CustomerName");
-        const customerPhoneInput = document.getElementById("CustomerPhoneNumber");
-        const customerEmailInput = document.getElementById("CustomerEmail");
-
-        const customerResults = document.getElementById("customerSearchResults");
-
-        let customerSearchTimeout;
-
         customerSearchInput.addEventListener("input", function () {
-
             clearTimeout(customerSearchTimeout);
 
             const query = this.value.trim();
@@ -803,7 +1271,6 @@
             }
 
             customerSearchTimeout = setTimeout(async () => {
-
                 const response = await fetch(`/ServiceRecords/SearchCustomers?query=${encodeURIComponent(query)}`);
 
                 if (!response.ok) {
@@ -820,9 +1287,7 @@
                 }
 
                 customers.forEach(customer => {
-
                     const item = document.createElement("div");
-
                     item.className = "customer-search-item";
 
                     item.innerHTML = `
@@ -831,13 +1296,11 @@
                     `;
 
                     item.addEventListener("click", () => {
-
                         customerNameInput.value = customer.name ?? "";
                         customerPhoneInput.value = customer.phoneNumber ?? "";
                         customerEmailInput.value = customer.email ?? "";
 
-                         customerSearchInput.value = "";
-
+                        customerSearchInput.value = "";
                         customerResults.style.display = "none";
                     });
 
@@ -850,35 +1313,46 @@
         });
 
         document.addEventListener("click", function (e) {
+            if (!customerResults.contains(e.target) && e.target !== customerSearchInput) {
+                customerResults.style.display = "none";
+            }
+        });
 
-                    if (!customerResults.contains(e.target) &&
-            e.target !== customerSearchInput) {
-            customerResults.style.display = "none";
-        }
+        document.addEventListener("keydown", function (e) {
+            if (e.ctrlKey && e.key.toLowerCase() === "k") {
+                e.preventDefault();
+                customerSearchInput.focus();
+            }
         });
 
         function addRequestItem() {
             const titleInput = document.getElementById("requestInput");
             const noteInput = document.getElementById("requestNoteInput");
             const estimatedInput = document.getElementById("requestEstimatedInput");
-            const container = document.getElementById("requestItemsContainer");
 
             const title = titleInput.value.trim();
             const note = noteInput.value.trim();
             const estimatedAmount = estimatedInput.value.trim();
 
             if (!title) {
+                showTemporaryInvalid(titleInput);
+                titleInput.focus();
                 return;
             }
 
+            const numericAmount = Number(estimatedAmount || 0);
+
             const item = document.createElement("div");
             item.className = "request-item";
+            item.dataset.estimatedAmount = numericAmount;
+            item.dataset.title = title;
+            item.dataset.note = note;
 
             item.innerHTML = `
                 <div>
                     <strong>${title}</strong>
                     ${note ? `<span>${note}</span>` : ""}
-                    ${estimatedAmount ? `<small>Tahmini: ${estimatedAmount} ₺</small>` : ""}
+                    ${estimatedAmount ? `<small>Tahmini: ${formatter.format(numericAmount)}</small>` : ""}
 
                     <input type="hidden" name="RequestItems[${requestIndex}].Title" value="${title}" />
                     <input type="hidden" name="RequestItems[${requestIndex}].Note" value="${note}" />
@@ -890,16 +1364,92 @@
 
             item.querySelector(".request-remove").addEventListener("click", () => {
                 item.remove();
+                updateRequestSummary();
             });
 
-            container.appendChild(item);
+            requestItemsContainer.appendChild(item);
 
             requestIndex++;
 
             titleInput.value = "";
             noteInput.value = "";
             estimatedInput.value = "";
+
+            updateRequestSummary();
         }
 
+        customerPhoneInput.addEventListener("beforeinput", function (e) {
+            if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
+                e.preventDefault();
+                showTemporaryInvalid(customerPhoneInput);
+            }
+        });
+
+        customerPhoneInput.addEventListener("paste", function (e) {
+            const pastedText = (e.clipboardData || window.clipboardData).getData("text");
+            const digits = pastedText.replace(/\D/g, "").slice(0, 11);
+
+            if (pastedText !== digits) {
+                e.preventDefault();
+                this.value = formatPhone(digits);
+                showTemporaryInvalid(customerPhoneInput);
+            }
+        });
+
+        customerPhoneInput.addEventListener("input", function () {
+            const digits = this.value.replace(/\D/g, "").slice(0, 11);
+            this.value = formatPhone(digits);
+        });
+
+        get("Plate").addEventListener("beforeinput", function (e) {
+            if (e.inputType === "insertText" && !/^[a-zA-Z0-9]$/.test(e.data)) {
+                e.preventDefault();
+                showTemporaryInvalid(this);
+            }
+        });
+
+        get("Plate").addEventListener("input", function () {
+            this.value = this.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "");
+        });
+
+        get("ModelYear").addEventListener("beforeinput", function (e) {
+            if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
+                e.preventDefault();
+                showTemporaryInvalid(this);
+            }
+        });
+
+        get("ModelYear").addEventListener("input", function () {
+            this.value = this.value.replace(/\D/g, "").slice(0, 4);
+        });
+
+        get("Mileage").addEventListener("beforeinput", function (e) {
+            if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
+                e.preventDefault();
+                showTemporaryInvalid(this);
+            }
+        });
+
+        get("Mileage").addEventListener("input", function () {
+            const digits = this.value.replace(/\D/g, "").slice(0, 8);
+            this.value = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        });
+
+        const chassisNumberInput = document.getElementById("chassisNumber");
+
+        if (chassisNumberInput) {
+            chassisNumberInput.addEventListener("input", function () {
+                this.value = this.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 17);
+            });
+        }
+
+        
+
+        updateRequestSummary();
     </script>
 }

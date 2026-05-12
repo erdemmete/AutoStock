@@ -1,9 +1,11 @@
 ﻿using AutoStock.Services.Dtos.Pdfs;
 using AutoStock.Services.Interfaces;
+
 using QRCoder;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+
 
 namespace AutoStock.Services.Services;
 
@@ -31,6 +33,192 @@ public class PdfService : IPdfService
 
                 page.Header().Element(c => BuildHeader(c, documentNo, request));
                 page.Content().Element(c => BuildContent(c, request, total));
+                page.Footer().Element(BuildFooter);
+            });
+        });
+
+        return pdf.GeneratePdf();
+    }
+
+    public byte[] CreateQuickOfferPdf(CreateQuickOfferPdfRequest request)
+    {
+        QuestPDF.Settings.License = LicenseType.Community;
+
+        var total = request.RequestItems.Sum(x => x.EstimatedAmount ?? 0);
+
+        var documentNo = $"QO-{DateTime.Now:yyyyMMdd-HHmm}";
+
+        var pdf = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(36);
+                page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                page.Header().Column(header =>
+                {
+                    header.Item().Row(row =>
+                    {
+                        row.RelativeItem().Column(left =>
+                        {
+                            left.Item().Text(request.WorkshopName ?? "Sente360")
+                                .FontSize(28)
+                                .Bold()
+                                .FontColor(Colors.Blue.Darken4);
+
+                            left.Item().PaddingTop(6).Text("Hızlı Servis Teklifi")
+                                .FontSize(13)
+                                .Bold()
+                                .FontColor(Colors.Grey.Darken2);
+                        });
+
+                        row.ConstantItem(170).AlignRight().Column(right =>
+                        {
+                            right.Item().Text("Belge No")
+                                .FontSize(9)
+                                .FontColor(Colors.Grey.Darken1);
+
+                            right.Item().Text(documentNo)
+                                .FontSize(12)
+                                .Bold()
+                                .FontColor(Colors.Grey.Darken4);
+
+                            right.Item().PaddingTop(6).Text(DateTime.Now.ToString("dd.MM.yyyy HH:mm"))
+                                .FontSize(10)
+                                .FontColor(Colors.Grey.Darken1);
+                        });
+                    });
+
+                    header.Item()
+                        .PaddingTop(16)
+                        .LineHorizontal(1)
+                        .LineColor(Colors.Grey.Lighten2);
+                });
+
+                page.Content().PaddingTop(20).Column(column =>
+                {
+                    column.Spacing(18);
+
+                    column.Item().Element(c =>
+                    {
+                        c.Background(Colors.Orange.Lighten5)
+                         .Border(1)
+                         .BorderColor(Colors.Orange.Lighten3)
+                         .Padding(12)
+                         .Text("Bu belge ön bilgilendirme / hızlı teklif amaçlıdır. Nihai servis kaydı ve yapılan işlemler servis kayıt ekranından oluşturulur.")
+                         .FontSize(9)
+                         .FontColor(Colors.Orange.Darken4);
+                    });
+
+                    column.Item().Row(row =>
+                    {
+                        row.RelativeItem().Element(c => InfoBox(c, "Müşteri Bilgileri",
+                            ("Ad Soyad / Firma", request.CustomerName),
+                            ("Telefon", request.CustomerPhone),
+                            ("Mail", request.CustomerEmail),
+                            ("Servis Danışmanı", request.ServiceAdvisorName)));
+
+                        row.ConstantItem(18);
+
+                        row.RelativeItem().Element(c => InfoBox(c, "Araç Bilgileri",
+                            ("Plaka", request.Plate),
+                            ("Marka", request.Brand),
+                            ("Model", request.Model),
+                            ("Model Yılı", request.ModelYear),
+                            ("Kilometre", request.Mileage),
+                            ("Şasi No", request.ChassisNumber)));
+                    });
+
+                    if (!string.IsNullOrWhiteSpace(request.Note))
+                    {
+                        column.Item().Element(c =>
+                        {
+                            c.Background(Colors.Grey.Lighten5)
+                             .Border(1)
+                             .BorderColor(Colors.Grey.Lighten2)
+                             .Padding(12)
+                             .Column(note =>
+                             {
+                                 note.Item().Text("Ön Not")
+                                     .Bold()
+                                     .FontSize(11)
+                                     .FontColor(Colors.Grey.Darken4);
+
+                                 note.Item().PaddingTop(4).Text(request.Note)
+                                     .FontSize(10)
+                                     .FontColor(Colors.Grey.Darken2);
+                             });
+                        });
+                    }
+
+                    column.Item().Text("Şikayet / Talep Listesi")
+                        .FontSize(16)
+                        .Bold()
+                        .FontColor(Colors.Grey.Darken4);
+
+                    if (request.RequestItems.Count == 0)
+                    {
+                        column.Item().Element(c =>
+                        {
+                            c.Background(Colors.Grey.Lighten5)
+                             .Border(1)
+                             .BorderColor(Colors.Grey.Lighten2)
+                             .Padding(14)
+                             .Text("Henüz talep eklenmedi.")
+                             .FontSize(10)
+                             .FontColor(Colors.Grey.Darken2);
+                        });
+                    }
+                    else
+                    {
+                        column.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(4);
+                                columns.RelativeColumn(4);
+                                columns.ConstantColumn(110);
+                            });
+
+                            table.Header(header =>
+                            {
+                                HeaderCell(header.Cell(), "Talep / İşlem");
+                                HeaderCell(header.Cell(), "Not");
+                                HeaderCell(header.Cell(), "Tahmini Tutar");
+                            });
+
+                            foreach (var item in request.RequestItems)
+                            {
+                                BodyCell(table.Cell(), GetValue(item.Title));
+                                BodyCell(table.Cell(), GetValue(item.Note));
+                                BodyCell(table.Cell(), item.EstimatedAmount.HasValue
+                                    ? FormatMoney(item.EstimatedAmount.Value)
+                                    : "-");
+                            }
+                        });
+                    }
+
+                    column.Item().AlignRight().Width(240).Element(c =>
+                    {
+                        c.Background(Colors.Blue.Lighten5)
+                         .Border(1)
+                         .BorderColor(Colors.Blue.Lighten3)
+                         .Padding(16)
+                         .Column(totalBox =>
+                         {
+                             totalBox.Item().Text("TAHMİNİ TOPLAM")
+                                 .FontSize(10)
+                                 .FontColor(Colors.Grey.Darken1);
+
+                             totalBox.Item().PaddingTop(4).Text(FormatMoney(total))
+                                 .FontSize(24)
+                                 .Bold()
+                                 .FontColor(Colors.Blue.Darken4);
+                         });
+                    });
+                });
+
                 page.Footer().Element(BuildFooter);
             });
         });

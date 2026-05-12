@@ -24,6 +24,7 @@
         public decimal? EstimatedAmount { get; set; }
 
         public string? EstimatedAmountNote { get; set; }
+        public string ServiceAdvisorName { get; set; } = string.Empty;
 
         public List<CreateServiceRequestItemViewModel> RequestItems { get; set; } = new();
 
