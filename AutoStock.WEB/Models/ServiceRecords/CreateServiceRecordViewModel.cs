@@ -1,17 +1,23 @@
-﻿namespace AutoStock.WEB.Models.ServiceRecords
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AutoStock.WEB.Models.ServiceRecords
 {
     public class CreateServiceRecordViewModel
     {
-
+        [Required(ErrorMessage = "Telefon numarası girilmesi zorunludur.")]
         public string CustomerPhoneNumber { get; set; } = null!;
 
+        [Required(ErrorMessage = "Ad soyad girilmesi zorunludur.")]
         public string CustomerName { get; set; } = null!;
         public string? CustomerEmail { get; set; }
 
+        [Required(ErrorMessage = "Plaka girilmesi zorunludur.")]
         public string Plate { get; set; } = null!;
 
+        [Required(ErrorMessage = "Araç markası girilmesi zorunludur.")]
         public int? VehicleBrandId { get; set; }
 
+        [Required(ErrorMessage = "Araç modeli girilmesi zorunludur.")]
         public int? VehicleModelId { get; set; }
 
         public int? ModelYear { get; set; }

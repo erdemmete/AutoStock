@@ -73,20 +73,22 @@ public class ServiceRecordsController : Controller
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
                 var errors = ModelState
-                    .Where(x => x.Value.Errors.Count > 0)
-                    .SelectMany(x => x.Value.Errors.Select(e => e.ErrorMessage))
-                    .ToList();
+                    .Where(x => x.Value.Errors.Any())
+                    .ToDictionary(
+                        x => x.Key,
+                        x => x.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
 
                 return BadRequest(new
                 {
                     success = false,
-                    message = errors.FirstOrDefault() ?? "Lütfen zorunlu alanları kontrol edin."
+                    validationErrors = errors
                 });
             }
 
             return View(model);
         }
-            
+
 
         var client = CreateApiClient();
 
