@@ -21,20 +21,21 @@
                 min-height: 100vh;
                 font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 color: #0f172a;
-                background: radial-gradient(circle at top left, rgba(37, 99, 235, .20), transparent 28rem), radial-gradient(circle at bottom right, rgba(22, 163, 74, .16), transparent 28rem), linear-gradient(135deg, #020617, #0f172a 48%, #1e3a8a);
+                background: radial-gradient(circle at top left, rgba(37, 99, 235, .26), transparent 30rem), radial-gradient(circle at bottom right, rgba(22, 163, 74, .18), transparent 28rem), linear-gradient(135deg, #020617, #0f172a 48%, #1e3a8a);
             }
 
             .page {
-                width: min(1200px, calc(100% - 48px));
+                width: min(1220px, calc(100% - 48px));
                 margin: 0 auto;
-                padding: 34px 0 60px;
+                padding: 30px 0 56px;
             }
 
             .topbar {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 28px;
+                gap: 18px;
+                margin-bottom: 24px;
                 color: white;
             }
 
@@ -45,14 +46,15 @@
             }
 
             .logo {
-                width: 50px;
-                height: 50px;
-                border-radius: 17px;
+                width: 52px;
+                height: 52px;
+                border-radius: 18px;
                 display: grid;
                 place-items: center;
                 background: linear-gradient(135deg, #2563eb, #16a34a);
                 color: white;
                 font-weight: 950;
+                box-shadow: 0 18px 40px rgba(37, 99, 235, .26);
             }
 
             .brand strong {
@@ -63,28 +65,43 @@
 
             .brand span {
                 display: block;
-                color: rgba(255,255,255,.65);
-                font-size: 13px;
                 margin-top: 2px;
+                color: rgba(255,255,255,.66);
+                font-size: 13px;
+                font-weight: 700;
             }
 
             .logout-button {
                 border: 1px solid rgba(255,255,255,.18);
-                background: rgba(255,255,255,.09);
+                background: rgba(255,255,255,.10);
                 color: white;
-                border-radius: 14px;
-                padding: 12px 16px;
-                font-weight: 800;
+                border-radius: 15px;
+                padding: 12px 17px;
+                font-weight: 900;
                 cursor: pointer;
+                backdrop-filter: blur(10px);
             }
 
             .hero {
+                position: relative;
+                overflow: hidden;
                 padding: 38px;
-                border-radius: 32px;
-                background: rgba(255,255,255,.96);
+                border-radius: 34px;
+                background: rgba(255,255,255,.97);
                 box-shadow: 0 35px 85px rgba(0,0,0,.30);
-                margin-bottom: 24px;
+                margin-bottom: 22px;
             }
+
+                .hero::after {
+                    content: "";
+                    position: absolute;
+                    right: -80px;
+                    top: -80px;
+                    width: 260px;
+                    height: 260px;
+                    border-radius: 999px;
+                    background: linear-gradient(135deg, rgba(37,99,235,.16), rgba(22,163,74,.12));
+                }
 
             .eyebrow {
                 display: inline-flex;
@@ -93,31 +110,114 @@
                 background: #eff6ff;
                 color: #1d4ed8;
                 font-size: 12px;
-                font-weight: 900;
+                font-weight: 950;
                 margin-bottom: 14px;
             }
 
             .hero h1 {
+                position: relative;
                 margin: 0;
-                font-size: 38px;
-                letter-spacing: -1.3px;
-            }
-
-            .hero p {
-                margin: 10px 0 0;
-                color: #64748b;
-                font-size: 15px;
-                line-height: 1.6;
+                font-size: 40px;
+                letter-spacing: -1.4px;
+                z-index: 1;
             }
 
             .welcome {
-                margin-top: 12px;
+                position: relative;
+                margin: 12px 0 0;
                 font-size: 16px;
                 color: #334155;
+                z-index: 1;
             }
 
                 .welcome strong {
                     color: #0f172a;
+                }
+
+            .hero-description {
+                position: relative;
+                max-width: 720px;
+                margin: 14px 0 0;
+                color: #64748b;
+                font-size: 15px;
+                line-height: 1.65;
+                font-weight: 650;
+                z-index: 1;
+            }
+
+            .quick-row {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+
+            .highlight-card {
+                padding: 24px;
+                border-radius: 28px;
+                background: linear-gradient(135deg, #2563eb, #1d4ed8);
+                color: white;
+                box-shadow: 0 25px 65px rgba(37, 99, 235, .28);
+                text-decoration: none;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 18px;
+            }
+
+                .highlight-card span {
+                    display: inline-flex;
+                    margin-bottom: 8px;
+                    padding: 6px 10px;
+                    border-radius: 999px;
+                    background: rgba(255,255,255,.16);
+                    font-size: 12px;
+                    font-weight: 950;
+                }
+
+                .highlight-card h2 {
+                    margin: 0;
+                    font-size: 25px;
+                    letter-spacing: -.7px;
+                }
+
+                .highlight-card p {
+                    margin: 8px 0 0;
+                    color: rgba(255,255,255,.78);
+                    font-size: 14px;
+                    font-weight: 700;
+                }
+
+            .highlight-arrow {
+                width: 54px;
+                height: 54px;
+                border-radius: 18px;
+                display: grid;
+                place-items: center;
+                background: rgba(255,255,255,.14);
+                font-size: 28px;
+                font-weight: 950;
+                flex-shrink: 0;
+            }
+
+            .mini-panel {
+                padding: 24px;
+                border-radius: 28px;
+                background: rgba(255,255,255,.97);
+                border: 1px solid rgba(226,232,240,.95);
+                box-shadow: 0 22px 55px rgba(15, 23, 42, .16);
+            }
+
+                .mini-panel span {
+                    display: block;
+                    color: #64748b;
+                    font-size: 13px;
+                    font-weight: 850;
+                }
+
+                .mini-panel strong {
+                    display: block;
+                    margin-top: 8px;
+                    font-size: 24px;
+                    letter-spacing: -.6px;
                 }
 
             .cards {
@@ -129,10 +229,10 @@
             .card {
                 min-height: 190px;
                 padding: 24px;
-                border-radius: 26px;
-                background: rgba(255,255,255,.96);
-                border: 1px solid rgba(226,232,240,.9);
-                box-shadow: 0 22px 55px rgba(15, 23, 42, .18);
+                border-radius: 28px;
+                background: rgba(255,255,255,.97);
+                border: 1px solid rgba(226,232,240,.95);
+                box-shadow: 0 22px 55px rgba(15, 23, 42, .16);
                 text-decoration: none;
                 color: #0f172a;
                 transition: .18s ease;
@@ -143,18 +243,19 @@
 
                 .card:hover {
                     transform: translateY(-4px);
-                    box-shadow: 0 30px 70px rgba(15, 23, 42, .24);
-                    border-color: #bfdbfe;
+                    box-shadow: 0 30px 70px rgba(15, 23, 42, .23);
+                    border-color: #93c5fd;
                 }
 
             .icon {
-                width: 52px;
-                height: 52px;
-                border-radius: 18px;
+                width: 54px;
+                height: 54px;
+                border-radius: 19px;
                 display: grid;
                 place-items: center;
                 font-size: 24px;
                 background: #eff6ff;
+                color: #1d4ed8;
             }
 
             .card h2 {
@@ -168,37 +269,193 @@
                 color: #64748b;
                 font-size: 14px;
                 line-height: 1.5;
+                font-weight: 650;
             }
 
             .disabled {
-                opacity: .55;
+                opacity: .58;
                 cursor: not-allowed;
             }
 
                 .disabled:hover {
                     transform: none;
+                    border-color: rgba(226,232,240,.95);
                 }
 
-            @@media(max-width: 1000px) {
-                .cards {
-                    grid-template-columns: repeat(2, 1fr);
+            .release-modal-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, .58);
+                backdrop-filter: blur(12px);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                z-index: 99999;
+            }
+
+                .release-modal-backdrop.show {
+                    display: flex;
+                }
+
+            .release-modal {
+                width: min(540px, 100%);
+                border-radius: 30px;
+                padding: 30px;
+                background: white;
+                box-shadow: 0 35px 90px rgba(15, 23, 42, .30);
+                animation: releasePop .25s ease;
+            }
+
+            .release-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                margin-bottom: 18px;
+            }
+
+            .release-badge,
+            .release-version {
+                padding: 7px 12px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 950;
+            }
+
+            .release-badge {
+                background: #dbeafe;
+                color: #1d4ed8;
+            }
+
+            .release-version {
+                background: #0f172a;
+                color: white;
+            }
+
+            .release-modal h2 {
+                margin: 0;
+                font-size: 28px;
+                letter-spacing: -.8px;
+            }
+
+            .release-subtitle {
+                margin: 10px 0 20px;
+                color: #64748b;
+                font-weight: 750;
+                line-height: 1.5;
+            }
+
+            .release-list {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-bottom: 24px;
+            }
+
+                .release-list div {
+                    padding: 12px 14px;
+                    border-radius: 15px;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    color: #0f172a;
+                    font-size: 13px;
+                    font-weight: 850;
+                }
+
+            .release-modal button {
+                width: 100%;
+                height: 50px;
+                border: none;
+                border-radius: 16px;
+                background: linear-gradient(135deg, #2563eb, #1d4ed8);
+                color: white;
+                font-size: 15px;
+                font-weight: 950;
+                cursor: pointer;
+                box-shadow: 0 14px 28px rgba(37, 99, 235, .22);
+            }
+
+            @@keyframes releasePop {
+                from {
+                    opacity: 0;
+                    transform: translateY(16px) scale(.97);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
                 }
             }
 
-            @@media(max-width: 620px) {
-                .page {
-                    width: min(100% - 28px, 1200px);
-                    padding-top: 20px;
+            @@media(max-width: 1000px) {
+                .active-cards {
+                    grid-template-columns: repeat(2, 1fr);
                 }
 
-                .cards {
-                    grid-template-columns: 1fr;
+                .secondary-cards {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+
+            @@media(max-width: 680px) {
+                .page {
+                    width: min(100% - 28px, 1220px);
+                    padding-top: 18px;
+                }
+
+                .topbar {
+                    align-items: flex-start;
                 }
 
                 .hero {
                     padding: 26px;
+                    border-radius: 28px;
+                }
+
+                    .hero h1 {
+                        font-size: 30px;
+                    }
+
+                .cards,
+                .active-cards,
+                .secondary-cards,
+                .release-list {
+                    grid-template-columns: 1fr;
+                }
+
+                .highlight-card {
+                    align-items: flex-start;
                 }
             }
+
+            .active-cards {
+                grid-template-columns: repeat(2, 1fr);
+                margin-bottom: 18px;
+            }
+
+            .secondary-cards {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .active-card {
+                background: linear-gradient(135deg, #2563eb, #1d4ed8);
+                color: white;
+                border: none;
+            }
+
+                .active-card p {
+                    color: rgba(255,255,255,.82);
+                }
+
+                .active-card .icon {
+                    background: rgba(255,255,255,.14);
+                    color: white;
+                }
+
+                .active-card:hover {
+                    border: none;
+                }
     </style>
 </head>
 
@@ -227,52 +484,132 @@
                 Hoş geldin, <strong>@Model.FullName</strong>
             </p>
 
-            <p>
-                Bu servis için formlarını, müşteri kayıtlarını, araç bilgilerini ve rapor ekranlarını buradan yönetebilirsin.
+            <p class="hero-description">
+                Servis kayıtlarını, müşteri taleplerini, araç bilgilerini ve operasyon süreçlerini tek panelden yönet.
             </p>
         </section>
 
-        <section class="cards">
-            <a class="card" asp-controller="ServiceRecords" asp-action="Create">
+        <section class="cards active-cards">
+
+            <a class="card active-card"
+                   asp-controller="ServiceRecords"
+                   asp-action="Create">
+
                 <div>
                     <div class="icon">📝</div>
+
                     <h2>Yeni Servis Girişi</h2>
-                    <p>Müşteri, araç ve şikayet/talep bilgileriyle yeni servis kaydı oluştur.</p>
+
+                    <p>
+                        Yeni müşteri ve araç için servis kaydı oluştur.
+                    </p>
                 </div>
             </a>
 
-            <a class="card" href="/ServiceRecords">
+            <a class="card active-card"
+                   href="/ServiceRecords">
+
                 <div>
                     <div class="icon">🛠️</div>
+
                     <h2>Servis Kayıtları</h2>
-                    <p>Açık servis kayıtlarını görüntüle, detayına gir ve işlemleri yönet.</p>
+
+                    <p>
+                        Açık servis kayıtlarını görüntüle ve yönet.
+                    </p>
                 </div>
-            </a>>
+            </a>
+
+        </section>
+
+        <section class="cards secondary-cards">
 
             <a class="card disabled" href="javascript:void(0)">
                 <div>
                     <div class="icon">👥</div>
+
                     <h2>Müşteriler</h2>
-                    <p>Yakında: müşteri kayıtları ve geçmiş servis formları.</p>
+
+                    <p>
+                        Yakında: müşteri kayıtları ve servis geçmişi.
+                    </p>
                 </div>
             </a>
 
             <a class="card disabled" href="javascript:void(0)">
                 <div>
                     <div class="icon">🚗</div>
+
                     <h2>Araçlar</h2>
-                    <p>Yakında: araç kartları, plaka ve servis geçmişi.</p>
+
+                    <p>
+                        Yakında: araç kartları ve servis geçmişi.
+                    </p>
                 </div>
             </a>
 
             <a class="card disabled" href="javascript:void(0)">
                 <div>
                     <div class="icon">📊</div>
+
                     <h2>Raporlar</h2>
-                    <p>Yakında: günlük işlem, ciro ve servis performansı.</p>
+
+                    <p>
+                        Yakında: günlük işlem ve ciro raporları.
+                    </p>
                 </div>
             </a>
+
         </section>
+
+        
     </main>
+
+    <div id="releaseModal" class="release-modal-backdrop">
+        <div class="release-modal">
+            <div class="release-top">
+                <span class="release-badge">YENİ GÜNCELLEME</span>
+                <span class="release-version">v2</span>
+            </div>
+
+            <h2>🚀 Sente360 v2 Yayında</h2>
+
+            <p class="release-subtitle">
+                Servis süreçleri artık daha hızlı, modern ve profesyonel.
+            </p>
+
+            <div class="release-list">
+                <div>✅ Talep bazlı servis yönetimi</div>
+                <div>✅ Parça / işçilik ayrımı</div>
+                <div>✅ Canlı toplam hesaplama</div>
+                <div>✅ Modern servis detay ekranı</div>
+                <div>✅ Profesyonel PDF servis formu</div>
+                <div>✅ QR araç eşleştirme</div>
+                <div>✅ Araç servis geçmişi</div>
+                <div>✅ Mobil uyumlu arayüz</div>
+            </div>
+
+            <button type="button" onclick="closeReleaseModal()">
+                Devam Et
+            </button>
+        </div>
+    </div>
+
+    <script>
+            const releaseNoteKey = "sente360-release-v2-seen";
+
+            document.addEventListener("DOMContentLoaded", function () {
+                const seen = localStorage.getItem(releaseNoteKey);
+
+                if (!seen) {
+                    document.getElementById("releaseModal")?.classList.add("show");
+                }
+            });
+
+            function closeReleaseModal() {
+                localStorage.setItem(releaseNoteKey, "true");
+                document.getElementById("releaseModal")?.classList.remove("show");
+            }
+    </script>
 </body>
 </html>
