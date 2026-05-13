@@ -205,6 +205,19 @@
                     font-size: 25px;
                 }
             }
+
+            .record-card {
+                text-decoration: none;
+                color: inherit;
+                cursor: pointer;
+                transition: .18s ease;
+            }
+
+                .record-card:hover {
+                    transform: translateY(-2px);
+                    border-color: #93c5fd;
+                    box-shadow: 0 18px 45px rgba(37, 99, 235, .12);
+                }
     </style>
 </head>
 <body>
@@ -251,7 +264,10 @@
             <div class="record-list">
                 @foreach (var record in Model.Records)
                 {
-                    <div class="record-card">
+                    <a class="record-card"
+                           href="/public/service-pdf/@Model.Code/@record.Id"
+                           target="_blank">
+
                         <div>
                             <strong>@record.RecordNumber</strong>
                             <span>@record.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
@@ -267,7 +283,8 @@
                                 _ => "Bilinmiyor"
                             })
                         </div>
-                    </div>
+
+                    </a>
                 }
             </div>
         }
