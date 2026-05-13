@@ -39,113 +39,147 @@
         </button>
     </section>
 
-    <section class="top-grid">
+    <section class="top-grid compact-top">
 
-        <div class="panel">
-            <div class="panel-title">
-                <span class="title-icon">👤</span>
-                <h2>Müşteri / Araç Bilgileri</h2>
-            </div>
+        <div class="panel collapsible-panel collapsed">
 
-            <div class="info-grid">
-                <div class="info-card">
-                    <span class="info-icon">👤</span>
-                    <div>
-                        <label>Müşteri</label>
-                        <strong>@Model.CustomerName</strong>
-                    </div>
+            <button type="button"
+                    class="collapsible-header"
+                    onclick="toggleInfoPanel(this)">
+
+                <div class="collapsible-left">
+                    <span class="title-icon">👤</span>
+                    <span>Müşteri / Araç Bilgileri</span>
                 </div>
 
-                <div class="info-card">
-                    <span class="info-icon">☎</span>
-                    <div>
-                        <label>Telefon</label>
-                        <strong>@Model.CustomerPhone</strong>
-                    </div>
-                </div>
+                <strong></strong>
 
-                <div class="info-card">
-                    <span class="info-icon">▣</span>
-                    <div>
-                        <label>Plaka</label>
-                        <strong>@Model.VehiclePlate</strong>
-                    </div>
-                </div>
+            </button>
 
-                <div class="info-card">
-                    <span class="info-icon">🚘</span>
-                    <div>
-                        <label>Araç</label>
-                        <strong>@Model.VehicleBrandName @Model.VehicleModelName</strong>
-                    </div>
-                </div>
+            <div class="collapsible-body">
 
-                <div class="info-card">
-                    <span class="info-icon">🏷</span>
-                    <div>
-                        <label>Marka / Model</label>
-                        <strong>@Model.VehicleBrandName / @Model.VehicleModelName</strong>
-                    </div>
-                </div>
+                <div class="info-grid">
 
-                <div class="info-card">
-                    <span class="info-icon">↗</span>
-                    <div>
-                        <label>Kilometre</label>
-                        <strong>@((Model.Mileage ?? 0).ToString("N0")) km</strong>
-                    </div>
-                </div>
-
-                @if (!string.IsNullOrWhiteSpace(Model.ChassisNumber))
-                {
                     <div class="info-card">
-                        <span class="info-icon">#</span>
+                        <span class="info-icon">👤</span>
                         <div>
-                            <label>Şasi No</label>
-                            <strong>@Model.ChassisNumber</strong>
+                            <label>Müşteri</label>
+                            <strong>@Model.CustomerName</strong>
                         </div>
                     </div>
-                }
+
+                    <div class="info-card">
+                        <span class="info-icon">☎</span>
+                        <div>
+                            <label>Telefon</label>
+                            <strong>@Model.CustomerPhone</strong>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <span class="info-icon">▣</span>
+                        <div>
+                            <label>Plaka</label>
+                            <strong>@Model.VehiclePlate</strong>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <span class="info-icon">🚘</span>
+                        <div>
+                            <label>Araç</label>
+                            <strong>@Model.VehicleBrandName @Model.VehicleModelName</strong>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <span class="info-icon">🏷</span>
+                        <div>
+                            <label>Marka / Model</label>
+                            <strong>@Model.VehicleBrandName / @Model.VehicleModelName</strong>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <span class="info-icon">↗</span>
+                        <div>
+                            <label>Kilometre</label>
+                            <strong>@((Model.Mileage ?? 0).ToString("N0")) km</strong>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.ChassisNumber))
+                    {
+                        <div class="info-card">
+                            <span class="info-icon">#</span>
+                            <div>
+                                <label>Şasi No</label>
+                                <strong>@Model.ChassisNumber</strong>
+                            </div>
+                        </div>
+                    }
+
+                </div>
+
             </div>
+
         </div>
 
-        <div class="panel">
-            <div class="panel-title">
-                <span class="title-icon">ⓘ</span>
-                <h2>Servis Bilgileri</h2>
+        <div class="panel collapsible-panel collapsed">
+
+            <button type="button"
+                    class="collapsible-header"
+                    onclick="toggleInfoPanel(this)">
+
+                <div class="collapsible-left">
+                    <span class="title-icon">ⓘ</span>
+                    <span>Servis Bilgileri</span>
+                </div>
+
+                <strong></strong>
+
+            </button>
+
+            <div class="collapsible-body">
+
+                <div class="service-info-list">
+
+                    <div>
+                        <span>Servis Kayıt No</span>
+                        <strong>@Model.RecordNumber</strong>
+                    </div>
+
+                    <div>
+                        <span>Kayıt Tarihi</span>
+                        <strong>@Model.CreatedAt.AddHours(3).ToString("dd.MM.yyyy HH:mm")</strong>
+                    </div>
+
+                    <div>
+                        <span>Son Güncelleme</span>
+                        <strong>@(Model.UpdatedAt?.AddHours(3).ToString("dd.MM.yyyy HH:mm") ?? "-")</strong>
+                    </div>
+
+                    <div>
+                        <span>Oluşturan</span>
+                        <strong>Sistem</strong>
+                    </div>
+
+                    <div>
+                        <span>Belge Tipi</span>
+                        <strong>Servis Formu</strong>
+                    </div>
+
+                    <div>
+                        <span>Durum</span>
+                        <strong class="status-pill status-@Model.Status">
+                            @GetStatusText(Model.Status)
+                        </strong>
+                    </div>
+
+                </div>
+
             </div>
 
-            <div class="service-info-list">
-                <div>
-                    <span>Servis Kayıt No</span>
-                    <strong>@Model.RecordNumber</strong>
-                </div>
-
-                <div>
-                    <span>Kayıt Tarihi</span>
-                    <strong>@Model.CreatedAt.AddHours(3).ToString("dd.MM.yyyy HH:mm")</strong>
-                </div>
-
-                <div>
-                    <span>Son Güncelleme</span>
-                    <strong>@(Model.UpdatedAt?.AddHours(3).ToString("dd.MM.yyyy HH:mm") ?? "-")</strong>
-                </div>
-
-                <div>
-                    <span>Oluşturan</span>
-                    <strong>Sistem</strong>
-                </div>
-
-                <div>
-                    <span>Belge Tipi</span>
-                    <strong>Servis Formu</strong>
-                </div>
-
-                <div>
-                    <span>Durum</span>
-                    <strong class="status-pill status-@Model.Status">@GetStatusText(Model.Status)</strong>
-                </div>
-            </div>
         </div>
 
     </section>
@@ -1492,6 +1526,81 @@
             height: auto !important;
             border-radius: 18px;
         }
+
+    .compact-top {
+        align-items: start;
+    }
+
+    .collapsible-panel {
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .collapsible-header {
+        width: 100%;
+        min-height: 76px;
+        padding: 0 22px;
+        border: none;
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        font: inherit;
+        color: #0f172a;
+    }
+
+    .collapsible-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+        .collapsible-left .title-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 17px;
+        }
+
+        .collapsible-left span:last-child {
+            font-size: 18px;
+            font-weight: 950;
+            letter-spacing: -.3px;
+        }
+
+    .collapsible-header strong {
+        min-width: 74px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-size: 0;
+        font-weight: 950;
+        text-align: center;
+    }
+
+    .collapsible-panel.collapsed .collapsible-header strong::before {
+        content: "Göster";
+        font-size: 12px;
+    }
+
+    .collapsible-panel:not(.collapsed) .collapsible-header strong::before {
+        content: "Gizle";
+        font-size: 12px;
+    }
+
+    .collapsible-body {
+        padding: 0 22px 22px;
+    }
+
+    .collapsible-panel.collapsed .collapsible-body {
+        display: none;
+    }
 </style>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -2134,6 +2243,13 @@
     button.textContent = "QR Tara";
     qrScanLocked = false;
     }
+    }
+
+    function toggleInfoPanel(button) {
+    const panel = button.closest(".collapsible-panel");
+    if (!panel) return;
+
+    panel.classList.toggle("collapsed");
     }
 
     async function assignScannedQrCode(vehicleId, code, button, resultBox) {
