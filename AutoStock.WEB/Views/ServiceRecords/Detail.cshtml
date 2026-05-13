@@ -2091,16 +2091,12 @@
     return;
     }
 
-    const selectedCamera =
-    cameras.find(x => x.label.toLowerCase().includes("back")) ||
-    cameras.find(x => x.label.toLowerCase().includes("rear")) ||
-    cameras.find(x => x.label.toLowerCase().includes("environment")) ||
-    cameras[0];
-
     qrScanner = new Html5Qrcode("qr-reader");
 
     await qrScanner.start(
-    selectedCamera.id,
+    {
+    facingMode: "environment"
+    },
     {
     fps: 10,
     qrbox: {
