@@ -6,16 +6,28 @@
 
 <div class="page">
     <div class="premium-header">
+
         <div class="premium-brand">
+
+            <a asp-controller="Dashboard"
+                   asp-action="Index"
+                   class="premium-logo premium-logo-link"
+                   title="Ana sayfa">
+                ⌂
+            </a>
+
             <div class="premium-logo">S</div>
+
             <div>
                 <span class="premium-eyebrow">SERVİS KAYITLARI</span>
                 <h1>Servis Kayıtları</h1>
                 <p>Açık ve tamamlanan servis kayıtlarını buradan takip edin.</p>
             </div>
+
         </div>
 
         <a href="/ServiceRecords/Create" class="premium-home">+</a>
+
     </div>
 
     @if (ViewBag.ErrorMessage is not null)
@@ -262,5 +274,16 @@
         .record-status.status-4 {
             background: #fee2e2;
             color: #b91c1c;
+        }
+
+    .premium-logo-link {
+        text-decoration: none;
+        cursor: pointer;
+        transition: .18s ease;
+    }
+
+        .premium-logo-link:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 22px 46px rgba(37, 99, 235, .36);
         }
 </style>

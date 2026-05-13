@@ -34,9 +34,12 @@
             </div>
         </div>
 
-        <button type="button" class="header-more" title="İşlemler">
-            ...
-        </button>
+        <a asp-controller="Dashboard"
+               asp-action="Index"
+               class="header-home"
+               title="Ana sayfa">
+            ⌂
+        </a>
     </section>
 
     <section class="top-grid compact-top">
@@ -1601,6 +1604,27 @@
     .collapsible-panel.collapsed .collapsible-body {
         display: none;
     }
+    .header-home {
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    background: rgba(255,255,255,.13);
+    border: 1px solid rgba(255,255,255,.20);
+    color: white;
+    text-decoration: none;
+    font-size: 24px;
+    font-weight: 950;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .18);
+    transition: .18s ease;
+}
+
+.header-home:hover {
+    background: rgba(255,255,255,.24);
+    transform: translateY(-2px);
+}
+    
 </style>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
