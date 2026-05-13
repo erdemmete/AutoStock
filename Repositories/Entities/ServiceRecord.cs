@@ -43,6 +43,8 @@ namespace AutoStock.Repositories.Entities
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        public DateTime? UpdatedAt { get; set; }
+
         public DateTime? CompletedAt { get; set; }
         public decimal? EstimatedAmount { get; set; }
 

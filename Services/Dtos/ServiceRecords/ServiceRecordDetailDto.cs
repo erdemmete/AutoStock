@@ -34,9 +34,12 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public decimal TotalAmount { get; set; }
 
         public DateTime CreatedAt { get; set; }
-
+        public DateTime? UpdatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
         public int VehicleId { get; set; }
+        public string? ChassisNumber { get; set; }
+
+       
         public List<ServiceRequestItemDto> RequestItems { get; set; } = new();
 
         public List<ServiceOperationDto> Operations { get; set; } = new();

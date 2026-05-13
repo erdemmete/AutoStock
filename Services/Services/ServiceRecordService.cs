@@ -144,6 +144,7 @@ public class ServiceRecordService : IServiceRecordService
     int workshopId)
     {
         var serviceRecord = await _context.ServiceRecords
+            .Include(x => x.Vehicle)
             .Include(x => x.Operations)
             .Include(x => x.RequestItems)
             .FirstOrDefaultAsync(x =>
@@ -180,6 +181,8 @@ public class ServiceRecordService : IServiceRecordService
 
             CreatedAt = serviceRecord.CreatedAt,
             CompletedAt = serviceRecord.CompletedAt,
+            ChassisNumber = serviceRecord.Vehicle.ChassisNumber,
+            UpdatedAt = serviceRecord.UpdatedAt,
 
             Operations = serviceRecord.Operations
                 .OrderBy(x => x.Id)
@@ -294,6 +297,8 @@ public class ServiceRecordService : IServiceRecordService
 
         serviceRecord.RequestItems.Add(requestItem);
 
+        serviceRecord.UpdatedAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
 
         return ServiceResult<int>.Success(requestItem.Id);
@@ -350,6 +355,8 @@ public class ServiceRecordService : IServiceRecordService
 
         serviceRecord.TotalAmount = serviceRecord.Operations.Sum(x => x.TotalPrice) + totalPrice;
 
+        serviceRecord.UpdatedAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
 
         return ServiceResult<ServiceOperationDto>.Success(new ServiceOperationDto
@@ -379,6 +386,7 @@ public class ServiceRecordService : IServiceRecordService
 
         serviceRecord.Status = ServiceRecordStatus.Completed;
         serviceRecord.CompletedAt = DateTime.UtcNow;
+        serviceRecord.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -409,6 +417,8 @@ public class ServiceRecordService : IServiceRecordService
             serviceRecord.CompletedAt = DateTime.UtcNow;
         else
             serviceRecord.CompletedAt = null;
+
+        serviceRecord.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -456,6 +466,7 @@ public class ServiceRecordService : IServiceRecordService
             return ServiceResult<DeleteServiceOperationResponse>.Fail("Servis kaydı bulunamadı.");
 
         serviceRecord.TotalAmount = recordTotal;
+        serviceRecord.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
@@ -508,6 +519,8 @@ public class ServiceRecordService : IServiceRecordService
             return ServiceResult<DeleteServiceRequestItemResponse>.Fail("Servis kaydı bulunamadı.");
 
         serviceRecord.TotalAmount = recordTotal;
+
+        serviceRecord.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 

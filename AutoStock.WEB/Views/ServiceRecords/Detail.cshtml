@@ -2,136 +2,236 @@
 
 @{
     ViewData["Title"] = "Servis Detayı";
+
+    string GetStatusText(int status)
+    {
+        return status switch
+        {
+            1 => "Açık Kayıt",
+            2 => "İşlemde",
+            3 => "Tamamlandı",
+            4 => "İptal Edildi",
+            _ => "Bilinmiyor"
+        };
+    }
 }
 
 <div class="page">
 
-    <div class="premium-header">
-        <div class="premium-brand">
-            <div class="premium-logo">S</div>
+    <section class="premium-header">
+        <a href="/ServiceRecords" class="header-back" title="Geri dön">
+            ←
+        </a>
 
-            <div>
-                <span class="premium-eyebrow">SERVİS DETAYI</span>
+        <div class="header-content">
+            <span class="header-badge">SERVİS DETAYI</span>
+            <h1>@Model.RecordNumber</h1>
 
-                <h1>@Model.RecordNumber</h1>
-
-                <p>
-                    @Model.CustomerName -
-                    @Model.VehiclePlate
-                </p>
+            <div class="header-meta">
+                <span>@Model.CustomerName</span>
+                <span>•</span>
+                <span>@Model.VehiclePlate</span>
             </div>
         </div>
 
-        <a href="/ServiceRecords" class="premium-home">
-            ←
-        </a>
-    </div>
+        <button type="button" class="header-more" title="İşlemler">
+            ...
+        </button>
+    </section>
 
-    <div class="detail-layout">
+    <section class="top-grid">
 
-        <div class="detail-main">
+        <div class="panel">
+            <div class="panel-title">
+                <span class="title-icon">👤</span>
+                <h2>Müşteri / Araç Bilgileri</h2>
+            </div>
 
-            <div class="panel">
-
-                <div class="section-title">
-                    Müşteri / Araç Bilgileri
-                </div>
-
-                <div class="info-grid">
-
-                    <div class="info-card">
+            <div class="info-grid">
+                <div class="info-card">
+                    <span class="info-icon">👤</span>
+                    <div>
                         <label>Müşteri</label>
                         <strong>@Model.CustomerName</strong>
                     </div>
+                </div>
 
-                    <div class="info-card">
+                <div class="info-card">
+                    <span class="info-icon">☎</span>
+                    <div>
                         <label>Telefon</label>
                         <strong>@Model.CustomerPhone</strong>
                     </div>
+                </div>
 
-                    <div class="info-card">
+                <div class="info-card">
+                    <span class="info-icon">▣</span>
+                    <div>
                         <label>Plaka</label>
                         <strong>@Model.VehiclePlate</strong>
                     </div>
+                </div>
 
-                    <div class="info-card">
+                <div class="info-card">
+                    <span class="info-icon">🚘</span>
+                    <div>
                         <label>Araç</label>
-                        <strong>
-                            @Model.VehicleBrandName
-                            @Model.VehicleModelName
-                        </strong>
+                        <strong>@Model.VehicleBrandName @Model.VehicleModelName</strong>
                     </div>
+                </div>
 
-                    <div class="info-card">
+                <div class="info-card">
+                    <span class="info-icon">🏷</span>
+                    <div>
+                        <label>Marka / Model</label>
+                        <strong>@Model.VehicleBrandName / @Model.VehicleModelName</strong>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <span class="info-icon">↗</span>
+                    <div>
                         <label>Kilometre</label>
-                        <strong>@Model.Mileage</strong>
+                        <strong>@((Model.Mileage ?? 0).ToString("N0")) km</strong>
                     </div>
+                </div>
 
+                @if (!string.IsNullOrWhiteSpace(Model.ChassisNumber))
+                {
                     <div class="info-card">
-                        <label>Kayıt Tarihi</label>
-                        <strong>
-                            @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")
-                        </strong>
+                        <span class="info-icon">#</span>
+                        <div>
+                            <label>Şasi No</label>
+                            <strong>@Model.ChassisNumber</strong>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">
+                <span class="title-icon">ⓘ</span>
+                <h2>Servis Bilgileri</h2>
+            </div>
+
+            <div class="service-info-list">
+                <div>
+                    <span>Servis Kayıt No</span>
+                    <strong>@Model.RecordNumber</strong>
+                </div>
+
+                <div>
+                    <span>Kayıt Tarihi</span>
+                    <strong>@Model.CreatedAt.AddHours(3).ToString("dd.MM.yyyy HH:mm")</strong>
+                </div>
+
+                <div>
+                    <span>Son Güncelleme</span>
+                    <strong>@(Model.UpdatedAt?.AddHours(3).ToString("dd.MM.yyyy HH:mm") ?? "-")</strong>
+                </div>
+
+                <div>
+                    <span>Oluşturan</span>
+                    <strong>Sistem</strong>
+                </div>
+
+                <div>
+                    <span>Belge Tipi</span>
+                    <strong>Servis Formu</strong>
+                </div>
+
+                <div>
+                    <span>Durum</span>
+                    <strong class="status-pill status-@Model.Status">@GetStatusText(Model.Status)</strong>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+    <section class="content-grid">
+
+        <main class="main-area">
+
+            <div class="panel complaint-panel">
+                <div class="panel-title">
+                    <span class="title-icon">💬</span>
+                    <h2>Müşteri Şikayeti / Servis Kabul Notu</h2>
+                </div>
+
+                <div class="note-grid">
+                    <div class="note-box">
+                        <label>Müşteri Şikayeti</label>
+                        <p>
+                            @(string.IsNullOrWhiteSpace(Model.CustomerComplaint)
+                                ? "Şikayet girilmemiş."
+                                : Model.CustomerComplaint)
+                        </p>
                     </div>
 
+                    <div class="note-box">
+                        <label>Servis Kabul Notu</label>
+                        <p>
+                            @(string.IsNullOrWhiteSpace(Model.ServiceReceptionNote)
+                                ? "Not girilmemiş."
+                                : Model.ServiceReceptionNote)
+                        </p>
+                    </div>
                 </div>
-
             </div>
 
-            <div class="panel">
+            <div class="panel requests-panel">
 
-                <div class="section-title">
-                    Müşteri Şikayeti
-                </div>
+                <div class="requests-header">
+                    <div class="panel-title no-margin">
+                        <span class="title-icon">🧾</span>
+                        <h2>Şikayet / Talepler ve İşlemler</h2>
+                    </div>
 
-                <div class="note-box">
-                    @(string.IsNullOrWhiteSpace(Model.CustomerComplaint)
-                        ? "Şikayet girilmemiş."
-                        : Model.CustomerComplaint)
-                </div>
-
-            </div>
-
-            <div class="panel">
-
-                <div class="section-title">
-                    Servis Kabul Notu
-                </div>
-
-                <div class="note-box">
-                    @(string.IsNullOrWhiteSpace(Model.ServiceReceptionNote)
-                        ? "Not girilmemiş."
-                        : Model.ServiceReceptionNote)
-                </div>
-
-            </div>
-
-            <div class="panel">
-
-                <div class="section-title">
-                    Şikayet / Talepler
+                    <button type="button" class="outline-btn" onclick="focusAddRequest()">
+                        + Talep / Şikayet Ekle
+                    </button>
                 </div>
 
                 @if (Model.RequestItems.Any())
                 {
                     <div class="request-detail-list">
-
                         @foreach (var item in Model.RequestItems)
                         {
-                            <div class="request-detail-card collapsed"
+                            var itemOperations = Model.Operations
+                                .Where(x => x.ServiceRequestItemId == item.Id)
+                                .ToList();
+
+                            var itemTotal = itemOperations.Sum(x => x.TotalPrice);
+
+                            <div class="request-detail-card @(item == Model.RequestItems.First() ? "" : "collapsed")"
                                  data-request-id="@item.Id"
                                  id="request-item-@item.Id">
 
                                 <div class="request-card-top">
-
                                     <button type="button"
                                             class="request-accordion-header"
                                             onclick="toggleRequestCard(this)">
+                                        <div>
+                                            <strong>@item.Title</strong>
 
-                                        <strong>@item.Title</strong>
+                                            @if (!string.IsNullOrWhiteSpace(item.Note))
+                                            {
+                                                <span>@item.Note</span>
+                                            }
+                                        </div>
 
-                                        <span class="accordion-arrow">›</span>
+                                        <div class="request-right">
+                                            @if ((item.EstimatedAmount ?? 0) > 0)
+                                            {
+                                                <span class="estimate-pill">
+                                                    Tahmini: @((item.EstimatedAmount ?? 0).ToString("N2")) ₺
+                                                </span>
+                                            }
 
+                                            <span class="accordion-arrow">⌄</span>
+                                        </div>
                                     </button>
 
                                     <button type="button"
@@ -139,20 +239,11 @@
                                             onclick="deleteRequestItem(@item.Id, this)">
                                         Sil
                                     </button>
-
                                 </div>
+
                                 <div class="request-accordion-body">
 
-                                    @{
-                                        var itemOperations = Model.Operations
-                                            .Where(x => x.ServiceRequestItemId == item.Id)
-                                            .ToList();
-
-                                        var itemTotal = itemOperations.Sum(x => x.TotalPrice);
-                                    }
-
                                     <div class="request-operation-area">
-
                                         <div class="request-operation-header">
                                             <strong>Yapılan İşlemler</strong>
                                             <span data-total="@itemTotal">Toplam: @itemTotal.ToString("N2") ₺</span>
@@ -160,25 +251,45 @@
 
                                         @if (itemOperations.Any())
                                         {
-                                            <div class="request-operation-list">
+                                            <div class="operation-table request-operation-list">
+                                                <div class="operation-table-head">
+                                                    <span>Tür</span>
+                                                    <span>Açıklama</span>
+                                                    <span>Miktar</span>
+                                                    <span>Birim Fiyat</span>
+                                                    <span>Toplam</span>
+                                                    <span></span>
+                                                </div>
+
                                                 @foreach (var operation in itemOperations)
                                                 {
-                                                    <div class="request-operation-item" id="operation-item-@operation.Id">
-                                                        <div>
+                                                    <div class="operation-table-row request-operation-item" id="operation-item-@operation.Id">
+                                                        <span>
+                                                            <b class="type-badge @(operation.Type == 1 ? "part" : "labor")">
+                                                                @(operation.Type == 1 ? "Parça" : "İşçilik")
+                                                            </b>
+                                                        </span>
+
+                                                        <span>
                                                             <strong>@operation.Description</strong>
-                                                            <span>@(operation.Type == 1 ? "Parça" : "İşçilik")</span>
-                                                        </div>
 
-                                                        <div>
-                                                            <strong>@operation.TotalPrice.ToString("N2") ₺</strong>
-                                                            <span>@operation.Quantity adet × @operation.UnitPrice.ToString("N2") ₺</span>
-                                                        </div>
+                                                            @if (!string.IsNullOrWhiteSpace(operation.Note))
+                                                            {
+                                                                <small>@operation.Note</small>
+                                                            }
+                                                        </span>
 
-                                                        <button type="button"
-                                                                class="operation-delete-btn"
-                                                                onclick="deleteOperation(@operation.Id, this)">
-                                                            Sil
-                                                        </button>
+                                                        <span>@operation.Quantity.ToString("N2")</span>
+                                                        <span>@operation.UnitPrice.ToString("N2") ₺</span>
+                                                        <span><strong>@operation.TotalPrice.ToString("N2") ₺</strong></span>
+
+                                                        <span>
+                                                            <button type="button"
+                                                                    class="icon-delete-btn"
+                                                                    onclick="deleteOperation(@operation.Id, this)">
+                                                                Sil
+                                                            </button>
+                                                        </span>
                                                     </div>
                                                 }
                                             </div>
@@ -189,7 +300,6 @@
                                                 Bu talep için henüz işlem eklenmedi.
                                             </div>
                                         }
-
                                     </div>
 
                                     <form asp-action="AddOperation"
@@ -202,36 +312,30 @@
                                         <div class="operation-form-row">
 
                                             <div class="type-toggle">
-
                                                 <input type="radio"
                                                        id="partType_@item.Id"
                                                        name="Type"
                                                        value="1"
                                                        checked />
 
-                                                <label for="partType_@item.Id">
-                                                    Parça
-                                                </label>
+                                                <label for="partType_@item.Id">Parça</label>
 
                                                 <input type="radio"
                                                        id="laborType_@item.Id"
                                                        name="Type"
                                                        value="2" />
 
-                                                <label for="laborType_@item.Id">
-                                                    İşçilik
-                                                </label>
-
+                                                <label for="laborType_@item.Id">İşçilik</label>
                                             </div>
 
                                             <div class="form-field">
                                                 <input name="Description" placeholder=" " />
-                                                <label>İşlem Açıklaması</label>
+                                                <label>İşçilik veya parça açıklaması</label>
                                             </div>
 
                                             <div class="form-field">
-                                                <input name="Quantity" type="number" value="1" min="1" placeholder=" " />
-                                                <label>Adet</label>
+                                                <input name="Quantity" type="number" value="1" min="1" step="0.01" placeholder=" " />
+                                                <label>Miktar</label>
                                             </div>
 
                                             <div class="form-field">
@@ -240,38 +344,35 @@
                                             </div>
 
                                             <button type="submit" class="btn-primary">
-                                                + İşlem
+                                                + Ekle
                                             </button>
-
                                         </div>
 
                                         <div class="form-field operation-note-field">
                                             <textarea name="Note" placeholder=" "></textarea>
                                             <label>İşlem Notu</label>
                                         </div>
-
                                     </form>
 
                                 </div>
-
                             </div>
                         }
-
                     </div>
                 }
                 else
                 {
-                    <div class="empty-state">
-                        Bu servis kaydı için talep girilmemiş.
+                    <div class="request-detail-list">
+                        <div class="empty-state">
+                            Bu servis kaydı için talep girilmemiş.
+                        </div>
                     </div>
                 }
-
             </div>
 
-            <div class="panel">
-
-                <div class="section-title">
-                    Ek Talep / İşlem Ekle
+            <div class="panel add-request-panel" id="addRequestPanel">
+                <div class="panel-title">
+                    <span class="title-icon">＋</span>
+                    <h2>Ek Talep / İşlem Ekle</h2>
                 </div>
 
                 <form asp-action="AddRequestItem"
@@ -309,7 +410,6 @@
                         <button type="submit" class="btn-primary">
                             + Talep Ekle
                         </button>
-
                     </div>
 
                     <div class="form-field add-request-note">
@@ -318,129 +418,141 @@
                     </div>
 
                 </form>
-
             </div>
 
-            <div class="panel">
+        </main>
 
-                <div class="section-title">
-                    İşlemler
+        <aside class="side-area">
+
+            <div class="side-card total-card">
+                <div class="side-title">
+                    <span class="title-icon purple">₺</span>
+                    <h3>Toplam Özet</h3>
                 </div>
 
-                @if (Model.Operations.Any())
-                {
-                    <div class="operation-list">
-                        @foreach (var operation in Model.Operations)
-                        {
-                            <div class="operation-card">
-                                <div>
-                                    <strong>@operation.Description</strong>
-                                    <span>@(operation.Type == 1 ? "Parça" : "İşçilik")</span>
-                                </div>
-
-                                <div>
-                                    <strong>@operation.Quantity Adet</strong>
-                                    <span>Birim: @operation.UnitPrice.ToString("N2") ₺</span>
-                                </div>
-
-                                <div>
-                                    <strong>@operation.TotalPrice.ToString("N2") ₺</strong>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="empty-state">
-                        Henüz işlem eklenmedi.
-                    </div>
-                }
-
-            </div>
-
-          
-
-        <div class="detail-sidebar">
-
-            <div class="summary-card">
-
-                <div class="summary-label">
-                    Toplam Tutar
+                <div class="total-row">
+                    <span>Tahmini Toplam</span>
+                    <strong>@Model.RequestItems.Sum(x => x.EstimatedAmount ?? 0).ToString("N2") ₺</strong>
                 </div>
 
-                    <div class="summary-total" data-total="@Model.TotalAmount">
+                <div class="total-row">
+                    <span>Gerçek Toplam</span>
+                    <strong class="summary-total" data-total="@Model.TotalAmount">
                         @Model.TotalAmount.ToString("N2") ₺
+                    </strong>
+                </div>
+            </div>
+
+            <div class="side-card status-card">
+                <div class="side-title">
+                    <span class="title-icon orange">⚑</span>
+                    <h3>Durum Yönetimi</h3>
+                </div>
+
+                <div class="mini-status-current">
+                    <span>Mevcut Durum</span>
+                    <strong class="summary-status status-@Model.Status">
+                        @GetStatusText(Model.Status)
+                    </strong>
+                </div>
+
+                <div class="status-steps">
+                    <div class="step @(Model.Status >= 1 && Model.Status != 4 ? "active" : "")">
+                        <span>1</span>
+                        <small>Açık</small>
                     </div>
 
-                    <div class="summary-status status-@Model.Status">
-                        @(Model.Status switch
-                        {
-                            1 => "Açık Kayıt",
-                            2 => "İşlemde",
-                            3 => "Tamamlandı",
-                            4 => "İptal Edildi",
-                            _ => "Bilinmiyor"
-                        })
+                    <div class="step @(Model.Status >= 2 && Model.Status != 4 ? "active" : "")">
+                        <span>2</span>
+                        <small>İşlemde</small>
                     </div>
 
-                    <div class="status-actions" data-record-id="@Model.Id">
-
-                        @if (Model.Status == 1)
-                        {
-                            <button type="button" class="status-btn warning" data-status="2">
-                                İşleme Al
-                            </button>
-
-                            <button type="button" class="status-btn danger" data-status="4">
-                                İptal Et
-                            </button>
-                        }
-                        else if (Model.Status == 2)
-                        {
-                            <button type="button" class="status-btn success" data-status="3">
-                                Tamamla
-                            </button>
-
-                            <button type="button" class="status-btn danger" data-status="4">
-                                İptal Et
-                            </button>
-                        }
-                        else if (Model.Status == 3 || Model.Status == 4)
-                        {
-                            <button type="button" class="status-btn primary" data-status="1">
-                                Tekrar Aç
-                            </button>
-                        }
-
+                    <div class="step @(Model.Status == 3 ? "active" : "")">
+                        <span>3</span>
+                        <small>Tamamlandı</small>
                     </div>
 
-                    <a href="/service-pdf/create/@Model.Id"
-                           class="pdf-btn"
-                           target="_blank">
-                        PDF Oluştur
-                    </a>
+                    <div class="step @(Model.Status == 4 ? "danger active" : "")">
+                        <span>4</span>
+                        <small>İptal</small>
+                    </div>
+                </div>
 
-                    <div class="qr-assign-box">
-                        <div class="qr-title">Araç QR Kodu</div>
-
-                        <button type="button"
-                                id="start-qr-scan-btn"
-                                onclick="startQrScanner(@Model.VehicleId, this)">
-                            QR Kod Tara
+                <div class="status-actions" data-record-id="@Model.Id">
+                    @if (Model.Status == 1)
+                    {
+                        <button type="button" class="status-btn success" data-status="2">
+                            İşleme Al
                         </button>
 
-                        <div id="qr-reader" style="display:none;"></div>
+                        <button type="button" class="status-btn danger" data-status="4">
+                            İptal Et
+                        </button>
+                    }
+                    else if (Model.Status == 2)
+                    {
+                        <button type="button" class="status-btn primary" data-status="3">
+                            Tamamla
+                        </button>
 
-                        <div id="qr-scan-result" class="qr-scan-result"></div>
-                    </div>
+                        <button type="button" class="status-btn danger" data-status="4">
+                            İptal Et
+                        </button>
+                    }
+                    else if (Model.Status == 3 || Model.Status == 4)
+                    {
+                        <button type="button" class="status-btn primary full" data-status="1">
+                            Tekrar Aç
+                        </button>
+                    }
+                </div>
             </div>
 
-        </div>
+            <div class="side-card action-card">
+                <div>
+                    <strong>Final Servis PDF</strong>
+                    <span>Bu servis kaydı için final PDF oluşturun.</span>
+                </div>
 
+                <a href="/service-pdf/create/@Model.Id"
+                       class="small-action-btn"
+                       target="_blank">
+                    PDF Oluştur
+                </a>
+            </div>
+
+            <div class="side-card action-card">
+                <div>
+                    <strong>QR Eşleştirme</strong>
+                    <span>Müşteri QR kodunu tarayarak araçla eşleştirin.</span>
+                </div>
+
+                <button type="button"
+                        class="small-action-btn"
+                        id="start-qr-scan-btn"
+                        onclick="startQrScanner(@Model.VehicleId, this)">
+                    QR Tara
+                </button>
+
+                <div id="qr-reader" style="display:none;"></div>
+                <div id="qr-scan-result" class="qr-scan-result"></div>
+            </div>
+
+            <div class="qr-note">
+                💡 QR eşleştirme işlemi müşteriye araç teslimi sırasında yapılmalıdır.
+            </div>
+
+        </aside>
+
+    </section>
+
+    <div class="page-footer">
+        🛡 Kayıt ve işlemler sistem tarafından güvenli şekilde kaydedilmektedir.
     </div>
 
 </div>
+
+<div id="toastMessage" class="toast-message"></div>
 
 <style>
     * {
@@ -449,194 +561,544 @@
 
     body {
         margin: 0;
-        background: radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 28rem), radial-gradient(circle at top right, rgba(22, 163, 74, .10), transparent 28rem), #f3f6fb;
+        background: radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 30rem), radial-gradient(circle at top right, rgba(22, 163, 74, .08), transparent 28rem), #f4f7fb;
         font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: #0f172a;
     }
 
     .page {
-        width: min(1450px, calc(100% - 48px));
+        width: min(1540px, calc(100% - 48px));
         margin: 0 auto;
-        padding: 36px 0 60px;
+        padding: 26px 0 42px;
     }
 
     .premium-header {
-        margin-bottom: 28px;
-        padding: 32px 36px;
-        border-radius: 32px;
+        min-height: 116px;
+        padding: 28px;
+        border-radius: 28px;
         background: linear-gradient(135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
         color: white;
-        box-shadow: 0 28px 80px rgba(15, 23, 42, .24);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .premium-brand {
-        display: flex;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
         align-items: center;
         gap: 22px;
+        box-shadow: 0 28px 80px rgba(15, 23, 42, .22);
     }
 
-    .premium-logo {
+    .header-back,
+    .header-more {
         width: 54px;
         height: 54px;
-        border-radius: 18px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,.14);
+        background: rgba(255,255,255,.11);
+        color: white;
         display: grid;
         place-items: center;
-        background: linear-gradient(135deg, #2563eb, #16a34a);
-        color: white;
-        font-weight: 950;
-        font-size: 22px;
-        flex-shrink: 0;
+        text-decoration: none;
+        font-size: 28px;
+        font-weight: 900;
     }
 
-    .premium-eyebrow {
+    .header-more {
+        cursor: pointer;
+        font-size: 22px;
+    }
+
+    .header-badge {
         display: inline-flex;
         margin-bottom: 7px;
         padding: 6px 11px;
         border-radius: 999px;
         background: rgba(255,255,255,.13);
         border: 1px solid rgba(255,255,255,.18);
-        color: rgba(255,255,255,.80);
+        color: rgba(255,255,255,.82);
         font-size: 12px;
-        font-weight: 800;
+        font-weight: 900;
+        letter-spacing: .4px;
     }
 
     .premium-header h1 {
         margin: 0;
-        font-size: 36px;
-        letter-spacing: -1.5px;
+        font-size: 32px;
         line-height: 1.05;
+        letter-spacing: -1px;
     }
 
-    .premium-header p {
-        margin: 10px 0 0;
-        color: rgba(255,255,255,.72);
+    .header-meta {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        color: rgba(255,255,255,.82);
+        font-size: 14px;
+        font-weight: 700;
     }
 
-    .premium-home {
-        width: 54px;
-        height: 54px;
+    .top-grid {
+        margin-top: 20px;
         display: grid;
-        place-items: center;
-        border-radius: 18px;
-        background: rgba(255,255,255,.12);
-        border: 1px solid rgba(255,255,255,.18);
-        color: white;
-        text-decoration: none;
-        font-size: 28px;
-        font-weight: 900;
-        flex-shrink: 0;
+        grid-template-columns: minmax(0, 1.1fr) minmax(420px, .9fr);
+        gap: 18px;
     }
 
-    .detail-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 980px) 340px;
-    gap: 24px;
-    align-items: start;
-    justify-content: center;
-            }
-
-    .detail-main {
+    .content-grid {
+        margin-top: 18px;
         display: grid;
-        gap: 20px;
+        grid-template-columns: minmax(0, 1fr) 470px;
+        gap: 18px;
+        align-items: start;
+    }
+
+    .main-area,
+    .side-area {
+        display: grid;
+        gap: 18px;
+    }
+
+    .side-area {
+        position: sticky;
+        top: 18px;
+    }
+
+    .panel,
+    .side-card {
+        border-radius: 24px;
+        background: rgba(255,255,255,.94);
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, .07);
     }
 
     .panel {
         padding: 24px;
-        border-radius: 30px;
-        background: rgba(255,255,255,.94);
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 22px 55px rgba(15, 23, 42, .08);
     }
 
-    .section-title {
-        margin: 0 0 18px;
-        font-size: 24px;
-        font-weight: 900;
-        color: #0f172a;
-        letter-spacing: -.5px;
+    .side-card {
+        padding: 20px;
     }
 
-    .section-header {
+    .panel-title,
+    .side-title {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 16px;
+        gap: 12px;
         margin-bottom: 18px;
     }
 
-    .btn-primary,
-    .btn-save-request {
-        border: none;
-        border-radius: 16px;
-        color: white;
-        padding: 13px 18px;
-        font-size: 14px;
-        font-weight: 900;
-        cursor: pointer;
-        transition: .18s ease;
-        white-space: nowrap;
+        .panel-title.no-margin {
+            margin-bottom: 0;
+        }
+
+        .panel-title h2,
+        .side-title h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 950;
+            letter-spacing: -.3px;
+        }
+
+    .title-icon,
+    .info-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: #eef4ff;
+        color: #1d4ed8;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, .10);
+        flex-shrink: 0;
+        font-weight: 950;
     }
 
-    .btn-primary {
-        background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        box-shadow: 0 12px 24px rgba(37, 99, 235, .18);
-    }
+        .title-icon.purple {
+            background: #f3e8ff;
+            color: #7e22ce;
+        }
 
-    .btn-save-request {
-        background: linear-gradient(135deg, #16a34a, #15803d);
-        box-shadow: 0 12px 24px rgba(22, 163, 74, .18);
-    }
-
-        .btn-primary:hover,
-        .btn-save-request:hover {
-            transform: translateY(-1px);
-            filter: brightness(.96);
+        .title-icon.orange {
+            background: #fff7ed;
+            color: #ea580c;
         }
 
     .info-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
+        gap: 12px;
     }
 
-    .info-card,
-    .note-box,
-    .operation-card,
-    .request-detail-card,
-    .empty-state {
-        border-radius: 20px;
+    .info-card {
+        min-height: 76px;
+        padding: 15px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+        .info-card label,
+        .note-box label {
+            display: block;
+            margin-bottom: 5px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .info-card strong {
+            display: block;
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 950;
+            word-break: break-word;
+        }
+
+    .service-info-list {
+        display: grid;
+        gap: 14px;
+    }
+
+        .service-info-list > div,
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+        }
+
+            .service-info-list span,
+            .total-row span {
+                color: #64748b;
+                font-size: 13px;
+                font-weight: 850;
+            }
+
+            .service-info-list strong,
+            .total-row strong {
+                color: #0f172a;
+                font-size: 13px;
+                font-weight: 950;
+                text-align: right;
+            }
+
+    .status-pill,
+    .summary-status {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-size: 12px !important;
+        font-weight: 950 !important;
+    }
+
+    .status-1 {
+        background: #dcfce7;
+        color: #15803d !important;
+    }
+
+    .status-2 {
+        background: #fef3c7;
+        color: #b45309 !important;
+    }
+
+    .status-3 {
+        background: #dbeafe;
+        color: #1d4ed8 !important;
+    }
+
+    .status-4 {
+        background: #fee2e2;
+        color: #b91c1c !important;
+    }
+
+    .note-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    .note-box {
+        padding: 16px;
+        border-radius: 18px;
         background: #f8fafc;
         border: 1px solid #e2e8f0;
     }
 
-    .info-card {
-        padding: 18px;
+        .note-box p {
+            margin: 0;
+            color: #0f172a;
+            font-size: 14px;
+            line-height: 1.6;
+            font-weight: 650;
+        }
+
+    .requests-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 18px;
     }
 
-        .info-card label {
+    .outline-btn {
+        height: 42px;
+        padding: 0 16px;
+        border-radius: 12px;
+        border: 1px solid #93c5fd;
+        background: white;
+        color: #1d4ed8;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+    .request-detail-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .request-detail-card {
+        border-radius: 18px;
+        background: #f8fbff;
+        border: 1px solid #bfdbfe;
+        overflow: hidden;
+    }
+
+    .request-card-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: stretch;
+    }
+
+    .request-accordion-header {
+        border: none;
+        width: 100%;
+        background: transparent;
+        cursor: pointer;
+        padding: 16px 18px;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        text-align: left;
+    }
+
+        .request-accordion-header strong {
             display: block;
-            margin-bottom: 8px;
+            font-size: 15px;
+            font-weight: 950;
+            color: #0f172a;
+        }
+
+        .request-accordion-header span:not(.accordion-arrow):not(.estimate-pill) {
+            display: block;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 750;
+        }
+
+    .request-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .estimate-pill {
+        display: inline-flex;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: #fee2e2;
+        color: #ef4444;
+        font-size: 12px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .accordion-arrow {
+        font-size: 18px;
+        font-weight: 950;
+        color: #334155;
+        transition: .18s ease;
+    }
+
+    .request-detail-card.collapsed .accordion-arrow {
+        transform: rotate(-90deg);
+    }
+
+    .request-detail-card.collapsed .request-accordion-body {
+        display: none;
+    }
+
+    .request-delete-btn,
+    .icon-delete-btn {
+        border: none;
+        background: #fff1f2;
+        color: #dc2626;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+    .request-delete-btn {
+        margin: 10px;
+        padding: 0 14px;
+        border-radius: 12px;
+    }
+
+    .icon-delete-btn {
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+    }
+
+    .request-accordion-body {
+        padding: 0 16px 16px;
+    }
+
+    .request-operation-area {
+        padding: 14px;
+        border-radius: 16px;
+        background: white;
+        border: 1px solid #e2e8f0;
+    }
+
+    .request-operation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 12px;
+    }
+
+        .request-operation-header strong {
+            font-size: 13px;
+            font-weight: 950;
+        }
+
+        .request-operation-header span {
+            color: #16a34a;
+            font-size: 13px;
+            font-weight: 950;
+        }
+
+    .operation-table {
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+    }
+
+    .operation-table-head,
+    .operation-table-row {
+        display: grid;
+        grid-template-columns: 110px minmax(0, 1.3fr) 100px 130px 130px 70px;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .operation-table-head {
+        padding: 11px 12px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .operation-table-row {
+        padding: 12px;
+        border-top: 1px solid #e2e8f0;
+        background: white;
+        font-size: 13px;
+        color: #0f172a;
+    }
+
+        .operation-table-row small {
+            display: block;
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+    .type-badge {
+        display: inline-flex;
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+        .type-badge.part {
+            background: #ede9fe;
+            color: #7c3aed;
+        }
+
+        .type-badge.labor {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+    .mini-empty,
+    .empty-state {
+        padding: 18px;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        color: #64748b;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+    .add-operation-form {
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 16px;
+        background: #f1f5f9;
+        display: grid;
+        gap: 12px;
+    }
+
+    .operation-form-row {
+        display: grid;
+        grid-template-columns: 140px minmax(260px, 1fr) 100px 130px;
+        gap: 12px;
+        align-items: center;
+    }
+
+        .operation-form-row .btn-primary {
+            grid-column: 1 / -1;
+        }
+
+    .type-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 48px;
+        border: 1px solid #dbe3ef;
+        border-radius: 14px;
+        overflow: hidden;
+        background: white;
+    }
+
+        .type-toggle input {
+            display: none;
+        }
+
+        .type-toggle label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
             color: #64748b;
             font-size: 13px;
-            font-weight: 800;
+            font-weight: 950;
         }
 
-        .info-card strong {
-            color: #0f172a;
-            font-size: 15px;
-            font-weight: 900;
+        .type-toggle input:checked + label {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
         }
-
-    .note-box {
-        padding: 18px;
-        color: #0f172a;
-        line-height: 1.7;
-        font-weight: 600;
-    }
 
     .form-field {
         position: relative;
@@ -646,20 +1108,20 @@
         .form-field input,
         .form-field textarea {
             width: 100%;
-            min-height: 54px;
+            min-height: 48px;
             border: 1px solid #dbe3ef;
-            border-radius: 16px;
+            border-radius: 14px;
             background: white;
-            padding: 20px 15px 10px;
+            padding: 18px 14px 8px;
             font: inherit;
-            font-size: 15px;
+            font-size: 14px;
             color: #0f172a;
             outline: none;
             transition: .18s ease;
         }
 
         .form-field textarea {
-            min-height: 96px;
+            min-height: 82px;
             resize: vertical;
             line-height: 1.45;
         }
@@ -667,20 +1129,19 @@
             .form-field input:focus,
             .form-field textarea:focus {
                 border-color: #2563eb;
-                background: white;
-                box-shadow: 0 0 0 4px rgba(37, 99, 235, .11);
+                box-shadow: 0 0 0 4px rgba(37, 99, 235, .10);
             }
 
         .form-field label {
             position: absolute;
-            top: 16px;
-            left: 15px;
-            padding: 0 6px;
-            border-radius: 8px;
+            top: 14px;
+            left: 13px;
+            padding: 0 5px;
+            border-radius: 7px;
             background: white;
             color: #64748b;
-            font-size: 14px;
-            font-weight: 800;
+            font-size: 13px;
+            font-weight: 850;
             pointer-events: none;
             transition: .18s ease;
         }
@@ -690,230 +1151,305 @@
         .form-field textarea:focus + label,
         .form-field textarea:not(:placeholder-shown) + label {
             top: -8px;
-            left: 12px;
+            left: 11px;
             color: #2563eb;
             font-size: 11px;
         }
 
-    .request-detail-list,
-    .operation-list {
-        display: grid;
-        gap: 14px;
-    }
-
-    .request-detail-card {
-        padding: 18px;
-    }
-
-    .request-detail-main {
-        display: flex;
-        justify-content: space-between;
-        gap: 18px;
-        align-items: flex-start;
-        margin-bottom: 16px;
-    }
-
-        .request-detail-main strong {
-            display: block;
-            font-size: 16px;
-            font-weight: 900;
-            color: #0f172a;
-        }
-
-        .request-detail-main span {
-            display: block;
-            margin-top: 6px;
-            color: #64748b;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-    .request-detail-meta {
-        text-align: right;
-        min-width: 170px;
-    }
-
-    .request-status {
-        display: inline-flex !important;
-        margin-top: 8px !important;
-        padding: 7px 11px;
-        border-radius: 999px;
-        font-size: 12px !important;
-        font-weight: 900 !important;
-    }
-
-        .request-status.open {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .request-status.resolved {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-    .request-update-form {
-        display: grid;
-        gap: 14px;
-    }
-
-    .request-repair-area {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 190px;
-        gap: 14px;
-    }
-
-    .request-actions {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-    }
-
-    .resolved-check {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: #334155;
-        font-size: 14px;
-        font-weight: 800;
-    }
-
-        .resolved-check input {
-            width: 18px;
-            height: 18px;
-            accent-color: #16a34a;
-        }
-
-    .add-request-form {
-        display: grid;
-        gap: 14px;
+    .btn-primary {
+        min-height: 48px;
+        border: none;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: white;
+        padding: 0 16px;
+        font-weight: 950;
+        cursor: pointer;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, .16);
     }
 
     .request-builder-detail {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 220px 170px;
+        grid-template-columns: minmax(0, 1fr) 220px 160px;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .add-request-form {
+        display: grid;
+        gap: 12px;
+    }
+
+    .side-title {
+        margin-bottom: 16px;
+    }
+
+    .total-card {
+        display: grid;
+        gap: 10px;
+    }
+
+    .total-row strong {
+        color: #1d4ed8;
+        font-size: 16px;
+    }
+
+    .mini-status-current {
+        margin-bottom: 16px;
+        padding: 13px;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+    }
+
+        .mini-status-current span {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+    .status-steps {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .step {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 850;
+    }
+
+        .step span {
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 6px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            color: #64748b;
+            display: grid;
+            place-items: center;
+            font-weight: 950;
+        }
+
+        .step.active span {
+            background: #dcfce7;
+            color: #16a34a;
+            box-shadow: 0 0 0 4px rgba(22, 163, 74, .12);
+        }
+
+        .step.danger.active span {
+            background: #fee2e2;
+            color: #dc2626;
+            box-shadow: 0 0 0 4px rgba(220, 38, 38, .12);
+        }
+
+    .status-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .status-btn {
+        min-height: 46px;
+        border: none;
+        border-radius: 13px;
+        color: white;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+        .status-btn.full {
+            grid-column: 1 / -1;
+        }
+
+        .status-btn.success {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+        }
+
+        .status-btn.primary {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        }
+
+        .status-btn.danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+    .action-card {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         gap: 14px;
         align-items: center;
     }
 
-    .add-request-note textarea {
-        min-height: 110px;
-    }
-
-    .operation-card {
-        display: grid;
-        grid-template-columns: 1.5fr 1fr 150px;
-        gap: 18px;
-        align-items: center;
-        padding: 18px;
-    }
-
-        .operation-card strong {
+        .action-card strong {
             display: block;
-            color: #0f172a;
-            font-weight: 900;
+            margin-bottom: 4px;
+            font-size: 15px;
+            font-weight: 950;
         }
 
-        .operation-card span {
+        .action-card span {
             display: block;
-            margin-top: 5px;
             color: #64748b;
-            font-size: 13px;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: 750;
         }
 
-    .empty-state {
-        padding: 30px;
-        border-style: dashed;
-        text-align: center;
+    .small-action-btn {
+        border: 1px solid #93c5fd;
+        background: white;
+        color: #1d4ed8;
+        text-decoration: none;
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 950;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    #qr-reader {
+        grid-column: 1 / -1;
+        margin-top: 12px;
+        overflow: hidden;
+        border-radius: 16px;
+        background: white;
+    }
+
+    .qr-scan-result {
+        grid-column: 1 / -1;
         color: #64748b;
-        font-weight: 800;
+        font-size: 12px;
+        font-weight: 850;
     }
 
-    .summary-card {
-        position: sticky;
-        top: 24px;
-        padding: 28px;
-        border-radius: 30px;
-        background: linear-gradient(180deg, #0f172a, #111827);
+    .qr-note {
+        padding: 14px;
+        border-radius: 16px;
+        background: #fef3c7;
+        border: 1px solid #fde68a;
+        color: #92400e;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+    .page-footer {
+        margin-top: 22px;
+        color: #64748b;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 750;
+    }
+
+    .toast-message {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        min-width: 280px;
+        max-width: 430px;
+        padding: 14px 18px;
+        border-radius: 14px;
         color: white;
-        box-shadow: 0 25px 60px rgba(15, 23, 42, .24);
-    }
-
-    .summary-label {
-        color: rgba(255,255,255,.70);
         font-size: 14px;
         font-weight: 800;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .22);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(20px);
+        transition: all .25s ease;
+        z-index: 9999;
     }
 
-    .summary-total {
-        margin-top: 14px;
-        font-size: 42px;
-        font-weight: 950;
-        letter-spacing: -2px;
-    }
+        .toast-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
-    .summary-status {
-        margin-top: 18px;
-        padding: 12px 14px;
-        border-radius: 16px;
-        background: rgba(255,255,255,.08);
-        border: 1px solid rgba(255,255,255,.08);
-        text-align: center;
-        font-weight: 800;
-    }
+        .toast-message.success {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+        }
 
-    @@media (max-width: 800px) {
-        .detail-layout {
+        .toast-message.error {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+        }
+
+        .toast-message.info {
+            background: linear-gradient(135deg, #2563eb, #38bdf8);
+        }
+
+    @@media (max-width: 1200px) {
+        .top-grid,
+        .content-grid {
             grid-template-columns: 1fr;
         }
 
-        .summary-card {
+        .side-area {
             position: static;
-        }
-
-        .info-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .operation-card {
-            grid-template-columns: 1fr;
         }
     }
 
     @@media (max-width: 900px) {
         .page {
-            width: min(100% - 28px, 1450px);
-            padding-top: 20px;
+            width: calc(100% - 28px);
+            padding-top: 16px;
         }
 
         .premium-header {
-            padding: 24px;
-            border-radius: 26px;
-            align-items: flex-start;
+            grid-template-columns: auto 1fr;
         }
 
-            .premium-header h1 {
-                font-size: 28px;
-            }
-
-        .premium-brand {
-            align-items: flex-start;
+        .header-more {
+            display: none;
         }
 
-        .request-detail-main,
-        .request-actions {
+        .premium-header h1 {
+            font-size: 24px;
+            word-break: break-word;
+        }
+
+        .info-grid,
+        .note-grid,
+        .request-builder-detail,
+        .operation-form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .operation-table-head {
+            display: none;
+        }
+
+        .operation-table-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .request-card-top {
+            grid-template-columns: 1fr;
+        }
+
+        .request-delete-btn {
+            min-height: 42px;
+        }
+
+        .requests-header {
             display: grid;
         }
 
-        .request-detail-meta {
-            text-align: left;
-            min-width: 0;
+        .action-card {
+            grid-template-columns: 1fr;
         }
 
-        .request-repair-area,
-        .request-builder-detail {
+        .status-actions {
             grid-template-columns: 1fr;
         }
     }
@@ -921,1076 +1457,700 @@
     @@media (max-width: 600px) {
         .page {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
         }
 
-        .panel {
+        .panel,
+        .side-card {
+            border-radius: 20px;
             padding: 16px;
+        }
+
+        .premium-header {
+            padding: 20px;
             border-radius: 22px;
         }
 
-        .premium-logo,
-        .premium-home {
+        .header-back {
             width: 46px;
             height: 46px;
-            border-radius: 15px;
-        }
-
-        .section-title {
-            font-size: 21px;
+            border-radius: 14px;
         }
     }
-
-    .premium-header {
-        max-width: 1344px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .detail-main {
-        width: 100%;
-        max-width: 980px;
-    }
-
-    .detail-sidebar {
-        width: 340px;
-    }
-
-            .detail-layout {
-                width: min(980px, 100%);
-                margin: 0 auto;
-                display: block;
-            }
-
-            .request-operation-area {
-                margin-top: 16px;
-                padding: 16px;
-                border-radius: 18px;
-                background: white;
-                border: 1px solid #e2e8f0;
-            }
-
-            .request-operation-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 14px;
-                margin-bottom: 12px;
-            }
-
-                .request-operation-header strong {
-                    font-size: 14px;
-                    font-weight: 900;
-                    color: #0f172a;
-                }
-
-                .request-operation-header span {
-                    font-size: 13px;
-                    font-weight: 900;
-                    color: #16a34a;
-                }
-
-            .request-operation-list {
-                display: grid;
-                gap: 10px;
-            }
-
-            .request-operation-item {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) auto auto;
-                align-items: center;
-                gap: 16px;
-                padding: 13px 14px;
-                border-radius: 15px;
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-            }
-
-                .request-operation-item strong {
-                    display: block;
-                    font-size: 14px;
-                    font-weight: 900;
-                    color: #0f172a;
-                }
-
-                .request-operation-item span {
-                    display: block;
-                    margin-top: 4px;
-                    color: #64748b;
-                    font-size: 12px;
-                    font-weight: 700;
-                }
-
-            .mini-empty {
-                padding: 14px;
-                border-radius: 15px;
-                background: #f8fafc;
-                border: 1px dashed #cbd5e1;
-                color: #64748b;
-                font-size: 13px;
-                font-weight: 800;
-                text-align: center;
-            }
-
-            .add-operation-form {
-                margin-top: 16px;
-                display: grid;
-                gap: 12px;
-            }
-
-            .operation-form-row {
-                display: grid;
-                grid-template-columns: 180px minmax(0, 1fr) 100px 160px 120px;
-                gap: 12px;
-                align-items: center;
-            }
-
-            .operation-note-field textarea {
-                min-height: 80px;
-            }
-
-            .form-field select {
-                width: 100%;
-                min-height: 54px;
-                border: 1px solid #dbe3ef;
-                border-radius: 16px;
-                background: white;
-                padding: 20px 15px 10px;
-                font: inherit;
-                font-size: 15px;
-                color: #0f172a;
-                outline: none;
-            }
-
-                .form-field select + label {
-                    top: -8px;
-                    left: 12px;
-                    color: #2563eb;
-                    font-size: 11px;
-                }
-
-            @@media (max-width: 900px) {
-                .operation-form-row {
-                    grid-template-columns: 1fr;
-                }
-            }
-
-            .type-toggle {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                border-radius: 16px;
-                overflow: hidden;
-                border: 1px solid #dbe3ef;
-                min-height: 54px;
-                background: white;
-            }
-
-                .type-toggle input {
-                    display: none;
-                }
-
-                .type-toggle label {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    font-size: 14px;
-                    font-weight: 800;
-                    color: #64748b;
-                    transition: .2s ease;
-                    background: white;
-                }
-
-                .type-toggle input:checked + label {
-                    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-                    color: white;
-                }
-
-            .request-accordion-header {
-                width: 100%;
-                border: none;
-                background: transparent;
-                padding: 0;
-                display: grid;
-                grid-template-columns: 1fr auto;
-                gap: 18px;
-                align-items: center;
-                text-align: left;
-                cursor: pointer;
-            }
-
-                .request-accordion-header strong {
-                    display: block;
-                    font-size: 16px;
-                    font-weight: 900;
-                    color: #0f172a;
-                }
-
-                .request-accordion-header span {
-                    display: block;
-                    margin-top: 6px;
-                    color: #64748b;
-                    font-size: 13px;
-                    font-weight: 700;
-                }
-
-            .accordion-arrow {
-                display: inline-flex !important;
-                justify-content: center;
-                align-items: center;
-                width: 38px;
-                height: 38px;
-                border-radius: 14px;
-                background: #dbeafe;
-                color: #1d4ed8 !important;
-                font-size: 24px !important;
-                font-weight: 950 !important;
-                transition: .18s ease;
-            }
-
-            .request-detail-card:not(.collapsed) .accordion-arrow {
-                transform: rotate(90deg);
-            }
-
-            .request-detail-card.collapsed .request-accordion-body {
-                display: none;
-            }
-
-            .request-detail-card.collapsed .accordion-arrow {
-                transform: rotate(-90deg);
-            }
-
-            .request-detail-card.collapsed .request-accordion-body {
-                display: none;
-            }
-
-            .summary-status.status-1 {
-                background: #dbeafe;
-                color: #1d4ed8;
-                border-color: #bfdbfe;
-            }
-
-            .summary-status.status-2 {
-                background: #fef3c7;
-                color: #b45309;
-                border-color: #fde68a;
-            }
-
-            .summary-status.status-3 {
-                background: #dcfce7;
-                color: #15803d;
-                border-color: #bbf7d0;
-            }
-
-            .summary-status.status-4 {
-                background: #fee2e2;
-                color: #b91c1c;
-                border-color: #fecaca;
-            }
-
-            .status-actions {
-                display: grid;
-                gap: 10px;
-                margin-top: 14px;
-            }
-
-            .status-btn {
-                border: none;
-                border-radius: 15px;
-                padding: 12px 14px;
-                font-weight: 900;
-                cursor: pointer;
-            }
-
-                .status-btn.primary {
-                    background: #dbeafe;
-                    color: #1d4ed8;
-                }
-
-                .status-btn.warning {
-                    background: #fef3c7;
-                    color: #b45309;
-                }
-
-                .status-btn.success {
-                    background: #dcfce7;
-                    color: #15803d;
-                }
-
-                .status-btn.danger {
-                    background: #fee2e2;
-                    color: #b91c1c;
-                }
-
-            .request-detail-card.collapsed .request-accordion-body {
-                display: none;
-            }
-
-            .request-detail-card.collapsed .accordion-arrow {
-                transform: rotate(0deg);
-            }
-
-            .request-detail-card:not(.collapsed) .accordion-arrow {
-                transform: rotate(90deg);
-            }
-
-            .operation-delete-btn {
-                border: none;
-                border-radius: 12px;
-                padding: 9px 12px;
-                background: #fee2e2;
-                color: #b91c1c;
-                font-size: 12px;
-                font-weight: 900;
-                cursor: pointer;
-                transition: .18s ease;
-            }
-
-                .operation-delete-btn:hover {
-                    background: #fecaca;
-                }
-
-            .request-card-top {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) auto;
-                gap: 12px;
-                align-items: center;
-            }
-
-            .request-delete-btn {
-                border: none;
-                border-radius: 14px;
-                padding: 11px 14px;
-                background: #fee2e2;
-                color: #b91c1c;
-                font-size: 13px;
-                font-weight: 900;
-                cursor: pointer;
-                transition: .18s ease;
-                flex-shrink: 0;
-            }
-
-                .request-delete-btn:hover {
-                    background: #fecaca;
-                }
-
-            .pdf-btn {
-                display: block;
-                margin-top: 14px;
-                padding: 13px 14px;
-                border-radius: 15px;
-                background: white;
-                color: #0f172a;
-                text-align: center;
-                text-decoration: none;
-                font-weight: 900;
-            }
-
-                .pdf-btn:hover {
-                    background: #f8fafc;
-                }
-
-            .qr-assign-box {
-                margin-top: 14px;
-                padding: 14px;
-                border-radius: 18px;
-                background: rgba(255,255,255,.08);
-                border: 1px solid rgba(255,255,255,.12);
-            }
-
-            .qr-title {
-                margin-bottom: 10px;
-                color: rgba(255,255,255,.75);
-                font-size: 13px;
-                font-weight: 900;
-            }
-
-            .qr-assign-box {
-                margin-top: 14px;
-                padding: 14px;
-                border-radius: 18px;
-                background: rgba(255,255,255,.08);
-                border: 1px solid rgba(255,255,255,.12);
-            }
-
-            .qr-title {
-                margin-bottom: 10px;
-                color: rgba(255,255,255,.75);
-                font-size: 13px;
-                font-weight: 900;
-            }
-
-            #start-qr-scan-btn {
-                width: 100%;
-                border: none;
-                border-radius: 13px;
-                padding: 12px;
-                background: #dbeafe;
-                color: #1d4ed8;
-                font-weight: 950;
-                cursor: pointer;
-            }
-
-            #qr-reader {
-                margin-top: 12px;
-                overflow: hidden;
-                border-radius: 16px;
-                background: white;
-            }
-
-            .qr-scan-result {
-                margin-top: 10px;
-                color: rgba(255,255,255,.78);
-                font-size: 12px;
-                font-weight: 800;
-            }
-
 </style>
 
-    <script>
-            function toggleRequestCard(button) {
-                const card = button.closest(".request-detail-card");
-                card.classList.toggle("collapsed");
-            }
+<script src="https://unpkg.com/html5-qrcode"></script>
 
-            function formatMoney(value) {
-                return Number(value || 0).toLocaleString("tr-TR", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }) + " ₺";
-            }
+<script>
+    function showToast(message, type = "info") {
+    const toast = document.getElementById("toastMessage");
 
-            function setButtonLoading(button, isLoading, loadingText) {
-                if (!button) return;
+    if (!toast) return;
 
-                if (isLoading) {
-                    button.dataset.originalText = button.textContent;
-                    button.disabled = true;
-                    button.textContent = loadingText;
-                    return;
-                }
+    toast.className = `toast-message ${type}`;
+    toast.innerText = message;
 
-                button.disabled = false;
-                button.textContent = button.dataset.originalText || button.textContent;
-            }
+    requestAnimationFrame(() => {
+    toast.classList.add("show");
+    });
 
-            function updateSummaryTotal(value) {
-                const summaryTotal = document.querySelector(".summary-total");
+    setTimeout(() => {
+    toast.classList.remove("show");
+    }, 3200);
+    }
 
-                if (!summaryTotal) return;
+    function focusAddRequest() {
+    const panel = document.getElementById("addRequestPanel");
+    const input = panel?.querySelector('input[name="Title"]');
 
-                summaryTotal.dataset.total = value;
-                summaryTotal.textContent = formatMoney(value);
-            }
+    panel?.scrollIntoView({ behavior: "smooth", block: "center" });
 
-                        async function assignQrCode(vehicleId, button) {
-                const input = document.getElementById("qr-code-input");
-                const code = input?.value?.trim();
+    setTimeout(() => {
+    input?.focus();
+    }, 350);
+    }
 
-                if (!code) {
-                    alert("QR kod giriniz.");
-                    return;
-                }
+    function toggleRequestCard(button) {
+    const card = button.closest(".request-detail-card");
+    card.classList.toggle("collapsed");
+    }
 
-                button.disabled = true;
-                button.textContent = "Atanıyor...";
+    function formatMoney(value) {
+    return Number(value || 0).toLocaleString("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+    }) + " ₺";
+    }
 
-                const formData = new FormData();
-                formData.append("vehicleId", vehicleId);
-                formData.append("code", code);
+    function setButtonLoading(button, isLoading, loadingText) {
+    if (!button) return;
 
-                const response = await fetch("/ServiceRecords/AssignQrCode", {
-                    method: "POST",
-                    body: formData
-                });
+    if (isLoading) {
+    button.dataset.originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = loadingText;
+    return;
+    }
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    alert(errorText || "QR atanırken hata oluştu.");
+    button.disabled = false;
+    button.textContent = button.dataset.originalText || button.textContent;
+    }
 
-                    button.disabled = false;
-                    button.textContent = "QR Ata";
-                    return;
-                }
+    function updateSummaryTotal(value) {
+    const summaryTotal = document.querySelector(".summary-total");
 
-                alert("QR kod araca başarıyla atandı.");
+    if (!summaryTotal) return;
 
-                button.textContent = "Atandı";
-                input.disabled = true;
-            }
+    summaryTotal.dataset.total = value;
+    summaryTotal.textContent = formatMoney(value);
+    }
 
-            function bindOperationForms() {
-                document.querySelectorAll(".ajax-operation-form").forEach(form => {
-                    if (form.dataset.bound === "true") return;
+    function createOperationListIfNeeded(card) {
+    let operationList = card.querySelector(".request-operation-list");
 
-                    form.dataset.bound = "true";
+    if (operationList) return operationList;
 
-                    form.addEventListener("submit", async function (e) {
-                        e.preventDefault();
+    const area = card.querySelector(".request-operation-area");
+    const empty = area.querySelector(".mini-empty");
 
-                        if (form.dataset.submitting === "true") {
-                            return;
-                        }
+    if (empty) empty.remove();
 
-                        form.dataset.submitting = "true";
+    operationList = document.createElement("div");
+    operationList.className = "operation-table request-operation-list";
 
-                        const submitButton = form.querySelector('button[type="submit"]');
-                        setButtonLoading(submitButton, true, "Ekleniyor...");
+    operationList.innerHTML = `
+    <div class="operation-table-head">
+    <span>Tür</span>
+    <span>Açıklama</span>
+    <span>Miktar</span>
+    <span>Birim Fiyat</span>
+    <span>Toplam</span>
+    <span></span>
+    </div>
+    `;
 
-                        try {
-                            const formData = new FormData(form);
+    area.appendChild(operationList);
 
-                            const response = await fetch(form.action, {
-                                method: "POST",
-                                body: formData
-                            });
+    return operationList;
+    }
 
-                            if (!response.ok) {
-                                alert("İşlem eklenemedi.");
-                                return;
-                            }
+    function bindOperationForms() {
+    document.querySelectorAll(".ajax-operation-form").forEach(form => {
+    if (form.dataset.bound === "true") return;
 
-                            const operation = await response.json();
+    form.dataset.bound = "true";
 
-                            const card = form.closest(".request-detail-card");
-                            const empty = card.querySelector(".mini-empty");
-                            const totalText = card.querySelector(".request-operation-header span");
+    form.addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-                            if (empty) {
-                                empty.remove();
-                            }
+    if (form.dataset.submitting === "true") {
+    return;
+    }
 
-                            let operationList = card.querySelector(".request-operation-list");
+    form.dataset.submitting = "true";
 
-                            if (!operationList) {
-                                const area = card.querySelector(".request-operation-area");
+    const submitButton = form.querySelector('button[type="submit"]');
+    setButtonLoading(submitButton, true, "Ekleniyor...");
 
-                                operationList = document.createElement("div");
-                                operationList.className = "request-operation-list";
+    try {
+    const formData = new FormData(form);
 
-                                area.appendChild(operationList);
-                            }
+    const response = await fetch(form.action, {
+    method: "POST",
+    body: formData
+    });
 
-                            const item = document.createElement("div");
-                            item.className = "request-operation-item";
-                            item.id = `operation-item-${operation.id}`;
+    if (!response.ok) {
+    showToast("İşlem eklenemedi.", "error");
+    return;
+    }
 
-                            const typeText = operation.type == 1 ? "Parça" : "İşçilik";
+    const operation = await response.json();
 
-                            item.innerHTML = `
-                                <div>
-                                    <strong>${operation.description}</strong>
-                                    <span>${typeText}</span>
-                                </div>
+    const card = form.closest(".request-detail-card");
+    const totalText = card.querySelector(".request-operation-header span");
+    const operationList = createOperationListIfNeeded(card);
 
-                                <div>
-                                    <strong>${formatMoney(operation.totalPrice)}</strong>
-                                    <span>${operation.quantity} adet × ${formatMoney(operation.unitPrice)}</span>
-                                </div>
+    const typeText = operation.type == 1 ? "Parça" : "İşçilik";
+    const typeClass = operation.type == 1 ? "part" : "labor";
 
-                                <button type="button"
-                                        class="operation-delete-btn"
-                                        onclick="deleteOperation(${operation.id}, this)">
-                                    Sil
-                                </button>
-                            `;
+    const item = document.createElement("div");
+    item.className = "operation-table-row request-operation-item";
+    item.id = `operation-item-${operation.id}`;
 
-                            operationList.appendChild(item);
+    item.innerHTML = `
+    <span>
+    <b class="type-badge ${typeClass}">${typeText}</b>
+    </span>
 
-                            const currentTotal = Number(totalText.dataset.total || "0");
-                            const newTotal = currentTotal + Number(operation.totalPrice || 0);
+    <span>
+    <strong>${operation.description}</strong>
+    ${operation.note ? `<small>${operation.note}</small>` : ""}
+    </span>
 
-                            totalText.dataset.total = newTotal;
-                            totalText.textContent = `Toplam: ${formatMoney(newTotal)}`;
+    <span>${Number(operation.quantity || 0).toLocaleString("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+    })}</span>
 
-                            const summaryTotal = document.querySelector(".summary-total");
+    <span>${formatMoney(operation.unitPrice)}</span>
 
-                            if (summaryTotal) {
-                                const currentSummaryTotal = Number(summaryTotal.dataset.total || "0");
-                                const newSummaryTotal = currentSummaryTotal + Number(operation.totalPrice || 0);
+    <span><strong>${formatMoney(operation.totalPrice)}</strong></span>
 
-                                updateSummaryTotal(newSummaryTotal);
-                            }
+    <span>
+    <button type="button"
+    class="icon-delete-btn"
+    onclick="deleteOperation(${operation.id}, this)">
+    Sil
+    </button>
+    </span>
+    `;
 
-                            form.reset();
+    operationList.appendChild(item);
 
-                            const quantityInput = form.querySelector('input[name="Quantity"]');
+    const currentTotal = Number(totalText.dataset.total || "0");
+    const newTotal = currentTotal + Number(operation.totalPrice || 0);
 
-                            if (quantityInput) {
-                                quantityInput.value = 1;
-                            }
-                        }
-                        finally {
-                            form.dataset.submitting = "false";
-                            setButtonLoading(submitButton, false);
-                        }
-                    });
-                });
-            }
+    totalText.dataset.total = newTotal;
+    totalText.textContent = `Toplam: ${formatMoney(newTotal)}`;
 
-            document.addEventListener("submit", async function (e) {
-                const form = e.target;
+    const summaryTotal = document.querySelector(".summary-total");
 
-                if (!form.classList.contains("ajax-request-form")) {
-                    return;
-                }
+    if (summaryTotal) {
+    const currentSummaryTotal = Number(summaryTotal.dataset.total || "0");
+    const newSummaryTotal = currentSummaryTotal + Number(operation.totalPrice || 0);
 
-                e.preventDefault();
+    updateSummaryTotal(newSummaryTotal);
+    }
 
-                if (form.dataset.submitting === "true") {
-                    return;
-                }
+    form.reset();
 
-                form.dataset.submitting = "true";
+    const quantityInput = form.querySelector('input[name="Quantity"]');
 
-                const submitButton = form.querySelector('button[type="submit"]');
-                setButtonLoading(submitButton, true, "Ekleniyor...");
+    if (quantityInput) {
+    quantityInput.value = 1;
+    }
 
-                try {
-                    const formData = new FormData(form);
-
-                    const response = await fetch(form.action, {
-                        method: "POST",
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        alert("Talep eklenemedi.");
-                        return;
-                    }
-
-                    const requestItem = await response.json();
-
-                    let list = document.querySelector(".request-detail-list");
-
-                    const emptyState = document.querySelector(".empty-state");
-
-                    if (!list) {
-                        const panel = form.closest(".panel").previousElementSibling;
-
-                        list = document.createElement("div");
-                        list.className = "request-detail-list";
-
-                        if (emptyState) {
-                            emptyState.replaceWith(list);
-                        }
-                    }
-
-                    const card = document.createElement("div");
-                    card.className = "request-detail-card collapsed";
-                    card.dataset.requestId = requestItem.id;
-                    card.id = `request-item-${requestItem.id}`;
-
-                    const estimatedText = requestItem.estimatedAmount
-                        ? `Tahmini: ${formatMoney(requestItem.estimatedAmount)}`
-                        : "";
-
-                    card.innerHTML = `
-                        <div class="request-card-top">
-                            <button type="button"
-                                    class="request-accordion-header"
-                                    onclick="toggleRequestCard(this)">
-                                <strong>${requestItem.title}</strong>
-                                <span class="accordion-arrow">›</span>
-                            </button>
-
-                            <button type="button"
-                                    class="request-delete-btn"
-                                    onclick="deleteRequestItem(${requestItem.id}, this)">
-                                Sil
-                            </button>
-                        </div>
-
-                        <div class="request-accordion-body">
-                            <div class="request-info-line">
-                                ${requestItem.note ? `<span>${requestItem.note}</span>` : ""}
-                                ${estimatedText ? `<strong>${estimatedText}</strong>` : ""}
-                            </div>
-
-                            <div class="request-operation-area">
-                                <div class="request-operation-header">
-                                    <strong>Yapılan İşlemler</strong>
-                                    <span data-total="0">Toplam: 0,00 ₺</span>
-                                </div>
-
-                                <div class="mini-empty">
-                                    Bu talep için henüz işlem eklenmedi.
-                                </div>
-                            </div>
-
-                            <form action="/ServiceRecords/AddOperation"
-                                  method="post"
-                                  class="add-operation-form ajax-operation-form">
-
-                                <input type="hidden" name="ServiceRecordId" value="${formData.get("serviceRecordId")}" />
-                                <input type="hidden" name="ServiceRequestItemId" value="${requestItem.id}" />
-
-                                <div class="operation-form-row">
-                                    <div class="type-toggle">
-                                        <input type="radio" id="partType_${requestItem.id}" name="Type" value="1" checked />
-                                        <label for="partType_${requestItem.id}">Parça</label>
+    showToast("İşlem başarıyla eklendi.", "success");
+    }
+    finally {
+    form.dataset.submitting = "false";
+    setButtonLoading(submitButton, false);
+    }
+    });
+    });
+    }
 
-                                        <input type="radio" id="laborType_${requestItem.id}" name="Type" value="2" />
-                                        <label for="laborType_${requestItem.id}">İşçilik</label>
-                                    </div>
+    document.addEventListener("submit", async function (e) {
+    const form = e.target;
 
-                                    <div class="form-field">
-                                        <input name="Description" placeholder=" " />
-                                        <label>İşlem Açıklaması</label>
-                                    </div>
-
-                                    <div class="form-field">
-                                        <input name="Quantity" type="number" value="1" min="1" placeholder=" " />
-                                        <label>Adet</label>
-                                    </div>
-
-                                    <div class="form-field">
-                                        <input name="UnitPrice" type="number" step="0.01" min="0" placeholder=" " />
-                                        <label>Birim Fiyat</label>
-                                    </div>
-
-                                    <button type="submit" class="btn-primary">
-                                        + İşlem
-                                    </button>
-                                </div>
-
-                                <div class="form-field operation-note-field">
-                                    <textarea name="Note" placeholder=" "></textarea>
-                                    <label>İşlem Notu</label>
-                                </div>
-                            </form>
-                        </div>
-                    `;
-
-                    if (list) {
-                        list.appendChild(card);
-                    }
-
-                    form.reset();
-                    bindOperationForms();
-                }
-                finally {
-                    form.dataset.submitting = "false";
-                    setButtonLoading(submitButton, false);
-                }
-            });
-
-            async function deleteOperation(operationId, button) {
-                const confirmed = confirm("Bu işlemi silmek istediğinize emin misiniz?");
-
-                if (!confirmed) {
-                    return;
-                }
-
-                setButtonLoading(button, true, "Siliniyor...");
+    if (!form.classList.contains("ajax-request-form")) {
+    return;
+    }
 
-                try {
-                    const formData = new FormData();
-                    formData.append("operationId", operationId);
+    e.preventDefault();
 
-                    const response = await fetch("/ServiceRecords/DeleteOperation", {
-                        method: "POST",
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        alert("İşlem silinirken hata oluştu.");
-                        return;
-                    }
-
-                    const result = await response.json();
-
-                    if (!result.isSuccess) {
-                        alert(result.errorMessage || "İşlem silinemedi.");
-                        return;
-                    }
-
-                    const item = document.getElementById(`operation-item-${operationId}`);
-                    const card = button.closest(".request-detail-card");
-
-                    if (item) {
-                        item.remove();
-                    }
-
-                    const totalText = card.querySelector(".request-operation-header span");
-
-                    if (totalText) {
-                        totalText.dataset.total = result.data.requestItemTotal;
-                        totalText.textContent = `Toplam: ${formatMoney(result.data.requestItemTotal)}`;
-                    }
-
-                    updateSummaryTotal(result.data.recordTotal);
-
-                    const operationList = card.querySelector(".request-operation-list");
-
-                    if (operationList && operationList.children.length === 0) {
-                        operationList.remove();
-
-                        const area = card.querySelector(".request-operation-area");
-
-                        const empty = document.createElement("div");
-                        empty.className = "mini-empty";
-                        empty.textContent = "Bu talep için henüz işlem eklenmedi.";
-
-                        area.appendChild(empty);
-                    }
-                }
-                finally {
-                    if (document.body.contains(button)) {
-                        setButtonLoading(button, false);
-                    }
-                }
-            }
-
-            async function deleteRequestItem(requestItemId, button) {
-                const confirmed = confirm(
-                    "Bu talep ve bağlı işlemler silinecek. Devam etmek istiyor musunuz?"
-                );
-
-                if (!confirmed) {
-                    return;
-                }
-
-                setButtonLoading(button, true, "Siliniyor...");
-
-                try {
-                    const formData = new FormData();
-                    formData.append("requestItemId", requestItemId);
-
-                    const response = await fetch("/ServiceRecords/DeleteRequestItem", {
-                        method: "POST",
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        alert("Talep silinirken hata oluştu.");
-                        return;
-                    }
-
-                    const result = await response.json();
-
-                    if (!result.isSuccess) {
-                        alert(result.errorMessage || "Talep silinemedi.");
-                        return;
-                    }
-
-                    const card = document.getElementById(`request-item-${requestItemId}`);
-
-                    if (card) {
-                        card.remove();
-                    }
-
-                    updateSummaryTotal(result.data.recordTotal);
-
-                    const requestList = document.querySelector(".request-detail-list");
-
-                    if (requestList && requestList.children.length === 0) {
-                        requestList.innerHTML = `
-                            <div class="empty-state">
-                                Bu servis kaydı için talep girilmemiş.
-                            </div>
-                        `;
-                    }
-                }
-                finally {
-                    if (document.body.contains(button)) {
-                        setButtonLoading(button, false);
-                    }
-                }
-            }
-
-            function getStatusButtons(status) {
-                if (status == "1") {
-                    return `
-                        <button type="button" class="status-btn warning" data-status="2">İşleme Al</button>
-                        <button type="button" class="status-btn danger" data-status="4">İptal Et</button>
-                    `;
-                }
-
-                if (status == "2") {
-                    return `
-                        <button type="button" class="status-btn success" data-status="3">Tamamla</button>
-                        <button type="button" class="status-btn danger" data-status="4">İptal Et</button>
-                    `;
-                }
-
-                if (status == "3" || status == "4") {
-                    return `
-                        <button type="button" class="status-btn primary" data-status="1">Tekrar Aç</button>
-                    `;
-                }
-
-                return "";
-            }
-
-            function bindStatusButtons() {
-                document.querySelectorAll(".status-btn").forEach(button => {
-                    button.onclick = async function () {
-                        if (button.dataset.loading === "true") {
-                            return;
-                        }
-
-                        button.dataset.loading = "true";
-                        setButtonLoading(button, true, "Güncelleniyor...");
-
-                        try {
-                            const statusActions = button.closest(".status-actions");
-                            const serviceRecordId = statusActions.dataset.recordId;
-                            const status = button.dataset.status;
-
-                            const formData = new FormData();
-                            formData.append("ServiceRecordId", serviceRecordId);
-                            formData.append("Status", status);
-
-                            const response = await fetch("/ServiceRecords/UpdateStatus", {
-                                method: "POST",
-                                body: formData
-                            });
-
-                            if (!response.ok) {
-                                alert("Durum güncellenirken hata oluştu.");
-                                return;
-                            }
-
-                            const summaryStatus = document.querySelector(".summary-status");
-
-                            const statusMap = {
-                                "1": "Açık Kayıt",
-                                "2": "İşlemde",
-                                "3": "Tamamlandı",
-                                "4": "İptal Edildi"
-                            };
-
-                            summaryStatus.className = `summary-status status-${status}`;
-                            summaryStatus.textContent = statusMap[status] ?? "Bilinmiyor";
-
-                            statusActions.innerHTML = getStatusButtons(status);
-                            bindStatusButtons();
-                        }
-                        finally {
-                            if (document.body.contains(button)) {
-                                button.dataset.loading = "false";
-                                setButtonLoading(button, false);
-                            }
-                        }
-                    };
-                });
-            }
-
-            bindOperationForms();
-            bindStatusButtons();
-
-        <script src="https://unpkg.com/html5-qrcode"></script>
-
-        <script>
-                let qrScanner = null;
-                let qrScanLocked = false;
-
-                async function startQrScanner(vehicleId, button) {
-                    if (qrScanLocked) {
-                        return;
-                    }
-
-                    const reader = document.getElementById("qr-reader");
-                    const resultBox = document.getElementById("qr-scan-result");
-
-                    reader.style.display = "block";
-                    resultBox.textContent = "Kamera açılıyor...";
-
-                    button.disabled = true;
-                    button.textContent = "Taranıyor...";
-
-                                    
-
-               
-
-                    
-
-                    
-
-               try {
-
-                    await navigator.mediaDevices.getUserMedia({
-                    video: true
-                });
-                const cameras = await Html5Qrcode.getCameras();
-
-                if (!cameras || cameras.length === 0) {
-                    resultBox.textContent = "Kamera bulunamadı.";
-                    button.disabled = false;
-                    button.textContent = "QR Kod Tara";
-                    qrScanLocked = false;
-                    return;
-                }
-
-                qrScanner = new Html5Qrcode("qr-reader"); 
-                                await qrScanner.start(
-                    selectedCamera.id,
-                    {
-                        fps: 10,
-                        qrbox: {
-                            width: 220,
-                            height: 220
-                        }
-                    },
-                    async function (decodedText) {
-                        if (qrScanLocked) {
-                            return;
-                        }
-
-                        qrScanLocked = true;
-
-                        resultBox.textContent = `QR okundu: ${decodedText}`;
-
-                        await qrScanner.stop();
-
-                        reader.style.display = "none";
-
-                        await assignScannedQrCode(
-                            vehicleId,
-                            decodedText,
-                            button,
-                            resultBox
-                        );
-                    }
-                );
-                    } catch (error) {
-                        resultBox.textContent = "Kamera açılamadı. Tarayıcı iznini kontrol edin.";
-                        button.disabled = false;
-                        button.textContent = "QR Kod Tara";
-                        qrScanLocked = false;
-                    }
-                }
-
-                async function assignScannedQrCode(vehicleId, code, button, resultBox) {
-                    button.textContent = "Atanıyor...";
-
-                    const formData = new FormData();
-                    formData.append("vehicleId", vehicleId);
-                    formData.append("code", code.trim());
-
-                    const response = await fetch("/ServiceRecords/AssignQrCode", {
-                        method: "POST",
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-
-                        resultBox.textContent = errorText || "QR atanırken hata oluştu.";
-
-                        button.disabled = false;
-                        button.textContent = "Tekrar Tara";
-                        qrScanLocked = false;
-
-                        return;
-                    }
-
-                    resultBox.textContent = "QR kod araca başarıyla atandı.";
-                    button.textContent = "QR Atandı";
-                }
-        </script>
-
-    </script>
-
-   
+    if (form.dataset.submitting === "true") {
+    return;
+    }
+
+    form.dataset.submitting = "true";
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    setButtonLoading(submitButton, true, "Ekleniyor...");
+
+    try {
+    const formData = new FormData(form);
+
+    const response = await fetch(form.action, {
+    method: "POST",
+    body: formData
+    });
+
+    if (!response.ok) {
+    showToast("Talep eklenemedi.", "error");
+    return;
+    }
+
+    const requestItem = await response.json();
+
+    let list = document.querySelector(".request-detail-list");
+
+    if (!list) {
+    list = document.createElement("div");
+    list.className = "request-detail-list";
+    document.querySelector(".requests-panel").appendChild(list);
+    }
+
+    const emptyState = list.querySelector(".empty-state");
+
+    if (emptyState) {
+    emptyState.remove();
+    }
+
+    const card = document.createElement("div");
+    card.className = "request-detail-card";
+    card.dataset.requestId = requestItem.id;
+    card.id = `request-item-${requestItem.id}`;
+
+    const estimatedText = requestItem.estimatedAmount
+    ? `<span class="estimate-pill">Tahmini: ${formatMoney(requestItem.estimatedAmount)}</span>`
+    : "";
+
+    card.innerHTML = `
+    <div class="request-card-top">
+    <button type="button"
+    class="request-accordion-header"
+    onclick="toggleRequestCard(this)">
+    <div>
+    <strong>${requestItem.title}</strong>
+    ${requestItem.note ? `<span>${requestItem.note}</span>` : ""}
+    </div>
+
+    <div class="request-right">
+    ${estimatedText}
+    <span class="accordion-arrow">⌄</span>
+    </div>
+    </button>
+
+    <button type="button"
+    class="request-delete-btn"
+    onclick="deleteRequestItem(${requestItem.id}, this)">
+    Sil
+    </button>
+    </div>
+
+    <div class="request-accordion-body">
+    <div class="request-operation-area">
+    <div class="request-operation-header">
+    <strong>Yapılan İşlemler</strong>
+    <span data-total="0">Toplam: 0,00 ₺</span>
+    </div>
+
+    <div class="mini-empty">
+    Bu talep için henüz işlem eklenmedi.
+    </div>
+    </div>
+
+    <form action="/ServiceRecords/AddOperation"
+    method="post"
+    class="add-operation-form ajax-operation-form">
+
+    <input type="hidden" name="ServiceRecordId" value="${formData.get("serviceRecordId")}" />
+    <input type="hidden" name="ServiceRequestItemId" value="${requestItem.id}" />
+
+    <div class="operation-form-row">
+    <div class="type-toggle">
+    <input type="radio" id="partType_${requestItem.id}" name="Type" value="1" checked />
+    <label for="partType_${requestItem.id}">Parça</label>
+
+    <input type="radio" id="laborType_${requestItem.id}" name="Type" value="2" />
+    <label for="laborType_${requestItem.id}">İşçilik</label>
+    </div>
+
+    <div class="form-field">
+    <input name="Description" placeholder=" " />
+    <label>İşçilik veya parça açıklaması</label>
+    </div>
+
+    <div class="form-field">
+    <input name="Quantity" type="number" value="1" min="1" step="0.01" placeholder=" " />
+    <label>Miktar</label>
+    </div>
+
+    <div class="form-field">
+    <input name="UnitPrice" type="number" step="0.01" min="0" placeholder=" " />
+    <label>Birim Fiyat</label>
+    </div>
+
+    <button type="submit" class="btn-primary">
+    + Ekle
+    </button>
+    </div>
+
+    <div class="form-field operation-note-field">
+    <textarea name="Note" placeholder=" "></textarea>
+    <label>İşlem Notu</label>
+    </div>
+    </form>
+    </div>
+    `;
+
+    list.appendChild(card);
+
+    form.reset();
+    bindOperationForms();
+
+    showToast("Talep başarıyla eklendi.", "success");
+    }
+    finally {
+    form.dataset.submitting = "false";
+    setButtonLoading(submitButton, false);
+    }
+    });
+
+    async function deleteOperation(operationId, button) {
+    const confirmed = confirm("Bu işlemi silmek istediğinize emin misiniz?");
+
+    if (!confirmed) return;
+
+    setButtonLoading(button, true, "Siliniyor...");
+
+    try {
+    const formData = new FormData();
+    formData.append("operationId", operationId);
+
+    const response = await fetch("/ServiceRecords/DeleteOperation", {
+    method: "POST",
+    body: formData
+    });
+
+    if (!response.ok) {
+    showToast("İşlem silinirken hata oluştu.", "error");
+    return;
+    }
+
+    const result = await response.json();
+
+    if (!result.isSuccess) {
+    showToast(result.errorMessage || "İşlem silinemedi.", "error");
+    return;
+    }
+
+    const item = document.getElementById(`operation-item-${operationId}`);
+    const card = button.closest(".request-detail-card");
+
+    if (item) item.remove();
+
+    const totalText = card.querySelector(".request-operation-header span");
+
+    if (totalText) {
+    totalText.dataset.total = result.data.requestItemTotal;
+    totalText.textContent = `Toplam: ${formatMoney(result.data.requestItemTotal)}`;
+    }
+
+    updateSummaryTotal(result.data.recordTotal);
+
+    const operationList = card.querySelector(".request-operation-list");
+    const operationRows = card.querySelectorAll(".request-operation-item");
+
+    if (operationList && operationRows.length === 0) {
+    operationList.remove();
+
+    const area = card.querySelector(".request-operation-area");
+
+    const empty = document.createElement("div");
+    empty.className = "mini-empty";
+    empty.textContent = "Bu talep için henüz işlem eklenmedi.";
+
+    area.appendChild(empty);
+    }
+
+    showToast("İşlem silindi.", "success");
+    }
+    finally {
+    if (document.body.contains(button)) {
+    setButtonLoading(button, false);
+    }
+    }
+    }
+
+    async function deleteRequestItem(requestItemId, button) {
+    const confirmed = confirm(
+    "Bu talep ve bağlı işlemler silinecek. Devam etmek istiyor musunuz?"
+    );
+
+    if (!confirmed) return;
+
+    setButtonLoading(button, true, "Siliniyor...");
+
+    try {
+    const formData = new FormData();
+    formData.append("requestItemId", requestItemId);
+
+    const response = await fetch("/ServiceRecords/DeleteRequestItem", {
+    method: "POST",
+    body: formData
+    });
+
+    if (!response.ok) {
+    showToast("Talep silinirken hata oluştu.", "error");
+    return;
+    }
+
+    const result = await response.json();
+
+    if (!result.isSuccess) {
+    showToast(result.errorMessage || "Talep silinemedi.", "error");
+    return;
+    }
+
+    const card = document.getElementById(`request-item-${requestItemId}`);
+
+    if (card) card.remove();
+
+    updateSummaryTotal(result.data.recordTotal);
+
+    const requestList = document.querySelector(".request-detail-list");
+
+    if (requestList && requestList.querySelectorAll(".request-detail-card").length === 0) {
+    requestList.innerHTML = `
+    <div class="empty-state">
+    Bu servis kaydı için talep girilmemiş.
+    </div>
+    `;
+    }
+
+    showToast("Talep silindi.", "success");
+    }
+    finally {
+    if (document.body.contains(button)) {
+    setButtonLoading(button, false);
+    }
+    }
+    }
+
+    function getStatusButtons(status) {
+    if (status == "1") {
+    return `
+    <button type="button" class="status-btn success" data-status="2">İşleme Al</button>
+    <button type="button" class="status-btn danger" data-status="4">İptal Et</button>
+    `;
+    }
+
+    if (status == "2") {
+    return `
+    <button type="button" class="status-btn primary" data-status="3">Tamamla</button>
+    <button type="button" class="status-btn danger" data-status="4">İptal Et</button>
+    `;
+    }
+
+    if (status == "3" || status == "4") {
+    return `
+    <button type="button" class="status-btn primary full" data-status="1">Tekrar Aç</button>
+    `;
+    }
+
+    return "";
+    }
+
+    function updateStatusSteps(status) {
+    const steps = document.querySelectorAll(".status-steps .step");
+
+    steps.forEach(x => x.classList.remove("active", "danger"));
+
+    if (status == "4") {
+    steps[3]?.classList.add("active", "danger");
+    return;
+    }
+
+    if (status >= 1) steps[0]?.classList.add("active");
+    if (status >= 2) steps[1]?.classList.add("active");
+    if (status == 3) steps[2]?.classList.add("active");
+    }
+
+    function bindStatusButtons() {
+    document.querySelectorAll(".status-btn").forEach(button => {
+    button.onclick = async function () {
+    if (button.dataset.loading === "true") return;
+
+    button.dataset.loading = "true";
+    setButtonLoading(button, true, "Güncelleniyor...");
+
+    try {
+    const statusActions = button.closest(".status-actions");
+    const serviceRecordId = statusActions.dataset.recordId;
+    const status = button.dataset.status;
+
+    const formData = new FormData();
+    formData.append("ServiceRecordId", serviceRecordId);
+    formData.append("Status", status);
+
+    const response = await fetch("/ServiceRecords/UpdateStatus", {
+    method: "POST",
+    body: formData
+    });
+
+    if (!response.ok) {
+    showToast("Durum güncellenirken hata oluştu.", "error");
+    return;
+    }
+
+    const statusMap = {
+    "1": "Açık Kayıt",
+    "2": "İşlemde",
+    "3": "Tamamlandı",
+    "4": "İptal Edildi"
+    };
+
+    document.querySelectorAll(".summary-status, .status-pill").forEach(statusEl => {
+    statusEl.className = statusEl.classList.contains("summary-status")
+    ? `summary-status status-${status}`
+    : `status-pill status-${status}`;
+
+    statusEl.textContent = statusMap[status] ?? "Bilinmiyor";
+    });
+
+    updateStatusSteps(status);
+
+    statusActions.innerHTML = getStatusButtons(status);
+    bindStatusButtons();
+
+    showToast("Durum güncellendi.", "success");
+    }
+    finally {
+    if (document.body.contains(button)) {
+    button.dataset.loading = "false";
+    setButtonLoading(button, false);
+    }
+    }
+    };
+    });
+    }
+
+    let qrScanner = null;
+    let qrScanLocked = false;
+
+    async function startQrScanner(vehicleId, button) {
+    if (qrScanLocked) return;
+
+    const reader = document.getElementById("qr-reader");
+    const resultBox = document.getElementById("qr-scan-result");
+
+    reader.style.display = "block";
+    resultBox.textContent = "Kamera açılıyor...";
+
+    button.disabled = true;
+    button.textContent = "Taranıyor...";
+
+    try {
+    await navigator.mediaDevices.getUserMedia({ video: true });
+
+    const cameras = await Html5Qrcode.getCameras();
+
+    if (!cameras || cameras.length === 0) {
+    resultBox.textContent = "Kamera bulunamadı.";
+    button.disabled = false;
+    button.textContent = "QR Tara";
+    qrScanLocked = false;
+    return;
+    }
+
+    const selectedCamera =
+    cameras.find(x => x.label.toLowerCase().includes("back")) ||
+    cameras.find(x => x.label.toLowerCase().includes("rear")) ||
+    cameras.find(x => x.label.toLowerCase().includes("environment")) ||
+    cameras[0];
+
+    qrScanner = new Html5Qrcode("qr-reader");
+
+    await qrScanner.start(
+    selectedCamera.id,
+    {
+    fps: 10,
+    qrbox: {
+    width: 220,
+    height: 220
+    }
+    },
+    async function (decodedText) {
+    if (qrScanLocked) return;
+
+    qrScanLocked = true;
+
+    resultBox.textContent = `QR okundu: ${decodedText}`;
+
+    await qrScanner.stop();
+
+    reader.style.display = "none";
+
+    await assignScannedQrCode(
+    vehicleId,
+    decodedText,
+    button,
+    resultBox
+    );
+    }
+    );
+    }
+    catch (error) {
+    resultBox.textContent = "Kamera açılamadı. Tarayıcı iznini kontrol edin.";
+    button.disabled = false;
+    button.textContent = "QR Tara";
+    qrScanLocked = false;
+    }
+    }
+
+    async function assignScannedQrCode(vehicleId, code, button, resultBox) {
+    button.textContent = "Atanıyor...";
+
+    const formData = new FormData();
+    formData.append("vehicleId", vehicleId);
+    formData.append("code", code.trim());
+
+    const response = await fetch("/ServiceRecords/AssignQrCode", {
+    method: "POST",
+    body: formData
+    });
+
+    if (!response.ok) {
+    const errorText = await response.text();
+
+    resultBox.textContent = errorText || "QR atanırken hata oluştu.";
+
+    button.disabled = false;
+    button.textContent = "Tekrar Tara";
+    qrScanLocked = false;
+
+    return;
+    }
+
+    resultBox.textContent = "QR kod araca başarıyla atandı.";
+    button.textContent = "QR Atandı";
+
+    showToast("QR kod başarıyla eşleştirildi.", "success");
+    }
+
+    bindOperationForms();
+    bindStatusButtons();
+</script>

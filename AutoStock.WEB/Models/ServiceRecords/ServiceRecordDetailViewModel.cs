@@ -1,6 +1,8 @@
 ﻿namespace AutoStock.WEB.Models.ServiceRecords
 {
-    public class ServiceRecordDetailViewModel
+
+
+public class ServiceRecordDetailViewModel
     {
         public int Id { get; set; }
 
@@ -18,6 +20,8 @@
 
         public string? VehicleModelName { get; set; }
 
+        public string? ChassisNumber { get; set; }
+
         public int? Mileage { get; set; }
 
         public string? CustomerComplaint { get; set; }
@@ -30,10 +34,14 @@
 
         public DateTime CreatedAt { get; set; }
 
+        public DateTime? UpdatedAt { get; set; }
+
         public DateTime? CompletedAt { get; set; }
+
         public int VehicleId { get; set; }
 
         public List<ServiceOperationViewModel> Operations { get; set; } = new();
+
         public List<ServiceRequestItemViewModel> RequestItems { get; set; } = new();
     }
 }
