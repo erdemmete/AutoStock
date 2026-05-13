@@ -1383,42 +1383,92 @@
 
         updateRequestSummary();
 
+                let isServiceRecordSaving = false;
+        let isServiceRecordCreated = false;
 
-                async function saveServiceRecord() {
-            const form = document.getElementById("serviceCreateForm");
-            const formData = new FormData(form);
+        async function saveServiceRecord() {
 
-            const mileageInput = document.getElementById("Mileage");
-
-            if (mileageInput) {
-                formData.set("Mileage", mileageInput.value.replace(/\D/g, ""));
-            }
-
-            const response = await fetch(form.action, {
-                method: "POST",
-                body: formData,
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest"
-                }
-            });
-
-            const result = await response.json();
-
-                    if (!response.ok || result.success === false) {
-            if (result.validationErrors) {
-                showValidationErrors(result.validationErrors);
+            if (isServiceRecordSaving || isServiceRecordCreated) {
                 return;
             }
 
-            
+            isServiceRecordSaving = true;
 
-            showToast(result.message || "Servis kaydı oluşturulamadı.", "error");
-            return;
-        }
-        clearValidationErrors();
+            const saveButton = document.querySelector(".btn-primary");
+            const originalText = saveButton?.innerText;
 
-            showToast(result.message || "Servis kaydı başarıyla oluşturuldu.", "success");
+            if (saveButton) {
+                saveButton.disabled = true;
+                saveButton.innerText = "Kaydediliyor...";
             }
+
+            try {
+
+                const form = document.getElementById("serviceCreateForm");
+                const formData = new FormData(form);
+
+                const mileageInput = document.getElementById("Mileage");
+
+                if (mileageInput) {
+                    formData.set("Mileage", mileageInput.value.replace(/\D/g, ""));
+                }
+
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || result.success === false) {
+
+                    if (result.validationErrors) {
+                        showValidationErrors(result.validationErrors);
+                    }
+
+                    showToast(
+                        result.message || "Servis kaydı oluşturulamadı.",
+                        "error"
+                    );
+
+                    return;
+                }
+
+                clearValidationErrors();
+
+                isServiceRecordCreated = true;
+
+                if (saveButton) {
+                    saveButton.innerText = "Kayıt Oluşturuldu";
+                }
+
+                showToast(
+                    result.message || "Servis kaydı başarıyla oluşturuldu.",
+                    "success"
+                );
+
+            }
+            catch (error) {
+
+                showToast(
+                    "Beklenmeyen bir hata oluştu.",
+                    "error"
+                );
+
+            }
+            finally {
+
+                isServiceRecordSaving = false;
+
+                if (!isServiceRecordCreated && saveButton) {
+                    saveButton.disabled = false;
+                    saveButton.innerText = originalText || "Kaydı Oluştur";
+                }
+            }
+        }
 
                 function showToast(message, type = "info") {
             const toast = document.getElementById("toastMessage");
