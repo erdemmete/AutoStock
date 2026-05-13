@@ -199,10 +199,17 @@ public class ServiceRecordsController : Controller
 
         var client = CreateApiClient();
 
+        code = code.Trim();
+
+        if (Uri.TryCreate(code, UriKind.Absolute, out var uri))
+        {
+            code = uri.Segments.Last().Trim('/');
+        }
+
         var requestBody = new
         {
             vehicleId,
-            code = code.Trim()
+            code
         };
 
         var json = JsonSerializer.Serialize(requestBody);

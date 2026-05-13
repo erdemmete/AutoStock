@@ -1477,6 +1477,21 @@
             border-radius: 14px;
         }
     }
+
+    #qr-reader {
+        width: 100%;
+        min-height: 260px;
+        margin-top: 16px;
+        overflow: hidden;
+        border-radius: 18px;
+        background: #0f172a;
+    }
+
+        #qr-reader video {
+            width: 100% !important;
+            height: auto !important;
+            border-radius: 18px;
+        }
 </style>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -2064,7 +2079,7 @@
     button.textContent = "Taranıyor...";
 
     try {
-    await navigator.mediaDevices.getUserMedia({ video: true });
+    // await navigator.mediaDevices.getUserMedia({ video: true });
 
     const cameras = await Html5Qrcode.getCameras();
 
@@ -2114,7 +2129,11 @@
     );
     }
     catch (error) {
-    resultBox.textContent = "Kamera açılamadı. Tarayıcı iznini kontrol edin.";
+    console.error(error);
+
+    resultBox.textContent =
+    "Kamera hatası: " + (error?.message || error);
+
     button.disabled = false;
     button.textContent = "QR Tara";
     qrScanLocked = false;
