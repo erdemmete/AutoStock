@@ -726,6 +726,167 @@
         .main-flow .card:first-child {
             z-index: 9999;
         }
+
+    .customer-extra-toggle {
+        grid-column: 1 / -1;
+        margin-top: 4px;
+    }
+
+        .customer-extra-toggle button {
+            border: none;
+            background: #eff6ff;
+            color: #2563eb;
+            padding: 11px 16px;
+            border-radius: 999px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+    .customer-extra-panel {
+        grid-column: 1 / -1;
+        display: none;
+        margin-top: 14px;
+        padding-top: 18px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+        .customer-extra-panel.active {
+            display: block;
+        }
+
+    .customer-type-switch {
+        display: inline-flex;
+        gap: 8px;
+        padding: 6px;
+        background: #f1f5f9;
+        border-radius: 999px;
+        margin-bottom: 16px;
+    }
+
+        .customer-type-switch button {
+            border: none;
+            padding: 9px 16px;
+            border-radius: 999px;
+            background: transparent;
+            color: #64748b;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+            .customer-type-switch button.active {
+                background: #2563eb;
+                color: white;
+            }
+
+    .corporate-fields {
+        display: none;
+    }
+
+        .corporate-fields.active {
+            display: block;
+        }
+
+    .form-field.full {
+        grid-column: 1 / -1;
+    }
+
+    .service-stepper {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+
+    .step-tab {
+        border: 1px solid #dbe4f0;
+        background: #ffffff;
+        color: #64748b;
+        border-radius: 18px;
+        padding: 14px 16px;
+        font-weight: 900;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+        .step-tab span {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #2563eb;
+            display: grid;
+            place-items: center;
+            font-size: 13px;
+        }
+
+        .step-tab.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+            box-shadow: 0 14px 30px rgba(37, 99, 235, .22);
+        }
+
+            .step-tab.active span {
+                background: white;
+                color: #2563eb;
+            }
+
+    .service-step {
+        display: none;
+    }
+
+        .service-step.active {
+            display: block;
+        }
+
+    .step-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 22px;
+    }
+
+    .step-next,
+    .step-back {
+        border: none;
+        border-radius: 16px;
+        padding: 14px 22px;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+    .step-next {
+        background: #2563eb;
+        color: white;
+    }
+
+    .step-back {
+        background: #f1f5f9;
+        color: #334155;
+    }
+
+    @@media (max-width: 760px) {
+        .service-stepper {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .step-tab {
+            font-size: 13px;
+            padding: 12px;
+        }
+
+        .step-actions {
+            flex-direction: column;
+        }
+
+        .step-next,
+        .step-back {
+            width: 100%;
+        }
+    }
 </style>
 
 <div class="page">
@@ -755,9 +916,25 @@
 
             <main class="main-flow">
 
-                
+                <div class="service-stepper">
+                    <button type="button" class="step-tab active" data-step="1" onclick="goToStep(1)">
+                        <span>1</span> Müşteri
+                    </button>
 
-                <section class="card">
+                    <button type="button" class="step-tab" data-step="2" onclick="goToStep(2)">
+                        <span>2</span> Araç
+                    </button>
+
+                    <button type="button" class="step-tab" data-step="3" onclick="goToStep(3)">
+                        <span>3</span> Talepler
+                    </button>
+
+                    <button type="button" class="step-tab" data-step="4" onclick="goToStep(4)">
+                        <span>4</span> Özet
+                    </button>
+                </div>
+
+                <section class="card service-step active" data-step="1">
                     <div class="section-title">
                         <div class="section-icon customer">♙</div>
                         <div>
@@ -795,10 +972,70 @@
                             <input asp-for="CustomerEmail" placeholder=" " autocomplete="off" />
                             <label>Mail Adresi</label>
                         </div>
+                        <div class="customer-extra-toggle">
+                            <button type="button" onclick="toggleCustomerExtra()">
+                                + Detaylı Müşteri Bilgisi
+                            </button>
+                        </div>
+
+                        <div id="customerExtraPanel" class="customer-extra-panel">
+                            <div class="customer-type-switch">
+                                <button type="button"
+                                        class="active"
+                                        data-type="1"
+                                        onclick="setCustomerType(1, this)">
+                                    Bireysel
+                                </button>
+
+                                <button type="button"
+                                        data-type="2"
+                                        onclick="setCustomerType(2, this)">
+                                    Kurumsal
+                                </button>
+                            </div>
+
+                            <input type="hidden" asp-for="CustomerType" id="CustomerType" />
+
+                            <div id="corporateFields" class="corporate-fields">
+                                <div class="form-grid">
+                                    <div class="form-field">
+                                        <input asp-for="CompanyName" placeholder=" " />
+                                        <label>Firma Ünvanı</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input asp-for="AuthorizedPersonName" placeholder=" " />
+                                        <label>Yetkili Kişi</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input asp-for="TaxOffice" placeholder=" " />
+                                        <label>Vergi Dairesi</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input asp-for="TaxNumber" placeholder=" " />
+                                        <label>Vergi No</label>
+                                    </div>
+
+                                    <div class="form-field full">
+                                        <textarea asp-for="CustomerAddress" placeholder=" "></textarea>
+                                        <label>Adres</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="step-actions">
+                        <button type="button" class="step-next" onclick="goToStep(2)">
+                            Araç Bilgilerine Geç →
+                        </button>
                     </div>
                 </section>
 
-                <section class="card">
+                <section class="card service-step" data-step="2">
                     <div class="section-title">
                         <div class="section-icon vehicle">▣</div>
                         <div>
@@ -847,24 +1084,37 @@
                             <label>Şasi No</label>
                         </div>
                     </div>
+
+                    <div class="step-actions">
+                        <button type="button" class="step-back" onclick="goToStep(1)">
+                            ← Geri
+                        </button>
+
+                        <button type="button" class="step-next" onclick="goToStep(3)">
+                            Taleplere Geç →
+                        </button>
+                    </div>
                 </section>
 
-                <section class="card">
+                <section class="card service-step" data-step="3">
                     <div class="section-title">
                         <div class="section-icon request">☷</div>
+
                         <div>
                             <h3>Şikayet / Talepler</h3>
-                            <p>Müşteri talebini ve varsa tahmini fiyatı ekleyin.</p>
+                            <p>Müşteri talebini, ön notu ve varsa tahmini fiyatı ekleyin.</p>
                         </div>
                     </div>
 
                     <div class="request-grid">
+
                         <div class="form-field">
                             <input type="text"
                                    id="requestInput"
                                    list="requestSuggestions"
                                    placeholder=" "
                                    autocomplete="off" />
+
                             <label>Şikayet / İşlem Talebi</label>
 
                             <datalist id="requestSuggestions">
@@ -893,13 +1143,31 @@
                         </button>
 
                         <div class="form-field full">
-                            <textarea id="requestNoteInput" placeholder=" " maxlength="500"></textarea>
+                            <textarea id="requestNoteInput"
+                                      placeholder=" "
+                                      maxlength="500"></textarea>
+
                             <label>Ön Not</label>
                         </div>
+
                     </div>
 
                     <div id="requestItemsContainer"
                          class="request-items">
+                    </div>
+
+                    <div class="step-actions">
+                        <button type="button"
+                                class="step-back"
+                                onclick="goToStep(2)">
+                            ← Geri
+                        </button>
+
+                        <button type="button"
+                                class="step-next"
+                                onclick="goToStep(4)">
+                            Özete Geç →
+                        </button>
                     </div>
                 </section>
 
@@ -973,6 +1241,7 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
+        const DRAFT_KEY = "sente360_create_service_draft";
         const brandSelect = document.getElementById("brandSelect");
         const modelSelect = document.getElementById("modelSelect");
 
@@ -1281,14 +1550,19 @@
             }
         });
 
-        function addRequestItem() {
+               function addRequestItem(titleFromDraft = null, noteFromDraft = null, estimatedFromDraft = null) {
+
             const titleInput = document.getElementById("requestInput");
             const noteInput = document.getElementById("requestNoteInput");
             const estimatedInput = document.getElementById("requestEstimatedInput");
 
-            const title = titleInput.value.trim();
-            const note = noteInput.value.trim();
-            const estimatedAmount = estimatedInput.value.replace(/\D/g, "");
+            const title = (titleFromDraft ?? titleInput.value).trim();
+            const note = (noteFromDraft ?? noteInput.value).trim();
+
+            const estimatedAmount = (
+                estimatedFromDraft ??
+                estimatedInput.value.replace(/\D/g, "")
+            );
 
             if (!title) {
                 showTemporaryInvalid(titleInput);
@@ -1299,7 +1573,9 @@
             const numericAmount = Number(estimatedAmount || 0);
 
             const item = document.createElement("div");
+
             item.className = "request-item";
+
             item.dataset.estimatedAmount = numericAmount;
             item.dataset.title = title;
             item.dataset.note = note;
@@ -1307,21 +1583,39 @@
             item.innerHTML = `
                 <div>
                     <strong>${title}</strong>
-                    ${note ? `<span>${note}</span>` : ""}
-                    ${estimatedAmount ? `<small>Tahmini: ${formatter.format(numericAmount)}</small>` : ""}
 
-                    <input type="hidden" name="RequestItems[${requestIndex}].Title" value="${title}" />
-                    <input type="hidden" name="RequestItems[${requestIndex}].Note" value="${note}" />
-                    <input type="hidden" name="RequestItems[${requestIndex}].EstimatedAmount" value="${estimatedAmount}" />
+                    ${note ? `<span>${note}</span>` : ""}
+
+                    ${numericAmount
+                        ? `<small>Tahmini: ${formatter.format(numericAmount)}</small>`
+                        : ""
+                    }
+
+                    <input type="hidden"
+                           name="RequestItems[${requestIndex}].Title"
+                           value="${title}" />
+
+                    <input type="hidden"
+                           name="RequestItems[${requestIndex}].Note"
+                           value="${note}" />
+
+                    <input type="hidden"
+                           name="RequestItems[${requestIndex}].EstimatedAmount"
+                           value="${numericAmount}" />
                 </div>
 
                 <button type="button" class="request-remove">✕</button>
             `;
 
-            item.querySelector(".request-remove").addEventListener("click", () => {
-                item.remove();
-                updateRequestSummary();
-            });
+            item.querySelector(".request-remove")
+                .addEventListener("click", () => {
+
+                    item.remove();
+
+                    updateRequestSummary();
+
+                    saveRequestItemsDraft();
+                });
 
             requestItemsContainer.appendChild(item);
 
@@ -1332,6 +1626,8 @@
             estimatedInput.value = "";
 
             updateRequestSummary();
+
+            saveRequestItemsDraft();
         }
 
         customerPhoneInput.addEventListener("beforeinput", function (e) {
@@ -1468,6 +1764,8 @@
                 if (saveButton) {
                     saveButton.innerText = "Kayıt Oluşturuldu";
                 }
+                localStorage.removeItem(DRAFT_KEY);
+                localStorage.removeItem(REQUEST_ITEMS_DRAFT_KEY);
 
                 showToast(
                     result.message || "Servis kaydı başarıyla oluşturuldu.",
@@ -1546,6 +1844,186 @@
             });
 
         }
+
+                function toggleCustomerExtra() {
+            const panel = document.getElementById("customerExtraPanel");
+            panel?.classList.toggle("active");
+        }
+
+        function setCustomerType(type, button) {
+            const input = document.getElementById("CustomerType");
+            const corporateFields = document.getElementById("corporateFields");
+
+            if (input) {
+                input.value = type;
+            }
+
+            document.querySelectorAll(".customer-type-switch button")
+                .forEach(x => x.classList.remove("active"));
+
+            button.classList.add("active");
+
+            if (corporateFields) {
+                corporateFields.classList.toggle("active", type === 2);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const input = document.getElementById("CustomerType");
+            if (input && !input.value) {
+                input.value = 1;
+            }
+        });
+
+                function goToStep(step) {
+            document.querySelectorAll(".service-step").forEach(section => {
+                section.classList.toggle("active", Number(section.dataset.step) === step);
+            });
+
+            document.querySelectorAll(".step-tab").forEach(tab => {
+                tab.classList.toggle("active", Number(tab.dataset.step) === step);
+            });
+
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+
+            saveCreateFormDraft();
+        }
+
+                function saveCreateFormDraft() {
+
+            const form = document.getElementById("serviceCreateForm");
+
+            if (!form) return;
+
+            const formData = {};
+
+            form.querySelectorAll("input, textarea, select").forEach(el => {
+
+                if (!el.name) return;
+
+                if (el.type === "checkbox") {
+                    formData[el.name] = el.checked;
+                }
+                else {
+                    formData[el.name] = el.value;
+                }
+            });
+
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+        }
+
+                function initializeDraftAutoSave() {
+
+            const form = document.getElementById("serviceCreateForm");
+
+            if (!form) return;
+
+            form.querySelectorAll("input, textarea, select").forEach(el => {
+
+                el.addEventListener("input", saveCreateFormDraft);
+                el.addEventListener("change", saveCreateFormDraft);
+            });
+        }
+
+                      function restoreCreateFormDraft() {
+
+            const draft = localStorage.getItem(DRAFT_KEY);
+
+            if (!draft) return;
+
+            const data = JSON.parse(draft);
+
+            Object.keys(data).forEach(key => {
+
+                if (key.startsWith("RequestItems")) {
+                    return;
+                }
+
+                const el = document.querySelector(`[name="${key}"]`);
+
+                if (!el) return;
+
+                if (el.type === "checkbox") {
+                    el.checked = data[key];
+                }
+                else {
+                    el.value = data[key];
+                }
+            });
+
+            console.log("Taslak geri yüklendi.");
+        }
+                const REQUEST_ITEMS_DRAFT_KEY = "sente360_request_items_draft";
+
+        function saveRequestItemsDraft() {
+
+            const items = [];
+
+            document.querySelectorAll(".request-item").forEach(item => {
+
+                items.push({
+                    title: item.dataset.title || "",
+                    note: item.dataset.note || "",
+                    estimatedAmount: item.dataset.estimatedAmount || "0"
+                });
+            });
+
+            localStorage.setItem(
+                REQUEST_ITEMS_DRAFT_KEY,
+                JSON.stringify(items)
+            );
+        }
+
+        function restoreRequestItemsDraft() {
+
+            const raw = localStorage.getItem(
+                REQUEST_ITEMS_DRAFT_KEY
+            );
+
+            if (!raw) return;
+
+            const items = JSON.parse(raw);
+
+            items.forEach(x => {
+
+                addRequestItem(
+                    x.title,
+                    x.note,
+                    x.estimatedAmount
+                );
+            });
+
+            updateRequestSummary();
+        }
+           
+                document.addEventListener("DOMContentLoaded", () => {
+
+            initializeDraftAutoSave();
+
+            restoreCreateFormDraft();
+
+            restoreRequestItemsDraft();
+        });
+
+                setTimeout(() => {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (!raw) return;
+
+            const draft = JSON.parse(raw);
+            const fields = draft.fields || draft;
+
+            if (!fields.VehicleBrandId || !fields.VehicleModelId) return;
+
+            brandSelect.value = fields.VehicleBrandId;
+            brandSelect.dispatchEvent(new Event("change"));
+
+            setTimeout(() => {
+                modelSelect.value = fields.VehicleModelId;
+            }, 700);
+        }, 300);
 
     </script>
 }

@@ -33,6 +33,13 @@ namespace AutoStock.WEB.Models.ServiceRecords
         public string? EstimatedAmountNote { get; set; }
         public string? ServiceAdvisorName { get; set; } = string.Empty;
 
+        public int CustomerType { get; set; } = 1;
+        public string? CompanyName { get; set; }
+        public string? AuthorizedPersonName { get; set; }
+        public string? TaxNumber { get; set; }
+        public string? TaxOffice { get; set; }
+        public string? CustomerAddress { get; set; }
+
         public List<CreateServiceRequestItemViewModel> RequestItems { get; set; } = new();
 
         public List<VehicleBrandViewModel> Brands { get; set; } = new();

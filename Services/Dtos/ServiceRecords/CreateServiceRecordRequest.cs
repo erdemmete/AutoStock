@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AutoStock.Repositories.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -28,6 +29,12 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public decimal? EstimatedAmount { get; set; }
 
         public string? EstimatedAmountNote { get; set; }
+        public CustomerType CustomerType { get; set; } = CustomerType.Individual;
+        public string? CompanyName { get; set; }
+        public string? AuthorizedPersonName { get; set; }
+        public string? TaxNumber { get; set; }
+        public string? TaxOffice { get; set; }
+        public string? CustomerAddress { get; set; }
 
         public List<CreateServiceRequestItemDto> RequestItems { get; set; } = new();
     }
