@@ -49,6 +49,7 @@ namespace AutoStock.Repositories.Entities
         public decimal? EstimatedAmount { get; set; }
 
         public string? EstimatedAmountNote { get; set; }
+        public string? VehicleDeliveredBySnapshot { get; set; }
 
         public ICollection<ServiceOperation> Operations { get; set; } = new List<ServiceOperation>();
 

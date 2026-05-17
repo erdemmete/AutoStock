@@ -54,7 +54,11 @@ public class ServiceRecordService : IServiceRecordService
                 TaxNumber = request.TaxNumber?.Trim(),
                 TaxOffice = request.TaxOffice?.Trim(),
                 Address = request.CustomerAddress?.Trim(),
-                IsActive = true
+                IsActive = true,
+                NationalIdentityNumber = request.NationalIdentityNumber?.Trim(),
+                AddressCity = request.AddressCity?.Trim(),
+                AddressDistrict = request.AddressDistrict?.Trim(),
+                
             };
 
             _context.Customers.Add(customer);
@@ -72,6 +76,9 @@ public class ServiceRecordService : IServiceRecordService
             customer.TaxOffice = request.TaxOffice?.Trim();
             customer.Address = request.CustomerAddress?.Trim();
             customer.IsActive = true;
+            customer.NationalIdentityNumber = request.NationalIdentityNumber?.Trim();
+            customer.AddressCity = request.AddressCity?.Trim();
+            customer.AddressDistrict = request.AddressDistrict?.Trim();
         }
 
             var vehicle = await _context.Vehicles
@@ -112,7 +119,19 @@ public class ServiceRecordService : IServiceRecordService
             var brandName = await GetBrandNameAsync(request.VehicleBrandId);
             var modelName = await GetModelNameAsync(request.VehicleModelId);
 
-            var serviceRecord = new ServiceRecord
+        var vehicleDeliveredBy =
+    string.IsNullOrWhiteSpace(request.VehicleDeliveredBy)
+        ? request.CustomerName.Trim()
+        : request.VehicleDeliveredBy.Trim();
+
+        if (request.CustomerType == CustomerType.Corporate &&
+            string.IsNullOrWhiteSpace(request.VehicleDeliveredBy))
+        {
+            return ServiceResult<CreateServiceRecordResponse>
+                .Fail("Kurumsal müşterilerde aracı getiren / ilgili kişi zorunludur.");
+        }
+
+        var serviceRecord = new ServiceRecord
             {
                 RecordNumber = GenerateRecordNumber(),
                 WorkshopId = workshopId,
@@ -126,6 +145,8 @@ public class ServiceRecordService : IServiceRecordService
                 VehiclePlateSnapshot = plate,
                 VehicleBrandNameSnapshot = brandName,
                 VehicleModelNameSnapshot = modelName,
+                VehicleDeliveredBySnapshot = vehicleDeliveredBy,
+                
                 MileageSnapshot = request.Mileage,
 
                 CustomerComplaint = request.CustomerComplaint?.Trim(),
@@ -165,9 +186,10 @@ public class ServiceRecordService : IServiceRecordService
     int workshopId)
     {
         var serviceRecord = await _context.ServiceRecords
-            .Include(x => x.Vehicle)
-            .Include(x => x.Operations)
-            .Include(x => x.RequestItems)
+    .Include(x => x.Customer)
+    .Include(x => x.Vehicle)
+    .Include(x => x.Operations)
+    .Include(x => x.RequestItems)
             .FirstOrDefaultAsync(x =>
                 x.Id == serviceRecordId &&
                 x.WorkshopId == workshopId);
@@ -187,6 +209,17 @@ public class ServiceRecordService : IServiceRecordService
 
             CustomerName = serviceRecord.CustomerNameSnapshot,
             CustomerPhone = serviceRecord.CustomerPhoneSnapshot,
+            VehicleDeliveredBy = serviceRecord.VehicleDeliveredBySnapshot,
+
+            CustomerEmail = serviceRecord.Customer.Email,
+            CompanyName = serviceRecord.Customer.CompanyName,
+            AuthorizedPersonName = serviceRecord.Customer.AuthorizedPersonName,
+            TaxNumber = serviceRecord.Customer.TaxNumber,
+            TaxOffice = serviceRecord.Customer.TaxOffice,
+            NationalIdentityNumber = serviceRecord.Customer.NationalIdentityNumber,
+            AddressCity = serviceRecord.Customer.AddressCity,
+            AddressDistrict = serviceRecord.Customer.AddressDistrict,
+            CustomerAddress = serviceRecord.Customer.Address,
 
             VehiclePlate = serviceRecord.VehiclePlateSnapshot,
             VehicleBrandName = serviceRecord.VehicleBrandNameSnapshot,

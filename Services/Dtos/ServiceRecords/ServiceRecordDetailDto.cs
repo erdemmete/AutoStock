@@ -39,7 +39,27 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public int VehicleId { get; set; }
         public string? ChassisNumber { get; set; }
 
-       
+        public string? VehicleDeliveredBy { get; set; }
+
+        public string? CustomerEmail { get; set; }
+
+        public string? CompanyName { get; set; }
+
+        public string? AuthorizedPersonName { get; set; }
+
+        public string? TaxNumber { get; set; }
+
+        public string? TaxOffice { get; set; }
+
+        public string? NationalIdentityNumber { get; set; }
+
+        public string? AddressCity { get; set; }
+
+        public string? AddressDistrict { get; set; }
+
+        public string? CustomerAddress { get; set; }
+
+
         public List<ServiceRequestItemDto> RequestItems { get; set; } = new();
 
         public List<ServiceOperationDto> Operations { get; set; } = new();

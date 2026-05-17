@@ -887,6 +887,133 @@
             width: 100%;
         }
     }
+
+    .quick-customer-fields {
+        grid-column: 1 / -1;
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+        .quick-customer-fields.hidden {
+            display: none;
+        }
+
+        .quick-customer-fields .form-field {
+            width: 100%;
+            min-width: 0;
+        }
+
+    .customer-extra-toggle {
+        grid-column: 1 / -1;
+    }
+
+    .customer-extra-panel {
+        grid-column: 1 / -1;
+    }
+
+    .customer-extra-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .customer-extra-back {
+        border: none;
+        background: #f1f5f9;
+        color: #334155;
+        padding: 10px 14px;
+        border-radius: 999px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    @@media (max-width: 900px) {
+        .quick-customer-fields {
+            grid-template-columns: 1fr;
+        }
+
+        .customer-extra-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+    .customer-extra-panel {
+        animation: customerPanelIn .18s ease;
+    }
+
+    .individual-subtype {
+        display: none;
+        margin-bottom: 16px;
+    }
+
+        .individual-subtype.active {
+            display: block;
+        }
+
+    .customer-subtype-switch {
+        display: inline-flex;
+        gap: 8px;
+        padding: 6px;
+        background: #f1f5f9;
+        border-radius: 999px;
+    }
+
+        .customer-subtype-switch button {
+            border: none;
+            padding: 9px 16px;
+            border-radius: 999px;
+            background: transparent;
+            color: #64748b;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+            .customer-subtype-switch button.active {
+                background: #0f172a;
+                color: white;
+            }
+
+    .individual-fields,
+    .sole-fields,
+    .corporate-fields {
+        display: none;
+    }
+
+        .individual-fields.active,
+        .sole-fields.active,
+        .corporate-fields.active {
+            display: block;
+        }
+
+    @@keyframes customerPanelIn {
+        from {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-block-title {
+        margin: 4px 0 14px;
+        color: #0f172a;
+        font-size: 15px;
+        font-weight: 950;
+        letter-spacing: -.2px;
+    }
+
+        .form-block-title.with-space {
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px solid #e2e8f0;
+        }
 </style>
 
 <div class="page">
@@ -945,33 +1072,50 @@
 
                     <div class="form-grid">
 
-                        <div class="form-field customer-search-wrapper">
+                        <div class="quick-customer-fields" id="quickCustomerFields">
 
-                            <input asp-for="CustomerName"
-                                   id="customerSearchInput"
-                                   autocomplete="off"
-                                   placeholder=" " />
+                            <div class="form-field customer-search-wrapper">
+                                <input asp-for="CustomerName"
+                                       id="MainCustomerName"
+                                       autocomplete="off"
+                                       placeholder=" " />
 
-                            <label>
-                                Ad Soyad / Firma Adı <span class="required">*</span>
-                            </label>
+                                <label>
+                                    Ad Soyad / Firma Adı <span class="required">*</span>
+                                </label>
 
-                            <div id="customerSearchResults"
-                                 class="customer-search-results">
+                                <div id="customerSearchResults"
+                                     class="customer-search-results">
+                                </div>
+                            </div>
+                            <div class="form-field">
+                                <input name="VehicleDeliveredBy"
+                                       id="VehicleDeliveredBy"
+                                       placeholder=" "
+                                       autocomplete="off" />
+                                <label>Aracı Getiren</label>
+                            </div>
+
+                            <div class="form-field">
+                                <input asp-for="CustomerPhoneNumber"
+                                       id="MainCustomerPhoneNumber"
+                                       placeholder=" "
+                                       autocomplete="off"
+                                       inputmode="numeric" />
+                                <label>Telefon Numarası <span class="required">*</span></label>
+                                <span asp-validation-for="CustomerPhoneNumber" class="field-error"></span>
+                            </div>
+
+                            <div class="form-field">
+                                <input asp-for="CustomerEmail"
+                                       id="MainCustomerEmail"
+                                       placeholder=" "
+                                       autocomplete="off" />
+                                <label>Mail Adresi</label>
                             </div>
 
                         </div>
 
-                        <div class="form-field">
-                            <input asp-for="CustomerPhoneNumber" placeholder=" " autocomplete="off" inputmode="numeric" />
-                            <label>Telefon Numarası <span class="required">*</span></label>
-                            <span asp-validation-for="CustomerPhoneNumber" class="field-error"></span>
-                        </div>
-
-                        <div class="form-field">
-                            <input asp-for="CustomerEmail" placeholder=" " autocomplete="off" />
-                            <label>Mail Adresi</label>
-                        </div>
                         <div class="customer-extra-toggle">
                             <button type="button" onclick="toggleCustomerExtra()">
                                 + Detaylı Müşteri Bilgisi
@@ -979,6 +1123,20 @@
                         </div>
 
                         <div id="customerExtraPanel" class="customer-extra-panel">
+                            <div class="customer-extra-header">
+                                <div>
+                                    <strong>Detaylı Müşteri Bilgisi</strong>
+                                    <p style="margin:4px 0 0; color:#64748b; font-size:13px; font-weight:700;">
+                                        Müşteri tipi ve fatura/cari bilgilerini düzenleyin.
+                                    </p>
+                                </div>
+
+                                <button type="button"
+                                        class="customer-extra-back"
+                                        onclick="backToQuickCustomer()">
+                                    ← Hızlı kayıta dön
+                                </button>
+                            </div>
                             <div class="customer-type-switch">
                                 <button type="button"
                                         class="active"
@@ -995,17 +1153,214 @@
                             </div>
 
                             <input type="hidden" asp-for="CustomerType" id="CustomerType" />
+                            <input type="hidden" id="CustomerSubType" name="CustomerSubType" value="individual" />
 
-                            <div id="corporateFields" class="corporate-fields">
+                            <div id="individualSubType" class="individual-subtype active">
+                                <div class="customer-subtype-switch">
+                                    <button type="button"
+                                            class="active"
+                                            data-subtype="individual"
+                                            onclick="setCustomerSubType('individual', this)">
+                                        Bireysel Müşteri
+                                    </button>
+
+                                    <button type="button"
+                                            data-subtype="sole"
+                                            onclick="setCustomerSubType('sole', this)">
+                                        Şahıs Firması
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="individualFields" class="individual-fields active">
                                 <div class="form-grid">
                                     <div class="form-field">
-                                        <input asp-for="CompanyName" placeholder=" " />
+                                        <input asp-for="CustomerName" placeholder=" " autocomplete="off" />
+                                        <label>Ad Soyad <span class="required">*</span></label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input asp-for="CustomerPhoneNumber" placeholder=" " autocomplete="off" inputmode="numeric" />
+                                        <label>Telefon Numarası <span class="required">*</span></label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input asp-for="CustomerEmail" placeholder=" " autocomplete="off" />
+                                        <label>Mail Adresi</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input id="IndividualNationalIdentityNumber"
+                                               name="NationalIdentityNumber"
+                                               placeholder=" "
+                                               autocomplete="off"
+                                               inputmode="numeric"
+                                               maxlength="11" />
+                                        <label>TC Kimlik No</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <select asp-for="AddressCity" id="IndividualAddressCity">
+                                            <option value="">İl seçiniz</option>
+                                        </select>
+                                        <label>Adres İli</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <select asp-for="AddressDistrict" id="IndividualAddressDistrict">
+                                            <option value="">Önce il seçiniz</option>
+                                        </select>
+                                        <label>Adres İlçesi</label>
+                                    </div>
+
+                                    <div class="form-field full">
+                                        <textarea asp-for="CustomerAddress" placeholder=" "></textarea>
+                                        <label>Açık Adres</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="soleFields" class="sole-fields">
+
+                                <div class="form-block-title">Cari / Fatura Bilgileri</div>
+
+                                <div class="form-grid">
+
+                                    <div class="form-field">
+                                        <input id="SoleCustomerName" name="CustomerName" placeholder=" " autocomplete="off" />
+                                        <label>Müşteri / Cari Adı <span class="required">*</span></label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input asp-for="CompanyName" placeholder=" " autocomplete="off" />
+                                        <label>İşletme Adı</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input asp-for="AuthorizedPersonName" placeholder=" " autocomplete="off" />
+                                        <label>Firma Yetkilisi</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input id="SoleNationalIdentityNumber"
+                                               name="NationalIdentityNumber"
+                                               placeholder=" "
+                                               autocomplete="off"
+                                               inputmode="numeric"
+                                               maxlength="11" />
+                                        <label>TC Kimlik No</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <select id="TaxOfficeCity" name="TaxOfficeCity">
+                                            <option value="">İl seçiniz</option>
+                                        </select>
+                                        <label>Vergi Dairesi İli</label>
+                                    </div>
+
+                                   
+
+                                    <div class="form-field">
+                                        <select asp-for="TaxOffice" id="TaxOfficeSelect">
+                                            <option value="">Vergi dairesi seçiniz</option>
+                                        </select>
+                                        <label>Vergi Dairesi</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input asp-for="TaxNumber" placeholder=" " />
+                                        <label>Vergi No</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <select asp-for="AddressCity" id="AddressCity">
+                                            <option value="">İl seçiniz</option>
+                                        </select>
+                                        <label>Adres İli</label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <select asp-for="AddressDistrict" id="AddressDistrict">
+                                            <option value="">Önce il seçiniz</option>
+                                        </select>
+                                        <label>Adres İlçesi</label>
+                                    </div>
+
+                                    <div class="form-field full">
+                                        <textarea asp-for="CustomerAddress" placeholder=" "></textarea>
+                                        <label>Açık Adres</label>
+                                    </div>
+
+                                </div>
+
+                                <div class="form-block-title with-space">
+                                    Servis İletişim Bilgileri
+                                </div>
+
+                                <div class="form-grid">
+
+                                    <div class="form-field">
+                                        <input asp-for="VehicleDeliveredBy"
+                                               placeholder=" "
+                                               autocomplete="off" 
+                                               required />
+
+                                        <label>Aracı Getiren / İlgili Kişi
+                                        
+                                        <span class="required">*</span>
+                                    </label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input id="SoleCustomerPhoneNumber" name="CustomerPhoneNumber" placeholder=" " autocomplete="off" inputmode="numeric" />
+
+                                        <label>
+                                            İletişim Telefonu
+                                            <span class="required">*</span>
+                                        </label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input id="SoleCustomerEmail" name="CustomerEmail" placeholder=" " autocomplete="off" />
+
+                                        <label>İletişim Maili</label>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <div id="corporateFields" class="corporate-fields">
+
+                                <div class="form-block-title">
+                                    Cari / Fatura Bilgileri
+                                </div>
+
+                                <div class="form-grid">
+
+                                    <div class="form-field">
+                                        <input id="CorporateCustomerName" name="CustomerName" placeholder=" " autocomplete="off" />
+
+                                        <label>
+                                            Müşteri / Cari Adı
+                                            <span class="required">*</span>
+                                        </label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input asp-for="CompanyName"
+                                               placeholder=" "
+                                               autocomplete="off" />
+
                                         <label>Firma Ünvanı</label>
                                     </div>
 
                                     <div class="form-field">
-                                        <input asp-for="AuthorizedPersonName" placeholder=" " />
-                                        <label>Yetkili Kişi</label>
+                                        <input asp-for="AuthorizedPersonName"
+                                               placeholder=" "
+                                               autocomplete="off" />
+
+                                        <label>Firma Yetkilisi</label>
                                     </div>
 
                                     <div class="form-field">
@@ -1022,11 +1377,47 @@
                                         <textarea asp-for="CustomerAddress" placeholder=" "></textarea>
                                         <label>Adres</label>
                                     </div>
+
                                 </div>
+
+                                <div class="form-block-title with-space">
+                                    Servis İletişim Bilgileri
+                                </div>
+
+                                <div class="form-grid">
+
+                                    <div class="form-field">
+                                        <input asp-for="VehicleDeliveredBy"
+                                               placeholder=" "
+                                               autocomplete="off"
+                                               required />
+
+                                        <label>
+                                            Aracı Getiren / İlgili Kişi
+                                            <span class="required">*</span>
+                                        </label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input id="CorporateCustomerPhoneNumber" name="CustomerPhoneNumber" placeholder=" " autocomplete="off" inputmode="numeric" />
+
+                                        <label>
+                                            İletişim Telefonu
+                                            <span class="required">*</span>
+                                        </label>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <input id="CorporateCustomerEmail" name="CustomerEmail" placeholder=" " autocomplete="off" />
+
+                                        <label>İletişim Maili</label>
+                                    </div>
+
+                                </div>
+
                             </div>
                         </div>
-
-                    </div>
+                        </div>
 
                     <div class="step-actions">
                         <button type="button" class="step-next" onclick="goToStep(2)">
@@ -1237,793 +1628,1107 @@
     </form>
 </div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    @section Scripts {
+        <partial name="_ValidationScriptsPartial" />
 
-    <script>
-        const DRAFT_KEY = "sente360_create_service_draft";
-        const brandSelect = document.getElementById("brandSelect");
-        const modelSelect = document.getElementById("modelSelect");
+        <script>
+            const DRAFT_KEY = "sente360_create_service_draft";
+            const REQUEST_ITEMS_DRAFT_KEY = "sente360_request_items_draft";
 
-        const customerSearchInput = document.getElementById("customerSearchInput");
-        const customerNameInput = document.getElementById("CustomerName");
-        const customerPhoneInput = document.getElementById("CustomerPhoneNumber");
-        const customerEmailInput = document.getElementById("CustomerEmail");
-        const chassisNumberInput = document.getElementById("ChassisNumber");
-        const customerResults = document.getElementById("customerSearchResults");
+            let customerSearchTimeout;
+            let requestIndex = 0;
+            let isServiceRecordSaving = false;
+            let isServiceRecordCreated = false;
 
-        const requestItemsContainer = document.getElementById("requestItemsContainer");
-        const requestCountText = document.getElementById("requestCountText");
-        const estimatedTotalText = document.getElementById("estimatedTotalText");
-        const estimatedTotalBox = document.getElementById("estimatedTotalBox");
-       
-                if (chassisNumberInput) {
-            chassisNumberInput.addEventListener("input", function () {
-                this.value = this.value
-                    .toUpperCase()
-                    .replace(/[^A-Z0-9]/g, "")
-                    .slice(0, 17);
-            });
-        }
+            let turkeyLocations = [];
+            let taxOffices = [];
 
-        let customerSearchTimeout;
-        let requestIndex = 0;
-
-        const formatter = new Intl.NumberFormat("tr-TR", {
-            style: "currency",
-            currency: "TRY"
-        });
-
-                const requestEstimatedInput = document.getElementById("requestEstimatedInput");
-
-        if (requestEstimatedInput) {
-            requestEstimatedInput.addEventListener("input", function () {
-                const digits = this.value.replace(/\D/g, "");
-
-                if (!digits) {
-                    this.value = "";
-                    return;
-                }
-
-                this.value = Number(digits).toLocaleString("tr-TR");
-            });
-        }
-
-        function get(id) {
-            return document.getElementById(id);
-        }
-
-        function setInputError(input, hasError) {
-            if (!input) return;
-
-            if (hasError) {
-                input.classList.add("input-invalid");
-            } else {
-                input.classList.remove("input-invalid");
-            }
-        }
-
-        function showTemporaryInvalid(input) {
-            if (!input) return;
-
-            input.classList.add("input-invalid");
-
-            setTimeout(() => {
-                input.classList.remove("input-invalid");
-            }, 1500);
-        }
-
-        function formatPhone(digits) {
-            if (digits.length > 9) {
-                return digits.replace(/(\d{4})(\d{3})(\d{2})(\d{0,2})/, "$1 $2 $3 $4").trim();
-            }
-
-            if (digits.length > 7) {
-                return digits.replace(/(\d{4})(\d{3})(\d{0,2})/, "$1 $2 $3").trim();
-            }
-
-            if (digits.length > 4) {
-                return digits.replace(/(\d{4})(\d{0,3})/, "$1 $2").trim();
-            }
-
-            return digits;
-        }
-
-        function updateRequestSummary() {
-            const requestItems = requestItemsContainer.querySelectorAll(".request-item");
-            let total = 0;
-
-            requestItems.forEach(item => {
-                const amount = Number(item.dataset.estimatedAmount || 0);
-                total += amount;
+            const formatter = new Intl.NumberFormat("tr-TR", {
+                style: "currency",
+                currency: "TRY"
             });
 
-            requestCountText.innerText = requestItems.length;
-            estimatedTotalText.innerText = formatter.format(total);
-            estimatedTotalBox.innerText = formatter.format(total);
-        }
-
-                function getPlateValue() {
-            const plateInput = document.getElementById("Plate");
-            return plateInput ? plateInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "") : "";
-        }
-
-        function requirePlate() {
-            const plate = getPlateValue();
-
-            if (!plate) {
-                const plateInput = document.getElementById("Plate");
-                showTemporaryInvalid(plateInput);
-                plateInput?.focus();
-                alert("Bu işlem için önce plaka girmelisin.");
-                return null;
+            function get(id) {
+                return document.getElementById(id);
             }
 
-            return plate;
-        }
-
-        function openVehicleHistory() {
-            const plate = requirePlate();
-            if (!plate) return;
-
-            window.location.href = `/ServiceRecords/VehicleHistory?plate=${encodeURIComponent(plate)}`;
-        }
-
-        function openQrAssign() {
-            const plate = requirePlate();
-            if (!plate) return;
-
-            window.location.href = `/VehicleQr/Assign?plate=${encodeURIComponent(plate)}`;
-        }
-
-                async function createPdfDraft() {
-            const requestItems = [];
-
-            document.querySelectorAll("#requestItemsContainer .request-item").forEach(item => {
-                requestItems.push({
-                    title: item.dataset.title || "",
-                    note: item.dataset.note || "",
-                    estimatedAmount: Number(item.dataset.estimatedAmount || 0)
-                });
-            });
-
-            const request = {
-                workshopName: "Sente360",
-
-                serviceAdvisorName:
-                    document.querySelector(".summary-value")?.innerText || "",
-
-                customerName: get("CustomerName")?.value?.trim() || "",
-                customerPhone: get("CustomerPhoneNumber")?.value?.trim() || "",
-                customerEmail: get("CustomerEmail")?.value?.trim() || "",
-
-                plate: get("Plate")?.value?.trim()?.toUpperCase() || "",
-
-                brand: brandSelect.options[brandSelect.selectedIndex]?.text || "",
-                model: modelSelect.options[modelSelect.selectedIndex]?.text || "",
-
-                modelYear: get("ModelYear")?.value?.trim() || "",
-                mileage: get("Mileage")?.value?.trim() || "",
-                chassisNumber: get("ChassisNumber")?.value?.trim() || "",
-
-                note: get("requestNoteInput")?.value?.trim() || "",
-
-                requestItems: requestItems
-            };
-
-            const response = await fetch("/quick-offer-pdf/create", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(request)
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-
-                alert("PDF oluşturulurken hata oluştu:\n" + errorText);
-
-                return;
+            function firstByName(name) {
+                return document.querySelector(`[name="${name}"]`);
             }
 
-                    const blob = await response.blob();
+            function getActiveCustomerContainer() {
+                const extraPanel = get("customerExtraPanel");
 
-        const disposition = response.headers.get("Content-Disposition");
-
-        let fileName = "hizli-teklif.pdf";
-
-        if (disposition && disposition.includes("filename")) {
-            const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
-
-            if (match?.[1]) {
-                fileName = decodeURIComponent(match[1].replace(/"/g, ""));
-            }
-        }
-
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-
-        a.href = url;
-        a.download = fileName;
-
-            document.body.appendChild(a);
-
-            a.click();
-
-            a.remove();
-
-            window.URL.revokeObjectURL(url);
-        }
-
-        brandSelect.addEventListener("change", async function () {
-            const brandId = this.value;
-
-            modelSelect.innerHTML = '<option value="">Model yükleniyor...</option>';
-
-            if (!brandId) {
-                modelSelect.innerHTML = '<option value="">Önce marka seçiniz</option>';
-                return;
-            }
-
-            const response = await fetch(`/ServiceRecords/GetModels?brandId=${brandId}`);
-
-            if (!response.ok) {
-                modelSelect.innerHTML = '<option value="">Model bulunamadı</option>';
-                return;
-            }
-
-            const models = await response.json();
-
-            modelSelect.innerHTML = '<option value="">Model seçiniz</option>';
-
-            models.forEach(model => {
-                const option = document.createElement("option");
-                option.value = model.id;
-                option.textContent = model.name;
-                modelSelect.appendChild(option);
-            });
-        });
-
-        customerSearchInput.addEventListener("input", function () {
-            clearTimeout(customerSearchTimeout);
-
-            const query = this.value.trim();
-
-            if (query.length < 2) {
-                customerResults.style.display = "none";
-                customerResults.innerHTML = "";
-                return;
-            }
-
-            customerSearchTimeout = setTimeout(async () => {
-                const response = await fetch(`/ServiceRecords/SearchCustomers?query=${encodeURIComponent(query)}`);
-
-                if (!response.ok) {
-                    return;
-                }
-
-                const customers = await response.json();
-
-                customerResults.innerHTML = "";
-
-                if (!customers.length) {
-                    customerResults.style.display = "none";
-                    return;
-                }
-
-                customers.forEach(customer => {
-                    const item = document.createElement("div");
-                    item.className = "customer-search-item";
-
-                    item.innerHTML = `
-                        <strong>${customer.name}</strong>
-                        <span>${customer.phoneNumber ?? "-"} ${customer.email ?? ""}</span>
-                    `;
-
-                           item.addEventListener("click", () => {
-            customerSearchInput.value = customer.name ?? "";
-            customerPhoneInput.value = customer.phoneNumber ?? "";
-            customerEmailInput.value = customer.email ?? "";
-
-            customerResults.style.display = "none";
-        });
-                    customerResults.appendChild(item);
-                });
-
-                customerResults.style.display = "block";
-
-            }, 300);
-        });
-
-        document.addEventListener("click", function (e) {
-            if (!customerResults.contains(e.target) && e.target !== customerSearchInput) {
-                customerResults.style.display = "none";
-            }
-        });
-
-        document.addEventListener("keydown", function (e) {
-            if (e.ctrlKey && e.key.toLowerCase() === "k") {
-                e.preventDefault();
-                customerSearchInput.focus();
-            }
-        });
-
-               function addRequestItem(titleFromDraft = null, noteFromDraft = null, estimatedFromDraft = null) {
-
-            const titleInput = document.getElementById("requestInput");
-            const noteInput = document.getElementById("requestNoteInput");
-            const estimatedInput = document.getElementById("requestEstimatedInput");
-
-            const title = (titleFromDraft ?? titleInput.value).trim();
-            const note = (noteFromDraft ?? noteInput.value).trim();
-
-            const estimatedAmount = (
-                estimatedFromDraft ??
-                estimatedInput.value.replace(/\D/g, "")
-            );
-
-            if (!title) {
-                showTemporaryInvalid(titleInput);
-                titleInput.focus();
-                return;
-            }
-
-            const numericAmount = Number(estimatedAmount || 0);
-
-            const item = document.createElement("div");
-
-            item.className = "request-item";
-
-            item.dataset.estimatedAmount = numericAmount;
-            item.dataset.title = title;
-            item.dataset.note = note;
-
-            item.innerHTML = `
-                <div>
-                    <strong>${title}</strong>
-
-                    ${note ? `<span>${note}</span>` : ""}
-
-                    ${numericAmount
-                        ? `<small>Tahmini: ${formatter.format(numericAmount)}</small>`
-                        : ""
+                if (extraPanel?.classList.contains("active")) {
+                    if (get("corporateFields")?.classList.contains("active")) {
+                        return get("corporateFields");
                     }
 
-                    <input type="hidden"
-                           name="RequestItems[${requestIndex}].Title"
-                           value="${title}" />
+                    if (get("soleFields")?.classList.contains("active")) {
+                        return get("soleFields");
+                    }
 
-                    <input type="hidden"
-                           name="RequestItems[${requestIndex}].Note"
-                           value="${note}" />
+                    if (get("individualFields")?.classList.contains("active")) {
+                        return get("individualFields");
+                    }
+                }
 
-                    <input type="hidden"
-                           name="RequestItems[${requestIndex}].EstimatedAmount"
-                           value="${numericAmount}" />
-                </div>
+                return get("quickCustomerFields") || document;
+            }
 
-                <button type="button" class="request-remove">✕</button>
-            `;
+            function getValueFromActiveCustomer(name) {
+                const container = getActiveCustomerContainer();
+                const input = container?.querySelector(`[name="${name}"]`);
 
-            item.querySelector(".request-remove")
-                .addEventListener("click", () => {
+                return input?.value?.trim() || "";
+            }
 
-                    item.remove();
+            function setInputError(input, hasError) {
+                if (!input) return;
 
-                    updateRequestSummary();
+                if (hasError) {
+                    input.classList.add("input-invalid");
+                } else {
+                    input.classList.remove("input-invalid");
+                }
+            }
 
-                    saveRequestItemsDraft();
+            function showTemporaryInvalid(input) {
+                if (!input) return;
+
+                input.classList.add("input-invalid");
+
+                setTimeout(() => {
+                    input.classList.remove("input-invalid");
+                }, 1500);
+            }
+
+            function showToast(message, type = "info") {
+                const toast = get("toastMessage");
+
+                if (!toast) return;
+
+                toast.className = `toast-message ${type}`;
+                toast.innerText = message;
+
+                requestAnimationFrame(() => {
+                    toast.classList.add("show");
                 });
 
-            requestItemsContainer.appendChild(item);
+                setTimeout(() => {
+                    toast.classList.remove("show");
+                }, 3200);
+            }
 
-            requestIndex++;
+            function clearValidationErrors() {
+                document.querySelectorAll("[data-valmsg-for]").forEach(x => {
+                    x.innerText = "";
+                });
+            }
 
-            titleInput.value = "";
-            noteInput.value = "";
-            estimatedInput.value = "";
+            function showValidationErrors(errors) {
+                clearValidationErrors();
 
-            updateRequestSummary();
+                Object.keys(errors).forEach(key => {
+                    const messageEl = document.querySelector(`[data-valmsg-for="${key}"]`);
 
-            saveRequestItemsDraft();
+                    if (messageEl) {
+                        messageEl.innerText = errors[key][0];
+                    }
+                });
+            }
+
+            function formatPhone(digits) {
+                digits = digits.replace(/\D/g, "").slice(0, 11);
+
+                if (digits.length > 9) {
+                    return digits.replace(/(\d{4})(\d{3})(\d{2})(\d{0,2})/, "$1 $2 $3 $4").trim();
+                }
+
+                if (digits.length > 7) {
+                    return digits.replace(/(\d{4})(\d{3})(\d{0,2})/, "$1 $2 $3").trim();
+                }
+
+                if (digits.length > 4) {
+                    return digits.replace(/(\d{4})(\d{0,3})/, "$1 $2").trim();
+                }
+
+                return digits;
+            }
+
+            function updateRequestSummary() {
+                const requestItemsContainer = get("requestItemsContainer");
+                const requestCountText = get("requestCountText");
+                const estimatedTotalText = get("estimatedTotalText");
+                const estimatedTotalBox = get("estimatedTotalBox");
+
+                if (!requestItemsContainer) return;
+
+                const requestItems = requestItemsContainer.querySelectorAll(".request-item");
+                let total = 0;
+
+                requestItems.forEach(item => {
+                    total += Number(item.dataset.estimatedAmount || 0);
+                });
+
+                if (requestCountText) requestCountText.innerText = requestItems.length;
+                if (estimatedTotalText) estimatedTotalText.innerText = formatter.format(total);
+                if (estimatedTotalBox) estimatedTotalBox.innerText = formatter.format(total);
+            }
+
+            function saveCreateFormDraft() {
+                const form = get("serviceCreateForm");
+
+                if (!form) return;
+
+                const data = {};
+
+                form.querySelectorAll("input, textarea, select").forEach(el => {
+                    if (!el.name && !el.id) return;
+
+                    const key = el.id || el.name;
+
+                    if (el.type === "checkbox") {
+                        data[key] = el.checked;
+                    } else {
+                        data[key] = el.value;
+                    }
+                });
+
+                data.__customerType = get("CustomerType")?.value || "1";
+                data.__customerSubType = get("CustomerSubType")?.value || "individual";
+                data.__isExtraPanelOpen = get("customerExtraPanel")?.classList.contains("active") || false;
+
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+            }
+
+            async function restoreCreateFormDraft() {
+                const raw = localStorage.getItem(DRAFT_KEY);
+
+                if (!raw) return;
+
+                let data;
+
+                try {
+                    data = JSON.parse(raw);
+                } catch {
+                    return;
+                }
+
+                if (data.__isExtraPanelOpen) {
+                    get("quickCustomerFields")?.classList.add("hidden");
+                    get("customerExtraPanel")?.classList.add("active");
+                }
+
+                if (get("CustomerType")) {
+                    get("CustomerType").value = data.__customerType || "1";
+                }
+
+                if (get("CustomerSubType")) {
+                    get("CustomerSubType").value = data.__customerSubType || "individual";
+                }
+
+                setCustomerType(
+                    Number(data.__customerType || 1),
+                    document.querySelector(`.customer-type-switch button[data-type="${data.__customerType || 1}"]`)
+                );
+
+                setCustomerSubType(
+                    data.__customerSubType || "individual",
+                    document.querySelector(`.customer-subtype-switch button[data-subtype="${data.__customerSubType || "individual"}"]`)
+                );
+
+                Object.keys(data).forEach(key => {
+                    if (key.startsWith("__")) return;
+                    if (key.startsWith("RequestItems")) return;
+
+                    const el = get(key) || document.querySelector(`[name="${key}"]`);
+
+                    if (!el) return;
+
+                    if (el.type === "checkbox") {
+                        el.checked = data[key];
+                    } else {
+                        el.value = data[key];
+                    }
+                });
+
+                if (get("AddressCity")?.value) {
+                    fillDistrictSelect("AddressCity", "AddressDistrict");
+
+                    if (data.AddressDistrict) {
+                        get("AddressDistrict").value = data.AddressDistrict;
+                    }
+                }
+
+                        if (get("IndividualAddressCity")?.value) {
+            fillDistrictSelect("IndividualAddressCity", "IndividualAddressDistrict");
+
+            if (data.IndividualAddressDistrict || data.AddressDistrict) {
+                get("IndividualAddressDistrict").value = data.IndividualAddressDistrict || data.AddressDistrict;
+            }
         }
 
-        customerPhoneInput.addEventListener("beforeinput", function (e) {
-            if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
-                e.preventDefault();
-                showTemporaryInvalid(customerPhoneInput);
+                        if (get("TaxOfficeCity")?.value) {
+            fillTaxOfficeSelect();
+
+            if (data.TaxOfficeSelect || data.TaxOffice) {
+                get("TaxOfficeSelect").value = data.TaxOfficeSelect || data.TaxOffice;
             }
-        });
+        }
 
-        customerPhoneInput.addEventListener("paste", function (e) {
-            const pastedText = (e.clipboardData || window.clipboardData).getData("text");
-            const digits = pastedText.replace(/\D/g, "").slice(0, 11);
-
-            if (pastedText !== digits) {
-                e.preventDefault();
-                this.value = formatPhone(digits);
-                showTemporaryInvalid(customerPhoneInput);
-            }
-        });
-
-        customerPhoneInput.addEventListener("input", function () {
-            const digits = this.value.replace(/\D/g, "").slice(0, 11);
-            this.value = formatPhone(digits);
-        });
-
-        get("Plate").addEventListener("beforeinput", function (e) {
-            if (e.inputType === "insertText" && !/^[a-zA-Z0-9]$/.test(e.data)) {
-                e.preventDefault();
-                showTemporaryInvalid(this);
-            }
-        });
-
-        get("Plate").addEventListener("input", function () {
-            this.value = this.value
-                .toUpperCase()
-                .replace(/[^A-Z0-9]/g, "");
-        });
-
-        get("ModelYear").addEventListener("beforeinput", function (e) {
-            if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
-                e.preventDefault();
-                showTemporaryInvalid(this);
-            }
-        });
-
-        get("ModelYear").addEventListener("input", function () {
-            this.value = this.value.replace(/\D/g, "").slice(0, 4);
-        });
-
-        get("Mileage").addEventListener("beforeinput", function (e) {
-            if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
-                e.preventDefault();
-                showTemporaryInvalid(this);
-            }
-        });
-
-        get("Mileage").addEventListener("input", function () {
-            const digits = this.value.replace(/\D/g, "").slice(0, 8);
-            this.value = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        });
-                const serviceCreateForm = document.getElementById("serviceCreateForm");
-
-       
-
-        updateRequestSummary();
-
-                let isServiceRecordSaving = false;
-        let isServiceRecordCreated = false;
-
-        async function saveServiceRecord() {
-
-            if (isServiceRecordSaving || isServiceRecordCreated) {
-                return;
+                await restoreVehicleModelSelection(data);
             }
 
-            isServiceRecordSaving = true;
+            async function restoreVehicleModelSelection(data) {
+                const brandSelect = get("brandSelect");
+                const modelSelect = get("modelSelect");
 
-            const saveButton = document.querySelector(".btn-primary");
-            const originalText = saveButton?.innerText;
+                if (!brandSelect || !modelSelect) return;
 
-            if (saveButton) {
-                saveButton.disabled = true;
-                saveButton.innerText = "Kaydediliyor...";
+                const brandValue = data.brandSelect || data.VehicleBrandId;
+                const modelValue = data.modelSelect || data.VehicleModelId;
+
+                if (!brandValue || !modelValue) return;
+
+                brandSelect.value = brandValue;
+
+                await loadModelsByBrand(brandValue);
+
+                modelSelect.value = modelValue;
             }
 
-            try {
+            function initializeDraftAutoSave() {
+                const form = get("serviceCreateForm");
 
-                const form = document.getElementById("serviceCreateForm");
+                if (!form) return;
+
+                form.addEventListener("input", saveCreateFormDraft);
+                form.addEventListener("change", saveCreateFormDraft);
+            }
+
+            function saveRequestItemsDraft() {
+                const items = [];
+
+                document.querySelectorAll(".request-item").forEach(item => {
+                    items.push({
+                        title: item.dataset.title || "",
+                        note: item.dataset.note || "",
+                        estimatedAmount: item.dataset.estimatedAmount || "0"
+                    });
+                });
+
+                localStorage.setItem(REQUEST_ITEMS_DRAFT_KEY, JSON.stringify(items));
+            }
+
+            function restoreRequestItemsDraft() {
+                const raw = localStorage.getItem(REQUEST_ITEMS_DRAFT_KEY);
+
+                if (!raw) return;
+
+                let items;
+
+                try {
+                    items = JSON.parse(raw);
+                } catch {
+                    return;
+                }
+
+                items.forEach(x => {
+                    addRequestItem(x.title, x.note, x.estimatedAmount);
+                });
+
+                updateRequestSummary();
+            }
+
+            function addRequestItem(titleFromDraft = null, noteFromDraft = null, estimatedFromDraft = null) {
+                const requestItemsContainer = get("requestItemsContainer");
+                const titleInput = get("requestInput");
+                const noteInput = get("requestNoteInput");
+                const estimatedInput = get("requestEstimatedInput");
+
+                if (!requestItemsContainer || !titleInput || !noteInput || !estimatedInput) return;
+
+                const title = (titleFromDraft ?? titleInput.value).trim();
+                const note = (noteFromDraft ?? noteInput.value).trim();
+
+                const estimatedAmount = (
+                    estimatedFromDraft ??
+                    estimatedInput.value.replace(/\D/g, "")
+                );
+
+                if (!title) {
+                    showTemporaryInvalid(titleInput);
+                    titleInput.focus();
+                    return;
+                }
+
+                const numericAmount = Number(estimatedAmount || 0);
+
+                const item = document.createElement("div");
+                item.className = "request-item";
+                item.dataset.estimatedAmount = numericAmount;
+                item.dataset.title = title;
+                item.dataset.note = note;
+
+                item.innerHTML = `
+                    <div>
+                        <strong>${title}</strong>
+
+                        ${note ? `<span>${note}</span>` : ""}
+
+                        ${numericAmount
+                            ? `<small>Tahmini: ${formatter.format(numericAmount)}</small>`
+                            : ""
+                        }
+
+                        <input type="hidden"
+                               name="RequestItems[${requestIndex}].Title"
+                               value="${title}" />
+
+                        <input type="hidden"
+                               name="RequestItems[${requestIndex}].Note"
+                               value="${note}" />
+
+                        <input type="hidden"
+                               name="RequestItems[${requestIndex}].EstimatedAmount"
+                               value="${numericAmount}" />
+                    </div>
+
+                    <button type="button" class="request-remove">✕</button>
+                `;
+
+                item.querySelector(".request-remove")
+                    .addEventListener("click", () => {
+                        item.remove();
+                        updateRequestSummary();
+                        saveRequestItemsDraft();
+                    });
+
+                requestItemsContainer.appendChild(item);
+
+                requestIndex++;
+
+                titleInput.value = "";
+                noteInput.value = "";
+                estimatedInput.value = "";
+
+                updateRequestSummary();
+                saveRequestItemsDraft();
+                saveCreateFormDraft();
+            }
+
+            function toggleCustomerExtra() {
+                const quickFields = get("quickCustomerFields");
+                const panel = get("customerExtraPanel");
+
+                quickFields?.classList.add("hidden");
+                panel?.classList.add("active");
+
+                setCustomerType(1, document.querySelector('.customer-type-switch button[data-type="1"]'));
+
+                saveCreateFormDraft();
+            }
+
+            function backToQuickCustomer() {
+                const quickFields = get("quickCustomerFields");
+                const panel = get("customerExtraPanel");
+
+                quickFields?.classList.remove("hidden");
+                panel?.classList.remove("active");
+
+                saveCreateFormDraft();
+            }
+
+            function setCustomerType(type, button) {
+                const input = get("CustomerType");
+                const individualSubType = get("individualSubType");
+                const individualFields = get("individualFields");
+                const soleFields = get("soleFields");
+                const corporateFields = get("corporateFields");
+
+                if (input) {
+                    input.value = type;
+                }
+
+                document.querySelectorAll(".customer-type-switch button")
+                    .forEach(x => x.classList.remove("active"));
+
+                button?.classList.add("active");
+
+                const isIndividual = type === 1;
+
+                individualSubType?.classList.toggle("active", isIndividual);
+                corporateFields?.classList.toggle("active", !isIndividual);
+
+                if (isIndividual) {
+                    const activeSubType = get("CustomerSubType")?.value || "individual";
+
+                    setCustomerSubType(
+                        activeSubType,
+                        document.querySelector(`.customer-subtype-switch button[data-subtype="${activeSubType}"]`)
+                    );
+                } else {
+                    individualFields?.classList.remove("active");
+                    soleFields?.classList.remove("active");
+                }
+
+                saveCreateFormDraft();
+            }
+
+            function setCustomerSubType(subType, button) {
+                const input = get("CustomerSubType");
+                const individualFields = get("individualFields");
+                const soleFields = get("soleFields");
+
+                if (input) {
+                    input.value = subType;
+                }
+
+                document.querySelectorAll(".customer-subtype-switch button")
+                    .forEach(x => x.classList.remove("active"));
+
+                button?.classList.add("active");
+
+                individualFields?.classList.toggle("active", subType === "individual");
+                soleFields?.classList.toggle("active", subType === "sole");
+
+                saveCreateFormDraft();
+            }
+
+            async function loadLocationData() {
+                try {
+                    const [locationsResponse, taxOfficesResponse] = await Promise.all([
+                        fetch("/data/turkey-locations.json"),
+                        fetch("/data/tax-offices.json")
+                    ]);
+
+                    turkeyLocations = await locationsResponse.json();
+                    taxOffices = await taxOfficesResponse.json();
+
+                    fillCitySelect("AddressCity");
+                    fillCitySelect("IndividualAddressCity");
+                    fillCitySelect("TaxOfficeCity");
+                } catch {
+                    console.warn("Lokasyon/vergi dairesi datası yüklenemedi.");
+                }
+            }
+
+                    function fillCitySelect(selectId) {
+
+            const select = get(selectId);
+
+            if (!select) return;
+
+            const currentValue = select.value;
+
+            select.innerHTML = `<option value="">İl seçiniz</option>`;
+
+            turkeyLocations
+                .sort((a, b) =>
+                    a.name.localeCompare(b.name, "tr"))
+                .forEach(city => {
+
+                    select.innerHTML += `
+                        <option value="${city.name}">
+                            ${toTitleCase(city.name)}
+                        </option>
+                    `;
+                });
+
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+                    function fillDistrictSelect(citySelectId, districtSelectId) {
+
+            const city = get(citySelectId)?.value;
+
+            const districtSelect = get(districtSelectId);
+
+            if (!districtSelect) return;
+
+            const currentValue = districtSelect.value;
+
+            districtSelect.innerHTML =
+                `<option value="">İlçe seçiniz</option>`;
+
+            const location =
+                turkeyLocations.find(x => x.name === city);
+
+            if (!location) return;
+
+            location.districts
+                .sort((a, b) =>
+                    a.name.localeCompare(b.name, "tr"))
+                .forEach(district => {
+
+                    districtSelect.innerHTML += `
+                        <option value="${district.name}">
+                            ${toTitleCase(district.name)}
+                        </option>
+                    `;
+                });
+
+            if (currentValue) {
+                districtSelect.value = currentValue;
+            }
+        }
+
+                           function normalizeTr(text) {
+            return (text || "")
+                .toLocaleLowerCase("tr-TR")
+                .trim();
+        }
+
+        function fillTaxOfficeSelect() {
+            const city = get("TaxOfficeCity")?.value;
+            const taxOfficeSelect = get("TaxOfficeSelect");
+
+            if (!taxOfficeSelect) return;
+
+            const currentValue = taxOfficeSelect.value;
+
+            taxOfficeSelect.innerHTML = `<option value="">Vergi dairesi seçiniz</option>`;
+
+            taxOffices
+                .filter(x => !city || normalizeTr(x.city) === normalizeTr(city))
+                .sort((a, b) => {
+                    const districtCompare = (a.district || "").localeCompare(b.district || "", "tr");
+                    if (districtCompare !== 0) return districtCompare;
+
+                    return (a.name || "").localeCompare(b.name || "", "tr");
+                })
+                .forEach(item => {
+                    taxOfficeSelect.innerHTML += `
+                        <option value="${item.name}">
+                            ${item.name} - ${item.district} / ${item.city}
+                        </option>`;
+                });
+
+            if (currentValue) {
+                taxOfficeSelect.value = currentValue;
+            }
+        }
+
+            async function loadModelsByBrand(brandId) {
+                const modelSelect = get("modelSelect");
+
+                if (!modelSelect) return;
+
+                modelSelect.innerHTML = '<option value="">Model yükleniyor...</option>';
+
+                if (!brandId) {
+                    modelSelect.innerHTML = '<option value="">Önce marka seçiniz</option>';
+                    return;
+                }
+
+                const response = await fetch(`/ServiceRecords/GetModels?brandId=${brandId}`);
+
+                if (!response.ok) {
+                    modelSelect.innerHTML = '<option value="">Model bulunamadı</option>';
+                    return;
+                }
+
+                const models = await response.json();
+
+                modelSelect.innerHTML = '<option value="">Model seçiniz</option>';
+
+                models.forEach(model => {
+                    const option = document.createElement("option");
+                    option.value = model.id;
+                    option.textContent = model.name;
+                    modelSelect.appendChild(option);
+                });
+            }
+
+            function getPlateValue() {
+                const plateInput = get("Plate");
+
+                return plateInput
+                    ? plateInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "")
+                    : "";
+            }
+
+            function requirePlate() {
+                const plate = getPlateValue();
+
+                if (!plate) {
+                    const plateInput = get("Plate");
+
+                    showTemporaryInvalid(plateInput);
+                    plateInput?.focus();
+
+                    alert("Bu işlem için önce plaka girmelisin.");
+
+                    return null;
+                }
+
+                return plate;
+            }
+
+            function openVehicleHistory() {
+                const plate = requirePlate();
+
+                if (!plate) return;
+
+                window.location.href = `/ServiceRecords/VehicleHistory?plate=${encodeURIComponent(plate)}`;
+            }
+
+            function openQrAssign() {
+                const plate = requirePlate();
+
+                if (!plate) return;
+
+                window.location.href = `/VehicleQr/Assign?plate=${encodeURIComponent(plate)}`;
+            }
+
+            function goToStep(step) {
+                document.querySelectorAll(".service-step").forEach(section => {
+                    section.classList.toggle("active", Number(section.dataset.step) === step);
+                });
+
+                document.querySelectorAll(".step-tab").forEach(tab => {
+                    tab.classList.toggle("active", Number(tab.dataset.step) === step);
+                });
+
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth"
+                });
+
+                saveCreateFormDraft();
+            }
+
+            function prepareFormDataForSubmit(form) {
                 const formData = new FormData(form);
 
-                const mileageInput = document.getElementById("Mileage");
+                const activeCustomerName = getValueFromActiveCustomer("CustomerName");
+                const activePhone = getValueFromActiveCustomer("CustomerPhoneNumber");
+                const activeEmail = getValueFromActiveCustomer("CustomerEmail");
+                const activeVehicleDeliveredBy = getValueFromActiveCustomer("VehicleDeliveredBy");
+
+                if (activeCustomerName) {
+                    formData.set("CustomerName", activeCustomerName);
+                }
+
+                if (activePhone) {
+                    formData.set("CustomerPhoneNumber", activePhone);
+                }
+
+                formData.set("CustomerEmail", activeEmail || "");
+                formData.set("VehicleDeliveredBy", activeVehicleDeliveredBy || "");
+
+                const mileageInput = get("Mileage");
 
                 if (mileageInput) {
                     formData.set("Mileage", mileageInput.value.replace(/\D/g, ""));
                 }
 
-                        const estimatedPriceInput = document.getElementById("requestEstimatedInput");
+                const customerType = get("CustomerType")?.value || "1";
+                formData.set("CustomerType", customerType);
 
-        if (estimatedPriceInput) {
-            formData.set(
-                "EstimatedPrice",
-                estimatedPriceInput.value.replace(/\./g, "")
-            );
-        }
+                return formData;
+            }
 
-                const response = await fetch(form.action, {
-                    method: "POST",
-                    body: formData,
-                    headers: {
-                        "X-Requested-With": "XMLHttpRequest"
-                    }
-                });
+            async function saveServiceRecord() {
+                saveCreateFormDraft();
 
-                const result = await response.json();
-
-                if (!response.ok || result.success === false) {
-
-                    if (result.validationErrors) {
-                        showValidationErrors(result.validationErrors);
-                    }
-
-                    showToast(
-                        result.message || "Servis kaydı oluşturulamadı.",
-                        "error"
-                    );
-
+                if (isServiceRecordSaving || isServiceRecordCreated) {
                     return;
                 }
 
-                clearValidationErrors();
+                const form = get("serviceCreateForm");
 
-                isServiceRecordCreated = true;
+                if (!form) return;
+
+                const formData = prepareFormDataForSubmit(form);
+
+                const customerName = formData.get("CustomerName")?.toString().trim();
+                const customerPhone = formData.get("CustomerPhoneNumber")?.toString().trim();
+
+                if (!customerName) {
+                    showToast("Müşteri / cari adı zorunludur.", "error");
+                    return;
+                }
+
+                if (!customerPhone) {
+                    showToast("İletişim telefonu zorunludur.", "error");
+                    return;
+                }
+
+                if (Number(formData.get("CustomerType")) === 2 &&
+                    !formData.get("VehicleDeliveredBy")?.toString().trim()) {
+                    showToast("Kurumsal müşterilerde aracı getiren / ilgili kişi zorunludur.", "error");
+                    return;
+                }
+
+                isServiceRecordSaving = true;
+
+                const saveButton = document.querySelector(".btn-primary");
+                const originalText = saveButton?.innerText;
 
                 if (saveButton) {
-                    saveButton.innerText = "Kayıt Oluşturuldu";
-                }
-                localStorage.removeItem(DRAFT_KEY);
-                localStorage.removeItem(REQUEST_ITEMS_DRAFT_KEY);
-
-                showToast(
-                    result.message || "Servis kaydı başarıyla oluşturuldu.",
-                    "success"
-                );
-
-            }
-            catch (error) {
-
-                showToast(
-                    "Beklenmeyen bir hata oluştu.",
-                    "error"
-                );
-
-            }
-            finally {
-
-                isServiceRecordSaving = false;
-
-                if (!isServiceRecordCreated && saveButton) {
-                    saveButton.disabled = false;
-                    saveButton.innerText = originalText || "Kaydı Oluştur";
-                }
-            }
-        }
-
-                function showToast(message, type = "info") {
-            const toast = document.getElementById("toastMessage");
-
-            if (!toast) return;
-
-            toast.className = `toast-message ${type}`;
-            toast.innerText = message;
-
-            requestAnimationFrame(() => {
-                toast.classList.add("show");
-            });
-
-            setTimeout(() => {
-                toast.classList.remove("show");
-            }, 3200);
-        }
-
-                function clearValidationErrors() {
-            document.querySelectorAll("[data-valmsg-for]").forEach(x => {
-                x.innerText = "";
-            });
-        }
-
-        function showValidationErrors(errors) {
-            clearValidationErrors();
-
-            Object.keys(errors).forEach(key => {
-                const messageEl = document.querySelector(`[data-valmsg-for="${key}"]`);
-
-                if (messageEl) {
-                    messageEl.innerText = errors[key][0];
-                }
-            });
-        }
-
-                const estimatedPriceInput = document.getElementById("estimatedPriceInput");
-
-        if (estimatedPriceInput) {
-
-            estimatedPriceInput.addEventListener("input", function () {
-
-                let value = this.value.replace(/\D/g, "");
-
-                if (!value) {
-                    this.value = "";
-                    return;
+                    saveButton.disabled = true;
+                    saveButton.innerText = "Kaydediliyor...";
                 }
 
-                this.value = Number(value).toLocaleString("tr-TR");
-            });
+                try {
+                    const response = await fetch(form.action, {
+                        method: "POST",
+                        body: formData,
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest"
+                        }
+                    });
 
-        }
+                    const result = await response.json();
 
-                function toggleCustomerExtra() {
-            const panel = document.getElementById("customerExtraPanel");
-            panel?.classList.toggle("active");
-        }
+                    if (!response.ok || result.success === false) {
+                        if (result.validationErrors) {
+                            showValidationErrors(result.validationErrors);
+                        }
 
-        function setCustomerType(type, button) {
-            const input = document.getElementById("CustomerType");
-            const corporateFields = document.getElementById("corporateFields");
+                        showToast(result.message || "Servis kaydı oluşturulamadı.", "error");
 
-            if (input) {
-                input.value = type;
+                        return;
+                    }
+
+                    clearValidationErrors();
+
+                    isServiceRecordCreated = true;
+
+                    if (saveButton) {
+                        saveButton.innerText = "Kayıt Oluşturuldu";
+                    }
+
+                    localStorage.removeItem(DRAFT_KEY);
+                    localStorage.removeItem(REQUEST_ITEMS_DRAFT_KEY);
+
+                    showToast(result.message || "Servis kaydı başarıyla oluşturuldu.", "success");
+                }
+                catch {
+                    showToast("Beklenmeyen bir hata oluştu.", "error");
+                }
+                finally {
+                    isServiceRecordSaving = false;
+
+                    if (!isServiceRecordCreated && saveButton) {
+                        saveButton.disabled = false;
+                        saveButton.innerText = originalText || "Kaydı Oluştur";
+                    }
+                }
             }
 
-            document.querySelectorAll(".customer-type-switch button")
-                .forEach(x => x.classList.remove("active"));
+            async function createPdfDraft() {
+                const requestItems = [];
 
-            button.classList.add("active");
-
-            if (corporateFields) {
-                corporateFields.classList.toggle("active", type === 2);
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            const input = document.getElementById("CustomerType");
-            if (input && !input.value) {
-                input.value = 1;
-            }
-        });
-
-                function goToStep(step) {
-            document.querySelectorAll(".service-step").forEach(section => {
-                section.classList.toggle("active", Number(section.dataset.step) === step);
-            });
-
-            document.querySelectorAll(".step-tab").forEach(tab => {
-                tab.classList.toggle("active", Number(tab.dataset.step) === step);
-            });
-
-            window.scrollTo({
-                top: 0,
-                behavior: "smooth"
-            });
-
-            saveCreateFormDraft();
-        }
-
-                function saveCreateFormDraft() {
-
-            const form = document.getElementById("serviceCreateForm");
-
-            if (!form) return;
-
-            const formData = {};
-
-            form.querySelectorAll("input, textarea, select").forEach(el => {
-
-                if (!el.name) return;
-
-                if (el.type === "checkbox") {
-                    formData[el.name] = el.checked;
-                }
-                else {
-                    formData[el.name] = el.value;
-                }
-            });
-
-            localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
-        }
-
-                function initializeDraftAutoSave() {
-
-            const form = document.getElementById("serviceCreateForm");
-
-            if (!form) return;
-
-            form.querySelectorAll("input, textarea, select").forEach(el => {
-
-                el.addEventListener("input", saveCreateFormDraft);
-                el.addEventListener("change", saveCreateFormDraft);
-            });
-        }
-
-                      function restoreCreateFormDraft() {
-
-            const draft = localStorage.getItem(DRAFT_KEY);
-
-            if (!draft) return;
-
-            const data = JSON.parse(draft);
-
-            Object.keys(data).forEach(key => {
-
-                if (key.startsWith("RequestItems")) {
-                    return;
-                }
-
-                const el = document.querySelector(`[name="${key}"]`);
-
-                if (!el) return;
-
-                if (el.type === "checkbox") {
-                    el.checked = data[key];
-                }
-                else {
-                    el.value = data[key];
-                }
-            });
-
-            console.log("Taslak geri yüklendi.");
-        }
-                const REQUEST_ITEMS_DRAFT_KEY = "sente360_request_items_draft";
-
-        function saveRequestItemsDraft() {
-
-            const items = [];
-
-            document.querySelectorAll(".request-item").forEach(item => {
-
-                items.push({
-                    title: item.dataset.title || "",
-                    note: item.dataset.note || "",
-                    estimatedAmount: item.dataset.estimatedAmount || "0"
+                document.querySelectorAll("#requestItemsContainer .request-item").forEach(item => {
+                    requestItems.push({
+                        title: item.dataset.title || "",
+                        note: item.dataset.note || "",
+                        estimatedAmount: Number(item.dataset.estimatedAmount || 0)
+                    });
                 });
+
+                const brandSelect = get("brandSelect");
+                const modelSelect = get("modelSelect");
+
+                const request = {
+                    workshopName: "Sente360",
+                    serviceAdvisorName: document.querySelector(".summary-value")?.innerText || "",
+
+                    customerName: getValueFromActiveCustomer("CustomerName"),
+                    customerPhone: getValueFromActiveCustomer("CustomerPhoneNumber"),
+                    customerEmail: getValueFromActiveCustomer("CustomerEmail"),
+
+                    plate: get("Plate")?.value?.trim()?.toUpperCase() || "",
+
+                    brand: brandSelect?.options[brandSelect.selectedIndex]?.text || "",
+                    model: modelSelect?.options[modelSelect.selectedIndex]?.text || "",
+
+                    modelYear: get("ModelYear")?.value?.trim() || "",
+                    mileage: get("Mileage")?.value?.trim() || "",
+                    chassisNumber: get("ChassisNumber")?.value?.trim() || "",
+
+                    note: get("requestNoteInput")?.value?.trim() || "",
+
+                    requestItems: requestItems
+                };
+
+                const response = await fetch("/quick-offer-pdf/create", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(request)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+
+                    alert("PDF oluşturulurken hata oluştu:\n" + errorText);
+
+                    return;
+                }
+
+                const blob = await response.blob();
+                const disposition = response.headers.get("Content-Disposition");
+
+                let fileName = "hizli-teklif.pdf";
+
+                if (disposition && disposition.includes("filename")) {
+                    const match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+
+                    if (match?.[1]) {
+                        fileName = decodeURIComponent(match[1].replace(/"/g, ""));
+                    }
+                }
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+
+                a.href = url;
+                a.download = fileName;
+
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+
+                window.URL.revokeObjectURL(url);
+            }
+
+            function initializeInputMasks() {
+                document.querySelectorAll(`[name="CustomerPhoneNumber"]`).forEach(phoneInput => {
+                    phoneInput.addEventListener("beforeinput", function (e) {
+                        if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
+                            e.preventDefault();
+                            showTemporaryInvalid(phoneInput);
+                        }
+                    });
+
+                    phoneInput.addEventListener("paste", function (e) {
+                        const pastedText = (e.clipboardData || window.clipboardData).getData("text");
+                        const digits = pastedText.replace(/\D/g, "").slice(0, 11);
+
+                        if (pastedText !== digits) {
+                            e.preventDefault();
+                            this.value = formatPhone(digits);
+                            showTemporaryInvalid(phoneInput);
+                        }
+                    });
+
+                    phoneInput.addEventListener("input", function () {
+                        this.value = formatPhone(this.value);
+                    });
+                });
+
+                const chassisNumberInput = get("ChassisNumber");
+
+                chassisNumberInput?.addEventListener("input", function () {
+                    this.value = this.value
+                        .toUpperCase()
+                        .replace(/[^A-Z0-9]/g, "")
+                        .slice(0, 17);
+                });
+
+                const plateInput = get("Plate");
+
+                plateInput?.addEventListener("beforeinput", function (e) {
+                    if (e.inputType === "insertText" && !/^[a-zA-Z0-9]$/.test(e.data)) {
+                        e.preventDefault();
+                        showTemporaryInvalid(this);
+                    }
+                });
+
+                plateInput?.addEventListener("input", function () {
+                    this.value = this.value
+                        .toUpperCase()
+                        .replace(/[^A-Z0-9]/g, "");
+                });
+
+                const modelYearInput = get("ModelYear");
+
+                modelYearInput?.addEventListener("beforeinput", function (e) {
+                    if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
+                        e.preventDefault();
+                        showTemporaryInvalid(this);
+                    }
+                });
+
+                modelYearInput?.addEventListener("input", function () {
+                    this.value = this.value.replace(/\D/g, "").slice(0, 4);
+                });
+
+                const mileageInput = get("Mileage");
+
+                mileageInput?.addEventListener("beforeinput", function (e) {
+                    if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
+                        e.preventDefault();
+                        showTemporaryInvalid(this);
+                    }
+                });
+
+                mileageInput?.addEventListener("input", function () {
+                    const digits = this.value.replace(/\D/g, "").slice(0, 8);
+                    this.value = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                });
+
+                const requestEstimatedInput = get("requestEstimatedInput");
+
+                requestEstimatedInput?.addEventListener("input", function () {
+                    const digits = this.value.replace(/\D/g, "");
+
+                    if (!digits) {
+                        this.value = "";
+                        return;
+                    }
+
+                    this.value = Number(digits).toLocaleString("tr-TR");
+                });
+            }
+
+            function initializeCustomerSearch() {
+                const customerSearchInput = get("customerSearchInput") || firstByName("CustomerName");
+                const customerResults = get("customerSearchResults");
+
+                if (!customerSearchInput || !customerResults) return;
+
+                customerSearchInput.addEventListener("input", function () {
+                    clearTimeout(customerSearchTimeout);
+
+                    const query = this.value.trim();
+
+                    if (query.length < 2) {
+                        customerResults.style.display = "none";
+                        customerResults.innerHTML = "";
+                        return;
+                    }
+
+                    customerSearchTimeout = setTimeout(async () => {
+                        const response = await fetch(`/ServiceRecords/SearchCustomers?query=${encodeURIComponent(query)}`);
+
+                        if (!response.ok) return;
+
+                        const customers = await response.json();
+
+                        customerResults.innerHTML = "";
+
+                        if (!customers.length) {
+                            customerResults.style.display = "none";
+                            return;
+                        }
+
+                        customers.forEach(customer => {
+                            const item = document.createElement("div");
+                            item.className = "customer-search-item";
+
+                            item.innerHTML = `
+                                <strong>${customer.name}</strong>
+                                <span>${customer.phoneNumber ?? "-"} ${customer.email ?? ""}</span>
+                            `;
+
+                            item.addEventListener("click", () => {
+                                customerSearchInput.value = customer.name ?? "";
+
+                                const container = getActiveCustomerContainer();
+
+                                const phoneInput = container.querySelector(`[name="CustomerPhoneNumber"]`);
+                                const emailInput = container.querySelector(`[name="CustomerEmail"]`);
+
+                                if (phoneInput) phoneInput.value = customer.phoneNumber ?? "";
+                                if (emailInput) emailInput.value = customer.email ?? "";
+
+                                customerResults.style.display = "none";
+
+                                saveCreateFormDraft();
+                            });
+
+                            customerResults.appendChild(item);
+                        });
+
+                        customerResults.style.display = "block";
+                    }, 300);
+                });
+
+                document.addEventListener("click", function (e) {
+                    if (!customerResults.contains(e.target) && e.target !== customerSearchInput) {
+                        customerResults.style.display = "none";
+                    }
+                });
+
+                document.addEventListener("keydown", function (e) {
+                    if (e.ctrlKey && e.key.toLowerCase() === "k") {
+                        e.preventDefault();
+                        customerSearchInput.focus();
+                    }
+                });
+            }
+
+            function initializeVehicleBrandModel() {
+                const brandSelect = get("brandSelect");
+
+                brandSelect?.addEventListener("change", async function () {
+                    await loadModelsByBrand(this.value);
+                    saveCreateFormDraft();
+                });
+            }
+
+                    function initializeLocationEvents() {
+            get("AddressCity")?.addEventListener("change", function () {
+                fillDistrictSelect("AddressCity", "AddressDistrict");
+                saveCreateFormDraft();
             });
 
-            localStorage.setItem(
-                REQUEST_ITEMS_DRAFT_KEY,
-                JSON.stringify(items)
-            );
-        }
-
-        function restoreRequestItemsDraft() {
-
-            const raw = localStorage.getItem(
-                REQUEST_ITEMS_DRAFT_KEY
-            );
-
-            if (!raw) return;
-
-            const items = JSON.parse(raw);
-
-            items.forEach(x => {
-
-                addRequestItem(
-                    x.title,
-                    x.note,
-                    x.estimatedAmount
-                );
+            get("IndividualAddressCity")?.addEventListener("change", function () {
+                fillDistrictSelect("IndividualAddressCity", "IndividualAddressDistrict");
+                saveCreateFormDraft();
             });
 
-            updateRequestSummary();
-        }
-           
-                document.addEventListener("DOMContentLoaded", () => {
-
-            initializeDraftAutoSave();
-
-            restoreCreateFormDraft();
-
-            restoreRequestItemsDraft();
+                    get("TaxOfficeCity")?.addEventListener("change", function () {
+            fillTaxOfficeSelect();
+            saveCreateFormDraft();
         });
 
-                setTimeout(() => {
-            const raw = localStorage.getItem(DRAFT_KEY);
-            if (!raw) return;
+            get("TaxOfficeSelect")?.addEventListener("change", function () {
+                saveCreateFormDraft();
+            });
+        }
 
-            const draft = JSON.parse(raw);
-            const fields = draft.fields || draft;
+            document.addEventListener("DOMContentLoaded", async function () {
+                if (get("CustomerType") && !get("CustomerType").value) {
+                    get("CustomerType").value = 1;
+                }
 
-            if (!fields.VehicleBrandId || !fields.VehicleModelId) return;
+                setCustomerType(
+                    Number(get("CustomerType")?.value || 1),
+                    document.querySelector(`.customer-type-switch button[data-type="${get("CustomerType")?.value || 1}"]`)
+                );
 
-            brandSelect.value = fields.VehicleBrandId;
-            brandSelect.dispatchEvent(new Event("change"));
+                await loadLocationData();
 
-            setTimeout(() => {
-                modelSelect.value = fields.VehicleModelId;
-            }, 700);
-        }, 300);
+                initializeDraftAutoSave();
+                initializeInputMasks();
+                initializeCustomerSearch();
+                initializeVehicleBrandModel();
+                initializeLocationEvents();
 
-    </script>
+                await restoreCreateFormDraft();
+                restoreRequestItemsDraft();
+
+                updateRequestSummary();
+            });
+
+            function toTitleCase(text) {
+
+    return text
+        .toLocaleLowerCase("tr-TR")
+        .split(" ")
+        .map(word =>
+            word.charAt(0).toLocaleUpperCase("tr-TR") +
+            word.slice(1))
+        .join(" ");
 }
+        </script>
+    }

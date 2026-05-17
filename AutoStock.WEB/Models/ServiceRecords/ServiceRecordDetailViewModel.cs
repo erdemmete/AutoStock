@@ -39,6 +39,25 @@ public class ServiceRecordDetailViewModel
         public DateTime? CompletedAt { get; set; }
 
         public int VehicleId { get; set; }
+        public string? VehicleDeliveredBy { get; set; }
+
+        public string? CustomerEmail { get; set; }
+
+        public string? CompanyName { get; set; }
+
+        public string? AuthorizedPersonName { get; set; }
+
+        public string? TaxNumber { get; set; }
+
+        public string? TaxOffice { get; set; }
+
+        public string? NationalIdentityNumber { get; set; }
+
+        public string? AddressCity { get; set; }
+
+        public string? AddressDistrict { get; set; }
+
+        public string? CustomerAddress { get; set; }
 
         public List<ServiceOperationViewModel> Operations { get; set; } = new();
 

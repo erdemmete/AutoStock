@@ -61,23 +61,137 @@
 
             <div class="collapsible-body">
 
+                <div class="detail-section-title">
+                    Cari / Servis Bilgileri
+                </div>
+
                 <div class="info-grid">
 
                     <div class="info-card">
                         <span class="info-icon">👤</span>
                         <div>
-                            <label>Müşteri</label>
+                            <label>Müşteri / Cari</label>
                             <strong>@Model.CustomerName</strong>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <span class="info-icon">🚗</span>
+                        <div>
+                            <label>Aracı Getiren</label>
+                            <strong>
+                                @(string.IsNullOrWhiteSpace(Model.VehicleDeliveredBy)
+                                    ? "-"
+                                    : Model.VehicleDeliveredBy)
+                            </strong>
                         </div>
                     </div>
 
                     <div class="info-card">
                         <span class="info-icon">☎</span>
                         <div>
-                            <label>Telefon</label>
+                            <label>İletişim Telefonu</label>
                             <strong>@Model.CustomerPhone</strong>
                         </div>
                     </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
+                    {
+                        <div class="info-card">
+                            <span class="info-icon">✉</span>
+                            <div>
+                                <label>İletişim Maili</label>
+                                <strong>@Model.CustomerEmail</strong>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.CompanyName))
+                    {
+                        <div class="info-card">
+                            <span class="info-icon">🏢</span>
+                            <div>
+                                <label>Firma / İşletme Ünvanı</label>
+                                <strong>@Model.CompanyName</strong>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.AuthorizedPersonName))
+                    {
+                        <div class="info-card">
+                            <span class="info-icon">🪪</span>
+                            <div>
+                                <label>Firma Yetkilisi</label>
+                                <strong>@Model.AuthorizedPersonName</strong>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.TaxOffice))
+                    {
+                        <div class="info-card">
+                            <span class="info-icon">🧾</span>
+                            <div>
+                                <label>Vergi Dairesi</label>
+                                <strong>@Model.TaxOffice</strong>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.TaxNumber))
+                    {
+                        <div class="info-card">
+                            <span class="info-icon">#</span>
+                            <div>
+                                <label>Vergi No</label>
+                                <strong>@Model.TaxNumber</strong>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.NationalIdentityNumber))
+                    {
+                        <div class="info-card">
+                            <span class="info-icon">🪪</span>
+                            <div>
+                                <label>TC Kimlik No</label>
+                                <strong>@Model.NationalIdentityNumber</strong>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.CustomerAddress)
+                    || !string.IsNullOrWhiteSpace(Model.AddressCity)
+                    || !string.IsNullOrWhiteSpace(Model.AddressDistrict))
+                    {
+                        <div class="info-card full-width">
+                            <span class="info-icon">📍</span>
+                            <div>
+                                <label>Adres</label>
+
+                                <strong>
+                                    @Model.CustomerAddress
+                                </strong>
+
+                                @if (!string.IsNullOrWhiteSpace(Model.AddressDistrict)
+                               || !string.IsNullOrWhiteSpace(Model.AddressCity))
+                                {
+                                    <small style="display:block; margin-top:6px; color:#64748b;">
+                                        @Model.AddressDistrict / @Model.AddressCity
+                                    </small>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                </div>
+
+                <div class="detail-section-title with-space">
+                    Araç Bilgileri
+                </div>
+
+                <div class="info-grid">
 
                     <div class="info-card">
                         <span class="info-icon">▣</span>
@@ -91,7 +205,9 @@
                         <span class="info-icon">🚘</span>
                         <div>
                             <label>Araç</label>
-                            <strong>@Model.VehicleBrandName @Model.VehicleModelName</strong>
+                            <strong>
+                                @Model.VehicleBrandName @Model.VehicleModelName
+                            </strong>
                         </div>
                     </div>
 
@@ -99,7 +215,9 @@
                         <span class="info-icon">🏷</span>
                         <div>
                             <label>Marka / Model</label>
-                            <strong>@Model.VehicleBrandName / @Model.VehicleModelName</strong>
+                            <strong>
+                                @Model.VehicleBrandName / @Model.VehicleModelName
+                            </strong>
                         </div>
                     </div>
 
@@ -107,7 +225,9 @@
                         <span class="info-icon">↗</span>
                         <div>
                             <label>Kilometre</label>
-                            <strong>@((Model.Mileage ?? 0).ToString("N0")) km</strong>
+                            <strong>
+                                @((Model.Mileage ?? 0).ToString("N0")) km
+                            </strong>
                         </div>
                     </div>
 
@@ -1633,6 +1753,24 @@
 
 .collapsible-panel:not(.collapsed) .collapse-arrow {
     transform: rotate(180deg);
+}
+
+.detail-section-title {
+    margin: 4px 0 16px;
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: -.2px;
+}
+
+.detail-section-title.with-space {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.info-card.full-width {
+    grid-column: 1 / -1;
 }
     
 </style>

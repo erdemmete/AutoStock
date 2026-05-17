@@ -35,6 +35,12 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public string? TaxNumber { get; set; }
         public string? TaxOffice { get; set; }
         public string? CustomerAddress { get; set; }
+        public string? NationalIdentityNumber { get; set; }
+
+        public string? AddressCity { get; set; }
+
+        public string? AddressDistrict { get; set; }
+        public string? VehicleDeliveredBy { get; set; }
 
         public List<CreateServiceRequestItemDto> RequestItems { get; set; } = new();
     }

@@ -4,6 +4,7 @@ using AutoStock.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AutoStock.Repositories.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260516170622_AddVehicleDeliveredByToServiceRecord")]
+    partial class AddVehicleDeliveredByToServiceRecord
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -98,6 +101,62 @@ namespace AutoStock.Repositories.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("AutoStock.Repositories.Entities.Customer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AuthorizedPersonName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CompanyName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TaxNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaxOffice")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WorkshopId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("AutoStock.Repositories.Entities.Employee", b =>
@@ -829,71 +888,6 @@ namespace AutoStock.Repositories.Migrations
                     b.ToTable("WorkshopUsers");
                 });
 
-            modelBuilder.Entity("Customer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AddressCity")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AddressDistrict")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AuthorizedPersonName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CompanyName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("NationalIdentityNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("TaxNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TaxOffice")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<int>("WorkshopId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Customers");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>
                 {
                     b.Property<int>("Id")
@@ -1047,7 +1041,7 @@ namespace AutoStock.Repositories.Migrations
 
             modelBuilder.Entity("AutoStock.Repositories.Entities.ServiceRecord", b =>
                 {
-                    b.HasOne("Customer", "Customer")
+                    b.HasOne("AutoStock.Repositories.Entities.Customer", "Customer")
                         .WithMany("ServiceRecords")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1092,7 +1086,7 @@ namespace AutoStock.Repositories.Migrations
 
             modelBuilder.Entity("AutoStock.Repositories.Entities.Vehicle", b =>
                 {
-                    b.HasOne("Customer", "Customer")
+                    b.HasOne("AutoStock.Repositories.Entities.Customer", "Customer")
                         .WithMany("Vehicles")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1205,6 +1199,13 @@ namespace AutoStock.Repositories.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("AutoStock.Repositories.Entities.Customer", b =>
+                {
+                    b.Navigation("ServiceRecords");
+
+                    b.Navigation("Vehicles");
+                });
+
             modelBuilder.Entity("AutoStock.Repositories.Entities.Employee", b =>
                 {
                     b.Navigation("ServiceRecords");
@@ -1237,13 +1238,6 @@ namespace AutoStock.Repositories.Migrations
             modelBuilder.Entity("AutoStock.Repositories.Entities.Workshop", b =>
                 {
                     b.Navigation("WorkshopUsers");
-                });
-
-            modelBuilder.Entity("Customer", b =>
-                {
-                    b.Navigation("ServiceRecords");
-
-                    b.Navigation("Vehicles");
                 });
 #pragma warning restore 612, 618
         }

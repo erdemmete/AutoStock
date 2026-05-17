@@ -39,6 +39,12 @@ namespace AutoStock.WEB.Models.ServiceRecords
         public string? TaxNumber { get; set; }
         public string? TaxOffice { get; set; }
         public string? CustomerAddress { get; set; }
+        public string? NationalIdentityNumber { get; set; }
+
+        public string? AddressCity { get; set; }
+
+        public string? AddressDistrict { get; set; }
+        public string? VehicleDeliveredBy { get; set; }
 
         public List<CreateServiceRequestItemViewModel> RequestItems { get; set; } = new();
 
