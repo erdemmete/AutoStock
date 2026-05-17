@@ -35,10 +35,10 @@ namespace AutoStockAPI.Controllers
             var record = await _context.ServiceRecords
             .Include(x => x.Operations)
             .Include(x => x.RequestItems)
-            
+
             .FirstOrDefaultAsync(x =>
                 x.Id == serviceRecordId &&
-        x.VehicleId == qr.VehicleId.Value);       
+        x.VehicleId == qr.VehicleId.Value);
 
             if (record is null)
                 return NotFound("Servis kaydı bulunamadı.");

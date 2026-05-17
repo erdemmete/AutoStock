@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace AutoStock.Services.Dtos.Customers
+﻿namespace AutoStock.Services.Dtos.Customers
 {
     public class CustomerSearchDto
     {

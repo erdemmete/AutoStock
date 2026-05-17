@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
 
 namespace AutoStock.Repositories
 {
@@ -16,7 +15,7 @@ namespace AutoStock.Repositories
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Vehicle> Vehicles { get; set; }
         public DbSet<ServiceRecord> ServiceRecords { get; set; }
-        
+
         public DbSet<Workshop> Workshops { get; set; }
         public DbSet<WorkshopUser> WorkshopUsers { get; set; }
         public DbSet<VehicleBrand> VehicleBrands { get; set; }
@@ -27,6 +26,9 @@ namespace AutoStock.Repositories
         public DbSet<ServiceRecordImage> ServiceRecordImages { get; set; }
         public DbSet<ServiceRequestItem> ServiceRequestItems { get; set; }
         public DbSet<VehicleQrCode> VehicleQrCodes { get; set; }
+        public DbSet<Invoice> Invoices { get; set; }
+
+        public DbSet<InvoiceItem> InvoiceItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -89,7 +91,7 @@ namespace AutoStock.Repositories
 
             base.OnModelCreating(builder);
 
-            
+
         }
     }
 }

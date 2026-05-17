@@ -1,8 +1,5 @@
 ﻿using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.ServiceRecords;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AutoStock.Services.Interfaces
 {

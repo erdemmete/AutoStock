@@ -2,7 +2,7 @@
 {
 
 
-public class ServiceRecordDetailViewModel
+    public class ServiceRecordDetailViewModel
     {
         public int Id { get; set; }
 

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
-using static System.Net.WebRequestMethods;
 
 namespace AutoStock.WEB.Controllers
 {
@@ -29,7 +28,7 @@ namespace AutoStock.WEB.Controllers
 
             return View();
         }
-        
+
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model)
         {

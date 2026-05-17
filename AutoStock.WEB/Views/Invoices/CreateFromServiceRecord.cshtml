@@ -1,0 +1,803 @@
+﻿@model AutoStock.WEB.Models.Invoices.InvoiceCreateViewModel
+
+@{
+    ViewData["Title"] = "Fatura Oluştur";
+}
+
+<div class="invoice-page">
+
+    <section class="invoice-header">
+        <a href="/ServiceRecords/Detail/@Model.ServiceRecordId" class="header-back">←</a>
+
+        <div>
+            <span class="header-badge">MATBU FATURA</span>
+            <h1>Fatura Oluştur</h1>
+            <p>@Model.CustomerTitle • @Model.Plate</p>
+        </div>
+
+        <a href="/Dashboard" class="header-home">⌂</a>
+    </section>
+
+    <input type="hidden" id="serviceRecordId" value="@Model.ServiceRecordId" />
+    <input type="hidden" id="customerId" value="@Model.CustomerId" />
+
+    <input type="hidden" id="customerTitle" value="@Model.CustomerTitle" />
+    <input type="hidden" id="customerTaxOffice" value="@Model.CustomerTaxOffice" />
+    <input type="hidden" id="customerTaxNumber" value="@Model.CustomerTaxNumber" />
+    <input type="hidden" id="customerTckn" value="@Model.CustomerTckn" />
+    <input type="hidden" id="customerAddress" value="@Model.CustomerAddress" />
+
+    <input type="hidden" id="plate" value="@Model.Plate" />
+    <input type="hidden" id="chassisNumber" value="@Model.ChassisNumber" />
+    <input type="hidden" id="mileage" value="@Model.Mileage" />
+
+    <section class="invoice-grid">
+
+        <main class="invoice-main">
+
+            <div class="panel">
+                <div class="panel-title">
+                    <span class="title-icon">👤</span>
+                    <h2>Cari / Müşteri Bilgileri</h2>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-card">
+                        <label>Ünvan / Ad Soyad</label>
+                        <strong>@Model.CustomerTitle</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <label>Vergi Dairesi</label>
+                        <strong>@(Model.CustomerTaxOffice ?? "-")</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <label>Vergi No</label>
+                        <strong>@(Model.CustomerTaxNumber ?? "-")</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <label>TC Kimlik No</label>
+                        <strong>@(Model.CustomerTckn ?? "-")</strong>
+                    </div>
+
+                    <div class="info-card full">
+                        <label>Adres</label>
+                        <strong>@(Model.CustomerAddress ?? "-")</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">
+                    <span class="title-icon">🚗</span>
+                    <h2>Araç Bilgileri</h2>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-card">
+                        <label>Plaka</label>
+                        <strong>@Model.Plate</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <label>Şasi No</label>
+                        <strong>@(Model.ChassisNumber ?? "-")</strong>
+                    </div>
+
+                    <div class="info-card">
+                        <label>Kilometre</label>
+                        <strong>@((Model.Mileage ?? 0).ToString("N0")) km</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="invoice-items-header">
+                    <div class="panel-title no-margin">
+                        <span class="title-icon">🧾</span>
+                        <h2>Fatura Kalemleri</h2>
+                    </div>
+
+                    <button type="button" class="outline-btn" onclick="addInvoiceRow()">
+                        + Kalem Ekle
+                    </button>
+                </div>
+
+                <div class="invoice-table" id="invoiceItems">
+
+                    <div class="invoice-table-head">
+                        <span>Tür</span>
+                        <span>Açıklama</span>
+                        <span>Miktar</span>
+                        <span>Birim</span>
+                        <span>Birim Fiyat</span>
+                        <span>İsk. %</span>
+                        <span>KDV %</span>
+                        <span>Toplam</span>
+                        <span></span>
+                    </div>
+
+                    @if (Model.Items.Any())
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            <div class="invoice-row">
+                                <select class="item-type">
+                                    <option value="1" selected="@(item.ItemType == 1)">İşçilik</option>
+                                    <option value="2" selected="@(item.ItemType == 2)">Parça</option>
+                                    <option value="3" selected="@(item.ItemType == 3)">Diğer</option>
+                                </select>
+
+                                <input class="description" value="@item.Description" />
+                                <input class="quantity calc-input" type="number" step="0.01" min="0" value="@item.Quantity" />
+                                <input class="unit" value="@item.Unit" />
+                                <input class="unit-price calc-input" type="number" step="0.01" min="0" value="@item.UnitPrice" />
+                                <input class="discount-rate calc-input" type="number" step="0.01" min="0" value="@item.DiscountRate" />
+                                <input class="vat-rate calc-input" type="number" step="0.01" min="0" value="@item.VatRate" />
+
+                                <strong class="line-total">0,00 ₺</strong>
+
+                                <button type="button" class="delete-row-btn" onclick="deleteInvoiceRow(this)">
+                                    Sil
+                                </button>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="invoice-row">
+                            <select class="item-type">
+                                <option value="1">İşçilik</option>
+                                <option value="2">Parça</option>
+                                <option value="3" selected>Diğer</option>
+                            </select>
+
+                            <input class="description" placeholder="Açıklama" />
+                            <input class="quantity calc-input" type="number" step="0.01" min="0" value="1" />
+                            <input class="unit" value="Adet" />
+                            <input class="unit-price calc-input" type="number" step="0.01" min="0" value="0" />
+                            <input class="discount-rate calc-input" type="number" step="0.01" min="0" value="0" />
+                            <input class="vat-rate calc-input" type="number" step="0.01" min="0" value="20" />
+                            <strong class="line-total">0,00 ₺</strong>
+                            <button type="button" class="delete-row-btn" onclick="deleteInvoiceRow(this)">Sil</button>
+                        </div>
+                    }
+
+                </div>
+            </div>
+
+        </main>
+
+        <aside class="invoice-side">
+
+            <div class="side-card total-card">
+                <div class="side-title">
+                    <span class="title-icon purple">₺</span>
+                    <h3>Fatura Özeti</h3>
+                </div>
+
+                <div class="total-row">
+                    <span>Ara Toplam</span>
+                    <strong id="subtotalText">0,00 ₺</strong>
+                </div>
+
+                <div class="total-row">
+                    <span>İskonto</span>
+                    <strong id="discountText">0,00 ₺</strong>
+                </div>
+
+                <div class="total-row">
+                    <span>KDV</span>
+                    <strong id="vatText">0,00 ₺</strong>
+                </div>
+
+                <div class="grand-total">
+                    <span>Genel Toplam</span>
+                    <strong id="grandTotalText">0,00 ₺</strong>
+                </div>
+            </div>
+
+            <div class="side-card action-card vertical">
+                <strong>Fatura Kaydı</strong>
+                <span>Kalemleri kontrol ettikten sonra faturayı taslak olarak kaydedin.</span>
+
+                <button type="button" class="save-btn active" id="saveInvoiceBtn" onclick="saveInvoice()">
+                    Faturayı Kaydet
+                </button>
+            </div>
+
+        </aside>
+
+    </section>
+
+</div>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 30rem), #f4f7fb;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #0f172a;
+    }
+
+    .invoice-page {
+        width: min(1540px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 26px 0 42px;
+    }
+
+    .invoice-header {
+        min-height: 116px;
+        padding: 28px;
+        border-radius: 28px;
+        background: linear-gradient(135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
+        color: white;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 22px;
+        box-shadow: 0 28px 80px rgba(15, 23, 42, .22);
+    }
+
+    .header-back,
+    .header-home {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: rgba(255,255,255,.13);
+        border: 1px solid rgba(255,255,255,.20);
+        color: white;
+        text-decoration: none;
+        font-size: 26px;
+        font-weight: 950;
+    }
+
+    .header-badge {
+        display: inline-flex;
+        margin-bottom: 7px;
+        padding: 6px 11px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.13);
+        border: 1px solid rgba(255,255,255,.18);
+        color: rgba(255,255,255,.82);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: .4px;
+    }
+
+    .invoice-header h1 {
+        margin: 0;
+        font-size: 32px;
+        letter-spacing: -1px;
+    }
+
+    .invoice-header p {
+        margin: 8px 0 0;
+        color: rgba(255,255,255,.82);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .invoice-grid {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+        gap: 18px;
+        align-items: start;
+    }
+
+    .invoice-main {
+        display: grid;
+        gap: 18px;
+    }
+
+    .invoice-side {
+        position: sticky;
+        top: 18px;
+        display: grid;
+        gap: 18px;
+    }
+
+    .invoice-main,
+    .invoice-side,
+    .panel,
+    .side-card {
+        min-width: 0;
+    }
+
+    .panel,
+    .side-card {
+        border-radius: 24px;
+        background: rgba(255,255,255,.94);
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, .07);
+        padding: 22px;
+    }
+
+    .panel-title,
+    .side-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+        .panel-title.no-margin {
+            margin-bottom: 0;
+        }
+
+        .panel-title h2,
+        .side-title h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 950;
+        }
+
+    .title-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: #eef4ff;
+        color: #1d4ed8;
+        font-weight: 950;
+    }
+
+        .title-icon.purple {
+            background: #f3e8ff;
+            color: #7e22ce;
+        }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+    }
+
+    .info-card {
+        padding: 15px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+        .info-card.full {
+            grid-column: 1 / -1;
+        }
+
+        .info-card label {
+            display: block;
+            margin-bottom: 6px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .info-card strong {
+            font-size: 14px;
+            font-weight: 950;
+            word-break: break-word;
+        }
+
+    .invoice-items-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 18px;
+    }
+
+    .outline-btn {
+        height: 42px;
+        padding: 0 16px;
+        border-radius: 12px;
+        border: 1px solid #93c5fd;
+        background: white;
+        color: #1d4ed8;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+    .invoice-table {
+        overflow-x: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+    }
+
+    .invoice-table-head,
+    .invoice-row {
+        display: grid;
+        grid-template-columns: 110px minmax(220px, 1.5fr) 90px 90px 130px 90px 90px 130px 70px;
+        gap: 10px;
+        align-items: center;
+        min-width: 1090px;
+    }
+
+    .invoice-table-head {
+        padding: 12px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .invoice-row {
+        padding: 12px;
+        border-top: 1px solid #e2e8f0;
+        background: white;
+    }
+
+        .invoice-row input,
+        .invoice-row select {
+            width: 100%;
+            min-height: 42px;
+            border: 1px solid #dbe3ef;
+            border-radius: 12px;
+            padding: 0 11px;
+            font: inherit;
+            font-size: 13px;
+            outline: none;
+            background: white;
+        }
+
+            .invoice-row input:focus,
+            .invoice-row select:focus {
+                border-color: #2563eb;
+                box-shadow: 0 0 0 4px rgba(37, 99, 235, .10);
+            }
+
+    .line-total {
+        font-size: 13px;
+        color: #16a34a;
+        text-align: right;
+    }
+
+    .delete-row-btn {
+        min-height: 38px;
+        border: none;
+        border-radius: 11px;
+        background: #fff1f2;
+        color: #dc2626;
+        font-size: 12px;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+    .total-card {
+        display: grid;
+        gap: 12px;
+    }
+
+    .total-row,
+    .grand-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+    }
+
+        .total-row span {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 850;
+        }
+
+        .total-row strong {
+            color: #1d4ed8;
+            font-size: 15px;
+            font-weight: 950;
+        }
+
+    .grand-total {
+        margin-top: 10px;
+        padding-top: 16px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+        .grand-total span {
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 950;
+        }
+
+        .grand-total strong {
+            color: #16a34a;
+            font-size: 24px;
+            font-weight: 950;
+        }
+
+    .action-card.vertical {
+        display: grid;
+        gap: 8px;
+    }
+
+        .action-card.vertical span {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 750;
+        }
+
+    .save-btn {
+        margin-top: 8px;
+        min-height: 46px;
+        border: none;
+        border-radius: 14px;
+        background: #cbd5e1;
+        color: white;
+        font-weight: 950;
+    }
+
+        .save-btn.active {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            cursor: pointer;
+            box-shadow: 0 12px 24px rgba(22, 163, 74, .18);
+        }
+
+            .save-btn.active:disabled {
+                background: #cbd5e1;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+
+    @@media (max-width: 1200px) {
+        .invoice-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .invoice-side {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .invoice-page {
+            width: 100%;
+            padding: 12px;
+        }
+
+        .invoice-header {
+            grid-template-columns: auto 1fr;
+            padding: 20px;
+            border-radius: 22px;
+        }
+
+        .header-home {
+            display: none;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .invoice-table-head {
+            display: none;
+        }
+
+        .invoice-row {
+            grid-template-columns: 1fr;
+            min-width: 0;
+        }
+
+        .line-total {
+            text-align: left;
+        }
+    }
+</style>
+
+<script>
+    function toNumber(value) {
+        if (!value) return 0;
+        return Number(String(value).replace(",", ".")) || 0;
+    }
+
+    function formatMoney(value) {
+        return Number(value || 0).toLocaleString("tr-TR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) + " ₺";
+    }
+
+    function calculateInvoice() {
+        let subtotal = 0;
+        let discountTotal = 0;
+        let vatTotal = 0;
+        let grandTotal = 0;
+
+        document.querySelectorAll(".invoice-row").forEach(row => {
+            const quantity = toNumber(row.querySelector(".quantity")?.value);
+            const unitPrice = toNumber(row.querySelector(".unit-price")?.value);
+            const discountRate = toNumber(row.querySelector(".discount-rate")?.value);
+            const vatRate = toNumber(row.querySelector(".vat-rate")?.value);
+
+            const gross = quantity * unitPrice;
+            const discount = gross * discountRate / 100;
+            const net = gross - discount;
+            const vat = net * vatRate / 100;
+            const lineTotal = net + vat;
+
+            subtotal += gross;
+            discountTotal += discount;
+            vatTotal += vat;
+            grandTotal += lineTotal;
+
+            const lineTotalElement = row.querySelector(".line-total");
+
+            if (lineTotalElement) {
+                lineTotalElement.textContent = formatMoney(lineTotal);
+            }
+        });
+
+        document.getElementById("subtotalText").textContent = formatMoney(subtotal);
+        document.getElementById("discountText").textContent = formatMoney(discountTotal);
+        document.getElementById("vatText").textContent = formatMoney(vatTotal);
+        document.getElementById("grandTotalText").textContent = formatMoney(grandTotal);
+    }
+
+    function bindCalculationInputs() {
+        document.querySelectorAll(".calc-input").forEach(input => {
+            input.removeEventListener("input", calculateInvoice);
+            input.addEventListener("input", calculateInvoice);
+        });
+    }
+
+    function addInvoiceRow() {
+        const table = document.getElementById("invoiceItems");
+
+        const row = document.createElement("div");
+        row.className = "invoice-row";
+
+        row.innerHTML = `
+            <select class="item-type">
+                <option value="1">İşçilik</option>
+                <option value="2">Parça</option>
+                <option value="3" selected>Diğer</option>
+            </select>
+
+            <input class="description" placeholder="Açıklama" />
+            <input class="quantity calc-input" type="number" step="0.01" min="0" value="1" />
+            <input class="unit" value="Adet" />
+            <input class="unit-price calc-input" type="number" step="0.01" min="0" value="0" />
+            <input class="discount-rate calc-input" type="number" step="0.01" min="0" value="0" />
+            <input class="vat-rate calc-input" type="number" step="0.01" min="0" value="20" />
+            <strong class="line-total">0,00 ₺</strong>
+            <button type="button" class="delete-row-btn" onclick="deleteInvoiceRow(this)">Sil</button>
+        `;
+
+        table.appendChild(row);
+
+        bindCalculationInputs();
+        calculateInvoice();
+    }
+
+    function deleteInvoiceRow(button) {
+        const rows = document.querySelectorAll(".invoice-row");
+
+        if (rows.length <= 1) {
+            alert("En az bir fatura kalemi kalmalı.");
+            return;
+        }
+
+        button.closest(".invoice-row")?.remove();
+        calculateInvoice();
+    }
+
+    function getInputValue(id) {
+        return document.getElementById(id)?.value || null;
+    }
+
+    function collectInvoicePayload() {
+        const items = [];
+
+        document.querySelectorAll(".invoice-row").forEach(row => {
+            const description = row.querySelector(".description")?.value?.trim();
+
+            if (!description) {
+                return;
+            }
+
+            items.push({
+                itemType: Number(row.querySelector(".item-type")?.value || 3),
+                description: description,
+                quantity: toNumber(row.querySelector(".quantity")?.value),
+                unit: row.querySelector(".unit")?.value || "Adet",
+                unitPrice: toNumber(row.querySelector(".unit-price")?.value),
+                discountRate: toNumber(row.querySelector(".discount-rate")?.value),
+                vatRate: toNumber(row.querySelector(".vat-rate")?.value)
+            });
+        });
+
+        return {
+            serviceRecordId: Number(getInputValue("serviceRecordId")),
+            customerId: Number(getInputValue("customerId")),
+            invoiceType: 1,
+
+            customerTitle: getInputValue("customerTitle"),
+            customerTaxOffice: getInputValue("customerTaxOffice"),
+            customerTaxNumber: getInputValue("customerTaxNumber"),
+            customerTckn: getInputValue("customerTckn"),
+            customerAddress: getInputValue("customerAddress"),
+
+            plate: getInputValue("plate"),
+            chassisNumber: getInputValue("chassisNumber"),
+            mileage: getInputValue("mileage") ? Number(getInputValue("mileage")) : null,
+
+            items: items
+        };
+    }
+
+    async function saveInvoice() {
+        const button = document.getElementById("saveInvoiceBtn");
+        const payload = collectInvoicePayload();
+
+        if (!payload.items.length) {
+            alert("En az bir fatura kalemi girilmelidir.");
+            return;
+        }
+
+        button.disabled = true;
+        button.dataset.originalText = button.textContent;
+        button.textContent = "Kaydediliyor...";
+
+        try {
+            const response = await fetch("/Invoices/CreateFromServiceRecord", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const text = await response.text();
+
+            let result = null;
+
+            try {
+                result = JSON.parse(text);
+            } catch {
+                result = null;
+            }
+
+            if (!response.ok) {
+                const errorMessage =
+                    result?.errorMessage?.[0] ||
+                    result?.errorMessage ||
+                    "Fatura kaydedilirken hata oluştu.";
+
+                alert(errorMessage);
+                return;
+            }
+
+            if (!result?.isSuccess) {
+                const errorMessage =
+                    result?.errorMessage?.[0] ||
+                    result?.errorMessage ||
+                    "Fatura kaydedilemedi.";
+
+                alert(errorMessage);
+                return;
+            }
+
+            alert("Fatura başarıyla kaydedildi.");
+
+            window.location.href = `/ServiceRecords/Detail/${payload.serviceRecordId}`;
+        }
+        finally {
+            button.disabled = false;
+            button.textContent = button.dataset.originalText || "Faturayı Kaydet";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        bindCalculationInputs();
+        calculateInvoice();
+    });
+</script>

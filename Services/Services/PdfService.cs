@@ -246,7 +246,7 @@ public class PdfService : IPdfService
                         .Bold()
                         .FontColor(Colors.Blue.Darken4);
 
-                    
+
 
                     if (!string.IsNullOrWhiteSpace(request.StatusText))
                     {

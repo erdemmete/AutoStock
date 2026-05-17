@@ -1,16 +1,14 @@
 ﻿using AutoStock.Repositories;
-using AutoStock.Repositories.Entities;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Customers;
 using AutoStock.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace AutoStock.Services.Services
 {
     public class CustomerService(ICustomerRepository customerRepository) : ICustomerService
     {
-        
+
 
         public async Task<ServiceResult<List<Customer>>> GetCustomersWithVehicles(int count)
         {

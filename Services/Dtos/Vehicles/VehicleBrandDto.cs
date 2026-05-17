@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace AutoStock.Services.Dtos.Vehicles
+﻿namespace AutoStock.Services.Dtos.Vehicles
 {
     public class VehicleBrandDto
     {

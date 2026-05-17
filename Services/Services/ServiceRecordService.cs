@@ -58,7 +58,7 @@ public class ServiceRecordService : IServiceRecordService
                 NationalIdentityNumber = request.NationalIdentityNumber?.Trim(),
                 AddressCity = request.AddressCity?.Trim(),
                 AddressDistrict = request.AddressDistrict?.Trim(),
-                
+
             };
 
             _context.Customers.Add(customer);
@@ -81,43 +81,43 @@ public class ServiceRecordService : IServiceRecordService
             customer.AddressDistrict = request.AddressDistrict?.Trim();
         }
 
-            var vehicle = await _context.Vehicles
-                .Include(x => x.VehicleBrand)
-                .Include(x => x.VehicleModel)
-                .FirstOrDefaultAsync(x =>
-                    x.WorkshopId == workshopId &&
-                    x.Plate == plate);
+        var vehicle = await _context.Vehicles
+            .Include(x => x.VehicleBrand)
+            .Include(x => x.VehicleModel)
+            .FirstOrDefaultAsync(x =>
+                x.WorkshopId == workshopId &&
+                x.Plate == plate);
 
-            if (vehicle is null)
+        if (vehicle is null)
+        {
+            vehicle = new Vehicle
             {
-                vehicle = new Vehicle
-                {
-                    WorkshopId = workshopId,
-                    Customer = customer,
-                    Plate = plate,
-                    VehicleBrandId = request.VehicleBrandId,
-                    VehicleModelId = request.VehicleModelId,
-                    ModelYear = request.ModelYear,
-                    Mileage = request.Mileage,
-                    ChassisNumber = request.ChassisNumber?.Trim()
-                };
+                WorkshopId = workshopId,
+                Customer = customer,
+                Plate = plate,
+                VehicleBrandId = request.VehicleBrandId,
+                VehicleModelId = request.VehicleModelId,
+                ModelYear = request.ModelYear,
+                Mileage = request.Mileage,
+                ChassisNumber = request.ChassisNumber?.Trim()
+            };
 
-                _context.Vehicles.Add(vehicle);
-            }
-            else
-            {
-                vehicle.Customer = customer;
-                vehicle.VehicleBrandId = request.VehicleBrandId ?? vehicle.VehicleBrandId;
-                vehicle.VehicleModelId = request.VehicleModelId ?? vehicle.VehicleModelId;
-                vehicle.ModelYear = request.ModelYear ?? vehicle.ModelYear;
-                vehicle.Mileage = request.Mileage ?? vehicle.Mileage;
+            _context.Vehicles.Add(vehicle);
+        }
+        else
+        {
+            vehicle.Customer = customer;
+            vehicle.VehicleBrandId = request.VehicleBrandId ?? vehicle.VehicleBrandId;
+            vehicle.VehicleModelId = request.VehicleModelId ?? vehicle.VehicleModelId;
+            vehicle.ModelYear = request.ModelYear ?? vehicle.ModelYear;
+            vehicle.Mileage = request.Mileage ?? vehicle.Mileage;
 
-                if (!string.IsNullOrWhiteSpace(request.ChassisNumber))
-                    vehicle.ChassisNumber = request.ChassisNumber.Trim();
-            }
+            if (!string.IsNullOrWhiteSpace(request.ChassisNumber))
+                vehicle.ChassisNumber = request.ChassisNumber.Trim();
+        }
 
-            var brandName = await GetBrandNameAsync(request.VehicleBrandId);
-            var modelName = await GetModelNameAsync(request.VehicleModelId);
+        var brandName = await GetBrandNameAsync(request.VehicleBrandId);
+        var modelName = await GetModelNameAsync(request.VehicleModelId);
 
         var vehicleDeliveredBy =
     string.IsNullOrWhiteSpace(request.VehicleDeliveredBy)
@@ -132,54 +132,54 @@ public class ServiceRecordService : IServiceRecordService
         }
 
         var serviceRecord = new ServiceRecord
+        {
+            RecordNumber = GenerateRecordNumber(),
+            WorkshopId = workshopId,
+            Customer = customer,
+            Vehicle = vehicle,
+            Status = ServiceRecordStatus.Open,
+
+            CustomerNameSnapshot = request.CustomerName.Trim(),
+            CustomerPhoneSnapshot = phoneNumber,
+
+            VehiclePlateSnapshot = plate,
+            VehicleBrandNameSnapshot = brandName,
+            VehicleModelNameSnapshot = modelName,
+            VehicleDeliveredBySnapshot = vehicleDeliveredBy,
+
+            MileageSnapshot = request.Mileage,
+
+            CustomerComplaint = request.CustomerComplaint?.Trim(),
+            ServiceReceptionNote = request.ServiceReceptionNote?.Trim(),
+            EstimatedAmount = request.EstimatedAmount,
+            EstimatedAmountNote = request.EstimatedAmountNote?.Trim(),
+            TotalAmount = 0,
+            ShowPricesOnPdf = true
+        };
+
+        foreach (var item in request.RequestItems.Where(x => !string.IsNullOrWhiteSpace(x.Title)))
+        {
+            serviceRecord.RequestItems.Add(new ServiceRequestItem
             {
-                RecordNumber = GenerateRecordNumber(),
-                WorkshopId = workshopId,
-                Customer = customer,
-                Vehicle = vehicle,
-                Status = ServiceRecordStatus.Open,
-
-                CustomerNameSnapshot = request.CustomerName.Trim(),
-                CustomerPhoneSnapshot = phoneNumber,
-
-                VehiclePlateSnapshot = plate,
-                VehicleBrandNameSnapshot = brandName,
-                VehicleModelNameSnapshot = modelName,
-                VehicleDeliveredBySnapshot = vehicleDeliveredBy,
-                
-                MileageSnapshot = request.Mileage,
-
-                CustomerComplaint = request.CustomerComplaint?.Trim(),
-                ServiceReceptionNote = request.ServiceReceptionNote?.Trim(),
-                EstimatedAmount = request.EstimatedAmount,
-                EstimatedAmountNote = request.EstimatedAmountNote?.Trim(),
-                TotalAmount = 0,
-                ShowPricesOnPdf = true
-            };
-
-            foreach (var item in request.RequestItems.Where(x => !string.IsNullOrWhiteSpace(x.Title)))
-            {
-                serviceRecord.RequestItems.Add(new ServiceRequestItem
-                {
-                    Title = item.Title.Trim(),
-                    Note = item.Note?.Trim(),
-                    EstimatedAmount = item.EstimatedAmount
-                });
-            }
-
-            _context.ServiceRecords.Add(serviceRecord);
-
-
-
-            await _context.SaveChangesAsync();
-
-            return ServiceResult<CreateServiceRecordResponse>.Success(new CreateServiceRecordResponse
-            {
-                ServiceRecordId = serviceRecord.Id,
-                RecordNumber = serviceRecord.RecordNumber
+                Title = item.Title.Trim(),
+                Note = item.Note?.Trim(),
+                EstimatedAmount = item.EstimatedAmount
             });
         }
-    
+
+        _context.ServiceRecords.Add(serviceRecord);
+
+
+
+        await _context.SaveChangesAsync();
+
+        return ServiceResult<CreateServiceRecordResponse>.Success(new CreateServiceRecordResponse
+        {
+            ServiceRecordId = serviceRecord.Id,
+            RecordNumber = serviceRecord.RecordNumber
+        });
+    }
+
 
     public async Task<ServiceResult<ServiceRecordDetailDto>> GetDetailAsync(
     int serviceRecordId,
@@ -622,5 +622,5 @@ public class ServiceRecordService : IServiceRecordService
         return $"SR-{DateTime.UtcNow:yyyyMMddHHmmssfff}";
     }
 
-    
+
 }

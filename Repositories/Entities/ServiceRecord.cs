@@ -54,7 +54,7 @@ namespace AutoStock.Repositories.Entities
         public ICollection<ServiceOperation> Operations { get; set; } = new List<ServiceOperation>();
 
         public ICollection<ServiceRecordImage> Images { get; set; } = new List<ServiceRecordImage>();
-       
+
 
         public ICollection<ServiceRequestItem> RequestItems { get; set; } = new List<ServiceRequestItem>();
     }

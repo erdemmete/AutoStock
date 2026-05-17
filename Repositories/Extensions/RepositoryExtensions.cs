@@ -25,6 +25,7 @@ namespace AutoStock.Repositories.Extensions
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 
+
             return services;
 
 

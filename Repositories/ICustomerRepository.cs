@@ -1,6 +1,4 @@
-﻿using AutoStock.Repositories.Entities;
-
-namespace AutoStock.Repositories
+﻿namespace AutoStock.Repositories
 {
     public interface ICustomerRepository : IGenericRepository<Customer>
     {

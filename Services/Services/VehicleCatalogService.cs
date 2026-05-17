@@ -2,9 +2,6 @@
 using AutoStock.Services.Dtos.Vehicles;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AutoStock.Services.Services
 {
