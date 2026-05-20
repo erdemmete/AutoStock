@@ -2,6 +2,7 @@
 using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Models.Common;
+using AutoStock.WEB.Models.Invoices;
 using AutoStock.WEB.Models.ServiceRecords;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http.Headers;
@@ -170,6 +171,49 @@ public class ServiceRecordsController : Controller
         {
             TempData["ErrorMessage"] = "Servis kaydı okunamadı.";
             return RedirectToAction(nameof(Index));
+        }
+
+        var invoiceResponse = await client.GetAsync($"/api/invoices/by-service-record/{id}");
+
+        if (invoiceResponse.IsSuccessStatusCode)
+        {
+            var invoiceJson = await invoiceResponse.Content.ReadAsStringAsync();
+
+            var invoiceResult = JsonSerializer.Deserialize<ApiResponse<List<InvoiceListItemViewModel>>>(
+                invoiceJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            result.Data.Invoices = invoiceResult?.Data ?? new List<InvoiceListItemViewModel>();
+        }
+        var draftInvoiceResponse = await client.GetAsync($"/api/invoices/draft/by-service-record/{id}");
+
+        if (draftInvoiceResponse.IsSuccessStatusCode)
+        {
+            var draftInvoiceJson = await draftInvoiceResponse.Content.ReadAsStringAsync();
+
+            var draftInvoiceResult = JsonSerializer.Deserialize<ApiResponse<InvoiceDetailViewModel>>(
+                draftInvoiceJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            result.Data.DraftInvoiceId = draftInvoiceResult?.Data?.Id;
+        }
+
+        var activeInvoiceResponse = await client.GetAsync($"/api/invoices/active/by-service-record/{id}");
+
+        if (activeInvoiceResponse.IsSuccessStatusCode)
+        {
+            var activeInvoiceJson = await activeInvoiceResponse.Content.ReadAsStringAsync();
+
+            var activeInvoiceResult = JsonSerializer.Deserialize<ApiResponse<InvoiceNavigationViewModel>>(
+                activeInvoiceJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (activeInvoiceResult?.Data is not null)
+            {
+                result.Data.ActiveInvoiceId = activeInvoiceResult.Data.InvoiceId;
+                result.Data.ActiveInvoiceStatus = activeInvoiceResult.Data.Status;
+                result.Data.ActiveInvoiceNumber = activeInvoiceResult.Data.InvoiceNumber;
+            }
         }
 
         return View(result.Data);

@@ -1,0 +1,746 @@
+﻿@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+
+@{
+    ViewData["Title"] = "Fatura Detayı";
+
+    string GetStatusText(int status) => status switch
+    {
+        1 => "Onay Bekliyor",
+        2 => "Kesildi",
+        3 => "İptal Edildi",
+        _ => "Bilinmiyor"
+    };
+
+    string GetItemTypeText(int type) => type switch
+    {
+        1 => "İşçilik",
+        2 => "Parça",
+        3 => "Diğer",
+        _ => "Diğer"
+    };
+
+    var isIndividual = !string.IsNullOrWhiteSpace(Model.CustomerTckn)
+        || (string.IsNullOrWhiteSpace(Model.CustomerTaxNumber) && string.IsNullOrWhiteSpace(Model.CustomerTaxOffice));
+}
+
+<div class="invoice-page">
+
+    <header class="top-header">
+        <div>
+            <div class="title-row">
+                <h1>Fatura Taslağı</h1>
+                <span class="status-badge status-@Model.Status">@GetStatusText(Model.Status)</span>
+            </div>
+
+            <p>
+                <span>▧</span>
+                @Model.InvoiceNumber numaralı belge referansı
+            </p>
+        </div>
+
+        <div class="header-actions">
+            @if (Model.Status == 2)
+            {
+                <a href="/Invoices/Print/@Model.Id" target="_blank" class="action-btn light">
+                    🖨 Yazdır
+                </a>
+
+                <button type="button" class="action-btn danger" onclick="cancelInvoice(@Model.Id)">
+                    × İptal Et
+                </button>
+            }
+
+            @if (Model.Status == 1)
+            {
+                <a href="/Invoices/Edit/@Model.Id" class="action-btn primary">
+                    ✎ Fatura Düzenle
+                </a>
+
+                <button type="button" class="action-btn success" onclick="issueInvoice(@Model.Id)">
+                    Faturayı Kes
+                </button>
+            }
+        </div>
+    </header>
+
+    <main class="invoice-card">
+
+        <section class="invoice-head">
+            <div>
+                <h2>@Model.InvoiceNumber</h2>
+
+                <div class="meta-line">
+                    <span>▣ @Model.InvoiceDate.AddHours(3).ToString("dd MMMM yyyy")</span>
+
+                    @if (Model.ServiceRecordId.HasValue)
+                    {
+                        <span>🔧 Servis Kaydı: #@Model.ServiceRecordId</span>
+                    }
+                </div>
+            </div>
+
+            <div class="plate-box">
+                <span>TR</span>
+                <strong>@(Model.Plate ?? "-")</strong>
+            </div>
+        </section>
+
+        <section class="info-section">
+            <div class="info-box">
+                <div class="box-title">♙ ALICI BİLGİLERİ</div>
+
+                <h3>@Model.CustomerTitle</h3>
+
+                <div class="info-lines">
+                    @if (isIndividual)
+                    {
+                        <p><span>#</span> TC: @(Model.CustomerTckn ?? "-")</p>
+                    }
+                    else
+                    {
+                        <p><span>#</span> Vergi No: @(Model.CustomerTaxNumber ?? "-")</p>
+                        <p><span>◎</span> Vergi Dairesi: @(Model.CustomerTaxOffice ?? "-")</p>
+                    }
+
+                    <p><span>⌖</span> @(Model.CustomerAddress ?? "-")</p>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <div class="box-title">▣ ARAÇ BİLGİLERİ</div>
+
+                <h3>@(Model.Plate ?? "-")</h3>
+
+                <div class="vehicle-grid">
+                    <div>
+                        <label>Kilometre</label>
+                        <strong>@((Model.Mileage ?? 0).ToString("N0")) km</strong>
+                    </div>
+
+                    <div>
+                        <label>Şasi Numarası</label>
+                        <strong>@(Model.ChassisNumber ?? "-")</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="items-section">
+            <h4>FATURA KALEMLERİ</h4>
+
+            <div class="invoice-table">
+                <div class="table-head">
+                    <span>Tür</span>
+                    <span>Açıklama</span>
+                    <span>Miktar</span>
+                    <span>Birim Fiyat</span>
+                    <span>İskonto</span>
+                    <span>KDV</span>
+                    <span>Tutar</span>
+                </div>
+
+                @foreach (var item in Model.Items)
+                {
+                    <div class="table-row">
+                        <span>
+                            <b class="item-badge type-@item.ItemType">
+                                @GetItemTypeText(item.ItemType)
+                            </b>
+                        </span>
+
+                        <span class="description">@item.Description</span>
+                        <span>@item.Quantity.ToString("N2")</span>
+                        <span>@item.UnitPrice.ToString("N2") ₺</span>
+
+                        <span class="discount">
+                            @(item.DiscountAmount > 0 ? "-" + item.DiscountAmount.ToString("N2") + " ₺" : "-")
+                        </span>
+
+                        <span>%@item.VatRate.ToString("N0")</span>
+                        <span class="line-total">@item.LineTotal.ToString("N2") ₺</span>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="bottom-section">
+            <div class="notes-box">
+                <h4>ⓘ Servis Notları & Uyarılar</h4>
+
+                <div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                    {
+                        @Model.Notes
+                    }
+                    else
+                    {
+                        <span>Bu fatura için ek not bulunmuyor.</span>
+                    }
+                </div>
+            </div>
+
+            <div class="total-box">
+                <div>
+                    <span>Ara Toplam</span>
+                    <strong>@Model.Subtotal.ToString("N2") ₺</strong>
+                </div>
+
+                <div class="red">
+                    <span>Toplam İskonto</span>
+                    <strong>-@Model.DiscountTotal.ToString("N2") ₺</strong>
+                </div>
+
+                <div>
+                    <span>Hesaplanan KDV</span>
+                    <strong>@Model.VatTotal.ToString("N2") ₺</strong>
+                </div>
+
+                <div class="grand">
+                    <span>Genel Toplam</span>
+                    <strong>@Model.GrandTotal.ToString("N2") ₺</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="footer-actions">
+            @if (Model.ServiceRecordId.HasValue)
+            {
+                <a href="/ServiceRecords/Detail/@Model.ServiceRecordId" class="footer-link">
+                    ← Servis Kaydına Git
+                </a>
+            }
+
+            <a href="/Invoices" class="footer-link">
+                Fatura Listesine Dön
+            </a>
+        </section>
+
+    </main>
+
+</div>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: #f4f7fb;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #0f172a;
+    }
+
+    .invoice-page {
+        width: min(1180px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 30px 0 56px;
+    }
+
+    .top-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 26px;
+    }
+
+    .title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .title-row h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: -.6px;
+        }
+
+    .top-header p {
+        margin: 6px 0 0;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 650;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        padding: 7px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 900;
+        border: 1px solid transparent;
+    }
+
+    .status-1 {
+        color: #c2410c;
+        background: #fff7ed;
+        border-color: #fed7aa;
+    }
+
+    .status-2 {
+        color: #15803d;
+        background: #dcfce7;
+        border-color: #bbf7d0;
+    }
+
+    .status-3 {
+        color: #b91c1c;
+        background: #fee2e2;
+        border-color: #fecaca;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .action-btn {
+        min-height: 42px;
+        padding: 0 16px;
+        border-radius: 11px;
+        border: 1px solid #dbe3ef;
+        background: white;
+        color: #334155;
+        font-weight: 900;
+        text-decoration: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, .08);
+    }
+
+        .action-btn.primary {
+            background: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+
+        .action-btn.success {
+            background: #16a34a;
+            color: white;
+            border-color: #16a34a;
+        }
+
+        .action-btn.danger {
+            color: #dc2626;
+            border-color: #fecaca;
+            background: white;
+        }
+
+    .invoice-card {
+        background: white;
+        border: 1px solid #dfe7f1;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, .06);
+    }
+
+    .invoice-head {
+        min-height: 118px;
+        padding: 32px 36px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+        .invoice-head h2 {
+            margin: 0;
+            font-size: 26px;
+            letter-spacing: -.6px;
+        }
+
+    .meta-line {
+        margin-top: 8px;
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 650;
+    }
+
+    .plate-box {
+        min-width: 170px;
+        min-height: 44px;
+        border: 1px solid #dbe3ef;
+        border-radius: 10px;
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        overflow: hidden;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, .06);
+    }
+
+        .plate-box span {
+            display: grid;
+            place-items: center;
+            background: #2563eb;
+            color: white;
+            font-size: 11px;
+            font-weight: 950;
+        }
+
+        .plate-box strong {
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+            letter-spacing: 1.5px;
+        }
+
+    .info-section {
+        padding: 34px 36px 22px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .info-box {
+        min-height: 160px;
+        border: 1px solid #e5ebf3;
+        border-radius: 16px;
+        padding: 22px;
+        background: #fff;
+    }
+
+    .box-title {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: .6px;
+        text-transform: uppercase;
+        margin-bottom: 18px;
+    }
+
+    .info-box h3 {
+        margin: 0 0 14px;
+        font-size: 20px;
+        font-weight: 900;
+    }
+
+    .info-lines {
+        display: grid;
+        gap: 10px;
+    }
+
+        .info-lines p {
+            margin: 0;
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.55;
+            font-weight: 650;
+        }
+
+        .info-lines span {
+            display: inline-block;
+            width: 22px;
+            color: #94a3b8;
+        }
+
+    .vehicle-grid {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+    }
+
+        .vehicle-grid label {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 850;
+            margin-bottom: 4px;
+        }
+
+        .vehicle-grid strong {
+            font-size: 14px;
+            font-weight: 900;
+            word-break: break-word;
+        }
+
+    .items-section {
+        padding: 8px 36px 28px;
+    }
+
+        .items-section h4,
+        .notes-box h4 {
+            margin: 0 0 14px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 950;
+            letter-spacing: .6px;
+            text-transform: uppercase;
+        }
+
+    .invoice-table {
+        border: 1px solid #dfe7f1;
+        border-radius: 14px;
+        overflow-x: auto;
+    }
+
+    .table-head,
+    .table-row {
+        display: grid;
+        grid-template-columns: 110px minmax(260px, 1fr) 90px 130px 110px 90px 130px;
+        align-items: center;
+        min-width: 900px;
+    }
+
+    .table-head {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+        text-transform: uppercase;
+    }
+
+        .table-head span,
+        .table-row span {
+            padding: 15px 18px;
+        }
+
+    .table-row {
+        border-top: 1px solid #edf2f7;
+        font-size: 14px;
+    }
+
+    .description {
+        color: #0f172a;
+        font-weight: 900;
+    }
+
+    .item-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 70px;
+        padding: 6px 10px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    .type-1 {
+        background: #f3e8ff;
+        color: #9333ea;
+        border: 1px solid #e9d5ff;
+    }
+
+    .type-2 {
+        background: #eff6ff;
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
+    }
+
+    .type-3 {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    .discount {
+        color: #ef4444;
+    }
+
+    .line-total {
+        color: #0f172a;
+        font-weight: 950;
+        text-align: right;
+    }
+
+    .bottom-section {
+        padding: 20px 36px 38px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 420px;
+        gap: 36px;
+        align-items: start;
+    }
+
+    .notes-box > div {
+        min-height: 112px;
+        padding: 18px;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        color: #475569;
+        font-size: 14px;
+        line-height: 1.65;
+        font-weight: 650;
+    }
+
+    .total-box {
+        padding: 22px 26px;
+        border-radius: 18px;
+        border: 1px solid #edf2f7;
+        background: #fff;
+        display: grid;
+        gap: 18px;
+    }
+
+        .total-box div {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            color: #475569;
+            font-size: 15px;
+        }
+
+        .total-box strong {
+            color: #0f172a;
+            font-weight: 900;
+        }
+
+        .total-box .red,
+        .total-box .red strong {
+            color: #ef4444;
+        }
+
+        .total-box .grand {
+            padding-top: 18px;
+            border-top: 1px solid #e2e8f0;
+            align-items: center;
+            color: #0f172a;
+            font-size: 17px;
+            font-weight: 900;
+        }
+
+            .total-box .grand strong {
+                color: #4f46e5;
+                font-size: 28px;
+                letter-spacing: -.8px;
+            }
+
+    .footer-actions {
+        padding: 20px 36px;
+        border-top: 1px solid #eef2f7;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .footer-link {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 900;
+    }
+
+    @@media (max-width: 1000px) {
+        .top-header,
+        .invoice-head,
+        .footer-actions {
+            flex-direction: column;
+        }
+
+        .header-actions {
+            justify-content: flex-start;
+        }
+
+        .info-section,
+        .bottom-section {
+            grid-template-columns: 1fr;
+        }
+
+        .plate-box {
+            width: 180px;
+        }
+    }
+
+    @@media (max-width: 700px) {
+        .invoice-page {
+            width: 100%;
+            padding: 14px;
+        }
+
+        .invoice-head,
+        .info-section,
+        .items-section,
+        .bottom-section,
+        .footer-actions {
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+
+        .title-row {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+        .action-btn {
+            width: 100%;
+        }
+
+        .vehicle-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    async function issueInvoice(invoiceId) {
+        const confirmed = confirm(
+            "Bu faturayı kesmek istediğinize emin misiniz?\n\n" +
+            "Kesilen faturalar artık taslak olarak düzenlenemez."
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`/Invoices/Issue/${invoiceId}`, {
+                method: "POST"
+            });
+
+            const text = await response.text();
+
+            let result = null;
+
+            try {
+                result = JSON.parse(text);
+            } catch {
+                result = null;
+            }
+
+            if (!response.ok || !result?.isSuccess) {
+                alert(result?.errorMessage || "Fatura kesilirken hata oluştu.");
+                return;
+            }
+
+            window.location.reload();
+        }
+        catch {
+            alert("Beklenmeyen bir hata oluştu.");
+        }
+    }
+
+    async function cancelInvoice(invoiceId) {
+        const confirmed = confirm("Bu faturayı iptal etmek istediğinize emin misiniz?");
+
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`/Invoices/Cancel/${invoiceId}`, {
+                method: "POST"
+            });
+
+            if (!response.ok) {
+                alert("Fatura iptal edilemedi.");
+                return;
+            }
+
+            location.reload();
+        }
+        catch {
+            alert("Beklenmeyen bir hata oluştu.");
+        }
+    }
+</script>

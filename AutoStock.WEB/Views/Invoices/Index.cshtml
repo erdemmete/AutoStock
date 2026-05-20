@@ -1,0 +1,381 @@
+﻿@model List<AutoStock.WEB.Models.Invoices.InvoiceListItemViewModel>
+
+@{
+    ViewData["Title"] = "Faturalar";
+
+    string GetStatusText(int status)
+    {
+        return status switch
+        {
+            1 => "Taslak",
+            2 => "Kesildi",
+            3 => "İptal",
+            _ => "Bilinmiyor"
+        };
+    }
+
+    string GetTypeText(int type)
+    {
+        return type switch
+        {
+            1 => "Matbu",
+            2 => "e-Arşiv",
+            3 => "e-Fatura",
+            _ => "Bilinmiyor"
+        };
+    }
+}
+
+<div class="invoice-list-page">
+
+    <section class="premium-header">
+        <a href="/Dashboard" class="header-back">←</a>
+
+        <div>
+            <span class="header-badge">FATURA YÖNETİMİ</span>
+            <h1>Faturalar</h1>
+            <p>Oluşturulan taslak ve kesilmiş faturaları yönetin.</p>
+        </div>
+
+        <a href="/Dashboard" class="header-home">⌂</a>
+    </section>
+
+    <section class="summary-grid">
+        <div class="summary-card">
+            <span>Toplam Fatura</span>
+            <strong>@Model.Count</strong>
+        </div>
+
+        <div class="summary-card">
+            <span>Taslak</span>
+            <strong>@Model.Count(x => x.Status == 1)</strong>
+        </div>
+
+        <div class="summary-card">
+            <span>Kesilmiş</span>
+            <strong>@Model.Count(x => x.Status == 2)</strong>
+        </div>
+
+        <div class="summary-card">
+            <span>Toplam Tutar</span>
+            <strong>@Model.Sum(x => x.GrandTotal).ToString("N2") ₺</strong>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-title">
+            <span class="title-icon">🧾</span>
+            <h2>Fatura Listesi</h2>
+        </div>
+
+        @if (Model.Any())
+        {
+            <div class="invoice-table">
+                <div class="invoice-table-head">
+                    <span>Fatura No</span>
+                    <span>Müşteri</span>
+                    <span>Plaka</span>
+                    <span>Tip</span>
+                    <span>Durum</span>
+                    <span>Tarih</span>
+                    <span>Tutar</span>
+                    <span></span>
+                </div>
+
+                @foreach (var invoice in Model)
+                {
+                    <div class="invoice-row">
+                        <span>
+                            <strong>@invoice.InvoiceNumber</strong>
+                        </span>
+
+                        <span>@invoice.CustomerTitle</span>
+
+                        <span>@(invoice.Plate ?? "-")</span>
+
+                        <span>@GetTypeText(invoice.Type)</span>
+
+                        <span>
+                            <b class="status-pill status-@invoice.Status">
+                                @GetStatusText(invoice.Status)
+                            </b>
+                        </span>
+
+                        <span>@invoice.InvoiceDate.AddHours(3).ToString("dd.MM.yyyy HH:mm")</span>
+
+                        <span>
+                            <strong>@invoice.GrandTotal.ToString("N2") ₺</strong>
+                        </span>
+
+                        <span>
+                            <a href="/Invoices/Detail/@invoice.Id" class="detail-btn">
+                                Detay
+                            </a>
+                        </span>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                Henüz fatura oluşturulmamış.
+            </div>
+        }
+    </section>
+
+</div>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        background: radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 30rem), #f4f7fb;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #0f172a;
+    }
+
+    .invoice-list-page {
+        width: min(1540px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 26px 0 42px;
+    }
+
+    .premium-header {
+        min-height: 116px;
+        padding: 28px;
+        border-radius: 28px;
+        background: linear-gradient(135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
+        color: white;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 22px;
+        box-shadow: 0 28px 80px rgba(15, 23, 42, .22);
+    }
+
+    .header-back,
+    .header-home {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: rgba(255,255,255,.13);
+        border: 1px solid rgba(255,255,255,.20);
+        color: white;
+        text-decoration: none;
+        font-size: 26px;
+        font-weight: 950;
+    }
+
+    .header-badge {
+        display: inline-flex;
+        margin-bottom: 7px;
+        padding: 6px 11px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.13);
+        border: 1px solid rgba(255,255,255,.18);
+        color: rgba(255,255,255,.82);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: .4px;
+    }
+
+    .premium-header h1 {
+        margin: 0;
+        font-size: 32px;
+        letter-spacing: -1px;
+    }
+
+    .premium-header p {
+        margin: 8px 0 0;
+        color: rgba(255,255,255,.82);
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .summary-grid {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .summary-card,
+    .panel {
+        border-radius: 24px;
+        background: rgba(255,255,255,.94);
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, .07);
+    }
+
+    .summary-card {
+        padding: 20px;
+    }
+
+        .summary-card span {
+            display: block;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 850;
+            margin-bottom: 8px;
+        }
+
+        .summary-card strong {
+            font-size: 24px;
+            font-weight: 950;
+            color: #1d4ed8;
+        }
+
+    .panel {
+        margin-top: 18px;
+        padding: 22px;
+    }
+
+    .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+        .panel-title h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 950;
+        }
+
+    .title-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: #eef4ff;
+        color: #1d4ed8;
+        font-weight: 950;
+    }
+
+    .invoice-table {
+        overflow-x: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+    }
+
+    .invoice-table-head,
+    .invoice-row {
+        display: grid;
+        grid-template-columns: 190px minmax(220px, 1fr) 120px 100px 110px 160px 140px 90px;
+        gap: 10px;
+        align-items: center;
+        min-width: 1130px;
+    }
+
+    .invoice-table-head {
+        padding: 12px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .invoice-row {
+        padding: 12px;
+        border-top: 1px solid #e2e8f0;
+        background: white;
+        font-size: 13px;
+    }
+
+        .invoice-row span {
+            min-width: 0;
+            word-break: break-word;
+        }
+
+    .status-pill {
+        display: inline-flex;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .status-1 {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .status-2 {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .status-3 {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .detail-btn {
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 12px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        text-decoration: none;
+        font-weight: 950;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .empty-state {
+        padding: 24px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        color: #64748b;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 850;
+    }
+
+    @@media (max-width: 1000px) {
+        .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 700px) {
+        .invoice-list-page {
+            width: 100%;
+            padding: 12px;
+        }
+
+        .premium-header {
+            grid-template-columns: auto 1fr;
+            padding: 20px;
+            border-radius: 22px;
+        }
+
+        .header-home {
+            display: none;
+        }
+
+        .summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .invoice-table-head {
+            display: none;
+        }
+
+        .invoice-row {
+            grid-template-columns: 1fr;
+            min-width: 0;
+            gap: 8px;
+        }
+    }
+</style>

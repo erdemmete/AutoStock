@@ -14,6 +14,28 @@
             _ => "Bilinmiyor"
         };
     }
+
+    string GetInvoiceStatusText(int status)
+    {
+        return status switch
+        {
+            1 => "Taslak",
+            2 => "Kesildi",
+            3 => "İptal",
+            _ => "Bilinmiyor"
+        };
+    }
+
+    string GetInvoiceTypeText(int type)
+    {
+        return type switch
+        {
+            1 => "Matbu",
+            2 => "e-Arşiv",
+            3 => "e-Fatura",
+            _ => "Bilinmiyor"
+        };
+    }
 }
 
 <div class="page">
@@ -680,13 +702,38 @@
             <div class="side-card action-card">
                 <div>
                     <strong>Matbu Fatura</strong>
-                    <span>Bu servis kaydından fatura taslağı oluşturun.</span>
+
+                    @if (Model.ActiveInvoiceId.HasValue)
+                    {
+                        if (Model.ActiveInvoiceStatus == 1)
+                        {
+                            <span>Taslak fatura mevcut: @Model.ActiveInvoiceNumber</span>
+                        }
+                        else if (Model.ActiveInvoiceStatus == 2)
+                        {
+                            <span>Bu servis kaydı için fatura kesilmiş: @Model.ActiveInvoiceNumber</span>
+                        }
+                    }
+                    else
+                    {
+                        <span>Bu servis kaydından fatura taslağı oluşturun.</span>
+                    }
                 </div>
 
-                <a href="/Invoices/CreateFromServiceRecord/@Model.Id"
-                   class="small-action-btn">
-                    Fatura Oluştur
-                </a>
+                @if (Model.ActiveInvoiceId.HasValue)
+                {
+                    <a href="/Invoices/Detail/@Model.ActiveInvoiceId"
+                       class="small-action-btn">
+                        @(Model.ActiveInvoiceStatus == 1 ? "Taslak Faturaya Git" : "Faturaya Git")
+                    </a>
+                }
+                else
+                {
+                    <a href="/Invoices/CreateFromServiceRecord/@Model.Id"
+                       class="small-action-btn">
+                        Fatura Oluştur
+                    </a>
+                }
             </div>
 
             <div class="side-card action-card">
@@ -709,6 +756,8 @@
             <div class="qr-note">
                 💡 QR eşleştirme işlemi müşteriye araç teslimi sırasında yapılmalıdır.
             </div>
+            
+            
 
         </aside>
 
@@ -1783,6 +1832,79 @@
 .info-card.full-width {
     grid-column: 1 / -1;
 }
+.invoice-mini-card {
+    display: grid;
+    gap: 12px;
+}
+
+.invoice-mini-list {
+    display: grid;
+    gap: 10px;
+}
+
+.invoice-mini-item {
+    padding: 13px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    color: #0f172a;
+    transition: .18s ease;
+}
+
+.invoice-mini-item:hover {
+    border-color: #93c5fd;
+    transform: translateY(-1px);
+}
+
+.invoice-mini-item strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 950;
+}
+
+.invoice-mini-item span {
+    display: block;
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 750;
+}
+
+.invoice-mini-right {
+    text-align: right;
+    display: grid;
+    gap: 6px;
+}
+
+.invoice-status {
+    display: inline-flex;
+    justify-content: center;
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 950;
+}
+
+.invoice-status.status-1 {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.invoice-status.status-2 {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.invoice-status.status-3 {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
     
 </style>
 

@@ -1,4 +1,6 @@
-﻿namespace AutoStock.WEB.Models.ServiceRecords
+﻿using AutoStock.WEB.Models.Invoices;
+
+namespace AutoStock.WEB.Models.ServiceRecords
 {
 
 
@@ -58,9 +60,15 @@
         public string? AddressDistrict { get; set; }
 
         public string? CustomerAddress { get; set; }
+        public int? DraftInvoiceId { get; set; }
+        public int? ActiveInvoiceId { get; set; }
+        public int? ActiveInvoiceStatus { get; set; }
+        public string? ActiveInvoiceNumber { get; set; }
 
         public List<ServiceOperationViewModel> Operations { get; set; } = new();
 
         public List<ServiceRequestItemViewModel> RequestItems { get; set; } = new();
+
+        public List<InvoiceListItemViewModel> Invoices { get; set; } = new();
     }
 }

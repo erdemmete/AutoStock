@@ -786,9 +786,15 @@
                 return;
             }
 
-            alert("Fatura başarıyla kaydedildi.");
+                alert("Fatura başarıyla kaydedildi.");
 
-            window.location.href = `/ServiceRecords/Detail/${payload.serviceRecordId}`;
+    const invoiceId = result.data?.invoiceId || result.Data?.InvoiceId;
+
+    if (invoiceId) {
+        window.location.href = `/Invoices/Detail/${invoiceId}`;
+    } else {
+        window.location.href = `/ServiceRecords/Detail/${payload.serviceRecordId}`;
+    }
         }
         finally {
             button.disabled = false;
