@@ -456,6 +456,189 @@
                 .active-card:hover {
                     border: none;
                 }
+
+            .release-modal-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(2, 6, 23, .72);
+                backdrop-filter: blur(18px);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                z-index: 99999;
+            }
+
+                .release-modal-backdrop.show {
+                    display: flex;
+                }
+
+            .release-modal {
+                position: relative;
+                overflow: hidden;
+                width: min(620px, 100%);
+                border-radius: 34px;
+                padding: 34px;
+                background: linear-gradient(145deg, rgba(15,23,42,.96), rgba(30,41,59,.96));
+                border: 1px solid rgba(255,255,255,.08);
+                box-shadow: 0 40px 120px rgba(0,0,0,.45);
+                animation: releasePop .28s ease;
+            }
+
+            .release-glow {
+                position: absolute;
+                width: 320px;
+                height: 320px;
+                border-radius: 999px;
+                right: -120px;
+                top: -120px;
+                background: radial-gradient(circle, rgba(37,99,235,.42), transparent 70%);
+            }
+
+            .release-header {
+                position: relative;
+                z-index: 2;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 18px;
+            }
+
+            .release-brand {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+            }
+
+            .release-logo {
+                width: 52px;
+                height: 52px;
+                border-radius: 18px;
+                display: grid;
+                place-items: center;
+                background: linear-gradient(135deg, #2563eb, #16a34a);
+                color: white;
+                font-weight: 950;
+                box-shadow: 0 18px 40px rgba(37,99,235,.30);
+            }
+
+            .release-brand strong {
+                display: block;
+                color: white;
+                font-size: 20px;
+                letter-spacing: -.5px;
+            }
+
+            .release-brand span {
+                display: block;
+                margin-top: 3px;
+                color: rgba(255,255,255,.58);
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            .release-version {
+                padding: 8px 12px;
+                border-radius: 999px;
+                background: rgba(255,255,255,.08);
+                border: 1px solid rgba(255,255,255,.08);
+                color: white;
+                font-size: 12px;
+                font-weight: 950;
+            }
+
+            .release-content {
+                position: relative;
+                z-index: 2;
+                margin-top: 34px;
+            }
+
+            .release-tag {
+                display: inline-flex;
+                padding: 7px 12px;
+                border-radius: 999px;
+                background: rgba(37,99,235,.16);
+                border: 1px solid rgba(59,130,246,.22);
+                color: #93c5fd;
+                font-size: 12px;
+                font-weight: 950;
+                margin-bottom: 18px;
+            }
+
+            .release-content h2 {
+                margin: 0;
+                color: white;
+                font-size: 38px;
+                line-height: 1.08;
+                letter-spacing: -1.6px;
+                max-width: 520px;
+            }
+
+            .release-description {
+                margin: 18px 0 0;
+                color: rgba(255,255,255,.68);
+                font-size: 15px;
+                line-height: 1.8;
+                max-width: 520px;
+                font-weight: 650;
+            }
+
+            .release-features {
+                margin-top: 28px;
+                display: grid;
+                gap: 12px;
+            }
+
+                .release-features div {
+                    padding: 14px 16px;
+                    border-radius: 16px;
+                    background: rgba(255,255,255,.04);
+                    border: 1px solid rgba(255,255,255,.06);
+                    color: rgba(255,255,255,.88);
+                    font-size: 14px;
+                    font-weight: 800;
+                }
+
+            .release-button {
+                width: 100%;
+                height: 56px;
+                margin-top: 30px;
+                border: none;
+                border-radius: 18px;
+                background: linear-gradient(135deg, #2563eb, #4f46e5);
+                color: white;
+                font-size: 15px;
+                font-weight: 950;
+                cursor: pointer;
+                box-shadow: 0 20px 40px rgba(37,99,235,.28);
+            }
+
+            @@keyframes releasePop {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px) scale(.96);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+
+            @@media(max-width: 700px) {
+                .release-modal {
+                    padding: 26px;
+                    border-radius: 28px;
+                }
+
+                .release-content h2 {
+                    font-size: 30px;
+                }
+
+                .release-description {
+                    font-size: 14px;
+                }
+            }
     </style>
 </head>
 
@@ -523,6 +706,18 @@
         </section>
 
         <section class="cards secondary-cards">
+            <a class="card" href="/CurrentAccounts">
+                <div>
+                    <div class="icon">💰</div>
+
+                    <h2>Cari Yönetimi</h2>
+
+                    <p>
+                        Cari hareketleri, tahsilatları ve müşteri bakiyelerini yönet.
+                    </p>
+                </div>
+            </a>
+
 
             <a class="card disabled" href="javascript:void(0)">
                 <div>
@@ -567,36 +762,60 @@
 
     <div id="releaseModal" class="release-modal-backdrop">
         <div class="release-modal">
-            <div class="release-top">
-                <span class="release-badge">YENİ GÜNCELLEME</span>
-                <span class="release-version">v2</span>
+
+            <div class="release-glow"></div>
+
+            <div class="release-header">
+                <div class="release-brand">
+                    <div class="release-logo">S360</div>
+
+                    <div>
+                        <strong>Sente360</strong>
+                        <span>Servis Operasyon Platformu</span>
+                    </div>
+                </div>
+
+                <div class="release-version">
+                    v3
+                </div>
             </div>
 
-            <h2>🚀 Sente360 v2 Yayında</h2>
+            <div class="release-content">
 
-            <p class="release-subtitle">
-                Servis süreçleri artık daha hızlı, modern ve profesyonel.
-            </p>
+                <div class="release-tag">
+                    YENİ DENEYİM
+                </div>
 
-            <div class="release-list">
-                <div>✅ Talep bazlı servis yönetimi</div>
-                <div>✅ Parça / işçilik ayrımı</div>
-                <div>✅ Canlı toplam hesaplama</div>
-                <div>✅ Modern servis detay ekranı</div>
-                <div>✅ Profesyonel PDF servis formu</div>
-                <div>✅ QR araç eşleştirme</div>
-                <div>✅ Araç servis geçmişi</div>
-                <div>✅ Mobil uyumlu arayüz</div>
+                <h2>
+                    Fatura ve servis süreçleri artık tek merkezde.
+                </h2>
+
+                <p class="release-description">
+                    Yeni fatura yönetimi, modern servis detay ekranı,
+                    QR araç eşleştirme ve gelişmiş operasyon akışlarıyla
+                    servis süreçlerinizi daha hızlı ve profesyonel yönetin.
+                </p>
+
+                <div class="release-features">
+                    <div>✓ Modern fatura yönetimi</div>
+                    <div>✓ Taslak / kesilmiş fatura akışı</div>
+                    <div>✓ QR araç eşleştirme</div>
+                    <div>✓ Mobil uyumlu operasyon ekranları</div>
+                </div>
+
+                <button type="button"
+                        class="release-button"
+                        onclick="closeReleaseModal()">
+
+                    Panele Devam Et →
+                </button>
+
             </div>
-
-            <button type="button" onclick="closeReleaseModal()">
-                Devam Et
-            </button>
         </div>
     </div>
 
     <script>
-            const releaseNoteKey = "sente360-release-v2-seen";
+            const releaseNoteKey = "sente360-release-v3-seen";
 
             document.addEventListener("DOMContentLoaded", function () {
                 const seen = localStorage.getItem(releaseNoteKey);

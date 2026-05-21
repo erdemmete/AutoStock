@@ -27,8 +27,9 @@ namespace AutoStock.Repositories
         public DbSet<ServiceRequestItem> ServiceRequestItems { get; set; }
         public DbSet<VehicleQrCode> VehicleQrCodes { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
-
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
+        public DbSet<CurrentAccountTransaction> CurrentAccountTransactions { get; set; }
+        
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

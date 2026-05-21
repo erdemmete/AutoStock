@@ -43,6 +43,7 @@ public class InvoiceDetailDto
     public decimal GrandTotal { get; set; }
 
     public string? Notes { get; set; }
+    public decimal CustomerBalance { get; set; }
 
     public List<InvoiceDetailItemDto> Items { get; set; } = new();
 }

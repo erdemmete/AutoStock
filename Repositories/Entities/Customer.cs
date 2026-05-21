@@ -37,4 +37,5 @@ public class Customer
     public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
 
     public ICollection<ServiceRecord> ServiceRecords { get; set; } = new List<ServiceRecord>();
+    public ICollection<CurrentAccountTransaction> CurrentAccountTransactions { get; set; } = new List<CurrentAccountTransaction>();
 }

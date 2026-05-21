@@ -1,0 +1,41 @@
+﻿@model AutoStock.WEB.Models.CurrentAccounts.CustomerCurrentAccountViewModel
+
+@{
+    ViewData["Title"] = "Cari Hesap";
+}
+
+<h2>Cari Hesap</h2>
+
+<div>
+    <h4>@Model.CustomerName</h4>
+    <strong>Bakiye:</strong>
+    <span>@Model.Balance.ToString("N2") TL</span>
+</div>
+
+<hr />
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Tarih</th>
+            <th>Evrak</th>
+            <th>Açıklama</th>
+            <th class="text-end">Borç</th>
+            <th class="text-end">Alacak</th>
+            <th class="text-end">Bakiye</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Transactions)
+        {
+            <tr>
+                <td>@item.TransactionDate.ToString("dd.MM.yyyy HH:mm")</td>
+                <td>@item.DocumentNumber</td>
+                <td>@item.Description</td>
+                <td class="text-end">@item.Debit.ToString("N2")</td>
+                <td class="text-end">@item.Credit.ToString("N2")</td>
+                <td class="text-end">@item.Balance.ToString("N2")</td>
+            </tr>
+        }
+    </tbody>
+</table>

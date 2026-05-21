@@ -204,6 +204,12 @@ namespace AutoStock.Services.Services
             if (invoice is null)
                 return ServiceResult<InvoiceDetailDto>.Fail("Fatura bulunamadı.");
 
+            var customerBalance = await _context.CurrentAccountTransactions
+    .Where(x =>
+        x.WorkshopId == workshopId &&
+        x.CustomerId == invoice.CustomerId)
+    .SumAsync(x => x.Debit - x.Credit);
+
             var dto = new InvoiceDetailDto
             {
                 Id = invoice.Id,
@@ -231,7 +237,7 @@ namespace AutoStock.Services.Services
                 DiscountTotal = invoice.DiscountTotal,
                 VatTotal = invoice.VatTotal,
                 GrandTotal = invoice.GrandTotal,
-
+                CustomerBalance = customerBalance,
                 Notes = invoice.Notes
             };
 
@@ -279,6 +285,28 @@ namespace AutoStock.Services.Services
                 return ServiceResult<IssueInvoiceResponseDto>.Fail("Fatura zaten kesilmiş.");
 
             invoice.Status = InvoiceStatus.Issued;
+
+            var transaction = new CurrentAccountTransaction
+            {
+                WorkshopId = invoice.WorkshopId,
+                CustomerId = invoice.CustomerId,
+                InvoiceId = invoice.Id,
+
+                Type = CurrentAccountTransactionType.InvoiceDebit,
+
+                Debit = invoice.GrandTotal,
+                Credit = 0,
+
+                TransactionDate = DateTime.UtcNow,
+
+                Description = $"{invoice.InvoiceNumber} numaralı fatura borç kaydı",
+
+                DocumentNumber = invoice.InvoiceNumber,
+
+                IsSystemGenerated = true
+            };
+
+            _context.CurrentAccountTransactions.Add(transaction);
 
             await _context.SaveChangesAsync();
 
@@ -387,7 +415,37 @@ namespace AutoStock.Services.Services
             if (invoice.Status == InvoiceStatus.Cancelled)
                 return ServiceResult<CancelInvoiceResponseDto>.Fail("Fatura zaten iptal edilmiş.");
 
+            var hasCancelTransaction = await _context.CurrentAccountTransactions
+    .AnyAsync(x =>
+        x.InvoiceId == invoice.Id &&
+        x.Type == CurrentAccountTransactionType.Cancel);
+
+            if (hasCancelTransaction)
+                return ServiceResult<CancelInvoiceResponseDto>.Fail("Bu fatura için iptal cari hareketi zaten oluşturulmuş.");
+
             invoice.Status = InvoiceStatus.Cancelled;
+
+            var transaction = new CurrentAccountTransaction
+            {
+                WorkshopId = invoice.WorkshopId,
+                CustomerId = invoice.CustomerId,
+                InvoiceId = invoice.Id,
+
+                Type = CurrentAccountTransactionType.Cancel,
+
+                Debit = 0,
+                Credit = invoice.GrandTotal,
+
+                TransactionDate = DateTime.UtcNow,
+
+                Description = $"{invoice.InvoiceNumber} numaralı fatura iptal kaydı",
+
+                DocumentNumber = invoice.InvoiceNumber,
+
+                IsSystemGenerated = true
+            };
+
+            _context.CurrentAccountTransactions.Add(transaction);
 
             await _context.SaveChangesAsync();
 

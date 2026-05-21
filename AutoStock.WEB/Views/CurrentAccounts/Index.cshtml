@@ -1,0 +1,208 @@
+﻿@model AutoStock.WEB.Models.CurrentAccounts.CurrentAccountSummaryViewModel
+
+@{
+    ViewData["Title"] = "Cari Özet";
+}
+
+<h2>Cari Özet</h2>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card p-3">
+            <small>Bu Ay Net Fatura</small>
+            <h3>@Model.ThisMonthInvoiceTotal.ToString("N2") TL</h3>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-3">
+            <small>Bu Ay Tahsilat</small>
+            <h3>@Model.ThisMonthPaymentTotal.ToString("N2") TL</h3>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-3">
+            <small>Toplam Açık Alacak</small>
+            <h3>@Model.TotalReceivableBalance.ToString("N2") TL</h3>
+        </div>
+    </div>
+</div>
+
+<h4>Müşteri Bakiyeleri</h4>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Müşteri</th>
+            <th class="text-end">Bakiye</th>
+            <th class="text-end">İşlem</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var item in Model.CustomerBalances)
+        {
+            <tr>
+                <td>@item.CustomerName</td>
+
+                <td class="text-end">
+                    @item.Balance.ToString("N2") TL
+                </td>
+
+                <td class="text-end">
+                    <button type="button"
+                            class="btn btn-sm btn-success"
+                            onclick="openPaymentModal(@item.CustomerId, '@item.CustomerName')">
+                        Tahsilat
+                    </button>
+
+                    <a class="btn btn-sm btn-outline-primary"
+                       href="/CurrentAccounts/Customer/@item.CustomerId">
+                        Ekstre
+                    </a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="modal fade"
+     id="paymentModal"
+     tabindex="-1"
+     aria-hidden="true">
+
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    Tahsilat Ekle
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <input type="hidden" id="paymentCustomerId" />
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        Müşteri
+                    </label>
+
+                    <input type="text"
+                           id="paymentCustomerName"
+                           class="form-control"
+                           disabled />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        Tutar
+                    </label>
+
+                    <input type="number"
+                           id="paymentAmount"
+                           class="form-control"
+                           step="0.01" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">
+                        Açıklama
+                    </label>
+
+                    <textarea id="paymentDescription"
+                              class="form-control"></textarea>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Vazgeç
+                </button>
+
+                <button type="button"
+                        class="btn btn-success"
+                        onclick="submitPayment()">
+                    Tahsilat Kaydet
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function openPaymentModal(customerId, customerName) {
+
+        document.getElementById("paymentCustomerId").value = customerId;
+
+        document.getElementById("paymentCustomerName").value = customerName;
+
+        document.getElementById("paymentAmount").value = "";
+
+        document.getElementById("paymentDescription").value = "";
+
+        const modal = new bootstrap.Modal(
+            document.getElementById("paymentModal")
+        );
+
+        modal.show();
+    }
+
+    async function submitPayment() {
+
+        const customerId =
+            parseInt(document.getElementById("paymentCustomerId").value);
+
+        const amount =
+            parseFloat(document.getElementById("paymentAmount").value);
+
+        const description =
+            document.getElementById("paymentDescription").value;
+
+        if (!amount || amount <= 0) {
+
+            alert("Geçerli bir tahsilat tutarı giriniz.");
+
+            return;
+        }
+
+        const response = await fetch("/CurrentAccounts/CreatePayment", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                customerId: customerId,
+                amount: amount,
+                description: description
+            })
+        });
+
+        const result = await response.json();
+
+        if (!result.isSuccess) {
+
+            alert("Tahsilat kaydedilemedi.");
+
+            return;
+        }
+
+        location.reload();
+    }
+</script>
