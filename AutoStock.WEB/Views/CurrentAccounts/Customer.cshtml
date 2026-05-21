@@ -4,38 +4,314 @@
     ViewData["Title"] = "Cari Hesap";
 }
 
-<h2>Cari Hesap</h2>
+<div class="ca-detail-page">
 
-<div>
-    <h4>@Model.CustomerName</h4>
-    <strong>Bakiye:</strong>
-    <span>@Model.Balance.ToString("N2") TL</span>
+    <div class="ca-detail-header">
+        <div>
+            <h1>@Model.CustomerName</h1>
+            <p>Cari hesap hareketleri ve müşteri ekstresi</p>
+        </div>
+
+        <div class="ca-balance-box">
+            <span>Güncel Bakiye</span>
+
+            <strong class="@(Model.Balance >= 0 ? "positive" : "negative")">
+                @Model.Balance.ToString("N2") TL
+            </strong>
+        </div>
+    </div>
+
+    <div class="ca-detail-card">
+
+        <div class="ca-toolbar">
+            <div class="ca-search">
+                <span>⌕</span>
+                <input type="text"
+                       placeholder="Açıklama veya evrak ara..." />
+            </div>
+
+            <button class="ca-btn ca-btn-success"
+                    type="button"
+                    onclick="history.back()">
+                Geri Dön
+            </button>
+        </div>
+
+        <table class="ca-table">
+
+            <thead>
+                <tr>
+                    <th>Tarih</th>
+                    <th>Evrak</th>
+                    <th>Açıklama</th>
+                    <th class="text-end">Borç</th>
+                    <th class="text-end">Alacak</th>
+                    <th class="text-end">Bakiye</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @foreach (var item in Model.Transactions)
+                {
+                    var rowClass =
+                        item.Debit > 0
+                        ? "debit"
+                        : "credit";
+
+                    <tr>
+
+                        <td>
+                            @item.TransactionDate.ToString("dd.MM.yyyy")
+                            <br />
+                            <small>
+                                @item.TransactionDate.ToString("HH:mm")
+                            </small>
+                        </td>
+
+                        <td>
+                            @(
+                                string.IsNullOrWhiteSpace(item.DocumentNumber)
+                                ? "-"
+                                : item.DocumentNumber
+                                )
+                        </td>
+
+                        <td>
+                            <div class="ca-description">
+                                @item.Description
+
+                                @if (item.IsSystemGenerated)
+                                {
+                                    <span class="ca-badge">
+                                        Sistem
+                                    </span>
+                                }
+                            </div>
+                        </td>
+
+                        <td class="text-end debit-text">
+                            @(item.Debit > 0
+                                ? item.Debit.ToString("N2")
+                                : "-")
+                        </td>
+
+                        <td class="text-end credit-text">
+                            @(item.Credit > 0
+                                ? item.Credit.ToString("N2")
+                                : "-")
+                        </td>
+
+                        <td class="text-end">
+                            <strong class="@(item.Balance >= 0 ? "positive" : "negative")">
+                                @item.Balance.ToString("N2")
+                            </strong>
+                        </td>
+
+                    </tr>
+                }
+
+            </tbody>
+
+        </table>
+
+    </div>
+
 </div>
 
-<hr />
+<style>
 
-<table class="table table-bordered table-striped">
-    <thead>
-        <tr>
-            <th>Tarih</th>
-            <th>Evrak</th>
-            <th>Açıklama</th>
-            <th class="text-end">Borç</th>
-            <th class="text-end">Alacak</th>
-            <th class="text-end">Bakiye</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Transactions)
-        {
-            <tr>
-                <td>@item.TransactionDate.ToString("dd.MM.yyyy HH:mm")</td>
-                <td>@item.DocumentNumber</td>
-                <td>@item.Description</td>
-                <td class="text-end">@item.Debit.ToString("N2")</td>
-                <td class="text-end">@item.Credit.ToString("N2")</td>
-                <td class="text-end">@item.Balance.ToString("N2")</td>
-            </tr>
+    .ca-detail-page {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        color: #001632;
+    }
+
+    .ca-detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+        gap: 20px;
+    }
+
+        .ca-detail-header h1 {
+            font-size: 30px;
+            font-weight: 800;
+            margin: 0;
         }
-    </tbody>
-</table>
+
+        .ca-detail-header p {
+            margin-top: 8px;
+            color: #536b8a;
+        }
+
+    .ca-balance-box {
+        background: #fff;
+        border: 1px solid #dbe4f0;
+        border-radius: 16px;
+        padding: 18px 24px;
+        min-width: 260px;
+        text-align: right;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, .06);
+    }
+
+        .ca-balance-box span {
+            display: block;
+            color: #536b8a;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .ca-balance-box strong {
+            font-size: 30px;
+            font-weight: 800;
+        }
+
+    .positive {
+        color: #009966;
+    }
+
+    .negative {
+        color: #e60046;
+    }
+
+    .ca-detail-card {
+        background: #fff;
+        border-radius: 18px;
+        border: 1px solid #dbe4f0;
+        overflow: hidden;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, .06);
+    }
+
+    .ca-toolbar {
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e5edf7;
+        gap: 16px;
+    }
+
+    .ca-search {
+        width: 420px;
+        height: 48px;
+        border: 1px solid #cbd8ea;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 10px;
+    }
+
+        .ca-search input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 15px;
+        }
+
+            .ca-search input::placeholder {
+                color: #8ca0bd;
+            }
+
+    .ca-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .ca-table thead {
+            background: #f6f9fd;
+        }
+
+        .ca-table th {
+            padding: 18px 24px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #536b8a;
+            letter-spacing: .05em;
+        }
+
+        .ca-table td {
+            padding: 20px 24px;
+            border-top: 1px solid #edf2f7;
+            vertical-align: middle;
+        }
+
+    .ca-description {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .ca-badge {
+        background: #eef2ff;
+        color: #4f46e5;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .debit-text {
+        color: #e60046;
+        font-weight: 700;
+    }
+
+    .credit-text {
+        color: #009966;
+        font-weight: 700;
+    }
+
+    .ca-btn {
+        min-height: 42px;
+        padding: 0 18px;
+        border-radius: 10px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .ca-btn-success {
+        background: #059669;
+        color: #fff;
+    }
+
+    .text-end {
+        text-align: right !important;
+    }
+
+    @@media (max-width: 900px) {
+
+        .ca-detail-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .ca-balance-box {
+            width: 100%;
+            text-align: left;
+        }
+
+        .ca-toolbar {
+            flex-direction: column;
+        }
+
+        .ca-search {
+            width: 100%;
+        }
+
+        .ca-detail-card {
+            overflow-x: auto;
+        }
+
+        .ca-table {
+            min-width: 900px;
+        }
+    }
+
+</style>

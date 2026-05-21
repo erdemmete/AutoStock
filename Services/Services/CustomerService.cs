@@ -2,11 +2,14 @@
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Customers;
 using AutoStock.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace AutoStock.Services.Services
 {
-    public class CustomerService(ICustomerRepository customerRepository) : ICustomerService
+    public class CustomerService(
+    ICustomerRepository customerRepository,
+    AppDbContext context) : ICustomerService
     {
 
 
@@ -43,6 +46,68 @@ namespace AutoStock.Services.Services
                 PhoneNumber = x.PhoneNumber,
                 Email = x.Email
             }).ToList();
+        }
+
+        public async Task<ServiceResult<List<CustomerListItemDto>>> GetListAsync(int workshopId)
+        {
+            var customers = await context.Customers
+                .Where(x => x.WorkshopId == workshopId)
+                .Select(x => new CustomerListItemDto
+                {
+                    Id = x.Id,
+
+                    DisplayName = !string.IsNullOrWhiteSpace(x.FullName)
+                        ? x.FullName
+                        : x.CompanyName ?? "İsimsiz Müşteri",
+
+                    PhoneNumber = x.PhoneNumber,
+                    Email = x.Email,
+
+                    TypeText = x.Type.ToString(),
+
+                    Balance = context.CurrentAccountTransactions
+                        .Where(t =>
+                            t.WorkshopId == workshopId &&
+                            t.CustomerId == x.Id)
+                        .Sum(t => t.Debit - t.Credit)
+                })
+                .OrderBy(x => x.DisplayName)
+                .ToListAsync();
+
+            return ServiceResult<List<CustomerListItemDto>>.Success(customers);
+        }
+        public async Task<ServiceResult<int>> CreateAsync(CreateCustomerDto request, int workshopId)
+        {
+            if (string.IsNullOrWhiteSpace(request.PhoneNumber))
+                return ServiceResult<int>.Fail("Telefon numarası zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(request.FullName))
+                return ServiceResult<int>.Fail("Müşteri / cari adı zorunludur.");
+
+            var customer = new Customer
+            {
+                WorkshopId = workshopId,
+                Type = request.Type,
+
+                PhoneNumber = request.PhoneNumber.Trim(),
+                FullName = request.FullName?.Trim(),
+                CompanyName = request.CompanyName?.Trim(),
+                AuthorizedPersonName = request.AuthorizedPersonName?.Trim(),
+                Email = request.Email?.Trim(),
+
+                TaxOffice = request.TaxOffice?.Trim(),
+                TaxNumber = request.TaxNumber?.Trim(),
+                NationalIdentityNumber = request.NationalIdentityNumber?.Trim(),
+
+                Address = request.Address?.Trim(),
+                AddressDistrict = request.AddressDistrict?.Trim(),
+                AddressCity = request.AddressCity?.Trim()
+            };
+
+            context.Customers.Add(customer);
+            await context.SaveChangesAsync();
+
+            return ServiceResult<int>.Success(customer.Id);
         }
     }
 }

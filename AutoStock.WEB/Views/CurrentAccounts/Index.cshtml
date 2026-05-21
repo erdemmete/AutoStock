@@ -1,142 +1,151 @@
 ﻿@model AutoStock.WEB.Models.CurrentAccounts.CurrentAccountSummaryViewModel
 
 @{
-    ViewData["Title"] = "Cari Özet";
+    ViewData["Title"] = "Cari Yönetimi";
 }
 
-<h2>Cari Özet</h2>
+<div class="ca-page">
+    <div class="ca-header">
+        <div>
+            <h1>Cari Yönetimi</h1>
+            <p>Müşteri hesaplarını görüntüleyin, yönetin ve takip edin.</p>
+        </div>
 
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card p-3">
-            <small>Bu Ay Net Fatura</small>
-            <h3>@Model.ThisMonthInvoiceTotal.ToString("N2") TL</h3>
+        <button class="ca-btn ca-btn-outline" type="button">
+            Dışa Aktar
+        </button>
+    </div>
+
+    <div class="ca-stats">
+        <div class="ca-card">
+            <div class="ca-icon ca-icon-green">↗</div>
+            <div>
+                <span>Toplam Açık Alacak</span>
+                <strong>@Model.TotalReceivableBalance.ToString("N2") TL</strong>
+                <small>bekleyen</small>
+            </div>
+        </div>
+
+        <div class="ca-card">
+            <div class="ca-icon ca-icon-blue">₺</div>
+            <div>
+                <span>Bu Ay Net Fatura</span>
+                <strong>@Model.ThisMonthInvoiceTotal.ToString("N2") TL</strong>
+                <small>kesilen</small>
+            </div>
+        </div>
+
+        <div class="ca-card">
+            <div class="ca-icon ca-icon-purple">✓</div>
+            <div>
+                <span>Bu Ay Tahsilat</span>
+                <strong>@Model.ThisMonthPaymentTotal.ToString("N2") TL</strong>
+                <small>alınan</small>
+            </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card p-3">
-            <small>Bu Ay Tahsilat</small>
-            <h3>@Model.ThisMonthPaymentTotal.ToString("N2") TL</h3>
-        </div>
-    </div>
+    <div class="ca-table-card">
+        <div class="ca-toolbar">
+            <div class="ca-search">
+                <span>⌕</span>
+                <input type="text" placeholder="Müşteri adı ile ara..." />
+            </div>
 
-    <div class="col-md-4">
-        <div class="card p-3">
-            <small>Toplam Açık Alacak</small>
-            <h3>@Model.TotalReceivableBalance.ToString("N2") TL</h3>
+            <button class="ca-btn ca-btn-outline" type="button">
+                Filtrele
+            </button>
         </div>
+
+        <table class="ca-table">
+            <thead>
+                <tr>
+                    <th>Müşteri</th>
+                    <th>Güncel Bakiye</th>
+                    <th class="text-end">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.CustomerBalances)
+                {
+                    var balanceClass = item.Balance > 0 ? "positive" : "negative";
+                    var balanceText = item.Balance > 0 ? "Alacaklıyız" : "Borçluyuz";
+
+                    <tr>
+                        <td>
+                            <div class="ca-customer">
+                                <div class="ca-avatar">
+                                    @(string.IsNullOrWhiteSpace(item.CustomerName) ? "?" : item.CustomerName.Substring(0, 1).ToUpper())
+                                </div>
+                                <div>
+                                    <strong>@item.CustomerName</strong>
+                                    <small>Müşteri hesabı</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="ca-balance @balanceClass">
+                                @item.Balance.ToString("N2") TL
+                            </div>
+                            <small>@balanceText</small>
+                        </td>
+
+                        <td class="text-end">
+                            <button type="button"
+                                    class="ca-btn ca-btn-success"
+                                    onclick="openPaymentModal(@item.CustomerId, '@item.CustomerName')">
+                                Tahsilat
+                            </button>
+
+                            <a class="ca-btn ca-btn-outline"
+                               href="/CurrentAccounts/Customer/@item.CustomerId">
+                                Ekstre
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
 </div>
 
-<h4>Müşteri Bakiyeleri</h4>
-
-<table class="table table-bordered table-striped">
-    <thead>
-        <tr>
-            <th>Müşteri</th>
-            <th class="text-end">Bakiye</th>
-            <th class="text-end">İşlem</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        @foreach (var item in Model.CustomerBalances)
-        {
-            <tr>
-                <td>@item.CustomerName</td>
-
-                <td class="text-end">
-                    @item.Balance.ToString("N2") TL
-                </td>
-
-                <td class="text-end">
-                    <button type="button"
-                            class="btn btn-sm btn-success"
-                            onclick="openPaymentModal(@item.CustomerId, '@item.CustomerName')">
-                        Tahsilat
-                    </button>
-
-                    <a class="btn btn-sm btn-outline-primary"
-                       href="/CurrentAccounts/Customer/@item.CustomerId">
-                        Ekstre
-                    </a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
-
-<div class="modal fade"
-     id="paymentModal"
-     tabindex="-1"
-     aria-hidden="true">
-
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
 
             <div class="modal-header">
-                <h5 class="modal-title">
-                    Tahsilat Ekle
-                </h5>
-
-                <button type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal">
-                </button>
+                <h5 class="modal-title">Tahsilat Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
             <div class="modal-body">
-
                 <input type="hidden" id="paymentCustomerId" />
 
                 <div class="mb-3">
-                    <label class="form-label">
-                        Müşteri
-                    </label>
-
-                    <input type="text"
-                           id="paymentCustomerName"
-                           class="form-control"
-                           disabled />
+                    <label class="form-label">Müşteri</label>
+                    <input type="text" id="paymentCustomerName" class="form-control" disabled />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">
-                        Tutar
-                    </label>
-
-                    <input type="number"
-                           id="paymentAmount"
-                           class="form-control"
-                           step="0.01" />
+                    <label class="form-label">Tutar</label>
+                    <input type="number" id="paymentAmount" class="form-control" step="0.01" />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">
-                        Açıklama
-                    </label>
-
-                    <textarea id="paymentDescription"
-                              class="form-control"></textarea>
+                    <label class="form-label">Açıklama</label>
+                    <textarea id="paymentDescription" class="form-control"></textarea>
                 </div>
-
             </div>
 
             <div class="modal-footer">
-
-                <button type="button"
-                        class="btn btn-secondary"
-                        data-bs-dismiss="modal">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Vazgeç
                 </button>
 
-                <button type="button"
-                        class="btn btn-success"
-                        onclick="submitPayment()">
+                <button type="button" class="btn btn-success" onclick="submitPayment()">
                     Tahsilat Kaydet
                 </button>
-
             </div>
 
         </div>
@@ -145,48 +154,30 @@
 
 <script>
     function openPaymentModal(customerId, customerName) {
-
         document.getElementById("paymentCustomerId").value = customerId;
-
         document.getElementById("paymentCustomerName").value = customerName;
-
         document.getElementById("paymentAmount").value = "";
-
         document.getElementById("paymentDescription").value = "";
 
-        const modal = new bootstrap.Modal(
-            document.getElementById("paymentModal")
-        );
-
+        const modal = new bootstrap.Modal(document.getElementById("paymentModal"));
         modal.show();
     }
 
     async function submitPayment() {
-
-        const customerId =
-            parseInt(document.getElementById("paymentCustomerId").value);
-
-        const amount =
-            parseFloat(document.getElementById("paymentAmount").value);
-
-        const description =
-            document.getElementById("paymentDescription").value;
+        const customerId = parseInt(document.getElementById("paymentCustomerId").value);
+        const amount = parseFloat(document.getElementById("paymentAmount").value);
+        const description = document.getElementById("paymentDescription").value;
 
         if (!amount || amount <= 0) {
-
             alert("Geçerli bir tahsilat tutarı giriniz.");
-
             return;
         }
 
         const response = await fetch("/CurrentAccounts/CreatePayment", {
-
             method: "POST",
-
             headers: {
                 "Content-Type": "application/json"
             },
-
             body: JSON.stringify({
                 customerId: customerId,
                 amount: amount,
@@ -197,12 +188,265 @@
         const result = await response.json();
 
         if (!result.isSuccess) {
-
             alert("Tahsilat kaydedilemedi.");
-
             return;
         }
 
         location.reload();
     }
 </script>
+
+<style>
+    .ca-page {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        color: #001632;
+    }
+
+    .ca-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 36px;
+    }
+
+        .ca-header h1 {
+            font-size: 30px;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .ca-header p {
+            margin: 8px 0 0;
+            color: #536b8a;
+            font-size: 16px;
+        }
+
+    .ca-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 38px;
+    }
+
+    .ca-card {
+        background: #fff;
+        border: 1px solid #dbe4f0;
+        border-radius: 16px;
+        padding: 26px;
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, .08);
+    }
+
+        .ca-card span {
+            display: block;
+            color: #51698b;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .ca-card strong {
+            font-size: 30px;
+            font-weight: 800;
+            margin-right: 8px;
+        }
+
+        .ca-card small {
+            color: #51698b;
+            font-weight: 600;
+        }
+
+    .ca-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .ca-icon-green {
+        background: #e7fbf1;
+        color: #0ca66f;
+    }
+
+    .ca-icon-blue {
+        background: #eef3ff;
+        color: #335cff;
+    }
+
+    .ca-icon-purple {
+        background: #f1ecff;
+        color: #4f35e8;
+    }
+
+    .ca-table-card {
+        background: #fff;
+        border: 1px solid #dbe4f0;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, .06);
+    }
+
+    .ca-toolbar {
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid #e5edf7;
+    }
+
+    .ca-search {
+        width: 520px;
+        height: 48px;
+        border: 1px solid #cbd8ea;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 10px;
+    }
+
+        .ca-search input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 15px;
+            color: #001632;
+        }
+
+            .ca-search input::placeholder {
+                color: #8ca0bd;
+            }
+
+    .ca-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .ca-table thead {
+            background: #f6f9fd;
+        }
+
+        .ca-table th {
+            text-align: left;
+            padding: 18px 28px;
+            font-size: 14px;
+            letter-spacing: .05em;
+            color: #536b8a;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .ca-table td {
+            padding: 24px 28px;
+            border-top: 1px solid #edf2f7;
+            vertical-align: middle;
+        }
+
+    .ca-customer {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .ca-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        color: #18365d;
+    }
+
+    .ca-customer strong {
+        display: block;
+        font-size: 18px;
+        margin-bottom: 4px;
+    }
+
+    .ca-customer small,
+    .ca-table td small {
+        color: #536b8a;
+    }
+
+    .ca-balance {
+        font-size: 18px;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+
+        .ca-balance.positive {
+            color: #009966;
+        }
+
+        .ca-balance.negative {
+            color: #e60046;
+        }
+
+    .ca-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 9px;
+        font-weight: 700;
+        text-decoration: none;
+        border: 1px solid transparent;
+        background: #fff;
+        cursor: pointer;
+    }
+
+    .ca-btn-outline {
+        color: #18365d;
+        border-color: #cbd8ea;
+        box-shadow: 0 2px 4px rgba(15, 23, 42, .08);
+    }
+
+    .ca-btn-success {
+        background: #059669;
+        color: #fff;
+        margin-right: 8px;
+    }
+
+    .text-end {
+        text-align: right !important;
+    }
+
+    @@media (max-width: 900px) {
+        .ca-header {
+            align-items: flex-start;
+            gap: 16px;
+            flex-direction: column;
+        }
+
+        .ca-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .ca-toolbar {
+            flex-direction: column;
+        }
+
+        .ca-search {
+            width: 100%;
+        }
+
+        .ca-table {
+            min-width: 760px;
+        }
+
+        .ca-table-card {
+            overflow-x: auto;
+        }
+    }
+</style>

@@ -18,9 +18,7 @@ public class ServiceRecordService : IServiceRecordService
         _context = context;
     }
 
-    public async Task<ServiceResult<CreateServiceRecordResponse>> CreateAsync(
-        CreateServiceRecordRequest request,
-        int workshopId)
+    public async Task<ServiceResult<CreateServiceRecordResponse>> CreateAsync(CreateServiceRecordRequest request,int workshopId)
     {
         if (string.IsNullOrWhiteSpace(request.CustomerPhoneNumber))
             return ServiceResult<CreateServiceRecordResponse>.Fail("Telefon numarası zorunludur.");

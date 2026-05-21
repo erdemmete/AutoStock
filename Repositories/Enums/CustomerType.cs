@@ -3,6 +3,7 @@
     public enum CustomerType
     {
         Individual = 1,
-        Corporate = 2
+        SoleProprietorship = 2,
+        Corporate = 3
     }
 }

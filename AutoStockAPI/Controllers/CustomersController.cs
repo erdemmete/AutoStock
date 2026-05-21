@@ -1,4 +1,5 @@
-﻿using AutoStock.Services.Interfaces;
+﻿using AutoStock.Services.Dtos.Customers;
+using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,6 +28,36 @@ public class CustomersController : ControllerBase
         var workshopId = int.Parse(workshopIdClaim);
 
         var result = await _customerService.SearchAsync(query, workshopId);
+
+        return Ok(result);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetList()
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (string.IsNullOrWhiteSpace(workshopIdClaim))
+            return Unauthorized();
+
+        var workshopId = int.Parse(workshopIdClaim);
+
+        var result = await _customerService.GetListAsync(workshopId);
+
+        return Ok(result);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateCustomerDto request)
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (string.IsNullOrWhiteSpace(workshopIdClaim))
+            return Unauthorized();
+
+        var workshopId = int.Parse(workshopIdClaim);
+
+        var result = await _customerService.CreateAsync(request, workshopId);
 
         return Ok(result);
     }

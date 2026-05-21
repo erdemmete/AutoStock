@@ -1,9 +1,12 @@
-﻿using AutoStock.Services.Dtos.Customers;
+﻿using AutoStock.Services.Dtos.Common;
+using AutoStock.Services.Dtos.Customers;
 
 namespace AutoStock.Services.Interfaces
 {
     public interface ICustomerService
     {
         Task<List<CustomerSearchDto>> SearchAsync(string query, int workshopId);
+        Task<ServiceResult<List<CustomerListItemDto>>> GetListAsync(int workshopId);
+        Task<ServiceResult<int>> CreateAsync(CreateCustomerDto request, int workshopId);
     }
 }

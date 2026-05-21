@@ -1,0 +1,459 @@
+﻿@model AutoStock.WEB.Models.Customers.CustomerListViewModel
+
+@{
+    ViewData["Title"] = "Müşteriler";
+
+    var totalCustomerCount = Model.Customers.Count;
+    var corporateCount = Model.Customers.Count(x => x.TypeText == "Corporate");
+    var totalBalance = Model.Customers.Sum(x => x.Balance);
+}
+
+<div class="customer-page">
+
+    <div class="page-badge">👥 Müşteri Yönetimi</div>
+
+    <div class="customer-header">
+        <div>
+            <h1>Müşteriler</h1>
+            <p>
+                Tüm bireysel ve kurumsal müşterilerinizi yönetin,
+                servis geçmişlerini inceleyin ve yeni kayıtlar oluşturun.
+            </p>
+        </div>
+
+        <a class="primary-btn"
+           asp-controller="Customers"
+           asp-action="Create">
+            + Yeni Müşteri Ekle
+        </a>
+    </div>
+
+    <div class="stat-grid">
+
+        <div class="stat-card">
+            <div class="stat-icon blue">👥</div>
+            <div>
+                <span>Toplam Müşteri</span>
+                <strong>@totalCustomerCount</strong>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon purple">🏢</div>
+            <div>
+                <span>Aktif Kurumsal</span>
+                <strong>@corporateCount</strong>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon green">↗</div>
+            <div>
+                <span>Toplam Cari Bakiye</span>
+                <strong>@totalBalance.ToString("N2") TL</strong>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="customer-table-card">
+
+        <div class="table-toolbar">
+            <div class="search-box">
+                <span>⌕</span>
+                <input id="customerSearchInput"
+                       type="text"
+                       placeholder="İsim, telefon veya e-posta ile ara..."
+                       onkeyup="filterCustomers()" />
+            </div>
+
+            <button type="button" class="filter-btn">
+                ⏷ Filtrele
+            </button>
+        </div>
+
+        <table class="customer-table">
+            <thead>
+                <tr>
+                    <th>Müşteri Profili</th>
+                    <th>İletişim</th>
+                    <th>Tür</th>
+                    <th class="text-end">Cari Bakiye</th>
+                    <th class="text-end">İşlem</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var item in Model.Customers)
+                {
+                    var initials = string.IsNullOrWhiteSpace(item.DisplayName)
+                        ? "?"
+                        : item.DisplayName.Substring(0, 1).ToUpper();
+
+                    var balanceClass = item.Balance >= 0 ? "positive" : "negative";
+
+                    <tr class="customer-row"
+                        data-search="@($"{item.DisplayName} {item.PhoneNumber} {item.Email}".ToLower())">
+
+                        <td>
+                            <div class="profile-cell">
+                                <div class="avatar">@initials</div>
+
+                                <div>
+                                    <strong>
+                                        @item.DisplayName
+                                        <span class="active-dot"></span>
+                                    </strong>
+                                    <small>Müşteri No: @item.Id</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="contact-cell">
+                                <div>☎ @(item.PhoneNumber ?? "-")</div>
+                                <small>✉ @(item.Email ?? "-")</small>
+                            </div>
+                        </td>
+
+                        <td>
+                            <span class="type-badge">
+                                @(item.TypeText == "Corporate" ? "Kurumsal" : "Bireysel")
+                            </span>
+                        </td>
+
+                        <td class="text-end">
+                            <strong class="@balanceClass">
+                                @item.Balance.ToString("N2") TL
+                            </strong>
+                        </td>
+
+                        <td class="text-end">
+                            <a class="action-btn"
+                               href="/CurrentAccounts/Customer/@item.Id">
+                                Cari
+                            </a>
+
+                            <a class="action-btn"
+                               href="#">
+                                Detay
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="table-footer">
+            <span>
+                Gösterilen: <strong>@Model.Customers.Count</strong> /
+                Toplam: <strong>@totalCustomerCount</strong>
+            </span>
+
+            <div>
+                <button class="page-btn disabled">Önceki</button>
+                <button class="page-btn">Sonraki</button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    function filterCustomers() {
+        const searchValue = document
+            .getElementById("customerSearchInput")
+            .value
+            .toLowerCase()
+            .trim();
+
+        const rows = document.querySelectorAll(".customer-row");
+
+        rows.forEach(row => {
+            const text = row.getAttribute("data-search") || "";
+            row.style.display = text.includes(searchValue) ? "" : "none";
+        });
+    }
+</script>
+
+<style>
+    .customer-page {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        color: #061936;
+    }
+
+    .page-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #eef2ff;
+        color: #4f35e8;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+
+    .customer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 36px;
+        gap: 24px;
+    }
+
+        .customer-header h1 {
+            font-size: 34px;
+            font-weight: 900;
+            margin: 0 0 10px;
+        }
+
+        .customer-header p {
+            max-width: 620px;
+            color: #667896;
+            font-size: 17px;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+    .primary-btn {
+        background: #4f35e8;
+        color: white;
+        text-decoration: none;
+        border-radius: 12px;
+        padding: 15px 24px;
+        font-weight: 800;
+        box-shadow: 0 8px 18px rgba(79, 53, 232, .28);
+    }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 22px;
+        margin-bottom: 34px;
+    }
+
+    .stat-card {
+        background: #fff;
+        border-radius: 18px;
+        padding: 26px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, .06);
+        border: 1px solid #eef2f7;
+    }
+
+    .stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+        .stat-icon.blue {
+            background: #eef3ff;
+        }
+
+        .stat-icon.purple {
+            background: #f1ecff;
+        }
+
+        .stat-icon.green {
+            background: #e8fbf1;
+            color: #009966;
+        }
+
+    .stat-card span {
+        display: block;
+        color: #667896;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .stat-card strong {
+        font-size: 28px;
+        font-weight: 900;
+    }
+
+    .customer-table-card {
+        background: #fff;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid #e4ebf5;
+        box-shadow: 0 14px 40px rgba(15, 23, 42, .07);
+    }
+
+    .table-toolbar {
+        padding: 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .search-box {
+        width: 430px;
+        height: 48px;
+        border: 1px solid #d4deec;
+        border-radius: 13px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 10px;
+    }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 15px;
+        }
+
+    .filter-btn,
+    .page-btn,
+    .action-btn {
+        border: 1px solid #cbd8ea;
+        background: #fff;
+        color: #18365d;
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .customer-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .customer-table thead {
+            background: #f7faff;
+        }
+
+        .customer-table th {
+            text-align: left;
+            padding: 18px 24px;
+            color: #667896;
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .customer-table td {
+            padding: 22px 24px;
+            border-top: 1px solid #edf2f7;
+            vertical-align: middle;
+        }
+
+    .profile-cell {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .avatar {
+        width: 52px;
+        height: 52px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        color: #17365d;
+    }
+
+    .profile-cell strong {
+        display: block;
+        font-size: 16px;
+        margin-bottom: 6px;
+    }
+
+    .profile-cell small,
+    .contact-cell small {
+        color: #667896;
+    }
+
+    .active-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        background: #10b981;
+        border-radius: 50%;
+        margin-left: 6px;
+    }
+
+    .contact-cell div {
+        margin-bottom: 6px;
+    }
+
+    .type-badge {
+        background: #eef2ff;
+        color: #4f35e8;
+        padding: 7px 13px;
+        border-radius: 999px;
+        font-weight: 900;
+        font-size: 13px;
+    }
+
+    .positive {
+        color: #009966;
+    }
+
+    .negative {
+        color: #e60046;
+    }
+
+    .text-end {
+        text-align: right !important;
+    }
+
+    .table-footer {
+        padding: 18px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fbfdff;
+        border-top: 1px solid #edf2f7;
+        color: #667896;
+    }
+
+    .page-btn.disabled {
+        opacity: .45;
+        cursor: not-allowed;
+    }
+
+    @@media (max-width: 900px) {
+        .customer-header,
+        .table-toolbar,
+        .table-footer {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .stat-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .search-box {
+            width: 100%;
+        }
+
+        .customer-table-card {
+            overflow-x: auto;
+        }
+
+        .customer-table {
+            min-width: 980px;
+        }
+    }
+</style>
