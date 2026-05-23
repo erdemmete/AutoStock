@@ -10,6 +10,7 @@ namespace AutoStock.WEB.Extensions
             services.AddHttpContextAccessor();
 
             services.AddScoped<CurrentAccountApiService>();
+            services.AddScoped<StockItemApiService>();
 
             return services;
         }

@@ -1,0 +1,113 @@
+﻿@model AutoStock.WEB.Models.StockItems.CreateStockItemViewModel
+
+@{
+    ViewData["Title"] = "Yeni Stok Kartı";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Yeni Stok Kartı</h1>
+        <p>Takip etmek istediğiniz parçayı stok kartı olarak ekleyin.</p>
+    </div>
+
+    <a asp-controller="StockItems" asp-action="Index" class="btn btn-secondary">
+        Geri
+    </a>
+</div>
+
+<form id="createStockItemForm" asp-controller="StockItems" asp-action="Create" method="post" class="card form-card">
+    <div class="form-grid">
+        <div class="form-group">
+            <label>Stok Adı</label>
+            <input asp-for="Name" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>Stok Kodu</label>
+            <input asp-for="Code" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>Barkod</label>
+            <input asp-for="Barcode" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>Marka</label>
+            <input asp-for="Brand" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>Birim</label>
+            <input asp-for="Unit" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label>İlk Miktar</label>
+            <input asp-for="Quantity" class="form-control" type="number" step="0.01" />
+        </div>
+
+        <div class="form-group">
+            <label>Alış Fiyatı</label>
+            <input asp-for="PurchasePrice" class="form-control" type="number" step="0.01" />
+        </div>
+
+        <div class="form-group">
+            <label>Satış Fiyatı</label>
+            <input asp-for="SalePrice" class="form-control" type="number" step="0.01" />
+        </div>
+
+        <div class="form-group">
+            <label>Minimum Stok</label>
+            <input asp-for="MinimumQuantity" class="form-control" type="number" step="0.01" />
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+            Kaydet
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        document.getElementById("createStockItemForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const form = e.target;
+            const formData = new FormData(form);
+
+            const data = Object.fromEntries(formData.entries());
+
+            data.quantity = Number(data.Quantity);
+            data.purchasePrice = Number(data.PurchasePrice);
+            data.salePrice = Number(data.SalePrice);
+            data.minimumQuantity = Number(data.MinimumQuantity);
+
+            data.name = data.Name;
+            data.code = data.Code;
+            data.barcode = data.Barcode;
+            data.brand = data.Brand;
+            data.unit = data.Unit;
+
+            const response = await fetch(form.action, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                showSuccessToast("Stok kartı başarıyla oluşturuldu.");
+
+                setTimeout(() => {
+                    window.location.href = "/StockItems";
+                }, 800);
+            } else {
+                showErrorToast("Stok kartı oluşturulamadı.");
+            }
+        });
+    </script>
+}

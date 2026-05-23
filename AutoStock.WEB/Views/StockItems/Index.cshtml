@@ -1,0 +1,70 @@
+﻿@model List<AutoStock.WEB.Models.StockItems.StockItemListViewModel>
+
+@{
+    ViewData["Title"] = "Stok Kartları";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Stok Kartları</h1>
+        <p>Takip edilen yedek parça ve ürün stokları</p>
+    </div>
+
+    <a asp-controller="StockItems" asp-action="Create" class="btn btn-primary">
+        Yeni Stok Kartı
+    </a>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Stok Adı</th>
+                    <th>Kod</th>
+                    <th>Marka</th>
+                    <th>Birim</th>
+                    <th>Miktar</th>
+                    <th>Satış Fiyatı</th>
+                    <th>Minimum</th>
+                    <th>Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">
+                            Henüz stok kartı oluşturulmamış.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Name</td>
+                            <td>@item.Code</td>
+                            <td>@item.Brand</td>
+                            <td>@item.Unit</td>
+                            <td>@item.Quantity</td>
+                            <td>@item.SalePrice.ToString("N2") ₺</td>
+                            <td>@item.MinimumQuantity</td>
+                            <td>
+                                @if (item.IsCritical)
+                                {
+                                    <span class="badge bg-danger">Kritik</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Normal</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
