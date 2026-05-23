@@ -8,5 +8,8 @@ namespace AutoStock.Services.Interfaces
         Task<List<CustomerSearchDto>> SearchAsync(string query, int workshopId);
         Task<ServiceResult<List<CustomerListItemDto>>> GetListAsync(int workshopId);
         Task<ServiceResult<int>> CreateAsync(CreateCustomerDto request, int workshopId);
+        Task<ServiceResult<CustomerDetailDto>> GetByIdAsync(int id, int workshopId);
+        Task<ServiceResult<int>> UpdateAsync(UpdateCustomerDto request, int workshopId);
+        Task<ServiceResult<int>> SetPassiveAsync(int id, int workshopId);
     }
 }

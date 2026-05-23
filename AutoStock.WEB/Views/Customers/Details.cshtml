@@ -1,0 +1,311 @@
+﻿@model AutoStock.WEB.Models.Customers.CustomerDetailViewModel
+
+@{
+    ViewData["Title"] = "Müşteri Detayı";
+}
+
+<div class="customer-detail-page">
+
+    <div class="create-header">
+        <div class="header-left">
+            <a class="back-btn" asp-controller="Customers" asp-action="Index">←</a>
+
+            <div>
+                <h1>@Model.FullName</h1>
+                <p>Müşteri detay bilgileri</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <a class="btn-outline" asp-controller="Customers" asp-action="Index">Listeye Dön</a>
+            <a class="btn-primary" asp-controller="Customers" asp-action="Edit" asp-route-id="@Model.Id">Düzenle</a>
+            @if (Model.IsActive)
+            {
+                <form asp-controller="Customers"
+                      asp-action="SetPassive"
+                      asp-route-id="@Model.Id"
+                      method="post"
+                      onsubmit="return confirm('Bu müşteriyi silmek istediğinize emin misiniz?');">
+
+                    <button type="submit" class="btn-outline">
+                        Sil
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <div class="create-layout">
+
+        <main class="main-column">
+
+            <section class="card form-card">
+                <div class="section-title">
+                    <span>▧</span>
+                    <h2>Kimlik ve Firma Bilgileri</h2>
+                </div>
+
+                <div class="detail-grid">
+                    <div>
+                        <label>Müşteri Tipi</label>
+                        <strong>@Model.Type</strong>
+                    </div>
+
+                    <div>
+                        <label>Resmi Cari / Fatura Adı</label>
+                        <strong>@Model.FullName</strong>
+                    </div>
+
+                    <div>
+                        <label>Marka / Tabela Adı</label>
+                        <strong>@(Model.CompanyName ?? "-")</strong>
+                    </div>
+
+                    <div>
+                        <label>Yetkili Kişi</label>
+                        <strong>@(Model.AuthorizedPersonName ?? "-")</strong>
+                    </div>
+
+                    <div>
+                        <label>TC Kimlik No</label>
+                        <strong>@(Model.NationalIdentityNumber ?? "-")</strong>
+                    </div>
+
+                    <div>
+                        <label>Vergi No</label>
+                        <strong>@(Model.TaxNumber ?? "-")</strong>
+                    </div>
+
+                    <div>
+                        <label>Vergi Dairesi</label>
+                        <strong>@(Model.TaxOffice ?? "-")</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card form-card">
+                <div class="section-title">
+                    <span>☎</span>
+                    <h2>İletişim Bilgileri</h2>
+                </div>
+
+                <div class="detail-grid">
+                    <div>
+                        <label>Telefon</label>
+                        <strong>@Model.PhoneNumber</strong>
+                    </div>
+
+                    <div>
+                        <label>E-posta</label>
+                        <strong>@(Model.Email ?? "-")</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card form-card">
+                <div class="section-title">
+                    <span>⌖</span>
+                    <h2>Adres Bilgileri</h2>
+                </div>
+
+                <div class="detail-grid">
+                    <div>
+                        <label>İl</label>
+                        <strong>@(Model.AddressCity ?? "-")</strong>
+                    </div>
+
+                    <div>
+                        <label>İlçe</label>
+                        <strong>@(Model.AddressDistrict ?? "-")</strong>
+                    </div>
+
+                    <div class="full">
+                        <label>Açık Adres</label>
+                        <strong>@(Model.Address ?? "-")</strong>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <aside class="side-column">
+            <section class="hint-card">
+                <h3>Durum</h3>
+                <p>@(Model.IsActive ? "Aktif müşteri" : "Pasif müşteri")</p>
+            </section>
+        </aside>
+
+    </div>
+</div>
+
+<style>
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 22px 24px;
+    }
+
+        .detail-grid div {
+            background: #f8fafc;
+            border: 1px solid #dbe4f0;
+            border-radius: 14px;
+            padding: 16px;
+            min-height: 74px;
+        }
+
+        .detail-grid .full {
+            grid-column: 1 / -1;
+        }
+
+        .detail-grid label {
+            display: block;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .detail-grid strong {
+            color: #061936;
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+    .customer-detail-page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 34px 24px 60px;
+        color: #061936;
+    }
+
+        .customer-detail-page .create-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 34px;
+            gap: 20px;
+        }
+
+        .customer-detail-page .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .customer-detail-page .back-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #fff;
+            border: 1px solid #dce5f2;
+            box-shadow: 0 3px 8px rgba(15, 23, 42, .06);
+            display: grid;
+            place-items: center;
+            text-decoration: none;
+            color: #64748b;
+            font-size: 24px;
+        }
+
+        .customer-detail-page .create-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 28px;
+            align-items: start;
+        }
+
+        .customer-detail-page .main-column {
+            display: grid;
+            gap: 24px;
+        }
+
+        .customer-detail-page .card,
+        .customer-detail-page .hint-card {
+            background: #fff;
+            border: 1px solid #dfe7f3;
+            border-radius: 18px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, .04);
+            padding: 28px;
+        }
+
+        .customer-detail-page .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid #edf2f7;
+            margin-bottom: 26px;
+        }
+
+        .customer-detail-page .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 22px 24px;
+        }
+
+            .customer-detail-page .detail-grid div {
+                background: #f8fafc;
+                border: 1px solid #dbe4f0;
+                border-radius: 14px;
+                padding: 16px;
+                min-height: 74px;
+            }
+
+            .customer-detail-page .detail-grid .full {
+                grid-column: 1 / -1;
+            }
+
+            .customer-detail-page .detail-grid label {
+                display: block;
+                color: #64748b;
+                font-size: 13px;
+                font-weight: 800;
+                margin-bottom: 8px;
+            }
+
+            .customer-detail-page .detail-grid strong {
+                color: #061936;
+                font-size: 15px;
+                font-weight: 900;
+            }
+
+        .customer-detail-page .btn-outline,
+        .customer-detail-page .btn-primary {
+            min-height: 44px;
+            border-radius: 13px;
+            padding: 0 22px;
+            font-weight: 850;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .customer-detail-page .btn-outline {
+            background: #fff;
+            color: #10284a;
+            border: 1px solid #cbd8ea;
+        }
+
+        .customer-detail-page .btn-primary {
+            border: none;
+            background: #4f35e8;
+            color: #fff;
+        }
+
+    @@media (max-width: 1100px) {
+        .customer-detail-page .create-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 760px) {
+        .customer-detail-page .create-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .customer-detail-page .detail-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

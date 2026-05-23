@@ -51,7 +51,7 @@ namespace AutoStock.Services.Services
         public async Task<ServiceResult<List<CustomerListItemDto>>> GetListAsync(int workshopId)
         {
             var customers = await context.Customers
-                .Where(x => x.WorkshopId == workshopId)
+                .Where(x => x.WorkshopId == workshopId && x.IsActive)
                 .Select(x => new CustomerListItemDto
                 {
                     Id = x.Id,
@@ -78,11 +78,7 @@ namespace AutoStock.Services.Services
         }
         public async Task<ServiceResult<int>> CreateAsync(CreateCustomerDto request, int workshopId)
         {
-            if (string.IsNullOrWhiteSpace(request.PhoneNumber))
-                return ServiceResult<int>.Fail("Telefon numarası zorunludur.");
-
-            if (string.IsNullOrWhiteSpace(request.FullName))
-                return ServiceResult<int>.Fail("Müşteri / cari adı zorunludur.");
+            
 
             var customer = new Customer
             {
@@ -105,6 +101,98 @@ namespace AutoStock.Services.Services
             };
 
             context.Customers.Add(customer);
+            await context.SaveChangesAsync();
+
+            return ServiceResult<int>.Success(customer.Id);
+        }
+
+        public async Task<ServiceResult<CustomerDetailDto>> GetByIdAsync(int id, int workshopId)
+        {
+            var customer = await context.Customers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x =>
+                         x.Id == id &&
+                         x.WorkshopId == workshopId &&
+                         x.IsActive);
+
+            if (customer == null)
+                return ServiceResult<CustomerDetailDto>.Fail("Müşteri bulunamadı.");
+
+            var dto = new CustomerDetailDto
+            {
+                Id = customer.Id,
+                WorkshopId = customer.WorkshopId,
+
+                Type = customer.Type,
+
+                PhoneNumber = customer.PhoneNumber,
+
+                FullName = customer.FullName,
+                CompanyName = customer.CompanyName,
+                AuthorizedPersonName = customer.AuthorizedPersonName,
+
+                Email = customer.Email,
+
+                TaxOffice = customer.TaxOffice,
+                TaxNumber = customer.TaxNumber,
+                NationalIdentityNumber = customer.NationalIdentityNumber,
+
+                Address = customer.Address,
+                AddressCity = customer.AddressCity,
+                AddressDistrict = customer.AddressDistrict,
+
+                IsActive = customer.IsActive
+            };
+
+            return ServiceResult<CustomerDetailDto>.Success(dto);
+        }
+        public async Task<ServiceResult<int>> UpdateAsync(UpdateCustomerDto request, int workshopId)
+        {
+            var customer = await context.Customers
+                .FirstOrDefaultAsync(x =>
+    x.Id == request.Id &&
+    x.WorkshopId == workshopId &&
+    x.IsActive);
+
+            if (customer == null)
+                return ServiceResult<int>.Fail("Müşteri bulunamadı.");
+
+            customer.Type = request.Type;
+
+            customer.PhoneNumber = request.PhoneNumber!.Trim();
+
+            customer.FullName = request.FullName?.Trim();
+            customer.CompanyName = request.CompanyName?.Trim();
+            customer.AuthorizedPersonName = request.AuthorizedPersonName?.Trim();
+
+            customer.Email = request.Email?.Trim();
+
+            customer.TaxOffice = request.TaxOffice?.Trim();
+            customer.TaxNumber = request.TaxNumber?.Trim();
+            customer.NationalIdentityNumber = request.NationalIdentityNumber?.Trim();
+
+            customer.Address = request.Address?.Trim();
+            customer.AddressCity = request.AddressCity?.Trim();
+            customer.AddressDistrict = request.AddressDistrict?.Trim();
+
+            await context.SaveChangesAsync();
+
+            return ServiceResult<int>.Success(customer.Id);
+        }
+
+        public async Task<ServiceResult<int>> SetPassiveAsync(int id, int workshopId)
+        {
+            var customer = await context.Customers
+                .FirstOrDefaultAsync(x => x.Id == id && x.WorkshopId == workshopId);
+
+            if (customer == null)
+                return ServiceResult<int>.Fail("Müşteri bulunamadı.");
+
+            if (!customer.IsActive)
+                return ServiceResult<int>.Fail("Müşteri zaten pasif durumda.");
+
+            customer.IsActive = false;
+
             await context.SaveChangesAsync();
 
             return ServiceResult<int>.Success(customer.Id);

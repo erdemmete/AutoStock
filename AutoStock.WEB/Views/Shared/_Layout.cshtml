@@ -1,29 +1,58 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>@ViewData["Title"] - AutoStock.WEB</title>
+
     <script type="importmap"></script>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site-toast.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AutoStock.WEB.styles.css" asp-append-version="true" />
 </head>
+
 <body>
-    
+
+    <div id="toastMessage" class="toast-message"></div>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
-   
+
     <footer class="servix-footer">
         © Sente360
     </footer>
- 
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/site-toast.js" asp-append-version="true"></script>
+
+    @if (TempData["ToastSuccess"] != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+            showToast(@Html.Raw(Json.Serialize(TempData["ToastSuccess"])), "success");
+            });
+        </script>
+    }
+
+    @if (TempData["ToastError"] != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+            showToast(@Html.Raw(Json.Serialize(TempData["ToastError"])), "error");
+            });
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

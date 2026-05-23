@@ -1,0 +1,770 @@
+﻿@model AutoStock.WEB.Models.Customers.EditCustomerViewModel
+@using AutoStock.Repositories.Enums
+
+@{
+    ViewData["Title"] = "Müşteri Düzenle";
+}
+
+<div class="customer-create-page">
+
+    <form asp-controller="Customers"
+          asp-action="Edit"
+          asp-route-id="@Model.Id"
+          method="post"
+          id="customerEditForm">
+
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="Type" id="CustomerType" />
+
+        <div class="create-header">
+            <div class="header-left">
+                <a class="back-btn" asp-controller="Customers" asp-action="Details" asp-route-id="@Model.Id">←</a>
+
+                <div>
+                    <h1>Müşteri Düzenle</h1>
+                    <p>Müşteri bilgilerini güncelleyin.</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <a class="btn-outline" asp-controller="Customers" asp-action="Details" asp-route-id="@Model.Id">İptal</a>
+                <button type="submit" class="btn-primary">✓ Güncelle</button>
+            </div>
+        </div>
+
+        <div class="create-layout">
+
+            <main class="main-column">
+
+                <section class="card">
+                    <h2>Müşteri Tipi Seçimi</h2>
+
+                    <div class="type-grid">
+                        <button type="button"
+                                class="type-card"
+                                data-type="Individual"
+                                onclick="setCustomerType('Individual', this)">
+                            <span class="type-check">✓</span>
+                            <div class="type-icon">♙</div>
+                            <strong>Bireysel</strong>
+                            <small>Şahıs kaydı</small>
+                        </button>
+
+                        <button type="button"
+                                class="type-card sole"
+                                data-type="SoleProprietorship"
+                                onclick="setCustomerType('SoleProprietorship', this)">
+                            <span class="type-check">✓</span>
+                            <div class="type-icon">▣</div>
+                            <strong>Şahıs Firması</strong>
+                            <small>Bireysel ticari işletme</small>
+                        </button>
+
+                        <button type="button"
+                                class="type-card"
+                                data-type="Corporate"
+                                onclick="setCustomerType('Corporate', this)">
+                            <span class="type-check">✓</span>
+                            <div class="type-icon">▤</div>
+                            <strong>Kurumsal</strong>
+                            <small>Limited / Anonim şirket</small>
+                        </button>
+                    </div>
+                </section>
+
+                <section class="card form-card">
+
+                    <div class="section-title">
+                        <span>▧</span>
+                        <h2>Kimlik ve Firma Bilgileri</h2>
+                    </div>
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="form-grid">
+
+                        <div class="form-group full">
+                            <label id="FullNameLabel">Müşteri Adı Soyadı <b>*</b></label>
+                            <input asp-for="FullName"
+                                   id="FullName"
+                                   placeholder="Örn: Erdem Mete"
+                                   autocomplete="off" />
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group" data-show-for="SoleProprietorship Corporate">
+                            <label id="CompanyNameLabel">Marka / Kısa Ünvan</label>
+                            <input asp-for="CompanyName"
+                                   id="CompanyName"
+                                   placeholder="Örn: Sente360"
+                                   autocomplete="off" />
+                        </div>
+
+                        <div class="form-group" data-show-for="SoleProprietorship Corporate">
+                            <label>Yetkili Kişi</label>
+                            <input asp-for="AuthorizedPersonName"
+                                   placeholder="Firmada iletişim kurulacak kişi..."
+                                   autocomplete="off" />
+                        </div>
+
+                        <div class="form-group" data-show-for="Individual SoleProprietorship">
+                            <label>TC Kimlik Numarası</label>
+                            <input asp-for="NationalIdentityNumber"
+                                   placeholder="11 Haneli TC Kimlik No"
+                                   maxlength="11"
+                                   inputmode="numeric"
+                                   autocomplete="off" />
+                        </div>
+
+                        <div class="form-group" data-show-for="SoleProprietorship Corporate">
+                            <label>Vergi Kimlik Numarası</label>
+                            <input asp-for="TaxNumber"
+                                   placeholder="10 Haneli VKN"
+                                   maxlength="10"
+                                   inputmode="numeric"
+                                   autocomplete="off" />
+                        </div>
+
+                        <div class="form-group" data-show-for="SoleProprietorship Corporate">
+                            <label>Vergi Dairesi İli</label>
+                            <select id="TaxOfficeCity">
+                                <option value="">İl seçiniz</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" data-show-for="SoleProprietorship Corporate">
+                            <label>Vergi Dairesi</label>
+                            <select asp-for="TaxOffice" id="TaxOfficeSelect">
+                                <option value="">Önce il seçiniz</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="section-title with-space">
+                        <span>☎</span>
+                        <h2>İletişim Bilgileri</h2>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Cep Telefonu <b>*</b></label>
+                            <input asp-for="PhoneNumber"
+                                   placeholder="0 (5XX) XXX XX XX"
+                                   inputmode="numeric"
+                                   autocomplete="off" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>E-posta Adresi</label>
+                            <input asp-for="Email"
+                                   placeholder="Fatura ve bilgilendirme mailleri için..."
+                                   autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="section-title with-space">
+                        <span>⌖</span>
+                        <h2>Adres Bilgileri</h2>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>İl</label>
+                            <select asp-for="AddressCity" id="AddressCity">
+                                <option value="">İl seçiniz</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>İlçe</label>
+                            <select asp-for="AddressDistrict" id="AddressDistrict">
+                                <option value="">Önce il seçiniz</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full">
+                            <label>Açık Adres</label>
+                            <textarea asp-for="Address"
+                                      placeholder="Mahalle, sokak, bina ve kapı no detaylarını giriniz..."></textarea>
+                        </div>
+                    </div>
+
+                </section>
+
+            </main>
+
+            <aside class="side-column">
+                <section class="note-card">
+                    <h3>Müşteri Notu</h3>
+                    <textarea disabled
+                              placeholder="Müşteri not sistemi ileride detay ekranına bağlanacak."></textarea>
+                </section>
+
+                <section class="hint-card">
+                    <h3>Güncelleme Kuralları</h3>
+                    <p>
+                        FullName her zaman resmi cari/fatura adıdır.
+                        CompanyName kısa marka/tabela adı olarak kullanılabilir.
+                    </p>
+                </section>
+            </aside>
+
+        </div>
+    </form>
+</div>
+
+<style>
+    body {
+        background: #f7f9fc;
+    }
+
+    .customer-create-page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 34px 24px 60px;
+        color: #061936;
+    }
+
+    .create-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 34px;
+        gap: 20px;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .back-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1px solid #dce5f2;
+        box-shadow: 0 3px 8px rgba(15, 23, 42, .06);
+        display: grid;
+        place-items: center;
+        text-decoration: none;
+        color: #64748b;
+        font-size: 24px;
+    }
+
+    .create-header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 900;
+    }
+
+    .create-header p {
+        margin: 6px 0 0;
+        color: #667896;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn-outline,
+    .btn-primary {
+        min-height: 44px;
+        border-radius: 13px;
+        padding: 0 22px;
+        font-weight: 850;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #cbd8ea;
+        cursor: pointer;
+    }
+
+    .btn-outline {
+        background: #fff;
+        color: #10284a;
+    }
+
+    .btn-primary {
+        border: none;
+        background: #4f35e8;
+        color: #fff;
+        box-shadow: 0 10px 22px rgba(79, 53, 232, .28);
+    }
+
+    .create-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 28px;
+        align-items: start;
+    }
+
+    .main-column {
+        display: grid;
+        gap: 24px;
+    }
+
+    .card,
+    .note-card,
+    .hint-card {
+        background: #fff;
+        border: 1px solid #dfe7f3;
+        border-radius: 18px;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .04);
+    }
+
+    .card {
+        padding: 28px;
+    }
+
+        .card h2 {
+            margin: 0 0 22px;
+            font-size: 20px;
+            font-weight: 900;
+        }
+
+    .type-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+    }
+
+    .type-card {
+        position: relative;
+        min-height: 140px;
+        border: 1px solid #e1e8f2;
+        background: #fff;
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: .18s ease;
+        color: #061936;
+    }
+
+        .type-card.active {
+            border-color: #4f35e8;
+            background: #f4f6ff;
+            box-shadow: 0 0 0 1px #4f35e8 inset;
+        }
+
+        .type-card.sole.active {
+            border-color: #f59e0b;
+            background: #fffbeb;
+            box-shadow: 0 0 0 1px #f59e0b inset;
+        }
+
+    .type-check {
+        display: none;
+        position: absolute;
+        top: 14px;
+        right: 16px;
+        color: #4f35e8;
+        font-weight: 900;
+    }
+
+    .type-card.active .type-check {
+        display: block;
+    }
+
+    .type-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        background: #eef2ff;
+        color: #4f35e8;
+        display: grid;
+        place-items: center;
+        font-size: 25px;
+        margin-bottom: 12px;
+    }
+
+    .type-card.sole.active .type-icon {
+        background: #fef3c7;
+        color: #f59e0b;
+    }
+
+    .type-card strong {
+        font-size: 16px;
+        font-weight: 900;
+        margin-bottom: 6px;
+    }
+
+    .type-card small {
+        color: #667896;
+        font-weight: 650;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid #edf2f7;
+        margin-bottom: 26px;
+    }
+
+        .section-title.with-space {
+            margin-top: 46px;
+        }
+
+        .section-title span {
+            color: #8ba1c0;
+            font-size: 24px;
+        }
+
+        .section-title h2 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 22px 24px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            color: #10284a;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+            .form-group label b {
+                color: #e11d48;
+            }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea,
+        .note-card textarea {
+            width: 100%;
+            border: 1px solid #dbe4f0;
+            border-radius: 14px;
+            background: #f8fafc;
+            min-height: 50px;
+            padding: 0 16px;
+            font-size: 15px;
+            color: #061936;
+            outline: none;
+            transition: .18s ease;
+        }
+
+        .form-group textarea,
+        .note-card textarea {
+            padding: 14px 16px;
+            min-height: 110px;
+            resize: vertical;
+        }
+
+            .form-group input:focus,
+            .form-group select:focus,
+            .form-group textarea:focus,
+            .note-card textarea:focus {
+                background: #fff;
+                border-color: #4f35e8;
+                box-shadow: 0 0 0 4px rgba(79, 53, 232, .10);
+            }
+
+    .side-column {
+        display: grid;
+        gap: 24px;
+        position: sticky;
+        top: 24px;
+    }
+
+    .note-card,
+    .hint-card {
+        padding: 26px;
+    }
+
+        .note-card h3,
+        .hint-card h3 {
+            margin: 0 0 16px;
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+    .hint-card {
+        background: #f1f4ff;
+        color: #4f35e8;
+        line-height: 1.5;
+    }
+
+        .hint-card p {
+            margin: 0;
+        }
+
+    .text-danger {
+        color: #e11d48;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    @@media (max-width: 1100px) {
+        .create-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .side-column {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 760px) {
+        .create-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .type-grid,
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+        .btn-outline,
+        .btn-primary {
+            flex: 1;
+        }
+    }
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        let turkeyLocations = [];
+        let taxOffices = [];
+
+        function get(id) {
+            return document.getElementById(id);
+        }
+
+        function normalizeTr(text) {
+            return (text || "").toLocaleLowerCase("tr-TR").trim();
+        }
+
+        function toTitleCase(text) {
+            return (text || "")
+                .toLocaleLowerCase("tr-TR")
+                .replace(/(^|\s)\S/g, x => x.toLocaleUpperCase("tr-TR"));
+        }
+
+        function setCustomerType(type, button) {
+            const typeInput = get("CustomerType");
+
+            if (typeInput) {
+                typeInput.value = type;
+            }
+
+            document.querySelectorAll(".type-card")
+                .forEach(x => x.classList.remove("active"));
+
+            button?.classList.add("active");
+
+            document.querySelectorAll("[data-show-for]").forEach(field => {
+                const allowedTypes = field.getAttribute("data-show-for").split(" ");
+
+                field.style.display = allowedTypes.includes(type)
+                    ? "flex"
+                    : "none";
+            });
+
+            const fullNameLabel = get("FullNameLabel");
+            const fullNameInput = get("FullName");
+            const companyNameLabel = get("CompanyNameLabel");
+
+            if (type === "Individual") {
+                fullNameLabel.innerHTML = "Müşteri Adı Soyadı <b>*</b>";
+                fullNameInput.placeholder = "Örn: Erdem Mete";
+            }
+
+            if (type === "SoleProprietorship") {
+                fullNameLabel.innerHTML = "Resmi Cari / Fatura Adı <b>*</b>";
+                fullNameInput.placeholder = "Örn: Erdem Mete";
+                companyNameLabel.innerText = "Marka / Tabela Adı";
+            }
+
+            if (type === "Corporate") {
+                fullNameLabel.innerHTML = "Firma Resmi Ünvanı <b>*</b>";
+                fullNameInput.placeholder = "Örn: Mete Servis İnşaat Gıda Ltd. Şti.";
+                companyNameLabel.innerText = "Kısa Ünvan / Marka Adı";
+            }
+        }
+
+        async function loadLocationData() {
+            try {
+                const [locationsResponse, taxOfficesResponse] = await Promise.all([
+                    fetch("/data/turkey-locations.json"),
+                    fetch("/data/tax-offices.json")
+                ]);
+
+                turkeyLocations = await locationsResponse.json();
+                taxOffices = await taxOfficesResponse.json();
+
+                fillCitySelect("AddressCity", "@Model.AddressCity");
+                fillCitySelect("TaxOfficeCity");
+            }
+            catch {
+                console.warn("Lokasyon veya vergi dairesi datası yüklenemedi.");
+            }
+        }
+
+        function fillCitySelect(selectId, selectedValue = "") {
+            const select = get(selectId);
+            if (!select) return;
+
+            select.innerHTML = `<option value="">İl seçiniz</option>`;
+
+            turkeyLocations
+                .sort((a, b) => a.name.localeCompare(b.name, "tr"))
+                .forEach(city => {
+                    const selected = city.name === selectedValue ? "selected" : "";
+
+                    select.innerHTML += `
+                        <option value="${city.name}" ${selected}>
+                            ${toTitleCase(city.name)}
+                        </option>`;
+                });
+        }
+
+        function fillDistrictSelect(selectedValue = "") {
+            const city = get("AddressCity")?.value;
+            const districtSelect = get("AddressDistrict");
+
+            if (!districtSelect) return;
+
+            districtSelect.innerHTML = `<option value="">İlçe seçiniz</option>`;
+
+            const location = turkeyLocations.find(x => x.name === city);
+
+            if (!location) return;
+
+            location.districts
+                .sort((a, b) => a.name.localeCompare(b.name, "tr"))
+                .forEach(district => {
+                    const selected = district.name === selectedValue ? "selected" : "";
+
+                    districtSelect.innerHTML += `
+                        <option value="${district.name}" ${selected}>
+                            ${toTitleCase(district.name)}
+                        </option>`;
+                });
+        }
+
+        function fillTaxOfficeSelect(selectedValue = "") {
+            const city = get("TaxOfficeCity")?.value;
+            const taxOfficeSelect = get("TaxOfficeSelect");
+
+            if (!taxOfficeSelect) return;
+
+            taxOfficeSelect.innerHTML = `<option value="">Vergi dairesi seçiniz</option>`;
+
+            taxOffices
+                .filter(x => !city || normalizeTr(x.city) === normalizeTr(city))
+                .sort((a, b) => {
+                    const districtCompare = (a.district || "").localeCompare(b.district || "", "tr");
+                    if (districtCompare !== 0) return districtCompare;
+                    return (a.name || "").localeCompare(b.name || "", "tr");
+                })
+                .forEach(item => {
+                    const selected = item.name === selectedValue ? "selected" : "";
+
+                    taxOfficeSelect.innerHTML += `
+                        <option value="${item.name}" ${selected}>
+                            ${item.name} - ${item.district} / ${item.city}
+                        </option>`;
+                });
+        }
+
+        function onlyDigits(input, maxLength) {
+            input.addEventListener("input", function () {
+                this.value = this.value.replace(/\D/g, "").slice(0, maxLength);
+            });
+        }
+
+        function formatPhoneInput(input) {
+            input.addEventListener("input", function () {
+                let digits = this.value.replace(/\D/g, "").slice(0, 11);
+
+                if (digits.length > 9) {
+                    this.value = digits.replace(/(\d{4})(\d{3})(\d{2})(\d{0,2})/, "$1 $2 $3 $4").trim();
+                    return;
+                }
+
+                if (digits.length > 7) {
+                    this.value = digits.replace(/(\d{4})(\d{3})(\d{0,2})/, "$1 $2 $3").trim();
+                    return;
+                }
+
+                if (digits.length > 4) {
+                    this.value = digits.replace(/(\d{4})(\d{0,3})/, "$1 $2").trim();
+                    return;
+                }
+
+                this.value = digits;
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", async function () {
+            const currentType = "@Model.Type";
+
+            await loadLocationData();
+
+            fillDistrictSelect("@Model.AddressDistrict");
+            fillTaxOfficeSelect("@Model.TaxOffice");
+
+            get("AddressCity")?.addEventListener("change", function () {
+                fillDistrictSelect();
+            });
+
+            get("TaxOfficeCity")?.addEventListener("change", function () {
+                fillTaxOfficeSelect();
+            });
+
+            document.querySelectorAll('[inputmode="numeric"]').forEach(input => {
+                input.addEventListener("beforeinput", function (e) {
+                    if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
+                        e.preventDefault();
+                    }
+                });
+            });
+
+            const phoneInput = document.querySelector('[name="PhoneNumber"]');
+            if (phoneInput) formatPhoneInput(phoneInput);
+
+            const tcknInput = document.querySelector('[name="NationalIdentityNumber"]');
+            if (tcknInput) onlyDigits(tcknInput, 11);
+
+            const taxNumberInput = document.querySelector('[name="TaxNumber"]');
+            if (taxNumberInput) onlyDigits(taxNumberInput, 10);
+
+            const activeButton = document.querySelector(`.type-card[data-type="${currentType}"]`)
+                || document.querySelector(`.type-card[data-type="Individual"]`);
+
+            setCustomerType(currentType || "Individual", activeButton);
+        });
+    </script>
+}

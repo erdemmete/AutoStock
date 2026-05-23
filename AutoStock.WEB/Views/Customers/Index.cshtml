@@ -134,10 +134,13 @@
                                 Cari
                             </a>
 
-                            <a class="action-btn"
-                               href="#">
-                                Detay
-                            </a>
+                            <td class="text-end">
+                                <a asp-action="Details"
+                                   asp-route-id="@item.Id"
+                                   class="action-btn">
+                                    Detay
+                                </a>
+                            </td>
                         </td>
                     </tr>
                 }
@@ -456,4 +459,16 @@
             min-width: 980px;
         }
     }
+
+    .action-link {
+        color: #4f35e8;
+        font-weight: 800;
+        text-decoration: none;
+        transition: .2s ease;
+    }
+
+        .action-link:hover {
+            color: #3725b7;
+            text-decoration: underline;
+        }
 </style>
