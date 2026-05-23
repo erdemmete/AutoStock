@@ -2,6 +2,8 @@
 using AutoStock.Services.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Services.Interfaces.StockItems;
+using Services.Services.StockItems;
 
 namespace AutoStock.Services.Extensions
 {
@@ -17,6 +19,7 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<IVehicleCatalogService, VehicleCatalogService>();
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<ICurrentAccountService, CurrentAccountService>();
+            services.AddScoped<IStockItemService, StockItemService>();
 
             return services;
 

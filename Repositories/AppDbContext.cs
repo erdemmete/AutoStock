@@ -29,7 +29,9 @@ namespace AutoStock.Repositories
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
         public DbSet<CurrentAccountTransaction> CurrentAccountTransactions { get; set; }
-        
+        public DbSet<StockItem> StockItems { get; set; }
+        public DbSet<StockMovement> StockMovements { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
