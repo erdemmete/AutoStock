@@ -197,5 +197,73 @@ namespace Services.Services.StockItems
                 })
                 .ToListAsync();
         }
+
+        public async Task<ServiceResult<int>> StockInAsync(int stockItemId, StockTransactionDto dto,int workshopId)
+        {
+            var stockItem = await _context.StockItems
+                .FirstOrDefaultAsync(x =>
+                    x.Id == stockItemId &&
+                    x.WorkshopId == workshopId &&
+                    x.IsActive);
+
+            if (stockItem == null)
+                return ServiceResult<int>.Fail("Stok kartı bulunamadı.");
+
+            stockItem.Quantity += dto.Quantity;
+
+            var movement = new StockMovement
+            {
+                WorkshopId = workshopId,
+                StockItemId = stockItem.Id,
+                MovementType = StockMovementType.In,
+                Quantity = dto.Quantity,
+                UnitPrice = dto.UnitPrice ?? stockItem.PurchasePrice,
+                Description = dto.Description,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.StockMovements.Add(movement);
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<int>.Success(stockItem.Id);
+        }
+
+        public async Task<ServiceResult<int>> StockOutAsync(
+    int stockItemId,
+    StockTransactionDto dto,
+    int workshopId)
+        {
+            var stockItem = await _context.StockItems
+                .FirstOrDefaultAsync(x =>
+                    x.Id == stockItemId &&
+                    x.WorkshopId == workshopId &&
+                    x.IsActive);
+
+            if (stockItem == null)
+                return ServiceResult<int>.Fail("Stok kartı bulunamadı.");
+
+            if (stockItem.Quantity < dto.Quantity)
+                return ServiceResult<int>.Fail("Yetersiz stok.");
+
+            stockItem.Quantity -= dto.Quantity;
+
+            var movement = new StockMovement
+            {
+                WorkshopId = workshopId,
+                StockItemId = stockItem.Id,
+                MovementType = StockMovementType.Out,
+                Quantity = dto.Quantity,
+                UnitPrice = dto.UnitPrice ?? stockItem.PurchasePrice,
+                Description = dto.Description,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.StockMovements.Add(movement);
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<int>.Success(stockItem.Id);
+        }
     }
 }

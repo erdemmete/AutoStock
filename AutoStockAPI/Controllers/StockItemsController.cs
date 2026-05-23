@@ -122,6 +122,38 @@ namespace AutoStockAPI.Controllers
 
             return Ok(result);
         }
+
+        [HttpPost("{id:int}/stock-in")]
+        public async Task<IActionResult> StockIn(int id, StockTransactionDto dto)
+        {
+            var workshopId = GetWorkshopId();
+
+            if (workshopId == null)
+                return Unauthorized();
+
+            var result = await _stockItemService.StockInAsync(id, dto, workshopId.Value);
+
+            if (!result.IsSuccess)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        [HttpPost("{id:int}/stock-out")]
+        public async Task<IActionResult> StockOut(int id, StockTransactionDto dto)
+        {
+            var workshopId = GetWorkshopId();
+
+            if (workshopId == null)
+                return Unauthorized();
+
+            var result = await _stockItemService.StockOutAsync(id, dto, workshopId.Value);
+
+            if (!result.IsSuccess)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
         private int? GetWorkshopId()
         {
             var workshopIdClaim = User.FindFirst("workshopId")?.Value;

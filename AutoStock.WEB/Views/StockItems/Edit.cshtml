@@ -1,24 +1,35 @@
-﻿@model AutoStock.WEB.Models.StockItems.CreateStockItemViewModel
+﻿@model AutoStock.WEB.Models.StockItems.EditStockItemViewModel
 
 @{
-    ViewData["Title"] = "Yeni Stok Kartı";
+    ViewData["Title"] = "Stok Kartı Düzenle";
 }
 
 <div class="page-header">
     <div>
-        <h1>Yeni Stok Kartı</h1>
-        <p>Takip etmek istediğiniz parçayı stok kartı olarak ekleyin.</p>
+        <h1>Stok Kartı Düzenle</h1>
+        <p>Stok kartı bilgilerini güncelleyin. Miktar bu ekrandan değiştirilemez.</p>
     </div>
 
-    <a asp-controller="StockItems" asp-action="Index" class="btn btn-secondary">
+    <a asp-controller="StockItems"
+       asp-action="Details"
+       asp-route-id="@Model.Id"
+       class="btn btn-secondary">
         Geri
     </a>
 </div>
 
+<div class="alert alert-info">
+    Mevcut stok miktarı bu ekrandan düzenlenmez. Miktar değişiklikleri için stok detay ekranındaki
+    <strong>Stok Düzelt</strong> işlemini kullanın.
+</div>
+
 <form asp-controller="StockItems"
-      asp-action="Create"
+      asp-action="Edit"
+      asp-route-id="@Model.Id"
       method="post"
       class="card form-card">
+
+    <input type="hidden" asp-for="Id" />
 
     <div class="form-grid">
         <div class="form-group">
@@ -47,11 +58,6 @@
         </div>
 
         <div class="form-group">
-            <label>İlk Miktar</label>
-            <input asp-for="Quantity" class="form-control" type="number" step="0.01" />
-        </div>
-
-        <div class="form-group">
             <label>Alış Fiyatı</label>
             <input asp-for="PurchasePrice" class="form-control" type="number" step="0.01" />
         </div>
@@ -69,7 +75,7 @@
 
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">
-            Kaydet
+            Güncelle
         </button>
     </div>
 </form>

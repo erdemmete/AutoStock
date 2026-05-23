@@ -13,5 +13,8 @@ namespace Services.Interfaces.StockItems
         Task<ServiceResult<int>> SetPassiveAsync(int id, int workshopId);
         Task<ServiceResult<int>> AdjustStockAsync(int stockItemId, AdjustStockDto dto, int workshopId);
         Task<List<StockMovementListDto>> GetMovementsAsync(int stockItemId, int workshopId);
+        Task<ServiceResult<int>> StockInAsync(int stockItemId, StockTransactionDto dto, int workshopId);
+
+        Task<ServiceResult<int>> StockOutAsync(int stockItemId, StockTransactionDto dto, int workshopId);
     }
 }

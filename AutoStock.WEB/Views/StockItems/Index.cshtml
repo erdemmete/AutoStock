@@ -28,13 +28,14 @@
                     <th>Satış Fiyatı</th>
                     <th>Minimum</th>
                     <th>Durum</th>
+                    <th>İşlem</th>
                 </tr>
             </thead>
             <tbody>
                 @if (!Model.Any())
                 {
                     <tr>
-                        <td colspan="8" class="text-center text-muted">
+                        <td colspan="9" class="text-center text-muted">
                             Henüz stok kartı oluşturulmamış.
                         </td>
                     </tr>
@@ -60,6 +61,15 @@
                                 {
                                     <span class="badge bg-success">Normal</span>
                                 }
+                            </td>
+
+                            <td>
+                                <a asp-controller="StockItems"
+                                   asp-action="Details"
+                                   asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Detay
+                                </a>
                             </td>
                         </tr>
                     }

@@ -1,0 +1,337 @@
+﻿@model AutoStock.WEB.Models.StockItems.StockItemDetailViewModel
+
+@{
+    ViewData["Title"] = "Stok Detayı";
+}
+
+<div class="page-header">
+    <div>
+        <h1>@Model.Name</h1>
+
+        <p>
+            Stok kartı detayları ve hareket geçmişi
+        </p>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="button"
+                class="btn btn-primary"
+                onclick="openAdjustStockModal()">
+            Stok Düzelt
+        </button>
+
+        <a asp-controller="StockItems"
+           asp-action="Edit"
+           asp-route-id="@Model.Id"
+           class="btn btn-warning">
+            Düzenle
+        </a>
+
+        <form asp-controller="StockItems"
+              asp-action="SetPassive"
+              asp-route-id="@Model.Id"
+              method="post"
+              onsubmit="return confirm('Bu stok kartını silmek istediğinize emin misiniz?');">
+
+            <button type="submit" class="btn btn-danger">
+                Sil
+            </button>
+        </form>
+
+        <a asp-controller="StockItems"
+           asp-action="Index"
+           class="btn btn-secondary">
+            Geri
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+
+        <div class="row g-4">
+
+            <div class="col-md-3">
+                <label class="text-muted small">Stok Adı</label>
+                <div class="fw-semibold">@Model.Name</div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="text-muted small">Kod</label>
+                <div class="fw-semibold">@Model.Code</div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="text-muted small">Barkod</label>
+                <div class="fw-semibold">@Model.Barcode</div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="text-muted small">Marka</label>
+                <div class="fw-semibold">@Model.Brand</div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="text-muted small">Birim</label>
+                <div class="fw-semibold">@Model.Unit</div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="text-muted small">Mevcut Stok</label>
+
+                <div class="fw-bold fs-5">
+                    @Model.Quantity
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="text-muted small">Alış Fiyatı</label>
+
+                <div class="fw-semibold">
+                    @Model.PurchasePrice.ToString("N2") ₺
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="text-muted small">Satış Fiyatı</label>
+
+                <div class="fw-semibold">
+                    @Model.SalePrice.ToString("N2") ₺
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="text-muted small">Minimum Stok</label>
+
+                <div class="fw-semibold">
+                    @Model.MinimumQuantity
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="text-muted small">Oluşturulma Tarihi</label>
+
+                <div class="fw-semibold">
+                    @Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            Stok Hareketleri
+        </h5>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table mb-0">
+
+            <thead>
+                <tr>
+                    <th>Tip</th>
+                    <th>Miktar</th>
+                    <th>Birim Fiyat</th>
+                    <th>Açıklama</th>
+                    <th>Tarih</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @if (!Model.Movements.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            Hareket bulunamadı.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var item in Model.Movements)
+                    {
+                        <tr>
+
+                            <td>
+                                @switch (item.MovementType)
+                                {
+                                    case "In":
+                                        <span class="badge bg-success">Giriş</span>
+                                        break;
+
+                                    case "Out":
+                                        <span class="badge bg-danger">Çıkış</span>
+                                        break;
+
+                                    case "Adjustment":
+                                        <span class="badge bg-warning text-dark">Düzeltme</span>
+                                        break;
+
+                                    case "ServiceUsage":
+                                        <span class="badge bg-primary">Servis</span>
+                                        break;
+
+                                    case "InvoiceUsage":
+                                        <span class="badge bg-dark">Fatura</span>
+                                        break;
+
+                                    default:
+                                        <span class="badge bg-secondary">
+                                            @item.MovementType
+                                        </span>
+                                        break;
+                                }
+                            </td>
+
+                            <td>@item.Quantity</td>
+
+                            <td>
+                                @(item.UnitPrice?.ToString("N2") + " ₺")
+                            </td>
+
+                            <td>@item.Description</td>
+
+                            <td>
+                                @(item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm"))
+                            </td>
+
+                        </tr>
+                    }
+                }
+
+            </tbody>
+
+        </table>
+    </div>
+</div>
+
+<div id="adjustStockModal" class="modal-backdrop-custom">
+    <div class="modal-card-custom">
+        <div class="modal-header-custom">
+            <div>
+                <h3>Stok Düzelt</h3>
+                <p>Mevcut stok miktarını gerçek sayım sonucuna göre güncelle.</p>
+            </div>
+
+            <button type="button"
+                    class="modal-close-button"
+                    onclick="closeAdjustStockModal()">
+                ×
+            </button>
+        </div>
+
+        <form asp-controller="StockItems"
+              asp-action="AdjustStock"
+              asp-route-id="@Model.Id"
+              method="post">
+
+            <div class="form-group">
+                <label>Yeni Stok Miktarı</label>
+                <input name="NewQuantity"
+                       type="number"
+                       step="0.01"
+                       min="0"
+                       class="form-control"
+                       value="@Model.Quantity" />
+            </div>
+
+            <div class="form-group mt-3">
+                <label>Açıklama</label>
+                <textarea name="Description"
+                          class="form-control"
+                          rows="3"
+                          placeholder="Örn: Depo sayım düzeltmesi"></textarea>
+            </div>
+
+            <div class="modal-actions-custom">
+                <button type="button"
+                        class="btn btn-secondary"
+                        onclick="closeAdjustStockModal()">
+                    Vazgeç
+                </button>
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Kaydet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .modal-backdrop-custom {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, .55);
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        padding: 20px;
+    }
+
+    .modal-backdrop-custom.show {
+        display: flex;
+    }
+
+    .modal-card-custom {
+        width: min(520px, 100%);
+        background: white;
+        border-radius: 22px;
+        padding: 24px;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, .28);
+    }
+
+    .modal-header-custom {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .modal-header-custom h3 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 800;
+    }
+
+    .modal-header-custom p {
+        margin: 6px 0 0;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .modal-close-button {
+        width: 38px;
+        height: 38px;
+        border: none;
+        border-radius: 12px;
+        background: #f1f5f9;
+        color: #0f172a;
+        font-size: 24px;
+        cursor: pointer;
+    }
+
+    .modal-actions-custom {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 22px;
+    }
+</style>
+
+<script>
+    function openAdjustStockModal() {
+        document.getElementById("adjustStockModal")?.classList.add("show");
+    }
+
+    function closeAdjustStockModal() {
+        document.getElementById("adjustStockModal")?.classList.remove("show");
+    }
+</script>
