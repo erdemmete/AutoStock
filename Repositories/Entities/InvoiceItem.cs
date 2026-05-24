@@ -27,6 +27,9 @@ namespace AutoStock.Repositories.Entities
         public decimal VatAmount { get; set; }
 
         public decimal LineTotal { get; set; }
+        public int? StockItemId { get; set; }
+
+        public StockItem? StockItem { get; set; }
 
         public Invoice Invoice { get; set; } = null!;
     }

@@ -10,6 +10,10 @@ namespace AutoStock.Repositories.Entities
 
         public ServiceRecord ServiceRecord { get; set; } = null!;
 
+        public int? StockItemId { get; set; }
+
+        public StockItem? StockItem { get; set; }
+
         public OperationType Type { get; set; }
 
         public string Description { get; set; } = null!;
@@ -21,6 +25,7 @@ namespace AutoStock.Repositories.Entities
         public decimal TotalPrice { get; set; }
 
         public string? Note { get; set; }
+
         public int? ServiceRequestItemId { get; set; }
 
         public ServiceRequestItem? ServiceRequestItem { get; set; }

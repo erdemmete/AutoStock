@@ -4,6 +4,7 @@ using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.Invoices;
 using AutoStock.WEB.Models.ServiceRecords;
+using AutoStock.WEB.Models.StockItems;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http.Headers;
 using System.Text;
@@ -214,6 +215,24 @@ public class ServiceRecordsController : Controller
                 result.Data.ActiveInvoiceStatus = activeInvoiceResult.Data.Status;
                 result.Data.ActiveInvoiceNumber = activeInvoiceResult.Data.InvoiceNumber;
             }
+
+            var stockResponse = await client.GetAsync("/api/StockItems/select-list");
+
+            if (stockResponse.IsSuccessStatusCode)
+            {
+                var stockJson = await stockResponse.Content.ReadAsStringAsync();
+
+                var stockResult = JsonSerializer.Deserialize<
+                    List<StockItemSelectViewModel>>(
+                    stockJson,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                result.Data.StockItems =
+                    stockResult ?? new List<StockItemSelectViewModel>();
+            }
         }
 
         return View(result.Data);
@@ -380,7 +399,8 @@ public class ServiceRecordsController : Controller
             description = model.Description,
             quantity = model.Quantity,
             unitPrice = model.UnitPrice,
-            note = model.Note
+            note = model.Note,
+            stockItemId = model.StockItemId,
         };
 
         var json = JsonSerializer.Serialize(requestBody);
@@ -463,6 +483,64 @@ public class ServiceRecordsController : Controller
             return BadRequest(json);
 
         return Content(json, "application/json");
+    }
+
+    [HttpGet("ServiceRecords/SearchStockItems")]
+    public async Task<IActionResult> SearchStockItems([FromQuery] string q)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+        {
+            return Ok(new List<StockItemSelectViewModel>());
+        }
+
+        var client = CreateApiClient();
+
+        var response = await client.GetAsync(
+            $"/api/StockItems/search?q={Uri.EscapeDataString(q.Trim())}"
+        );
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return Ok(new List<StockItemSelectViewModel>());
+        }
+
+        var json = await response.Content.ReadAsStringAsync();
+
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+
+            if (document.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                var directResult = JsonSerializer.Deserialize<List<StockItemSelectViewModel>>(
+                    json,
+                    options
+                );
+
+                return Ok(directResult ?? new List<StockItemSelectViewModel>());
+            }
+
+            if (document.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                var apiResult = JsonSerializer.Deserialize<ApiResponse<List<StockItemSelectViewModel>>>(
+                    json,
+                    options
+                );
+
+                return Ok(apiResult?.Data ?? new List<StockItemSelectViewModel>());
+            }
+
+            return Ok(new List<StockItemSelectViewModel>());
+        }
+        catch
+        {
+            return Ok(new List<StockItemSelectViewModel>());
+        }
     }
 
 }

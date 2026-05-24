@@ -229,10 +229,7 @@ namespace Services.Services.StockItems
             return ServiceResult<int>.Success(stockItem.Id);
         }
 
-        public async Task<ServiceResult<int>> StockOutAsync(
-    int stockItemId,
-    StockTransactionDto dto,
-    int workshopId)
+        public async Task<ServiceResult<int>> StockOutAsync(int stockItemId, StockTransactionDto dto, int workshopId)
         {
             var stockItem = await _context.StockItems
                 .FirstOrDefaultAsync(x =>
@@ -264,6 +261,89 @@ namespace Services.Services.StockItems
             await _context.SaveChangesAsync();
 
             return ServiceResult<int>.Success(stockItem.Id);
+        }
+
+        public async Task<ServiceResult<int>> UseForInvoiceAsync(int stockItemId, decimal quantity, decimal? unitPrice, int invoiceId, int workshopId)
+        {
+            if (quantity <= 0)
+                return ServiceResult<int>.Fail("Stoktan düşülecek miktar sıfırdan büyük olmalıdır.");
+
+            var stockItem = await _context.StockItems
+                .FirstOrDefaultAsync(x =>
+                    x.Id == stockItemId &&
+                    x.WorkshopId == workshopId &&
+                    x.IsActive);
+
+            if (stockItem == null)
+                return ServiceResult<int>.Fail("Stok kartı bulunamadı.");
+
+            if (stockItem.Quantity < quantity)
+                return ServiceResult<int>.Fail($"{stockItem.Name} için yeterli stok yok.");
+
+            stockItem.Quantity -= quantity;
+
+            var movement = new StockMovement
+            {
+                WorkshopId = workshopId,
+                StockItemId = stockItem.Id,
+                MovementType = StockMovementType.InvoiceUsage,
+                Quantity = quantity,
+                UnitPrice = unitPrice ?? stockItem.SalePrice,
+                Description = "Fatura kaynaklı stok çıkışı",
+                ReferenceType = "Invoice",
+                ReferenceId = invoiceId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.StockMovements.Add(movement);
+
+            return ServiceResult<int>.Success(stockItem.Id);
+        }
+
+        public async Task<List<StockItemSelectDto>> GetSelectListAsync(int workshopId)
+        {
+            return await _context.StockItems
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new StockItemSelectDto
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Quantity = x.Quantity
+                })
+                .ToListAsync();
+        }
+
+        public async Task<List<StockItemSelectDto>> SearchAsync(int workshopId, string? query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return new List<StockItemSelectDto>();
+            }
+
+            query = query.Trim();
+
+            return await _context.StockItems
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.IsActive &&
+                    (
+                        x.Name.Contains(query) ||
+                        (x.Code != null && x.Code.Contains(query))
+                    ))
+                .OrderBy(x => x.Name)
+                .Take(5)
+                .Select(x => new StockItemSelectDto
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Code = x.Code,
+                    Quantity = x.Quantity,
+                    SalePrice = x.SalePrice
+                })
+                .ToListAsync();
         }
     }
 }

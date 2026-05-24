@@ -5,12 +5,22 @@ using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Invoices;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Services.Interfaces.StockItems;
 
 namespace AutoStock.Services.Services
 {
     public class InvoiceService : IInvoiceService
     {
         private readonly AppDbContext _context;
+        private readonly IStockItemService _stockItemService;
+
+        public InvoiceService(
+            AppDbContext context,
+            IStockItemService stockItemService)
+        {
+            _context = context;
+            _stockItemService = stockItemService;
+        }
 
         public InvoiceService(AppDbContext context)
         {
@@ -71,6 +81,7 @@ namespace AutoStock.Services.Services
 
                     Description = operation.Description,
                     Quantity = operation.Quantity,
+                    StockItemId = operation.StockItemId,
                     Unit = "Adet",
                     UnitPrice = operation.UnitPrice,
                     DiscountRate = 0,
@@ -172,7 +183,8 @@ namespace AutoStock.Services.Services
                     VatRate = vatRate,
                     VatAmount = vatAmount,
 
-                    LineTotal = lineTotal
+                    LineTotal = lineTotal,
+                    StockItemId = item.StockItemId
                 });
             }
 
@@ -271,9 +283,10 @@ namespace AutoStock.Services.Services
         public async Task<ServiceResult<IssueInvoiceResponseDto>> IssueAsync(int invoiceId, int workshopId)
         {
             var invoice = await _context.Invoices
-                .FirstOrDefaultAsync(x =>
-                    x.Id == invoiceId &&
-                    x.WorkshopId == workshopId);
+                            .Include(x => x.Items)
+                            .FirstOrDefaultAsync(x =>
+                                x.Id == invoiceId &&
+                                x.WorkshopId == workshopId);
 
             if (invoice is null)
                 return ServiceResult<IssueInvoiceResponseDto>.Fail("Fatura bulunamadı.");
@@ -285,6 +298,23 @@ namespace AutoStock.Services.Services
                 return ServiceResult<IssueInvoiceResponseDto>.Fail("Fatura zaten kesilmiş.");
 
             invoice.Status = InvoiceStatus.Issued;
+
+            foreach (var item in invoice.Items)
+            {
+                if (item.StockItemId == null)
+                    continue;
+
+                var stockResult = await _stockItemService.UseForInvoiceAsync(
+                    item.StockItemId.Value,
+                    item.Quantity,
+                    item.UnitPrice,
+                    invoice.Id,
+                    workshopId);
+
+                if (!stockResult.IsSuccess)
+                    return ServiceResult<IssueInvoiceResponseDto>.Fail(stockResult.ErrorMessage);
+            }
+
 
             var transaction = new CurrentAccountTransaction
             {
@@ -524,15 +554,24 @@ namespace AutoStock.Services.Services
                 invoice.Items.Add(new InvoiceItem
                 {
                     ItemType = (InvoiceItemType)item.ItemType,
+
                     Description = item.Description!.Trim(),
+
                     Quantity = quantity,
-                    Unit = string.IsNullOrWhiteSpace(item.Unit) ? "Adet" : item.Unit.Trim(),
+
+                    Unit = string.IsNullOrWhiteSpace(item.Unit) ? "Adet"  : item.Unit.Trim(),
+
                     UnitPrice = unitPrice,
+
                     DiscountRate = discountRate,
                     DiscountAmount = discountAmount,
+
                     VatRate = vatRate,
                     VatAmount = vatAmount,
-                    LineTotal = lineTotal
+
+                    LineTotal = lineTotal,
+
+                    StockItemId = item.StockItemId
                 });
             }
 

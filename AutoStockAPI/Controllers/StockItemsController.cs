@@ -154,6 +154,27 @@ namespace AutoStockAPI.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet("select-list")]
+        public async Task<IActionResult> GetSelectList()
+        {
+            var workshopId = GetWorkshopId();
+
+            var result = await _stockItemService
+                .GetSelectListAsync(workshopId.Value);
+
+            return Ok(result);
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string q)
+        {
+            var workshopId = GetWorkshopId();
+
+            var result = await _stockItemService.SearchAsync(workshopId.Value, q);
+
+            return Ok(result);
+        }
         private int? GetWorkshopId()
         {
             var workshopIdClaim = User.FindFirst("workshopId")?.Value;
@@ -163,5 +184,7 @@ namespace AutoStockAPI.Controllers
 
             return int.Parse(workshopIdClaim);
         }
+
+
     }
 }

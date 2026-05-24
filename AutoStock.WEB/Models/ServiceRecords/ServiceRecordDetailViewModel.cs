@@ -1,4 +1,5 @@
 ﻿using AutoStock.WEB.Models.Invoices;
+using AutoStock.WEB.Models.StockItems;
 
 namespace AutoStock.WEB.Models.ServiceRecords
 {
@@ -70,5 +71,6 @@ namespace AutoStock.WEB.Models.ServiceRecords
         public List<ServiceRequestItemViewModel> RequestItems { get; set; } = new();
 
         public List<InvoiceListItemViewModel> Invoices { get; set; } = new();
+        public List<StockItemSelectViewModel> StockItems { get; set; } = new();
     }
 }

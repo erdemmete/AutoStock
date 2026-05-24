@@ -14,7 +14,7 @@
         public string? Plate { get; set; }
         public string? ChassisNumber { get; set; }
         public int? Mileage { get; set; }
-
+        
         public List<CreateInvoiceDraftItemDto> Items { get; set; } = new();
     }
 
@@ -28,5 +28,6 @@
         public decimal UnitPrice { get; set; }
         public decimal DiscountRate { get; set; }
         public decimal VatRate { get; set; } = 20;
+        public int? StockItemId { get; set; }
     }
 }

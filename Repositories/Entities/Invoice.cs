@@ -60,5 +60,6 @@ namespace AutoStock.Repositories.Entities
         public ServiceRecord? ServiceRecord { get; set; }
 
         public ICollection<InvoiceItem> Items { get; set; } = new List<InvoiceItem>();
+
     }
 }

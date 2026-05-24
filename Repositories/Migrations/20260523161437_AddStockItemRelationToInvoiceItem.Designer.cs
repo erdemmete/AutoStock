@@ -4,6 +4,7 @@ using AutoStock.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AutoStock.Repositories.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260523161437_AddStockItemRelationToInvoiceItem")]
+    partial class AddStockItemRelationToInvoiceItem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -381,9 +384,6 @@ namespace AutoStock.Repositories.Migrations
                     b.Property<int?>("ServiceRequestItemId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("StockItemId")
-                        .HasColumnType("int");
-
                     b.Property<decimal>("TotalPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -400,8 +400,6 @@ namespace AutoStock.Repositories.Migrations
                     b.HasIndex("ServiceRecordId");
 
                     b.HasIndex("ServiceRequestItemId");
-
-                    b.HasIndex("StockItemId");
 
                     b.ToTable("ServiceOperations");
                 });
@@ -1436,16 +1434,9 @@ namespace AutoStock.Repositories.Migrations
                         .HasForeignKey("ServiceRequestItemId")
                         .OnDelete(DeleteBehavior.NoAction);
 
-                    b.HasOne("AutoStock.Repositories.Entities.StockItem", "StockItem")
-                        .WithMany()
-                        .HasForeignKey("StockItemId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("ServiceRecord");
 
                     b.Navigation("ServiceRequestItem");
-
-                    b.Navigation("StockItem");
                 });
 
             modelBuilder.Entity("AutoStock.Repositories.Entities.ServiceRecord", b =>

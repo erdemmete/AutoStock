@@ -7,11 +7,23 @@
     {
         return status switch
         {
-            1 => "Açık Kayıt",
+            1 => "Açık",
             2 => "İşlemde",
             3 => "Tamamlandı",
-            4 => "İptal Edildi",
+            4 => "İptal",
             _ => "Bilinmiyor"
+        };
+    }
+
+    string GetStatusClass(int status)
+    {
+        return status switch
+        {
+            1 => "open",
+            2 => "progress",
+            3 => "completed",
+            4 => "cancelled",
+            _ => "unknown"
         };
     }
 
@@ -26,750 +38,612 @@
         };
     }
 
-    string GetInvoiceTypeText(int type)
+    string FormatMoney(decimal value)
     {
-        return type switch
-        {
-            1 => "Matbu",
-            2 => "e-Arşiv",
-            3 => "e-Fatura",
-            _ => "Bilinmiyor"
-        };
+        return value.ToString("N2") + " ₺";
     }
+
+    var estimatedTotal = Model.RequestItems.Sum(x => x.EstimatedAmount ?? 0);
+    var subTotal = Model.TotalAmount;
+    var vatTotal = subTotal * 0.20m;
+    var grandTotal = subTotal + vatTotal;
 }
 
-<div class="page">
+<div class="srx-page">
 
-    <section class="premium-header">
-        <a href="/ServiceRecords" class="header-back" title="Geri dön">
+    <div id="toastMessage" class="srx-toast"></div>
+
+    <header class="srx-page-header">
+
+        <a href="/ServiceRecords"
+           class="srx-back-btn"
+           title="Servis kayıtlarına dön">
             ←
         </a>
 
-        <div class="header-content">
-            <span class="header-badge">SERVİS DETAYI</span>
-            <h1>@Model.RecordNumber</h1>
+        <div class="srx-header-main">
+            <div class="srx-header-title-row">
+                <h1>Kayıt @Model.RecordNumber</h1>
 
-            <div class="header-meta">
-                <span>@Model.CustomerName</span>
-                <span>•</span>
-                <span>@Model.VehiclePlate</span>
+                <span class="srx-status-badge @GetStatusClass(Model.Status)">
+                    @GetStatusText(Model.Status)
+                </span>
             </div>
+
+            <p>
+                @Model.CreatedAt.AddHours(3).ToString("dd MMMM yyyy") tarihinde açıldı.
+            </p>
         </div>
 
         <a asp-controller="Dashboard"
-               asp-action="Index"
-               class="header-home"
-               title="Ana sayfa">
+           asp-action="Index"
+           class="srx-home-btn"
+           title="Ana sayfa">
             ⌂
         </a>
-    </section>
 
-    <section class="top-grid compact-top">
+    </header>
 
-        <div class="panel collapsible-panel collapsed">
+    <section class="srx-info-card collapsed">
 
-            <button type="button"
-                    class="collapsible-header"
-                    onclick="toggleInfoPanel(this)">
+        <button type="button"
+                class="srx-info-summary"
+                data-action="toggle-info">
 
-                <div class="collapsible-left">
-                    <span class="title-icon">👤</span>
-                    <span>Müşteri / Araç Bilgileri</span>
-                </div>
+            <div class="srx-info-summary-left">
+                <span class="srx-info-icon">♙</span>
 
-                <strong class="collapse-arrow">⌄</strong>
+                <strong>@Model.CustomerName</strong>
 
-            </button>
+                <span class="srx-dot">•</span>
 
-            <div class="collapsible-body">
+                <span class="srx-plate">@Model.VehiclePlate</span>
 
-                <div class="detail-section-title">
-                    Cari / Servis Bilgileri
-                </div>
+                <span>@Model.VehicleBrandName @Model.VehicleModelName</span>
+            </div>
 
-                <div class="info-grid">
+            <div class="srx-info-summary-right">
+                <span>Müşteri ve Araç Detayları</span>
+                <span class="srx-chevron">⌃</span>
+            </div>
 
-                    <div class="info-card">
-                        <span class="info-icon">👤</span>
-                        <div>
-                            <label>Müşteri / Cari</label>
-                            <strong>@Model.CustomerName</strong>
-                        </div>
-                    </div>
+        </button>
 
-                    <div class="info-card">
-                        <span class="info-icon">🚗</span>
-                        <div>
-                            <label>Aracı Getiren</label>
-                            <strong>
-                                @(string.IsNullOrWhiteSpace(Model.VehicleDeliveredBy)
-                                    ? "-"
-                                    : Model.VehicleDeliveredBy)
-                            </strong>
-                        </div>
-                    </div>
+        <div class="srx-info-body">
 
-                    <div class="info-card">
-                        <span class="info-icon">☎</span>
-                        <div>
-                            <label>İletişim Telefonu</label>
-                            <strong>@Model.CustomerPhone</strong>
-                        </div>
-                    </div>
+            <div class="srx-info-column">
+                <h3>Müşteri Bilgileri</h3>
+
+                <div class="srx-info-grid">
+                    <span>Ad Soyad</span>
+                    <strong>@Model.CustomerName</strong>
+
+                    <span>Telefon</span>
+                    <strong>@Model.CustomerPhone</strong>
 
                     @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
                     {
-                        <div class="info-card">
-                            <span class="info-icon">✉</span>
-                            <div>
-                                <label>İletişim Maili</label>
-                                <strong>@Model.CustomerEmail</strong>
-                            </div>
-                        </div>
+                        <span>E-posta</span>
+                        <strong>@Model.CustomerEmail</strong>
                     }
 
                     @if (!string.IsNullOrWhiteSpace(Model.CompanyName))
                     {
-                        <div class="info-card">
-                            <span class="info-icon">🏢</span>
-                            <div>
-                                <label>Firma / İşletme Ünvanı</label>
-                                <strong>@Model.CompanyName</strong>
-                            </div>
-                        </div>
+                        <span>Firma</span>
+                        <strong>@Model.CompanyName</strong>
                     }
 
                     @if (!string.IsNullOrWhiteSpace(Model.AuthorizedPersonName))
                     {
-                        <div class="info-card">
-                            <span class="info-icon">🪪</span>
-                            <div>
-                                <label>Firma Yetkilisi</label>
-                                <strong>@Model.AuthorizedPersonName</strong>
-                            </div>
-                        </div>
+                        <span>Yetkili</span>
+                        <strong>@Model.AuthorizedPersonName</strong>
                     }
 
                     @if (!string.IsNullOrWhiteSpace(Model.TaxOffice))
                     {
-                        <div class="info-card">
-                            <span class="info-icon">🧾</span>
-                            <div>
-                                <label>Vergi Dairesi</label>
-                                <strong>@Model.TaxOffice</strong>
-                            </div>
-                        </div>
+                        <span>Vergi Dairesi</span>
+                        <strong>@Model.TaxOffice</strong>
                     }
 
                     @if (!string.IsNullOrWhiteSpace(Model.TaxNumber))
                     {
-                        <div class="info-card">
-                            <span class="info-icon">#</span>
-                            <div>
-                                <label>Vergi No</label>
-                                <strong>@Model.TaxNumber</strong>
-                            </div>
-                        </div>
+                        <span>Vergi No</span>
+                        <strong>@Model.TaxNumber</strong>
                     }
 
                     @if (!string.IsNullOrWhiteSpace(Model.NationalIdentityNumber))
                     {
-                        <div class="info-card">
-                            <span class="info-icon">🪪</span>
-                            <div>
-                                <label>TC Kimlik No</label>
-                                <strong>@Model.NationalIdentityNumber</strong>
-                            </div>
-                        </div>
+                        <span>TC Kimlik No</span>
+                        <strong>@Model.NationalIdentityNumber</strong>
                     }
 
                     @if (!string.IsNullOrWhiteSpace(Model.CustomerAddress)
-                    || !string.IsNullOrWhiteSpace(Model.AddressCity)
-                    || !string.IsNullOrWhiteSpace(Model.AddressDistrict))
+                        || !string.IsNullOrWhiteSpace(Model.AddressDistrict)
+                        || !string.IsNullOrWhiteSpace(Model.AddressCity))
                     {
-                        <div class="info-card full-width">
-                            <span class="info-icon">📍</span>
-                            <div>
-                                <label>Adres</label>
-
-                                <strong>
-                                    @Model.CustomerAddress
-                                </strong>
-
-                                @if (!string.IsNullOrWhiteSpace(Model.AddressDistrict)
-                               || !string.IsNullOrWhiteSpace(Model.AddressCity))
-                                {
-                                    <small style="display:block; margin-top:6px; color:#64748b;">
-                                        @Model.AddressDistrict / @Model.AddressCity
-                                    </small>
-                                }
-                            </div>
-                        </div>
+                        <span>Adres</span>
+                        <strong>
+                            @Model.CustomerAddress
+                            @if (!string.IsNullOrWhiteSpace(Model.AddressDistrict)
+                                || !string.IsNullOrWhiteSpace(Model.AddressCity))
+                            {
+                                <small>
+                                    @Model.AddressDistrict / @Model.AddressCity
+                                </small>
+                            }
+                        </strong>
                     }
-
                 </div>
+            </div>
 
-                <div class="detail-section-title with-space">
-                    Araç Bilgileri
-                </div>
+            <div class="srx-info-column">
+                <h3>Araç Bilgileri</h3>
 
-                <div class="info-grid">
+                <div class="srx-info-grid">
+                    <span>Marka/Model</span>
+                    <strong>@Model.VehicleBrandName @Model.VehicleModelName</strong>
 
-                    <div class="info-card">
-                        <span class="info-icon">▣</span>
-                        <div>
-                            <label>Plaka</label>
-                            <strong>@Model.VehiclePlate</strong>
-                        </div>
-                    </div>
+                    <span>Plaka</span>
+                    <strong>@Model.VehiclePlate</strong>
 
-                    <div class="info-card">
-                        <span class="info-icon">🚘</span>
-                        <div>
-                            <label>Araç</label>
-                            <strong>
-                                @Model.VehicleBrandName @Model.VehicleModelName
-                            </strong>
-                        </div>
-                    </div>
-
-                    <div class="info-card">
-                        <span class="info-icon">🏷</span>
-                        <div>
-                            <label>Marka / Model</label>
-                            <strong>
-                                @Model.VehicleBrandName / @Model.VehicleModelName
-                            </strong>
-                        </div>
-                    </div>
-
-                    <div class="info-card">
-                        <span class="info-icon">↗</span>
-                        <div>
-                            <label>Kilometre</label>
-                            <strong>
-                                @((Model.Mileage ?? 0).ToString("N0")) km
-                            </strong>
-                        </div>
-                    </div>
+                    <span>Kilometre</span>
+                    <strong>@((Model.Mileage ?? 0).ToString("N0")) km</strong>
 
                     @if (!string.IsNullOrWhiteSpace(Model.ChassisNumber))
                     {
-                        <div class="info-card">
-                            <span class="info-icon">#</span>
-                            <div>
-                                <label>Şasi No</label>
-                                <strong>@Model.ChassisNumber</strong>
-                            </div>
-                        </div>
+                        <span>Şasi No</span>
+                        <strong>@Model.ChassisNumber</strong>
                     }
 
+                    @if (!string.IsNullOrWhiteSpace(Model.VehicleDeliveredBy))
+                    {
+                        <span>Aracı Getiren</span>
+                        <strong>@Model.VehicleDeliveredBy</strong>
+                    }
                 </div>
-
             </div>
 
         </div>
 
-        <div class="panel collapsible-panel collapsed">
+        @if (!string.IsNullOrWhiteSpace(Model.CustomerComplaint)
+            || !string.IsNullOrWhiteSpace(Model.ServiceReceptionNote))
+        {
+            <div class="srx-note-strip">
+                @if (!string.IsNullOrWhiteSpace(Model.CustomerComplaint))
+                {
+                    <div>
+                        <span>Müşteri Şikayeti</span>
+                        <p>@Model.CustomerComplaint</p>
+                    </div>
+                }
 
-            <button type="button"
-                    class="collapsible-header"
-                    onclick="toggleInfoPanel(this)">
+                @if (!string.IsNullOrWhiteSpace(Model.ServiceReceptionNote))
+                {
+                    <div>
+                        <span>Servis Kabul Notu</span>
+                        <p>@Model.ServiceReceptionNote</p>
+                    </div>
+                }
+            </div>
+        }
 
-                <div class="collapsible-left">
-                    <span class="title-icon">ⓘ</span>
-                    <span>Servis Bilgileri</span>
+    </section>
+
+    <section class="srx-workspace">
+
+        <main class="srx-work-main">
+
+            <div class="srx-request-list" id="requestList">
+
+                @if (Model.RequestItems.Any())
+                {
+                    @foreach (var request in Model.RequestItems)
+                    {
+                        var requestOperations = Model.Operations
+                            .Where(x => x.ServiceRequestItemId == request.Id)
+                            .OrderBy(x => x.Id)
+                            .ToList();
+
+                        var requestTotal = requestOperations.Sum(x => x.TotalPrice);
+
+                        <article class="srx-request-card"
+                                 id="request-item-@request.Id"
+                                 data-request-id="@request.Id"
+                                 data-expanded="false">
+
+                            <header class="srx-request-header">
+
+                                <button type="button"
+                                        class="srx-request-title-btn"
+                                        data-action="toggle-request">
+
+                                    <span class="srx-request-alert">!</span>
+
+                                    <div>
+                                        <h2>@request.Title</h2>
+
+                                        @if (!string.IsNullOrWhiteSpace(request.Note))
+                                        {
+                                            <p>@request.Note</p>
+                                        }
+                                    </div>
+
+                                </button>
+
+                                <div class="srx-request-header-actions">
+
+                                    @if ((request.EstimatedAmount ?? 0) > 0)
+                                    {
+                                        <span class="srx-estimate-pill">
+                                            Tahmini: @FormatMoney(request.EstimatedAmount ?? 0)
+                                        </span>
+                                    }
+
+                                    <button type="button"
+                                            class="srx-icon-btn"
+                                            data-action="delete-request"
+                                            data-request-id="@request.Id"
+                                            title="Talebi sil">
+                                        🗑
+                                    </button>
+
+                                </div>
+
+                            </header>
+
+                            <div class="srx-request-body">
+
+                                <div class="srx-operation-grid"
+                                     data-operation-list
+                                     data-request-id="@request.Id">
+
+                                    <div class="srx-operation-head">
+                                        <span>Tür</span>
+                                        <span>Açıklama</span>
+                                        <span>Miktar</span>
+                                        <span>Br. Fiyat</span>
+                                        <span>Toplam</span>
+                                        <span></span>
+                                    </div>
+
+                                    @if (requestOperations.Any())
+                                    {
+                                        @foreach (var operation in requestOperations)
+                                        {
+                                            var typeClass = operation.Type == 1 ? "part" : "labor";
+                                            var typeText = operation.Type == 1 ? "Parça" : "İşçilik";
+
+                                            <div class="srx-operation-row request-operation-item"
+                                                 id="operation-item-@operation.Id"
+                                                 data-operation-id="@operation.Id">
+
+                                                <div>
+                                                    <span class="srx-type-badge @typeClass">
+                                                        @typeText
+                                                    </span>
+                                                </div>
+
+                                                <div class="srx-operation-description">
+                                                    <strong>@operation.Description</strong>
+
+                                                    @if (!string.IsNullOrWhiteSpace(operation.Note))
+                                                    {
+                                                        <small>@operation.Note</small>
+                                                    }
+                                                </div>
+
+                                                <div>@operation.Quantity.ToString("N2")</div>
+
+                                                <div>@FormatMoney(operation.UnitPrice)</div>
+
+                                                <div>
+                                                    <strong>@FormatMoney(operation.TotalPrice)</strong>
+                                                </div>
+
+                                                <div class="srx-operation-actions">
+                                                    <button type="button"
+                                                            class="srx-row-delete"
+                                                            data-action="delete-operation"
+                                                            data-operation-id="@operation.Id"
+                                                            title="İşlemi sil">
+                                                        Sil
+                                                    </button>
+                                                </div>
+
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="srx-operation-empty">
+                                            Bu şikayet için henüz işlem eklenmedi.
+                                        </div>
+                                    }
+
+                                </div>
+
+                                <button type="button"
+                                        class="srx-add-operation-trigger"
+                                        data-action="show-operation-form">
+                                    + Şikayete işlem ekle
+                                </button>
+
+                                <form asp-action="AddOperation"
+                                      method="post"
+                                      class="srx-operation-form ajax-operation-form"
+                                      data-request-id="@request.Id"
+                                      hidden>
+
+                                    <input type="hidden"
+                                           name="ServiceRecordId"
+                                           value="@Model.Id" />
+
+                                    <input type="hidden"
+                                           name="ServiceRequestItemId"
+                                           value="@request.Id" />
+
+                                    <input type="hidden"
+                                           name="StockItemId"
+                                           class="srx-stock-item-id" />
+
+                                    <div class="srx-operation-editor">
+
+                                        <div class="srx-type-switch">
+
+                                            <input type="radio"
+                                                   id="partType_@request.Id"
+                                                   name="Type"
+                                                   value="1"
+                                                   checked />
+
+                                            <label for="partType_@request.Id">
+                                                Parça
+                                            </label>
+
+                                            <input type="radio"
+                                                   id="laborType_@request.Id"
+                                                   name="Type"
+                                                   value="2" />
+
+                                            <label for="laborType_@request.Id">
+                                                İşçilik
+                                            </label>
+
+                                        </div>
+
+                                        <div class="srx-search-box">
+
+                                            <input type="text"
+                                                   name="Description"
+                                                   class="srx-operation-search-input"
+                                                   placeholder="Parça adı, kodu veya işlem açıklaması..."
+                                                   autocomplete="off" />
+
+                                            <div class="srx-search-results"></div>
+
+                                        </div>
+
+                                        <input type="number"
+                                               name="Quantity"
+                                               class="srx-qty-input"
+                                               value="1"
+                                               min="1"
+                                               step="0.01"
+                                               placeholder="Miktar" />
+
+                                        <div class="srx-money-input">
+                                            <input type="text"
+                                                   name="UnitPrice"
+                                                   class="srx-price-input"
+                                                   inputmode="decimal"
+                                                   autocomplete="off"
+                                                   placeholder="Fiyat" />
+
+                                            <span>₺</span>
+                                        </div>
+
+                                        <button type="submit"
+                                                class="srx-add-row-btn">
+                                            Ekle
+                                        </button>
+
+                                    </div>
+
+                                    <input type="text"
+                                           name="Note"
+                                           class="srx-operation-note"
+                                           placeholder="İşlem notu opsiyonel" />
+
+                                </form>
+
+                            </div>
+
+                        </article>
+                    }
+                }
+                else
+                {
+                    <div class="srx-empty-requests">
+                        Bu servis kaydı için henüz şikayet / talep girilmemiş.
+                    </div>
+                }
+
+            </div>
+
+            <section class="srx-new-request-card" id="newRequestCard">
+
+                <button type="button"
+                        class="srx-new-request-trigger"
+                        data-action="toggle-new-request">
+                    + Yeni Şikayet Ekle
+                </button>
+
+                <form asp-action="AddRequestItem"
+                      method="post"
+                      class="srx-new-request-form ajax-request-form"
+                      hidden>
+
+                    <input type="hidden"
+                           name="serviceRecordId"
+                           value="@Model.Id" />
+
+                    <input type="text"
+                           name="Title"
+                           list="requestSuggestions"
+                           placeholder="Şikayet / talep başlığı" />
+
+                    <input type="number"
+                           name="EstimatedAmount"
+                           min="0"
+                           step="0.01"
+                           placeholder="Tahmini fiyat" />
+
+                    <input type="text"
+                           name="Note"
+                           placeholder="Ön not opsiyonel" />
+
+                    <button type="submit">
+                        Kaydet
+                    </button>
+
+                    <button type="button"
+                            data-action="cancel-new-request">
+                        Vazgeç
+                    </button>
+
+                    <datalist id="requestSuggestions">
+                        <option value="Genel bakım"></option>
+                        <option value="Yağ değişimi"></option>
+                        <option value="Fren kontrolü"></option>
+                        <option value="Klima arızası"></option>
+                        <option value="Rot balans kontrolü"></option>
+                        <option value="Far ayarı"></option>
+                    </datalist>
+
+                </form>
+
+            </section>
+
+        </main>
+
+        <aside class="srx-side-panel">
+
+            <section class="srx-summary-card">
+
+                <h2>Servis Özeti</h2>
+
+                <div class="srx-estimate-box">
+                    <span>Tahmini Fiyat Verildi</span>
+                    <strong>@FormatMoney(estimatedTotal)</strong>
                 </div>
 
-                <strong class="collapse-arrow">⌄</strong>
-
-            </button>
-
-            <div class="collapsible-body">
-
-                <div class="service-info-list">
+                <div class="srx-summary-lines">
 
                     <div>
-                        <span>Servis Kayıt No</span>
-                        <strong>@Model.RecordNumber</strong>
+                        <span>Ara Toplam</span>
+                        <strong class="summary-total"
+                                data-total="@subTotal">
+                            @FormatMoney(subTotal)
+                        </strong>
                     </div>
 
                     <div>
-                        <span>Kayıt Tarihi</span>
-                        <strong>@Model.CreatedAt.AddHours(3).ToString("dd.MM.yyyy HH:mm")</strong>
-                    </div>
-
-                    <div>
-                        <span>Son Güncelleme</span>
-                        <strong>@(Model.UpdatedAt?.AddHours(3).ToString("dd.MM.yyyy HH:mm") ?? "-")</strong>
-                    </div>
-
-                    <div>
-                        <span>Oluşturan</span>
-                        <strong>Sistem</strong>
-                    </div>
-
-                    <div>
-                        <span>Belge Tipi</span>
-                        <strong>Servis Formu</strong>
-                    </div>
-
-                    <div>
-                        <span>Durum</span>
-                        <strong class="status-pill status-@Model.Status">
-                            @GetStatusText(Model.Status)
+                        <span>KDV (%20)</span>
+                        <strong class="summary-vat"
+                                data-vat="@vatTotal">
+                            @FormatMoney(vatTotal)
                         </strong>
                     </div>
 
                 </div>
 
-            </div>
-
-        </div>
-
-    </section>
-
-    <section class="content-grid">
-
-        <main class="main-area">
-
-            <div class="panel complaint-panel">
-                <div class="panel-title">
-                    <span class="title-icon">💬</span>
-                    <h2>Müşteri Şikayeti / Servis Kabul Notu</h2>
-                </div>
-
-                <div class="note-grid">
-                    <div class="note-box">
-                        <label>Müşteri Şikayeti</label>
-                        <p>
-                            @(string.IsNullOrWhiteSpace(Model.CustomerComplaint)
-                                ? "Şikayet girilmemiş."
-                                : Model.CustomerComplaint)
-                        </p>
-                    </div>
-
-                    <div class="note-box">
-                        <label>Servis Kabul Notu</label>
-                        <p>
-                            @(string.IsNullOrWhiteSpace(Model.ServiceReceptionNote)
-                                ? "Not girilmemiş."
-                                : Model.ServiceReceptionNote)
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel requests-panel">
-
-                <div class="requests-header">
-                    <div class="panel-title no-margin">
-                        <span class="title-icon">🧾</span>
-                        <h2>Şikayet / Talepler ve İşlemler</h2>
-                    </div>
-
-                    <button type="button" class="outline-btn" onclick="focusAddRequest()">
-                        + Talep / Şikayet Ekle
-                    </button>
-                </div>
-
-                @if (Model.RequestItems.Any())
-                {
-                    <div class="request-detail-list">
-                        @foreach (var item in Model.RequestItems)
-                        {
-                            var itemOperations = Model.Operations
-                                .Where(x => x.ServiceRequestItemId == item.Id)
-                                .ToList();
-
-                            var itemTotal = itemOperations.Sum(x => x.TotalPrice);
-
-                            <div class="request-detail-card @(item == Model.RequestItems.First() ? "" : "collapsed")"
-                                 data-request-id="@item.Id"
-                                 id="request-item-@item.Id">
-
-                                <div class="request-card-top">
-                                    <button type="button"
-                                            class="request-accordion-header"
-                                            onclick="toggleRequestCard(this)">
-                                        <div>
-                                            <strong>@item.Title</strong>
-
-                                            @if (!string.IsNullOrWhiteSpace(item.Note))
-                                            {
-                                                <span>@item.Note</span>
-                                            }
-                                        </div>
-
-                                        <div class="request-right">
-                                            @if ((item.EstimatedAmount ?? 0) > 0)
-                                            {
-                                                <span class="estimate-pill">
-                                                    Tahmini: @((item.EstimatedAmount ?? 0).ToString("N2")) ₺
-                                                </span>
-                                            }
-
-                                            <span class="accordion-arrow">⌄</span>
-                                        </div>
-                                    </button>
-
-                                    <button type="button"
-                                            class="request-delete-btn"
-                                            onclick="deleteRequestItem(@item.Id, this)">
-                                        Sil
-                                    </button>
-                                </div>
-
-                                <div class="request-accordion-body">
-
-                                    <div class="request-operation-area">
-                                        <div class="request-operation-header">
-                                            <strong>Yapılan İşlemler</strong>
-                                            <span data-total="@itemTotal">Toplam: @itemTotal.ToString("N2") ₺</span>
-                                        </div>
-
-                                        @if (itemOperations.Any())
-                                        {
-                                            <div class="operation-table request-operation-list">
-                                                <div class="operation-table-head">
-                                                    <span>Tür</span>
-                                                    <span>Açıklama</span>
-                                                    <span>Miktar</span>
-                                                    <span>Birim Fiyat</span>
-                                                    <span>Toplam</span>
-                                                    <span></span>
-                                                </div>
-
-                                                @foreach (var operation in itemOperations)
-                                                {
-                                                    <div class="operation-table-row request-operation-item" id="operation-item-@operation.Id">
-                                                        <span>
-                                                            <b class="type-badge @(operation.Type == 1 ? "part" : "labor")">
-                                                                @(operation.Type == 1 ? "Parça" : "İşçilik")
-                                                            </b>
-                                                        </span>
-
-                                                        <span>
-                                                            <strong>@operation.Description</strong>
-
-                                                            @if (!string.IsNullOrWhiteSpace(operation.Note))
-                                                            {
-                                                                <small>@operation.Note</small>
-                                                            }
-                                                        </span>
-
-                                                        <span>@operation.Quantity.ToString("N2")</span>
-                                                        <span>@operation.UnitPrice.ToString("N2") ₺</span>
-                                                        <span><strong>@operation.TotalPrice.ToString("N2") ₺</strong></span>
-
-                                                        <span>
-                                                            <button type="button"
-                                                                    class="icon-delete-btn"
-                                                                    onclick="deleteOperation(@operation.Id, this)">
-                                                                Sil
-                                                            </button>
-                                                        </span>
-                                                    </div>
-                                                }
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <div class="mini-empty">
-                                                Bu talep için henüz işlem eklenmedi.
-                                            </div>
-                                        }
-                                    </div>
-
-                                    <form asp-action="AddOperation"
-                                          method="post"
-                                          class="add-operation-form ajax-operation-form">
-
-                                        <input type="hidden" name="ServiceRecordId" value="@Model.Id" />
-                                        <input type="hidden" name="ServiceRequestItemId" value="@item.Id" />
-
-                                        <div class="operation-form-row">
-
-                                            <div class="type-toggle">
-                                                <input type="radio"
-                                                       id="partType_@item.Id"
-                                                       name="Type"
-                                                       value="1"
-                                                       checked />
-
-                                                <label for="partType_@item.Id">Parça</label>
-
-                                                <input type="radio"
-                                                       id="laborType_@item.Id"
-                                                       name="Type"
-                                                       value="2" />
-
-                                                <label for="laborType_@item.Id">İşçilik</label>
-                                            </div>
-
-                                            <div class="form-field">
-                                                <input name="Description" placeholder=" " />
-                                                <label>İşçilik veya parça açıklaması</label>
-                                            </div>
-
-                                            <div class="form-field">
-                                                <input name="Quantity" type="number" value="1" min="1" step="0.01" placeholder=" " />
-                                                <label>Miktar</label>
-                                            </div>
-
-                                            <div class="form-field">
-                                                <input name="UnitPrice" type="number" step="0.01" min="0" placeholder=" " />
-                                                <label>Birim Fiyat</label>
-                                            </div>
-
-                                            <button type="submit" class="btn-primary">
-                                                + Ekle
-                                            </button>
-                                        </div>
-
-                                        <div class="form-field operation-note-field">
-                                            <textarea name="Note" placeholder=" "></textarea>
-                                            <label>İşlem Notu</label>
-                                        </div>
-                                    </form>
-
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="request-detail-list">
-                        <div class="empty-state">
-                            Bu servis kaydı için talep girilmemiş.
-                        </div>
-                    </div>
-                }
-            </div>
-
-            <div class="panel add-request-panel" id="addRequestPanel">
-                <div class="panel-title">
-                    <span class="title-icon">＋</span>
-                    <h2>Ek Talep / İşlem Ekle</h2>
-                </div>
-
-                <form asp-action="AddRequestItem"
-                      method="post"
-                      class="add-request-form ajax-request-form">
-
-                    <input type="hidden" name="serviceRecordId" value="@Model.Id" />
-
-                    <div class="request-builder-detail">
-
-                        <div class="form-field">
-                            <input name="Title"
-                                   list="detailRequestSuggestions"
-                                   placeholder=" " />
-                            <label>Talep / İşlem</label>
-
-                            <datalist id="detailRequestSuggestions">
-                                <option value="Genel bakım"></option>
-                                <option value="Yağ değişimi"></option>
-                                <option value="Fren kontrolü"></option>
-                                <option value="Klima arızası"></option>
-                                <option value="Rot balans kontrolü"></option>
-                                <option value="Far ayarı"></option>
-                            </datalist>
-                        </div>
-
-                        <div class="form-field">
-                            <input name="EstimatedAmount"
-                                   type="number"
-                                   step="0.01"
-                                   placeholder=" " />
-                            <label>Tahmini Fiyat</label>
-                        </div>
-
-                        <button type="submit" class="btn-primary">
-                            + Talep Ekle
-                        </button>
-                    </div>
-
-                    <div class="form-field add-request-note">
-                        <textarea name="Note" placeholder=" "></textarea>
-                        <label>Ön Not</label>
-                    </div>
-
-                </form>
-            </div>
-
-        </main>
-
-        <aside class="side-area">
-
-            <div class="side-card total-card">
-                <div class="side-title">
-                    <span class="title-icon purple">₺</span>
-                    <h3>Toplam Özet</h3>
-                </div>
-
-                <div class="total-row">
-                    <span>Tahmini Toplam</span>
-                    <strong>@Model.RequestItems.Sum(x => x.EstimatedAmount ?? 0).ToString("N2") ₺</strong>
-                </div>
-
-                <div class="total-row">
-                    <span>Gerçek Toplam</span>
-                    <strong class="summary-total" data-total="@Model.TotalAmount">
-                        @Model.TotalAmount.ToString("N2") ₺
+                <div class="srx-grand-total">
+                    <span>Genel Toplam</span>
+                    <strong class="summary-grand-total"
+                            data-grand-total="@grandTotal">
+                        @FormatMoney(grandTotal)
                     </strong>
-                </div>
-            </div>
-
-            <div class="side-card status-card">
-                <div class="side-title">
-                    <span class="title-icon orange">⚑</span>
-                    <h3>Durum Yönetimi</h3>
-                </div>
-
-                <div class="mini-status-current">
-                    <span>Mevcut Durum</span>
-                    <strong class="summary-status status-@Model.Status">
-                        @GetStatusText(Model.Status)
-                    </strong>
-                </div>
-
-                <div class="status-steps">
-                    <div class="step @(Model.Status >= 1 && Model.Status != 4 ? "active" : "")">
-                        <span>1</span>
-                        <small>Açık</small>
-                    </div>
-
-                    <div class="step @(Model.Status >= 2 && Model.Status != 4 ? "active" : "")">
-                        <span>2</span>
-                        <small>İşlemde</small>
-                    </div>
-
-                    <div class="step @(Model.Status == 3 ? "active" : "")">
-                        <span>3</span>
-                        <small>Tamamlandı</small>
-                    </div>
-
-                    <div class="step @(Model.Status == 4 ? "danger active" : "")">
-                        <span>4</span>
-                        <small>İptal</small>
-                    </div>
-                </div>
-
-                <div class="status-actions" data-record-id="@Model.Id">
-                    @if (Model.Status == 1)
-                    {
-                        <button type="button" class="status-btn success" data-status="2">
-                            İşleme Al
-                        </button>
-
-                        <button type="button" class="status-btn danger" data-status="4">
-                            İptal Et
-                        </button>
-                    }
-                    else if (Model.Status == 2)
-                    {
-                        <button type="button" class="status-btn primary" data-status="3">
-                            Tamamla
-                        </button>
-
-                        <button type="button" class="status-btn danger" data-status="4">
-                            İptal Et
-                        </button>
-                    }
-                    else if (Model.Status == 3 || Model.Status == 4)
-                    {
-                        <button type="button" class="status-btn primary full" data-status="1">
-                            Tekrar Aç
-                        </button>
-                    }
-                </div>
-            </div>
-
-            <div class="side-card action-card">
-                <div>
-                    <strong>Final Servis PDF</strong>
-                    <span>Bu servis kaydı için final PDF oluşturun.</span>
-                </div>
-
-                <a href="/service-pdf/create/@Model.Id"
-                       class="small-action-btn"
-                       target="_blank">
-                    PDF Oluştur
-                </a>
-            </div>
-            <div class="side-card action-card">
-                <div>
-                    <strong>Matbu Fatura</strong>
-
-                    @if (Model.ActiveInvoiceId.HasValue)
-                    {
-                        if (Model.ActiveInvoiceStatus == 1)
-                        {
-                            <span>Taslak fatura mevcut: @Model.ActiveInvoiceNumber</span>
-                        }
-                        else if (Model.ActiveInvoiceStatus == 2)
-                        {
-                            <span>Bu servis kaydı için fatura kesilmiş: @Model.ActiveInvoiceNumber</span>
-                        }
-                    }
-                    else
-                    {
-                        <span>Bu servis kaydından fatura taslağı oluşturun.</span>
-                    }
                 </div>
 
                 @if (Model.ActiveInvoiceId.HasValue)
                 {
                     <a href="/Invoices/Detail/@Model.ActiveInvoiceId"
-                       class="small-action-btn">
+                       class="srx-primary-action">
                         @(Model.ActiveInvoiceStatus == 1 ? "Taslak Faturaya Git" : "Faturaya Git")
                     </a>
                 }
                 else
                 {
                     <a href="/Invoices/CreateFromServiceRecord/@Model.Id"
-                       class="small-action-btn">
-                        Fatura Oluştur
+                       class="srx-primary-action">
+                        Fatura Taslağına Geç
                     </a>
                 }
-            </div>
 
-            <div class="side-card action-card">
-                <div>
-                    <strong>QR Eşleştirme</strong>
-                    <span>Müşteri QR kodunu tarayarak araçla eşleştirin.</span>
+                <div class="srx-action-grid">
+
+                    <a href="/service-pdf/create/@Model.Id"
+                       target="_blank"
+                       class="srx-secondary-action">
+                        PDF Oluştur
+                    </a>
+
+                    <button type="button"
+                            class="srx-secondary-action"
+                            id="start-qr-scan-btn"
+                            onclick="startQrScanner(@Model.VehicleId, this)">
+                        QR Tara
+                    </button>
+
+                    @if (Model.Status == 1)
+                    {
+                        <button type="button"
+                                class="srx-secondary-action status-btn"
+                                data-status="2">
+                            İşleme Al
+                        </button>
+
+                        <button type="button"
+                                class="srx-secondary-action danger status-btn"
+                                data-status="4">
+                            İptal Et
+                        </button>
+                    }
+                    else if (Model.Status == 2)
+                    {
+                        <button type="button"
+                                class="srx-secondary-action status-btn"
+                                data-status="3">
+                            Tamamla
+                        </button>
+
+                        <button type="button"
+                                class="srx-secondary-action danger status-btn"
+                                data-status="4">
+                            İptal Et
+                        </button>
+                    }
+                    else if (Model.Status == 3 || Model.Status == 4)
+                    {
+                        <button type="button"
+                                class="srx-secondary-action status-btn wide"
+                                data-status="1">
+                            Tekrar Aç
+                        </button>
+                    }
+
                 </div>
 
-                <button type="button"
-                        class="small-action-btn"
-                        id="start-qr-scan-btn"
-                        onclick="startQrScanner(@Model.VehicleId, this)">
-                    QR Tara
-                </button>
+                <div id="qr-reader" class="srx-qr-reader" hidden></div>
+                <div id="qr-scan-result" class="srx-qr-result"></div>
 
-                <div id="qr-reader" style="display:none;"></div>
-                <div id="qr-scan-result" class="qr-scan-result"></div>
-            </div>
-
-            <div class="qr-note">
-                💡 QR eşleştirme işlemi müşteriye araç teslimi sırasında yapılmalıdır.
-            </div>
-            
-            
+            </section>
 
         </aside>
 
     </section>
 
-    <div class="page-footer">
-        🛡 Kayıt ve işlemler sistem tarafından güvenli şekilde kaydedilmektedir.
-    </div>
-
 </div>
-
-<div id="toastMessage" class="toast-message"></div>
 
 <style>
     * {
@@ -778,1146 +652,1162 @@
 
     body {
         margin: 0;
-        background: radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 30rem), radial-gradient(circle at top right, rgba(22, 163, 74, .08), transparent 28rem), #f4f7fb;
+        background: #f4f7fb;
         font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         color: #0f172a;
     }
 
-    .page {
-        width: min(1540px, calc(100% - 48px));
+    button,
+    input,
+    textarea {
+        font: inherit;
+    }
+
+    button {
+        cursor: pointer;
+    }
+
+    a {
+        color: inherit;
+    }
+
+    .srx-page {
+        width: min(1360px, calc(100% - 48px));
         margin: 0 auto;
-        padding: 26px 0 42px;
+        padding: 30px 0 54px;
     }
 
-    .premium-header {
-        min-height: 116px;
-        padding: 28px;
-        border-radius: 28px;
-        background: linear-gradient(135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
-        color: white;
+    .srx-page-header {
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 22px;
-        box-shadow: 0 28px 80px rgba(15, 23, 42, .22);
+        grid-template-columns: 42px minmax(0, 1fr) 42px;
+        gap: 16px;
+        align-items: start;
+        margin-bottom: 24px;
     }
 
-    .header-back,
-    .header-more {
-        width: 54px;
-        height: 54px;
-        border-radius: 16px;
-        border: 1px solid rgba(255,255,255,.14);
-        background: rgba(255,255,255,.11);
-        color: white;
+    .srx-back-btn,
+    .srx-home-btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
         display: grid;
         place-items: center;
         text-decoration: none;
-        font-size: 28px;
-        font-weight: 900;
-    }
-
-    .header-more {
-        cursor: pointer;
+        color: #64748b;
+        background: transparent;
+        border: 1px solid transparent;
         font-size: 22px;
+        transition: .18s ease;
     }
 
-    .header-badge {
-        display: inline-flex;
-        margin-bottom: 7px;
-        padding: 6px 11px;
-        border-radius: 999px;
-        background: rgba(255,255,255,.13);
-        border: 1px solid rgba(255,255,255,.18);
-        color: rgba(255,255,255,.82);
-        font-size: 12px;
-        font-weight: 900;
-        letter-spacing: .4px;
+        .srx-back-btn:hover,
+        .srx-home-btn:hover {
+            background: white;
+            border-color: #e2e8f0;
+            color: #2563eb;
+        }
+
+    .srx-header-main {
+        min-width: 0;
     }
 
-    .premium-header h1 {
-        margin: 0;
-        font-size: 32px;
-        line-height: 1.05;
-        letter-spacing: -1px;
-    }
-
-    .header-meta {
-        margin-top: 10px;
+    .srx-header-title-row {
         display: flex;
         flex-wrap: wrap;
+        align-items: center;
         gap: 10px;
-        color: rgba(255,255,255,.82);
+    }
+
+        .srx-header-title-row h1 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 25px;
+            line-height: 1.1;
+            letter-spacing: -.7px;
+            font-weight: 950;
+        }
+
+    .srx-header-main p {
+        margin: 7px 0 0;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 650;
+    }
+
+    .srx-status-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 4px 11px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+        .srx-status-badge.open {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .srx-status-badge.progress {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+
+        .srx-status-badge.completed {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .srx-status-badge.cancelled {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+    .srx-info-card {
+        margin-bottom: 24px;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        background: white;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+        overflow: hidden;
+    }
+
+    .srx-info-summary {
+        width: 100%;
+        min-height: 54px;
+        padding: 0 24px;
+        border: none;
+        background: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+        color: #0f172a;
+    }
+
+    .srx-info-summary-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        color: #334155;
+        font-size: 14px;
+        font-weight: 750;
+    }
+
+    .srx-info-icon {
+        color: #94a3b8;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .srx-dot {
+        color: #cbd5e1;
+        font-weight: 950;
+    }
+
+    .srx-plate {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 7px;
+        background: #e2e8f0;
+        color: #0f172a;
+        font-weight: 950;
+        letter-spacing: .3px;
+    }
+
+    .srx-info-summary-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #4f46e5;
+        font-size: 13px;
+        font-weight: 850;
+        white-space: nowrap;
+    }
+
+    .srx-chevron {
+        font-size: 17px;
+        transition: .18s ease;
+    }
+
+    .srx-info-card.collapsed .srx-info-body,
+    .srx-info-card.collapsed .srx-note-strip {
+        display: none;
+    }
+
+    .srx-info-card.collapsed .srx-chevron {
+        transform: rotate(180deg);
+    }
+
+    .srx-info-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 56px;
+        padding: 22px 24px 26px;
+        border-top: 1px solid #eef2f7;
+    }
+
+    .srx-info-column h3 {
+        margin: 0 0 14px;
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: .8px;
+    }
+
+    .srx-info-grid {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        row-gap: 14px;
+        column-gap: 28px;
+        align-items: start;
+    }
+
+        .srx-info-grid span {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 750;
+        }
+
+        .srx-info-grid strong {
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 900;
+            word-break: break-word;
+        }
+
+        .srx-info-grid small {
+            display: block;
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+    .srx-note-strip {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        padding: 0 24px 24px;
+    }
+
+        .srx-note-strip div {
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .srx-note-strip span {
+            display: block;
+            margin-bottom: 6px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .srx-note-strip p {
+            margin: 0;
+            color: #0f172a;
+            font-size: 13px;
+            line-height: 1.55;
+            font-weight: 650;
+        }
+
+    .srx-workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 430px;
+        gap: 22px;
+        align-items: start;
+    }
+
+    .srx-work-main {
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+    }
+
+    .srx-request-list {
+        display: grid;
+        gap: 18px;
+    }
+
+    .srx-request-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        background: white;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .045);
+        overflow: hidden;
+    }
+
+    .srx-request-header {
+        min-height: 56px;
+        padding: 0 18px 0 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .srx-request-title-btn {
+        min-width: 0;
+        border: none;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0;
+        text-align: left;
+        color: #0f172a;
+    }
+
+    .srx-request-alert {
+        width: 15px;
+        height: 15px;
+        border-radius: 999px;
+        border: 1.8px solid #fb3d5d;
+        color: #fb3d5d;
+        display: inline-grid;
+        place-items: center;
+        font-size: 10px;
+        font-weight: 950;
+        flex-shrink: 0;
+    }
+
+    .srx-request-title-btn h2 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 16px;
+        line-height: 1.2;
+        font-weight: 950;
+        letter-spacing: -.2px;
+    }
+
+    .srx-request-title-btn p {
+        margin: 4px 0 0;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 650;
+    }
+
+    .srx-request-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .srx-estimate-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 0 13px;
+        border-radius: 999px;
+        background: #fff1f2;
+        color: #ef4444;
+        font-size: 13px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .srx-icon-btn {
+        width: 34px;
+        height: 34px;
+        border: none;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: transparent;
+        color: #94a3b8;
+        transition: .18s ease;
+    }
+
+        .srx-icon-btn:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+    .srx-request-body {
+        display: block;
+    }
+
+    .srx-request-card[data-expanded="false"] .srx-request-body {
+        display: none;
+    }
+
+    .srx-operation-grid {
+        display: grid;
+    }
+
+    .srx-operation-head,
+    .srx-operation-row {
+        display: grid;
+        grid-template-columns: 140px minmax(0, 1fr) 120px 140px 140px 74px;
+        align-items: center;
+    }
+
+    .srx-operation-head {
+        min-height: 40px;
+        padding: 0 20px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #fbfdff;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .srx-operation-row {
+        min-height: 46px;
+        padding: 0 20px;
+        border-bottom: 1px solid #eef2f7;
+        color: #334155;
         font-size: 14px;
         font-weight: 700;
     }
 
-    .top-grid {
-        margin-top: 20px;
-        display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(420px, .9fr);
-        gap: 18px;
-    }
-
-    .content-grid {
-        margin-top: 18px;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 470px;
-        gap: 18px;
-        align-items: start;
-    }
-
-    .main-area,
-    .side-area {
-        display: grid;
-        gap: 18px;
-    }
-
-    .side-area {
-        position: sticky;
-        top: 18px;
-    }
-
-    .panel,
-    .side-card {
-        border-radius: 24px;
-        background: rgba(255,255,255,.94);
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 20px 50px rgba(15, 23, 42, .07);
-    }
-
-    .panel {
-        padding: 24px;
-    }
-
-    .side-card {
-        padding: 20px;
-    }
-
-    .panel-title,
-    .side-title {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
-    }
-
-        .panel-title.no-margin {
-            margin-bottom: 0;
+        .srx-operation-row:hover {
+            background: #fcfdff;
         }
 
-        .panel-title h2,
-        .side-title h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 950;
-            letter-spacing: -.3px;
-        }
-
-    .title-icon,
-    .info-icon {
-        width: 34px;
-        height: 34px;
-        border-radius: 12px;
-        display: grid;
-        place-items: center;
-        background: #eef4ff;
-        color: #1d4ed8;
-        box-shadow: 0 8px 18px rgba(37, 99, 235, .10);
-        flex-shrink: 0;
-        font-weight: 950;
-    }
-
-        .title-icon.purple {
-            background: #f3e8ff;
-            color: #7e22ce;
-        }
-
-        .title-icon.orange {
-            background: #fff7ed;
-            color: #ea580c;
-        }
-
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-    }
-
-    .info-card {
-        min-height: 76px;
-        padding: 15px;
-        border-radius: 18px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-        .info-card label,
-        .note-box label {
-            display: block;
-            margin-bottom: 5px;
-            color: #64748b;
-            font-size: 12px;
-            font-weight: 900;
-        }
-
-        .info-card strong {
-            display: block;
-            color: #0f172a;
-            font-size: 14px;
-            font-weight: 950;
-            word-break: break-word;
-        }
-
-    .service-info-list {
-        display: grid;
-        gap: 14px;
-    }
-
-        .service-info-list > div,
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 18px;
-        }
-
-            .service-info-list span,
-            .total-row span {
-                color: #64748b;
-                font-size: 13px;
-                font-weight: 850;
-            }
-
-            .service-info-list strong,
-            .total-row strong {
-                color: #0f172a;
-                font-size: 13px;
-                font-weight: 950;
-                text-align: right;
-            }
-
-    .status-pill,
-    .summary-status {
+    .srx-type-badge {
         display: inline-flex;
-        justify-content: center;
         align-items: center;
-        padding: 7px 12px;
-        border-radius: 999px;
-        font-size: 12px !important;
-        font-weight: 950 !important;
-    }
-
-    .status-1 {
-        background: #dcfce7;
-        color: #15803d !important;
-    }
-
-    .status-2 {
-        background: #fef3c7;
-        color: #b45309 !important;
-    }
-
-    .status-3 {
-        background: #dbeafe;
-        color: #1d4ed8 !important;
-    }
-
-    .status-4 {
-        background: #fee2e2;
-        color: #b91c1c !important;
-    }
-
-    .note-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
-    }
-
-    .note-box {
-        padding: 16px;
-        border-radius: 18px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-    }
-
-        .note-box p {
-            margin: 0;
-            color: #0f172a;
-            font-size: 14px;
-            line-height: 1.6;
-            font-weight: 650;
-        }
-
-    .requests-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 14px;
-        margin-bottom: 18px;
-    }
-
-    .outline-btn {
-        height: 42px;
-        padding: 0 16px;
-        border-radius: 12px;
-        border: 1px solid #93c5fd;
-        background: white;
-        color: #1d4ed8;
-        font-weight: 950;
-        cursor: pointer;
-    }
-
-    .request-detail-list {
-        display: grid;
-        gap: 12px;
-    }
-
-    .request-detail-card {
-        border-radius: 18px;
-        background: #f8fbff;
-        border: 1px solid #bfdbfe;
-        overflow: hidden;
-    }
-
-    .request-card-top {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: stretch;
-    }
-
-    .request-accordion-header {
-        border: none;
-        width: 100%;
-        background: transparent;
-        cursor: pointer;
-        padding: 16px 18px;
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        align-items: center;
-        text-align: left;
-    }
-
-        .request-accordion-header strong {
-            display: block;
-            font-size: 15px;
-            font-weight: 950;
-            color: #0f172a;
-        }
-
-        .request-accordion-header span:not(.accordion-arrow):not(.estimate-pill) {
-            display: block;
-            margin-top: 5px;
-            color: #64748b;
-            font-size: 12px;
-            font-weight: 750;
-        }
-
-    .request-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .estimate-pill {
-        display: inline-flex;
-        padding: 7px 10px;
-        border-radius: 999px;
-        background: #fee2e2;
-        color: #ef4444;
+        min-height: 24px;
+        padding: 0 10px;
+        border-radius: 7px;
         font-size: 12px;
-        font-weight: 950;
-        white-space: nowrap;
-    }
-
-    .accordion-arrow {
-        font-size: 18px;
-        font-weight: 950;
-        color: #334155;
-        transition: .18s ease;
-    }
-
-    .request-detail-card.collapsed .accordion-arrow {
-        transform: rotate(-90deg);
-    }
-
-    .request-detail-card.collapsed .request-accordion-body {
-        display: none;
-    }
-
-    .request-delete-btn,
-    .icon-delete-btn {
-        border: none;
-        background: #fff1f2;
-        color: #dc2626;
-        font-weight: 950;
-        cursor: pointer;
-    }
-
-    .request-delete-btn {
-        margin: 10px;
-        padding: 0 14px;
-        border-radius: 12px;
-    }
-
-    .icon-delete-btn {
-        padding: 8px 10px;
-        border-radius: 10px;
-        font-size: 12px;
-    }
-
-    .request-accordion-body {
-        padding: 0 16px 16px;
-    }
-
-    .request-operation-area {
-        padding: 14px;
-        border-radius: 16px;
-        background: white;
-        border: 1px solid #e2e8f0;
-    }
-
-    .request-operation-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 14px;
-        margin-bottom: 12px;
-    }
-
-        .request-operation-header strong {
-            font-size: 13px;
-            font-weight: 950;
-        }
-
-        .request-operation-header span {
-            color: #16a34a;
-            font-size: 13px;
-            font-weight: 950;
-        }
-
-    .operation-table {
-        overflow: hidden;
-        border: 1px solid #e2e8f0;
-        border-radius: 14px;
-    }
-
-    .operation-table-head,
-    .operation-table-row {
-        display: grid;
-        grid-template-columns: 110px minmax(0, 1.3fr) 100px 130px 130px 70px;
-        gap: 12px;
-        align-items: center;
-    }
-
-    .operation-table-head {
-        padding: 11px 12px;
-        background: #f8fafc;
-        color: #64748b;
-        font-size: 12px;
-        font-weight: 950;
-    }
-
-    .operation-table-row {
-        padding: 12px;
-        border-top: 1px solid #e2e8f0;
-        background: white;
-        font-size: 13px;
-        color: #0f172a;
-    }
-
-        .operation-table-row small {
-            display: block;
-            margin-top: 4px;
-            color: #64748b;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-    .type-badge {
-        display: inline-flex;
-        padding: 7px 10px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 950;
-    }
-
-        .type-badge.part {
-            background: #ede9fe;
-            color: #7c3aed;
-        }
-
-        .type-badge.labor {
-            background: #dbeafe;
-            color: #2563eb;
-        }
-
-    .mini-empty,
-    .empty-state {
-        padding: 18px;
-        border-radius: 14px;
-        background: #f8fafc;
-        border: 1px dashed #cbd5e1;
-        color: #64748b;
-        text-align: center;
-        font-size: 13px;
         font-weight: 850;
     }
 
-    .add-operation-form {
-        margin-top: 14px;
-        padding: 14px;
-        border-radius: 16px;
-        background: #f1f5f9;
-        display: grid;
-        gap: 12px;
-    }
-
-    .operation-form-row {
-        display: grid;
-        grid-template-columns: 140px minmax(260px, 1fr) 100px 130px;
-        gap: 12px;
-        align-items: center;
-    }
-
-        .operation-form-row .btn-primary {
-            grid-column: 1 / -1;
+        .srx-type-badge.part {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
         }
 
-    .type-toggle {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        min-height: 48px;
-        border: 1px solid #dbe3ef;
-        border-radius: 14px;
-        overflow: hidden;
-        background: white;
-    }
-
-        .type-toggle input {
-            display: none;
+        .srx-type-badge.labor {
+            background: #faf5ff;
+            color: #9333ea;
+            border: 1px solid #e9d5ff;
         }
 
-        .type-toggle label {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #64748b;
-            font-size: 13px;
-            font-weight: 950;
-        }
-
-        .type-toggle input:checked + label {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: white;
-        }
-
-    .form-field {
-        position: relative;
+    .srx-operation-description {
         min-width: 0;
     }
 
-        .form-field input,
-        .form-field textarea {
-            width: 100%;
-            min-height: 48px;
-            border: 1px solid #dbe3ef;
-            border-radius: 14px;
-            background: white;
-            padding: 18px 14px 8px;
-            font: inherit;
-            font-size: 14px;
+        .srx-operation-description strong {
+            display: block;
             color: #0f172a;
-            outline: none;
-            transition: .18s ease;
-        }
-
-        .form-field textarea {
-            min-height: 82px;
-            resize: vertical;
-            line-height: 1.45;
-        }
-
-            .form-field input:focus,
-            .form-field textarea:focus {
-                border-color: #2563eb;
-                box-shadow: 0 0 0 4px rgba(37, 99, 235, .10);
-            }
-
-        .form-field label {
-            position: absolute;
-            top: 14px;
-            left: 13px;
-            padding: 0 5px;
-            border-radius: 7px;
-            background: white;
-            color: #64748b;
-            font-size: 13px;
-            font-weight: 850;
-            pointer-events: none;
-            transition: .18s ease;
-        }
-
-        .form-field input:focus + label,
-        .form-field input:not(:placeholder-shown) + label,
-        .form-field textarea:focus + label,
-        .form-field textarea:not(:placeholder-shown) + label {
-            top: -8px;
-            left: 11px;
-            color: #2563eb;
-            font-size: 11px;
-        }
-
-    .btn-primary {
-        min-height: 48px;
-        border: none;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        color: white;
-        padding: 0 16px;
-        font-weight: 950;
-        cursor: pointer;
-        box-shadow: 0 12px 24px rgba(37, 99, 235, .16);
-    }
-
-    .request-builder-detail {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 220px 160px;
-        gap: 12px;
-        align-items: center;
-    }
-
-    .add-request-form {
-        display: grid;
-        gap: 12px;
-    }
-
-    .side-title {
-        margin-bottom: 16px;
-    }
-
-    .total-card {
-        display: grid;
-        gap: 10px;
-    }
-
-    .total-row strong {
-        color: #1d4ed8;
-        font-size: 16px;
-    }
-
-    .mini-status-current {
-        margin-bottom: 16px;
-        padding: 13px;
-        border-radius: 14px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 14px;
-    }
-
-        .mini-status-current span {
-            color: #64748b;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 900;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-    .status-steps {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-        margin-bottom: 16px;
-    }
-
-    .step {
-        text-align: center;
-        color: #94a3b8;
-        font-size: 11px;
-        font-weight: 850;
-    }
-
-        .step span {
-            width: 32px;
-            height: 32px;
-            margin: 0 auto 6px;
-            border-radius: 999px;
-            background: #e2e8f0;
+        .srx-operation-description small {
+            display: block;
+            margin-top: 3px;
             color: #64748b;
-            display: grid;
-            place-items: center;
-            font-weight: 950;
+            font-size: 11px;
+            font-weight: 650;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .step.active span {
-            background: #dcfce7;
-            color: #16a34a;
-            box-shadow: 0 0 0 4px rgba(22, 163, 74, .12);
-        }
+    .srx-operation-row strong {
+        color: #0f172a;
+        font-weight: 950;
+    }
 
-        .step.danger.active span {
+    .srx-operation-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .srx-row-delete {
+        min-height: 30px;
+        padding: 0 10px;
+        border: none;
+        border-radius: 9px;
+        background: transparent;
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 900;
+        transition: .18s ease;
+    }
+
+        .srx-row-delete:hover {
             background: #fee2e2;
             color: #dc2626;
-            box-shadow: 0 0 0 4px rgba(220, 38, 38, .12);
         }
 
-    .status-actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-    }
-
-    .status-btn {
-        min-height: 46px;
-        border: none;
-        border-radius: 13px;
-        color: white;
-        font-weight: 950;
-        cursor: pointer;
-    }
-
-        .status-btn.full {
-            grid-column: 1 / -1;
-        }
-
-        .status-btn.success {
-            background: linear-gradient(135deg, #16a34a, #22c55e);
-        }
-
-        .status-btn.primary {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        }
-
-        .status-btn.danger {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-
-    .action-card {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 14px;
-        align-items: center;
-    }
-
-        .action-card strong {
-            display: block;
-            margin-bottom: 4px;
-            font-size: 15px;
-            font-weight: 950;
-        }
-
-        .action-card span {
-            display: block;
-            color: #64748b;
-            font-size: 12px;
-            font-weight: 750;
-        }
-
-    .small-action-btn {
-        border: 1px solid #93c5fd;
-        background: white;
-        color: #1d4ed8;
-        text-decoration: none;
-        min-height: 40px;
-        padding: 0 16px;
-        border-radius: 12px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 950;
-        cursor: pointer;
-        white-space: nowrap;
-    }
-
-    #qr-reader {
-        grid-column: 1 / -1;
-        margin-top: 12px;
-        overflow: hidden;
-        border-radius: 16px;
-        background: white;
-    }
-
-    .qr-scan-result {
-        grid-column: 1 / -1;
+    .srx-operation-empty {
+        padding: 28px 20px;
         color: #64748b;
-        font-size: 12px;
-        font-weight: 850;
-    }
-
-    .qr-note {
-        padding: 14px;
-        border-radius: 16px;
-        background: #fef3c7;
-        border: 1px solid #fde68a;
-        color: #92400e;
-        font-size: 13px;
-        font-weight: 850;
-    }
-
-    .page-footer {
-        margin-top: 22px;
-        color: #64748b;
+        background: #fbfdff;
+        border-bottom: 1px solid #eef2f7;
         text-align: center;
         font-size: 13px;
         font-weight: 750;
     }
 
-    .toast-message {
+    .srx-add-operation-trigger {
+        width: 100%;
+        min-height: 50px;
+        padding: 0 20px;
+        border: none;
+        background: white;
+        color: #4f46e5;
+        display: flex;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 900;
+        transition: .18s ease;
+    }
+
+        .srx-add-operation-trigger:hover {
+            background: #f8fafc;
+            color: #3730a3;
+        }
+
+    .srx-operation-form {
+        padding: 14px 20px 18px;
+        border-top: 1px solid #eef2f7;
+        background: #f8fafc;
+        display: grid;
+        gap: 10px;
+    }
+
+        .srx-operation-form[hidden] {
+            display: none !important;
+        }
+
+    .srx-operation-editor {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr) 100px 140px 96px;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .srx-type-switch {
+        height: 42px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border: 1px solid #dbe3ef;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+        .srx-type-switch input {
+            display: none;
+        }
+
+        .srx-type-switch label {
+            display: grid;
+            place-items: center;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: .18s ease;
+        }
+
+        .srx-type-switch input:checked + label {
+            background: #4f46e5;
+            color: white;
+        }
+
+    .srx-search-box {
+        position: relative;
+        min-width: 0;
+    }
+
+    .srx-operation-search-input,
+    .srx-qty-input,
+    .srx-operation-note,
+    .srx-new-request-form input {
+        width: 100%;
+        height: 42px;
+        border: 1px solid #dbe3ef;
+        border-radius: 12px;
+        background: white;
+        color: #0f172a;
+        padding: 0 13px;
+        font-size: 14px;
+        font-weight: 700;
+        outline: none;
+        transition: .18s ease;
+    }
+
+        .srx-operation-search-input:focus,
+        .srx-qty-input:focus,
+        .srx-price-input:focus,
+        .srx-operation-note:focus,
+        .srx-new-request-form input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, .10);
+        }
+
+    .srx-qty-input,
+    .srx-price-input {
+        text-align: right;
+    }
+
+    .srx-add-row-btn {
+        height: 42px;
+        border: none;
+        border-radius: 12px;
+        background: #4f46e5;
+        color: white;
+        font-size: 14px;
+        font-weight: 950;
+        box-shadow: 0 10px 22px rgba(79, 70, 229, .18);
+        transition: .18s ease;
+    }
+
+        .srx-add-row-btn:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+    .srx-operation-note {
+        height: 38px;
+        font-size: 13px;
+    }
+
+    .srx-search-results {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        z-index: 30;
+        display: none;
+        background: white;
+        border: 1px solid #dbe3ef;
+        border-radius: 14px;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, .16);
+        overflow: hidden;
+    }
+
+        .srx-search-results.active {
+            display: block;
+        }
+
+    .srx-search-item {
+        padding: 11px 13px;
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: center;
+        border-bottom: 1px solid #eef2f7;
+        cursor: pointer;
+        transition: .18s ease;
+    }
+
+        .srx-search-item:last-child {
+            border-bottom: none;
+        }
+
+        .srx-search-item:hover,
+        .srx-search-item.active {
+            background: #f8fafc;
+        }
+
+        .srx-search-item strong {
+            display: block;
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .srx-search-item small {
+            display: block;
+            margin-top: 3px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .srx-search-item span {
+            color: #16a34a;
+            font-size: 12px;
+            font-weight: 950;
+            white-space: nowrap;
+        }
+
+    .srx-new-request-card {
+        border: 1px dashed #cbd5e1;
+        border-radius: 18px;
+        background: rgba(255,255,255,.55);
+        overflow: hidden;
+    }
+
+    .srx-new-request-trigger {
+        width: 100%;
+        min-height: 60px;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-size: 15px;
+        font-weight: 950;
+        transition: .18s ease;
+    }
+
+        .srx-new-request-trigger:hover {
+            background: white;
+            color: #4f46e5;
+        }
+
+    .srx-new-request-form {
+        padding: 16px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 160px minmax(0, 1fr) 100px 100px;
+        gap: 10px;
+        background: white;
+        border-top: 1px solid #eef2f7;
+    }
+
+        .srx-new-request-form[hidden] {
+            display: none !important;
+        }
+
+        .srx-new-request-form button {
+            height: 42px;
+            border-radius: 12px;
+            border: 1px solid #dbe3ef;
+            background: white;
+            color: #334155;
+            font-weight: 900;
+        }
+
+            .srx-new-request-form button[type="submit"] {
+                border: none;
+                background: #4f46e5;
+                color: white;
+            }
+
+    .srx-empty-requests {
+        padding: 34px;
+        border-radius: 18px;
+        border: 1px dashed #cbd5e1;
+        color: #64748b;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 850;
+        background: rgba(255,255,255,.7);
+    }
+
+    .srx-side-panel {
+        position: sticky;
+        top: 22px;
+        min-width: 0;
+    }
+
+    .srx-summary-card {
+        padding: 24px;
+        border-radius: 18px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+    }
+
+        .srx-summary-card h2 {
+            margin: 0 0 18px;
+            color: #0f172a;
+            font-size: 17px;
+            font-weight: 950;
+            letter-spacing: -.2px;
+        }
+
+    .srx-estimate-box {
+        margin-bottom: 22px;
+        min-height: 56px;
+        padding: 0 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 14px;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        gap: 14px;
+    }
+
+        .srx-estimate-box span {
+            color: #92400e;
+            font-size: 13px;
+            font-weight: 950;
+        }
+
+        .srx-estimate-box strong {
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+    .srx-summary-lines {
+        display: grid;
+        gap: 16px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+        .srx-summary-lines div,
+        .srx-grand-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .srx-summary-lines span {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 750;
+        }
+
+        .srx-summary-lines strong {
+            color: #334155;
+            font-size: 14px;
+            font-weight: 900;
+        }
+
+    .srx-grand-total {
+        padding: 20px 0 22px;
+    }
+
+        .srx-grand-total span {
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 950;
+        }
+
+        .srx-grand-total strong {
+            color: #4f46e5;
+            font-size: 25px;
+            line-height: 1;
+            font-weight: 950;
+            letter-spacing: -.8px;
+        }
+
+    .srx-primary-action {
+        width: 100%;
+        min-height: 48px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 13px;
+        background: #4f46e5;
+        color: white;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 950;
+        box-shadow: 0 14px 28px rgba(79, 70, 229, .20);
+        transition: .18s ease;
+    }
+
+        .srx-primary-action:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+    .srx-action-grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .srx-secondary-action {
+        min-height: 40px;
+        border-radius: 12px;
+        border: 1px solid #dbe3ef;
+        background: white;
+        color: #334155;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 900;
+        transition: .18s ease;
+    }
+
+        .srx-secondary-action:hover {
+            border-color: #93c5fd;
+            color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .srx-secondary-action.danger:hover {
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
+        .srx-secondary-action.wide {
+            grid-column: 1 / -1;
+        }
+
+    .srx-qr-reader {
+        margin-top: 16px;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #0f172a;
+    }
+
+        .srx-qr-reader[hidden] {
+            display: none !important;
+        }
+
+        .srx-qr-reader video {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+    .srx-qr-result {
+        margin-top: 10px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .srx-toast {
         position: fixed;
         right: 24px;
         bottom: 24px;
         min-width: 280px;
-        max-width: 430px;
+        max-width: 440px;
         padding: 14px 18px;
         border-radius: 14px;
         color: white;
         font-size: 14px;
-        font-weight: 800;
+        font-weight: 850;
         box-shadow: 0 18px 45px rgba(15, 23, 42, .22);
         opacity: 0;
         pointer-events: none;
         transform: translateY(20px);
-        transition: all .25s ease;
+        transition: .25s ease;
         z-index: 9999;
     }
 
-        .toast-message.show {
+        .srx-toast.show {
             opacity: 1;
             transform: translateY(0);
         }
 
-        .toast-message.success {
+        .srx-toast.success {
             background: linear-gradient(135deg, #16a34a, #22c55e);
         }
 
-        .toast-message.error {
+        .srx-toast.error {
             background: linear-gradient(135deg, #dc2626, #ef4444);
         }
 
-        .toast-message.info {
+        .srx-toast.info {
             background: linear-gradient(135deg, #2563eb, #38bdf8);
         }
 
-    @@media (max-width: 1200px) {
-        .top-grid,
-        .content-grid {
+    @@media (max-width: 1180px) {
+        .srx-workspace {
             grid-template-columns: 1fr;
         }
 
-        .side-area {
+        .srx-side-panel {
             position: static;
         }
     }
 
-    @@media (max-width: 900px) {
-        .page {
-            width: calc(100% - 28px);
-            padding-top: 16px;
+    @@media (max-width: 920px) {
+        .srx-page {
+            width: min(100% - 28px, 1360px);
+            padding-top: 18px;
         }
 
-        .premium-header {
-            grid-template-columns: auto 1fr;
+        .srx-page-header {
+            grid-template-columns: 42px minmax(0, 1fr);
         }
 
-        .header-more {
+        .srx-home-btn {
             display: none;
         }
 
-        .premium-header h1 {
-            font-size: 24px;
-            word-break: break-word;
+        .srx-info-summary {
+            align-items: flex-start;
+            padding: 14px 16px;
         }
 
-        .info-grid,
-        .note-grid,
-        .request-builder-detail,
-        .operation-form-row {
+        .srx-info-summary-left {
+            flex-wrap: wrap;
+        }
+
+        .srx-info-summary-right {
+            display: none;
+        }
+
+        .srx-info-body,
+        .srx-note-strip {
             grid-template-columns: 1fr;
+            gap: 18px;
         }
 
-        .operation-table-head {
+        .srx-info-grid {
+            grid-template-columns: 130px minmax(0, 1fr);
+        }
+
+        .srx-operation-head {
             display: none;
         }
 
-        .operation-table-row {
+        .srx-operation-row {
             grid-template-columns: 1fr;
             gap: 8px;
+            padding: 14px 16px;
         }
 
-        .request-card-top {
+        .srx-operation-editor,
+        .srx-new-request-form {
             grid-template-columns: 1fr;
         }
 
-        .request-delete-btn {
-            min-height: 42px;
+        .srx-request-header {
+            align-items: flex-start;
+            padding: 14px 16px;
         }
 
-        .requests-header {
-            display: grid;
-        }
-
-        .action-card {
-            grid-template-columns: 1fr;
-        }
-
-        .status-actions {
-            grid-template-columns: 1fr;
+        .srx-request-header-actions {
+            flex-direction: column;
+            align-items: flex-end;
         }
     }
 
-    @@media (max-width: 600px) {
-        .page {
+    @@media (max-width: 620px) {
+        .srx-page {
             width: 100%;
             padding: 12px;
         }
 
-        .panel,
-        .side-card {
-            border-radius: 20px;
-            padding: 16px;
+        .srx-header-title-row h1 {
+            font-size: 21px;
         }
 
-        .premium-header {
-            padding: 20px;
-            border-radius: 22px;
+        .srx-info-card,
+        .srx-request-card,
+        .srx-summary-card,
+        .srx-new-request-card {
+            border-radius: 16px;
         }
 
-        .header-back {
-            width: 46px;
-            height: 46px;
-            border-radius: 14px;
+        .srx-action-grid {
+            grid-template-columns: 1fr;
         }
     }
 
-    #qr-reader {
-        width: 100%;
-        min-height: 260px;
-        margin-top: 16px;
-        overflow: hidden;
-        border-radius: 18px;
-        background: #0f172a;
-    }
-
-        #qr-reader video {
-            width: 100% !important;
-            height: auto !important;
-            border-radius: 18px;
-        }
-
-    .compact-top {
-        align-items: start;
-    }
-
-    .collapsible-panel {
-        padding: 0;
-        overflow: hidden;
-        border-radius: 22px;
-        background: rgba(255,255,255,.96);
-    }
-
-    .collapsible-header {
-        width: 100%;
-        min-height: 62px;
-        padding: 0 18px;
-        border: none;
-        background: linear-gradient(135deg, #ffffff, #f8fafc);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        cursor: pointer;
-        font: inherit;
-        color: #0f172a;
-    }
-
-    .collapsible-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-        .collapsible-left .title-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 14px;
-            display: grid;
-            place-items: center;
-            background: #eef4ff;
-            color: #1d4ed8;
-            box-shadow: 0 8px 18px rgba(37, 99, 235, .10);
-        }
-
-        .collapsible-left span:last-child {
-            font-size: 16px;
-            font-weight: 950;
-            letter-spacing: -.25px;
-        }
-
-    .collapse-arrow {
-        width: 36px;
-        height: 36px;
-        border-radius: 999px;
-        background: #eff6ff;
-        color: #2563eb;
+    .srx-money-input {
+        height: 42px;
+        border: 1px solid #dbe3ef;
+        border-radius: 12px;
+        background: white;
         display: grid;
-        place-items: center;
-        font-size: 18px;
-        font-weight: 950;
-        line-height: 1;
-        flex-shrink: 0;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        overflow: hidden;
         transition: .18s ease;
     }
 
-    .collapsible-panel:not(.collapsed) .collapse-arrow {
-        transform: rotate(180deg);
-    }
+        .srx-money-input:focus-within {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, .10);
+        }
 
-    .collapsible-body {
-        padding: 0 18px 18px;
-    }
+        .srx-money-input input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            outline: none;
+            padding: 0 10px 0 13px;
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 800;
+            text-align: right;
+        }
 
-    .collapsible-panel.collapsed .collapsible-body {
-        display: none;
-    }
-    .header-home {
-    width: 54px;
-    height: 54px;
-    border-radius: 18px;
-    display: grid;
-    place-items: center;
-    background: rgba(255,255,255,.13);
-    border: 1px solid rgba(255,255,255,.20);
-    color: white;
-    text-decoration: none;
-    font-size: 24px;
-    font-weight: 950;
-    box-shadow: 0 14px 34px rgba(15, 23, 42, .18);
-    transition: .18s ease;
-}
-
-.header-home:hover {
-    background: rgba(255,255,255,.24);
-    transform: translateY(-2px);
-}
-
-.collapse-arrow {
-    font-size: 22px !important;
-    line-height: 1;
-    transition: .18s ease;
-}
-
-.collapsible-panel:not(.collapsed) .collapse-arrow {
-    transform: rotate(180deg);
-}
-
-.detail-section-title {
-    margin: 4px 0 16px;
-    color: #0f172a;
-    font-size: 15px;
-    font-weight: 900;
-    letter-spacing: -.2px;
-}
-
-.detail-section-title.with-space {
-    margin-top: 28px;
-    padding-top: 20px;
-    border-top: 1px solid #e2e8f0;
-}
-
-.info-card.full-width {
-    grid-column: 1 / -1;
-}
-.invoice-mini-card {
-    display: grid;
-    gap: 12px;
-}
-
-.invoice-mini-list {
-    display: grid;
-    gap: 10px;
-}
-
-.invoice-mini-item {
-    padding: 13px;
-    border-radius: 14px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    text-decoration: none;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: center;
-    color: #0f172a;
-    transition: .18s ease;
-}
-
-.invoice-mini-item:hover {
-    border-color: #93c5fd;
-    transform: translateY(-1px);
-}
-
-.invoice-mini-item strong {
-    display: block;
-    font-size: 13px;
-    font-weight: 950;
-}
-
-.invoice-mini-item span {
-    display: block;
-    margin-top: 4px;
-    color: #64748b;
-    font-size: 11px;
-    font-weight: 750;
-}
-
-.invoice-mini-right {
-    text-align: right;
-    display: grid;
-    gap: 6px;
-}
-
-.invoice-status {
-    display: inline-flex;
-    justify-content: center;
-    padding: 6px 9px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 950;
-}
-
-.invoice-status.status-1 {
-    background: #fef3c7;
-    color: #b45309;
-}
-
-.invoice-status.status-2 {
-    background: #dcfce7;
-    color: #15803d;
-}
-
-.invoice-status.status-3 {
-    background: #fee2e2;
-    color: #b91c1c;
-}
-
-    
+        .srx-money-input span {
+            padding: 0 13px 0 4px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 900;
+        }
 </style>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
+    const serviceRecordId = @Model.Id;
+
+    function escapeHtml(value) {
+    if (value === null || value === undefined) return "";
+
+    return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+    }
+
+    function toNumber(value) {
+    if (value === null || value === undefined || value === "") return 0;
+
+    if (typeof value === "number") return value;
+
+    let normalized = String(value)
+    .replaceAll("₺", "")
+    .replaceAll(" ", "")
+    .trim();
+
+    if (normalized.includes(",")) {
+    normalized = normalized
+    .replaceAll(".", "")
+    .replace(",", ".");
+    }
+    else {
+    normalized = normalized.replaceAll(",", "");
+    }
+
+    return Number(normalized) || 0;
+    }
+
+    function formatDecimalInput(value) {
+    return toNumber(value).toLocaleString("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+    });
+    }
+
+    function formatMoney(value) {
+    return toNumber(value).toLocaleString("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+    }) + " ₺";
+    }
+
     function showToast(message, type = "info") {
     const toast = document.getElementById("toastMessage");
 
     if (!toast) return;
 
-    toast.className = `toast-message ${type}`;
-    toast.innerText = message;
+    toast.className = `srx-toast ${type}`;
+    toast.textContent = message;
 
     requestAnimationFrame(() => {
     toast.classList.add("show");
@@ -1928,30 +1818,7 @@
     }, 3200);
     }
 
-    function focusAddRequest() {
-    const panel = document.getElementById("addRequestPanel");
-    const input = panel?.querySelector('input[name="Title"]');
-
-    panel?.scrollIntoView({ behavior: "smooth", block: "center" });
-
-    setTimeout(() => {
-    input?.focus();
-    }, 350);
-    }
-
-    function toggleRequestCard(button) {
-    const card = button.closest(".request-detail-card");
-    card.classList.toggle("collapsed");
-    }
-
-    function formatMoney(value) {
-    return Number(value || 0).toLocaleString("tr-TR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-    }) + " ₺";
-    }
-
-    function setButtonLoading(button, isLoading, loadingText) {
+    function setButtonLoading(button, isLoading, loadingText = "İşleniyor...") {
     if (!button) return;
 
     if (isLoading) {
@@ -1965,54 +1832,390 @@
     button.textContent = button.dataset.originalText || button.textContent;
     }
 
-    function updateSummaryTotal(value) {
-    const summaryTotal = document.querySelector(".summary-total");
+    function updateSummaryTotal(recordTotal) {
+    const subTotal = toNumber(recordTotal);
+    const vat = subTotal * 0.20;
+    const grandTotal = subTotal + vat;
 
-    if (!summaryTotal) return;
+    const totalElement = document.querySelector(".summary-total");
+    const vatElement = document.querySelector(".summary-vat");
+    const grandTotalElement = document.querySelector(".summary-grand-total");
 
-    summaryTotal.dataset.total = value;
-    summaryTotal.textContent = formatMoney(value);
+    if (totalElement) {
+    totalElement.dataset.total = subTotal;
+    totalElement.textContent = formatMoney(subTotal);
     }
 
-    function createOperationListIfNeeded(card) {
-    let operationList = card.querySelector(".request-operation-list");
+    if (vatElement) {
+    vatElement.dataset.vat = vat;
+    vatElement.textContent = formatMoney(vat);
+    }
 
-    if (operationList) return operationList;
+    if (grandTotalElement) {
+    grandTotalElement.dataset.grandTotal = grandTotal;
+    grandTotalElement.textContent = formatMoney(grandTotal);
+    }
+    }
 
-    const area = card.querySelector(".request-operation-area");
-    const empty = area.querySelector(".mini-empty");
+    function getCurrentSummaryTotal() {
+    const totalElement = document.querySelector(".summary-total");
 
-    if (empty) empty.remove();
+    if (!totalElement) return 0;
 
-    operationList = document.createElement("div");
-    operationList.className = "operation-table request-operation-list";
+    return toNumber(totalElement.dataset.total);
+    }
 
-    operationList.innerHTML = `
-    <div class="operation-table-head">
-    <span>Tür</span>
-    <span>Açıklama</span>
-    <span>Miktar</span>
-    <span>Birim Fiyat</span>
-    <span>Toplam</span>
-    <span></span>
+    function updateStatusBadge(status) {
+    const badge = document.querySelector(".srx-status-badge");
+
+    if (!badge) return;
+
+    const statusMap = {
+    "1": { text: "Açık", className: "open" },
+    "2": { text: "İşlemde", className: "progress" },
+    "3": { text: "Tamamlandı", className: "completed" },
+    "4": { text: "İptal", className: "cancelled" }
+    };
+
+    const next = statusMap[String(status)] || {
+    text: "Bilinmiyor",
+    className: "unknown"
+    };
+
+    badge.className = `srx-status-badge ${next.className}`;
+    badge.textContent = next.text;
+    }
+
+    function renderStatusButtons(status) {
+    status = String(status);
+
+    if (status === "1") {
+    return `
+    <button type="button"
+    class="srx-secondary-action status-btn"
+    data-status="2">
+    İşleme Al
+    </button>
+
+    <button type="button"
+    class="srx-secondary-action danger status-btn"
+    data-status="4">
+    İptal Et
+    </button>
+    `;
+    }
+
+    if (status === "2") {
+    return `
+    <button type="button"
+    class="srx-secondary-action status-btn"
+    data-status="3">
+    Tamamla
+    </button>
+
+    <button type="button"
+    class="srx-secondary-action danger status-btn"
+    data-status="4">
+    İptal Et
+    </button>
+    `;
+    }
+
+    if (status === "3" || status === "4") {
+    return `
+    <button type="button"
+    class="srx-secondary-action status-btn wide"
+    data-status="1">
+    Tekrar Aç
+    </button>
+    `;
+    }
+
+    return "";
+    }
+
+    function refreshStatusButtons(status) {
+    const grid = document.querySelector(".srx-action-grid");
+
+    if (!grid) return;
+
+    grid.querySelectorAll(".status-btn").forEach(button => button.remove());
+
+    grid.insertAdjacentHTML("beforeend", renderStatusButtons(status));
+    }
+
+    function getOperationType(form) {
+    return form.querySelector('input[name="Type"]:checked')?.value || "1";
+    }
+
+    function getOperationTypeText(type) {
+    return String(type) === "1" ? "Parça" : "İşçilik";
+    }
+
+    function getOperationTypeClass(type) {
+    return String(type) === "1" ? "part" : "labor";
+    }
+
+    function createOperationRow(operation) {
+    const typeText = getOperationTypeText(operation.type);
+    const typeClass = getOperationTypeClass(operation.type);
+
+    return `
+    <div class="srx-operation-row request-operation-item"
+    id="operation-item-${operation.id}"
+    data-operation-id="${operation.id}">
+
+    <div>
+    <span class="srx-type-badge ${typeClass}">
+    ${typeText}
+    </span>
+    </div>
+
+    <div class="srx-operation-description">
+    <strong>${escapeHtml(operation.description)}</strong>
+    ${
+    operation.note
+    ? `<small>${escapeHtml(operation.note)}</small>`
+    : ""
+    }
+    </div>
+
+    <div>
+    ${toNumber(operation.quantity).toLocaleString("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+    })}
+    </div>
+
+    <div>
+    ${formatMoney(operation.unitPrice)}
+    </div>
+
+    <div>
+    <strong>${formatMoney(operation.totalPrice)}</strong>
+    </div>
+
+    <div class="srx-operation-actions">
+    <button type="button"
+    class="srx-row-delete"
+    data-action="delete-operation"
+    data-operation-id="${operation.id}"
+    title="İşlemi sil">
+    Sil
+    </button>
+    </div>
+
     </div>
     `;
+    }
 
-    area.appendChild(operationList);
+    function ensureOperationGrid(card) {
+    const grid = card.querySelector("[data-operation-list]");
 
-    return operationList;
+    if (!grid) return null;
+
+    const empty = grid.querySelector(".srx-operation-empty");
+
+    if (empty) {
+    empty.remove();
+    }
+
+    return grid;
+    }
+
+    function clearOperationForm(form) {
+    form.reset();
+
+    const quantityInput = form.querySelector('input[name="Quantity"]');
+    const stockInput = form.querySelector(".srx-stock-item-id");
+    const results = form.querySelector(".srx-search-results");
+
+    if (quantityInput) {
+    quantityInput.value = 1;
+    }
+
+    if (stockInput) {
+    stockInput.value = "";
+    }
+
+    if (results) {
+    results.innerHTML = "";
+    results.classList.remove("active");
+    }
+    }
+
+    function bindOperationAutocomplete(form) {
+    if (form.dataset.searchBound === "true") return;
+
+    form.dataset.searchBound = "true";
+
+    const input = form.querySelector(".srx-operation-search-input");
+    const stockInput = form.querySelector(".srx-stock-item-id");
+    const results = form.querySelector(".srx-search-results");
+    const priceInput = form.querySelector('input[name="UnitPrice"]');
+    const typeRadios = form.querySelectorAll('input[name="Type"]');
+
+    if (!input || !stockInput || !results) return;
+
+    let timer = null;
+
+    function closeResults() {
+    results.innerHTML = "";
+    results.classList.remove("active");
+    }
+
+    function clearStockSelection() {
+    stockInput.value = "";
+    }
+
+    typeRadios.forEach(radio => {
+    radio.addEventListener("change", () => {
+    clearStockSelection();
+    closeResults();
+    });
+    });
+
+    input.addEventListener("input", () => {
+    clearTimeout(timer);
+    clearStockSelection();
+
+    const query = input.value.trim();
+    const type = getOperationType(form);
+
+    if (type !== "1" || query.length < 2) {
+    closeResults();
+    return;
+    }
+
+    timer = setTimeout(async () => {
+    try {
+    const response = await fetch(
+    `/ServiceRecords/SearchStockItems?q=${encodeURIComponent(query)}`
+    );
+
+    if (!response.ok) {
+    closeResults();
+    return;
+    }
+
+    const payload = await response.json();
+    const items = Array.isArray(payload)
+    ? payload
+    : (payload.data || []);
+
+    results.innerHTML = "";
+
+    if (!items.length) {
+    results.innerHTML = `
+    <div class="srx-search-item">
+    <div>
+    <strong>Sonuç bulunamadı</strong>
+    <small>Bu parçayı serbest açıklama olarak ekleyebilirsiniz.</small>
+    </div>
+    </div>
+    `;
+    results.classList.add("active");
+    return;
+    }
+
+    items.forEach(item => {
+    const id = item.id ?? item.Id;
+    const name = item.name ?? item.Name ?? "";
+    const code = item.code ?? item.Code ?? "";
+    const quantity = item.quantity ?? item.Quantity ?? 0;
+    const salePrice =
+    item.salePrice ??
+    item.SalePrice ??
+    item.unitPrice ??
+    item.UnitPrice ??
+    null;
+
+    const element = document.createElement("div");
+    element.className = "srx-search-item";
+
+    element.innerHTML = `
+    <div>
+    <strong>${escapeHtml(name)}</strong>
+    <small>
+    ${
+    code
+    ? `Kod: ${escapeHtml(code)} • `
+    : ""
+    }
+    Stok: ${toNumber(quantity).toLocaleString("tr-TR")}
+    </small>
+    </div>
+
+    <span>
+    ${
+    salePrice !== null
+    ? formatMoney(salePrice)
+    : ""
+    }
+    </span>
+    `;
+
+    element.addEventListener("click", () => {
+    input.value = name;
+    stockInput.value = id;
+
+    if (salePrice !== null && priceInput && !priceInput.value) {
+    priceInput.value = formatDecimalInput(salePrice);
+    }
+
+    closeResults();
+    input.focus();
+    });
+
+    results.appendChild(element);
+    });
+
+    results.classList.add("active");
+    }
+    catch {
+    closeResults();
+    }
+    }, 250);
+    });
+
+    input.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+    closeResults();
+    }
+    });
+
+    document.addEventListener("click", e => {
+    if (!form.contains(e.target)) {
+    closeResults();
+    }
+    });
     }
 
     function bindOperationForms() {
     document.querySelectorAll(".ajax-operation-form").forEach(form => {
+    bindOperationAutocomplete(form);
+
     if (form.dataset.bound === "true") return;
 
     form.dataset.bound = "true";
 
-    form.addEventListener("submit", async function (e) {
+    form.addEventListener("submit", async e => {
     e.preventDefault();
 
-    if (form.dataset.submitting === "true") {
+    if (form.dataset.submitting === "true") return;
+
+    const descriptionInput = form.querySelector('input[name="Description"]');
+    const priceInput = form.querySelector('input[name="UnitPrice"]');
+
+    if (!descriptionInput?.value.trim()) {
+    showToast("Açıklama zorunludur.", "error");
+    descriptionInput?.focus();
+    return;
+    }
+
+    if (!priceInput?.value || toNumber(priceInput.value) < 0) {
+    showToast("Birim fiyat geçerli olmalıdır.", "error");
+    priceInput?.focus();
     return;
     }
 
@@ -2022,6 +2225,10 @@
     setButtonLoading(submitButton, true, "Ekleniyor...");
 
     try {
+
+    const normalizedPrice = toNumber(priceInput.value);
+
+    priceInput.value = normalizedPrice.toFixed(2);
     const formData = new FormData(form);
 
     const response = await fetch(form.action, {
@@ -2036,68 +2243,29 @@
 
     const operation = await response.json();
 
-    const card = form.closest(".request-detail-card");
-    const totalText = card.querySelector(".request-operation-header span");
-    const operationList = createOperationListIfNeeded(card);
+    const card = form.closest(".srx-request-card");
+    const grid = ensureOperationGrid(card);
 
-    const typeText = operation.type == 1 ? "Parça" : "İşçilik";
-    const typeClass = operation.type == 1 ? "part" : "labor";
+    if (!grid) return;
 
-    const item = document.createElement("div");
-    item.className = "operation-table-row request-operation-item";
-    item.id = `operation-item-${operation.id}`;
+    grid.insertAdjacentHTML(
+    "beforeend",
+    createOperationRow(operation)
+    );
 
-    item.innerHTML = `
-    <span>
-    <b class="type-badge ${typeClass}">${typeText}</b>
-    </span>
+    const newTotal =
+    getCurrentSummaryTotal() + toNumber(operation.totalPrice);
 
-    <span>
-    <strong>${operation.description}</strong>
-    ${operation.note ? `<small>${operation.note}</small>` : ""}
-    </span>
+    updateSummaryTotal(newTotal);
 
-    <span>${Number(operation.quantity || 0).toLocaleString("tr-TR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-    })}</span>
+    clearOperationForm(form);
 
-    <span>${formatMoney(operation.unitPrice)}</span>
+    form.hidden = true;
 
-    <span><strong>${formatMoney(operation.totalPrice)}</strong></span>
+    const trigger = card.querySelector('[data-action="show-operation-form"]');
 
-    <span>
-    <button type="button"
-    class="icon-delete-btn"
-    onclick="deleteOperation(${operation.id}, this)">
-    Sil
-    </button>
-    </span>
-    `;
-
-    operationList.appendChild(item);
-
-    const currentTotal = Number(totalText.dataset.total || "0");
-    const newTotal = currentTotal + Number(operation.totalPrice || 0);
-
-    totalText.dataset.total = newTotal;
-    totalText.textContent = `Toplam: ${formatMoney(newTotal)}`;
-
-    const summaryTotal = document.querySelector(".summary-total");
-
-    if (summaryTotal) {
-    const currentSummaryTotal = Number(summaryTotal.dataset.total || "0");
-    const newSummaryTotal = currentSummaryTotal + Number(operation.totalPrice || 0);
-
-    updateSummaryTotal(newSummaryTotal);
-    }
-
-    form.reset();
-
-    const quantityInput = form.querySelector('input[name="Quantity"]');
-
-    if (quantityInput) {
-    quantityInput.value = 1;
+    if (trigger) {
+    trigger.hidden = false;
     }
 
     showToast("İşlem başarıyla eklendi.", "success");
@@ -2110,153 +2278,181 @@
     });
     }
 
-    document.addEventListener("submit", async function (e) {
-    const form = e.target;
+    function createRequestCard(requestItem) {
+    const id = requestItem.id ?? requestItem.Id;
+    const title = requestItem.title ?? requestItem.Title ?? "";
+    const note = requestItem.note ?? requestItem.Note ?? "";
+    const estimatedAmount =
+    requestItem.estimatedAmount ??
+    requestItem.EstimatedAmount ??
+    null;
 
-    if (!form.classList.contains("ajax-request-form")) {
-    return;
-    }
-
-    e.preventDefault();
-
-    if (form.dataset.submitting === "true") {
-    return;
-    }
-
-    form.dataset.submitting = "true";
-
-    const submitButton = form.querySelector('button[type="submit"]');
-    setButtonLoading(submitButton, true, "Ekleniyor...");
-
-    try {
-    const formData = new FormData(form);
-
-    const response = await fetch(form.action, {
-    method: "POST",
-    body: formData
-    });
-
-    if (!response.ok) {
-    showToast("Talep eklenemedi.", "error");
-    return;
-    }
-
-    const requestItem = await response.json();
-
-    let list = document.querySelector(".request-detail-list");
-
-    if (!list) {
-    list = document.createElement("div");
-    list.className = "request-detail-list";
-    document.querySelector(".requests-panel").appendChild(list);
-    }
-
-    const emptyState = list.querySelector(".empty-state");
-
-    if (emptyState) {
-    emptyState.remove();
-    }
-
-    const card = document.createElement("div");
-    card.className = "request-detail-card";
-    card.dataset.requestId = requestItem.id;
-    card.id = `request-item-${requestItem.id}`;
-
-    const estimatedText = requestItem.estimatedAmount
-    ? `<span class="estimate-pill">Tahmini: ${formatMoney(requestItem.estimatedAmount)}</span>`
+    const estimateHtml =
+    estimatedAmount && toNumber(estimatedAmount) > 0
+    ? `<span class="srx-estimate-pill">
+    Tahmini: ${formatMoney(estimatedAmount)}
+    </span>`
     : "";
 
-    card.innerHTML = `
-    <div class="request-card-top">
+    return `
+    <article class="srx-request-card"
+    id="request-item-${id}"
+    data-request-id="${id}"
+    data-expanded="true">
+
+    <header class="srx-request-header">
+
     <button type="button"
-    class="request-accordion-header"
-    onclick="toggleRequestCard(this)">
+    class="srx-request-title-btn"
+    data-action="toggle-request">
+
+    <span class="srx-request-alert">!</span>
+
     <div>
-    <strong>${requestItem.title}</strong>
-    ${requestItem.note ? `<span>${requestItem.note}</span>` : ""}
+    <h2>${escapeHtml(title)}</h2>
+    ${
+    note
+    ? `<p>${escapeHtml(note)}</p>`
+    : ""
+    }
     </div>
 
-    <div class="request-right">
-    ${estimatedText}
-    <span class="accordion-arrow">⌄</span>
-    </div>
     </button>
+
+    <div class="srx-request-header-actions">
+    ${estimateHtml}
 
     <button type="button"
-    class="request-delete-btn"
-    onclick="deleteRequestItem(${requestItem.id}, this)">
-    Sil
+    class="srx-icon-btn"
+    data-action="delete-request"
+    data-request-id="${id}"
+    title="Talebi sil">
+    🗑
     </button>
     </div>
 
-    <div class="request-accordion-body">
-    <div class="request-operation-area">
-    <div class="request-operation-header">
-    <strong>Yapılan İşlemler</strong>
-    <span data-total="0">Toplam: 0,00 ₺</span>
+    </header>
+
+    <div class="srx-request-body">
+
+    <div class="srx-operation-grid"
+    data-operation-list
+    data-request-id="${id}">
+
+    <div class="srx-operation-head">
+    <span>Tür</span>
+    <span>Açıklama</span>
+    <span>Miktar</span>
+    <span>Br. Fiyat</span>
+    <span>Toplam</span>
+    <span></span>
     </div>
 
-    <div class="mini-empty">
-    Bu talep için henüz işlem eklenmedi.
+    <div class="srx-operation-empty">
+    Bu şikayet için henüz işlem eklenmedi.
     </div>
+
     </div>
+
+    <button type="button"
+    class="srx-add-operation-trigger"
+    data-action="show-operation-form">
+    + Şikayete işlem ekle
+    </button>
 
     <form action="/ServiceRecords/AddOperation"
     method="post"
-    class="add-operation-form ajax-operation-form">
+    class="srx-operation-form ajax-operation-form"
+    data-request-id="${id}"
+    hidden>
 
-    <input type="hidden" name="ServiceRecordId" value="${formData.get("serviceRecordId")}" />
-    <input type="hidden" name="ServiceRequestItemId" value="${requestItem.id}" />
+    <input type="hidden"
+    name="ServiceRecordId"
+    value="${serviceRecordId}" />
 
-    <div class="operation-form-row">
-    <div class="type-toggle">
-    <input type="radio" id="partType_${requestItem.id}" name="Type" value="1" checked />
-    <label for="partType_${requestItem.id}">Parça</label>
+    <input type="hidden"
+    name="ServiceRequestItemId"
+    value="${id}" />
 
-    <input type="radio" id="laborType_${requestItem.id}" name="Type" value="2" />
-    <label for="laborType_${requestItem.id}">İşçilik</label>
+    <input type="hidden"
+    name="StockItemId"
+    class="srx-stock-item-id" />
+
+    <div class="srx-operation-editor">
+
+    <div class="srx-type-switch">
+
+    <input type="radio"
+    id="partType_${id}"
+    name="Type"
+    value="1"
+    checked />
+
+    <label for="partType_${id}">
+    Parça
+    </label>
+
+    <input type="radio"
+    id="laborType_${id}"
+    name="Type"
+    value="2" />
+
+    <label for="laborType_${id}">
+    İşçilik
+    </label>
+
     </div>
 
-    <div class="form-field">
-    <input name="Description" placeholder=" " />
-    <label>İşçilik veya parça açıklaması</label>
+    <div class="srx-search-box">
+
+    <input type="text"
+    name="Description"
+    class="srx-operation-search-input"
+    placeholder="Parça adı, kodu veya işlem açıklaması..."
+    autocomplete="off" />
+
+    <div class="srx-search-results"></div>
+
     </div>
 
-    <div class="form-field">
-    <input name="Quantity" type="number" value="1" min="1" step="0.01" placeholder=" " />
-    <label>Miktar</label>
+    <input type="number"
+    name="Quantity"
+    class="srx-qty-input"
+    value="1"
+    min="1"
+    step="0.01"
+    placeholder="Miktar" />
+
+    <div class="srx-money-input">
+    <input type="text"
+    name="UnitPrice"
+    class="srx-price-input"
+    inputmode="decimal"
+    autocomplete="off"
+    placeholder="Fiyat" />
+
+    <span>₺</span>
     </div>
 
-    <div class="form-field">
-    <input name="UnitPrice" type="number" step="0.01" min="0" placeholder=" " />
-    <label>Birim Fiyat</label>
-    </div>
-
-    <button type="submit" class="btn-primary">
-    + Ekle
+    <button type="submit"
+    class="srx-add-row-btn">
+    Ekle
     </button>
+
     </div>
 
-    <div class="form-field operation-note-field">
-    <textarea name="Note" placeholder=" "></textarea>
-    <label>İşlem Notu</label>
-    </div>
+    <input type="text"
+    name="Note"
+    class="srx-operation-note"
+    placeholder="İşlem notu opsiyonel" />
+
     </form>
+
     </div>
+
+    </article>
     `;
-
-    list.appendChild(card);
-
-    form.reset();
-    bindOperationForms();
-
-    showToast("Talep başarıyla eklendi.", "success");
     }
-    finally {
-    form.dataset.submitting = "false";
-    setButtonLoading(submitButton, false);
-    }
-    });
 
     async function deleteOperation(operationId, button) {
     const confirmed = confirm("Bu işlemi silmek istediğinize emin misiniz?");
@@ -2286,33 +2482,27 @@
     return;
     }
 
-    const item = document.getElementById(`operation-item-${operationId}`);
-    const card = button.closest(".request-detail-card");
+    const row = document.getElementById(`operation-item-${operationId}`);
+    const card = row?.closest(".srx-request-card");
 
-    if (item) item.remove();
-
-    const totalText = card.querySelector(".request-operation-header span");
-
-    if (totalText) {
-    totalText.dataset.total = result.data.requestItemTotal;
-    totalText.textContent = `Toplam: ${formatMoney(result.data.requestItemTotal)}`;
+    if (row) {
+    row.remove();
     }
 
+    if (result.data?.recordTotal !== undefined) {
     updateSummaryTotal(result.data.recordTotal);
+    }
 
-    const operationList = card.querySelector(".request-operation-list");
-    const operationRows = card.querySelectorAll(".request-operation-item");
+    const grid = card?.querySelector("[data-operation-list]");
+    const rows = grid?.querySelectorAll(".request-operation-item") ?? [];
 
-    if (operationList && operationRows.length === 0) {
-    operationList.remove();
-
-    const area = card.querySelector(".request-operation-area");
-
-    const empty = document.createElement("div");
-    empty.className = "mini-empty";
-    empty.textContent = "Bu talep için henüz işlem eklenmedi.";
-
-    area.appendChild(empty);
+    if (grid && rows.length === 0) {
+    grid.insertAdjacentHTML(
+    "beforeend",
+    `<div class="srx-operation-empty">
+    Bu şikayet için henüz işlem eklenmedi.
+    </div>`
+    );
     }
 
     showToast("İşlem silindi.", "success");
@@ -2326,7 +2516,7 @@
 
     async function deleteRequestItem(requestItemId, button) {
     const confirmed = confirm(
-    "Bu talep ve bağlı işlemler silinecek. Devam etmek istiyor musunuz?"
+    "Bu şikayet ve bağlı işlemler silinecek. Devam etmek istiyor musunuz?"
     );
 
     if (!confirmed) return;
@@ -2343,34 +2533,41 @@
     });
 
     if (!response.ok) {
-    showToast("Talep silinirken hata oluştu.", "error");
+    showToast("Şikayet silinirken hata oluştu.", "error");
     return;
     }
 
     const result = await response.json();
 
     if (!result.isSuccess) {
-    showToast(result.errorMessage || "Talep silinemedi.", "error");
+    showToast(result.errorMessage || "Şikayet silinemedi.", "error");
     return;
     }
 
     const card = document.getElementById(`request-item-${requestItemId}`);
 
-    if (card) card.remove();
+    if (card) {
+    card.remove();
+    }
 
+    if (result.data?.recordTotal !== undefined) {
     updateSummaryTotal(result.data.recordTotal);
+    }
 
-    const requestList = document.querySelector(".request-detail-list");
+    const requestList = document.getElementById("requestList");
 
-    if (requestList && requestList.querySelectorAll(".request-detail-card").length === 0) {
+    if (
+    requestList &&
+    requestList.querySelectorAll(".srx-request-card").length === 0
+    ) {
     requestList.innerHTML = `
-    <div class="empty-state">
-    Bu servis kaydı için talep girilmemiş.
+    <div class="srx-empty-requests">
+    Bu servis kaydı için henüz şikayet / talep girilmemiş.
     </div>
     `;
     }
 
-    showToast("Talep silindi.", "success");
+    showToast("Şikayet silindi.", "success");
     }
     finally {
     if (document.body.contains(button)) {
@@ -2379,56 +2576,93 @@
     }
     }
 
-    function getStatusButtons(status) {
-    if (status == "1") {
-    return `
-    <button type="button" class="status-btn success" data-status="2">İşleme Al</button>
-    <button type="button" class="status-btn danger" data-status="4">İptal Et</button>
-    `;
-    }
+    function bindNewRequestForm() {
+    const form = document.querySelector(".ajax-request-form");
 
-    if (status == "2") {
-    return `
-    <button type="button" class="status-btn primary" data-status="3">Tamamla</button>
-    <button type="button" class="status-btn danger" data-status="4">İptal Et</button>
-    `;
-    }
+    if (!form || form.dataset.bound === "true") return;
 
-    if (status == "3" || status == "4") {
-    return `
-    <button type="button" class="status-btn primary full" data-status="1">Tekrar Aç</button>
-    `;
-    }
+    form.dataset.bound = "true";
 
-    return "";
-    }
+    form.addEventListener("submit", async e => {
+    e.preventDefault();
 
-    function updateStatusSteps(status) {
-    const steps = document.querySelectorAll(".status-steps .step");
+    if (form.dataset.submitting === "true") return;
 
-    steps.forEach(x => x.classList.remove("active", "danger"));
+    const titleInput = form.querySelector('input[name="Title"]');
 
-    if (status == "4") {
-    steps[3]?.classList.add("active", "danger");
+    if (!titleInput?.value.trim()) {
+    showToast("Şikayet başlığı zorunludur.", "error");
+    titleInput?.focus();
     return;
     }
 
-    if (status >= 1) steps[0]?.classList.add("active");
-    if (status >= 2) steps[1]?.classList.add("active");
-    if (status == 3) steps[2]?.classList.add("active");
+    form.dataset.submitting = "true";
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    setButtonLoading(submitButton, true, "Kaydediliyor...");
+
+    try {
+    const formData = new FormData(form);
+
+    const response = await fetch(form.action, {
+    method: "POST",
+    body: formData
+    });
+
+    if (!response.ok) {
+    showToast("Şikayet eklenemedi.", "error");
+    return;
+    }
+
+    const requestItem = await response.json();
+
+    let requestList = document.getElementById("requestList");
+
+    if (!requestList) return;
+
+    const empty = requestList.querySelector(".srx-empty-requests");
+
+    if (empty) {
+    empty.remove();
+    }
+
+    requestList.insertAdjacentHTML(
+    "beforeend",
+    createRequestCard(requestItem)
+    );
+
+    form.reset();
+    form.hidden = true;
+
+    const trigger = document.querySelector('[data-action="toggle-new-request"]');
+
+    if (trigger) {
+    trigger.hidden = false;
+    }
+
+    bindOperationForms();
+
+    showToast("Şikayet başarıyla eklendi.", "success");
+    }
+    finally {
+    form.dataset.submitting = "false";
+    setButtonLoading(submitButton, false);
+    }
+    });
     }
 
     function bindStatusButtons() {
-    document.querySelectorAll(".status-btn").forEach(button => {
-    button.onclick = async function () {
+    document.addEventListener("click", async e => {
+    const button = e.target.closest(".status-btn");
+
+    if (!button) return;
+
     if (button.dataset.loading === "true") return;
 
     button.dataset.loading = "true";
     setButtonLoading(button, true, "Güncelleniyor...");
 
     try {
-    const statusActions = button.closest(".status-actions");
-    const serviceRecordId = statusActions.dataset.recordId;
     const status = button.dataset.status;
 
     const formData = new FormData();
@@ -2445,25 +2679,8 @@
     return;
     }
 
-    const statusMap = {
-    "1": "Açık Kayıt",
-    "2": "İşlemde",
-    "3": "Tamamlandı",
-    "4": "İptal Edildi"
-    };
-
-    document.querySelectorAll(".summary-status, .status-pill").forEach(statusEl => {
-    statusEl.className = statusEl.classList.contains("summary-status")
-    ? `summary-status status-${status}`
-    : `status-pill status-${status}`;
-
-    statusEl.textContent = statusMap[status] ?? "Bilinmiyor";
-    });
-
-    updateStatusSteps(status);
-
-    statusActions.innerHTML = getStatusButtons(status);
-    bindStatusButtons();
+    updateStatusBadge(status);
+    refreshStatusButtons(status);
 
     showToast("Durum güncellendi.", "success");
     }
@@ -2473,7 +2690,105 @@
     setButtonLoading(button, false);
     }
     }
-    };
+    });
+    }
+
+    function bindPageActions() {
+    document.addEventListener("click", e => {
+    const actionElement = e.target.closest("[data-action]");
+
+    if (!actionElement) return;
+
+    const action = actionElement.dataset.action;
+
+    if (action === "toggle-info") {
+    const card = actionElement.closest(".srx-info-card");
+
+    if (card) {
+    card.classList.toggle("collapsed");
+    }
+
+    return;
+    }
+
+    if (action === "toggle-request") {
+    const card = actionElement.closest(".srx-request-card");
+
+    if (!card) return;
+
+    const isExpanded = card.dataset.expanded !== "false";
+
+    card.dataset.expanded = isExpanded ? "false" : "true";
+
+    return;
+    }
+
+    if (action === "show-operation-form") {
+    const card = actionElement.closest(".srx-request-card");
+    const form = card?.querySelector(".srx-operation-form");
+
+    if (!form) return;
+
+    form.hidden = false;
+    actionElement.hidden = true;
+
+    const input = form.querySelector(".srx-operation-search-input");
+
+    setTimeout(() => input?.focus(), 50);
+
+    return;
+    }
+
+    if (action === "delete-operation") {
+    const operationId = actionElement.dataset.operationId;
+
+    if (operationId) {
+    deleteOperation(operationId, actionElement);
+    }
+
+    return;
+    }
+
+    if (action === "delete-request") {
+    const requestId = actionElement.dataset.requestId;
+
+    if (requestId) {
+    deleteRequestItem(requestId, actionElement);
+    }
+
+    return;
+    }
+
+    if (action === "toggle-new-request") {
+    const form = document.querySelector(".srx-new-request-form");
+
+    if (!form) return;
+
+    form.hidden = false;
+    actionElement.hidden = true;
+
+    const input = form.querySelector('input[name="Title"]');
+
+    setTimeout(() => input?.focus(), 50);
+
+    return;
+    }
+
+    if (action === "cancel-new-request") {
+    const form = actionElement.closest(".srx-new-request-form");
+    const trigger = document.querySelector('[data-action="toggle-new-request"]');
+
+    if (form) {
+    form.reset();
+    form.hidden = true;
+    }
+
+    if (trigger) {
+    trigger.hidden = false;
+    }
+
+    return;
+    }
     });
     }
 
@@ -2486,15 +2801,15 @@
     const reader = document.getElementById("qr-reader");
     const resultBox = document.getElementById("qr-scan-result");
 
-    reader.style.display = "block";
+    if (!reader || !resultBox) return;
+
+    reader.hidden = false;
     resultBox.textContent = "Kamera açılıyor...";
 
     button.disabled = true;
     button.textContent = "Taranıyor...";
 
     try {
-    // await navigator.mediaDevices.getUserMedia({ video: true });
-
     const cameras = await Html5Qrcode.getCameras();
 
     if (!cameras || cameras.length === 0) {
@@ -2508,9 +2823,7 @@
     qrScanner = new Html5Qrcode("qr-reader");
 
     await qrScanner.start(
-    {
-    facingMode: "environment"
-    },
+    { facingMode: "environment" },
     {
     fps: 10,
     qrbox: {
@@ -2518,7 +2831,7 @@
     height: 220
     }
     },
-    async function (decodedText) {
+    async decodedText => {
     if (qrScanLocked) return;
 
     qrScanLocked = true;
@@ -2527,7 +2840,7 @@
 
     await qrScanner.stop();
 
-    reader.style.display = "none";
+    reader.hidden = true;
 
     await assignScannedQrCode(
     vehicleId,
@@ -2548,13 +2861,6 @@
     button.textContent = "QR Tara";
     qrScanLocked = false;
     }
-    }
-
-    function toggleInfoPanel(button) {
-    const panel = button.closest(".collapsible-panel");
-    if (!panel) return;
-
-    panel.classList.toggle("collapsed");
     }
 
     async function assignScannedQrCode(vehicleId, code, button, resultBox) {
@@ -2587,6 +2893,10 @@
     showToast("QR kod başarıyla eşleştirildi.", "success");
     }
 
+    document.addEventListener("DOMContentLoaded", () => {
+    bindPageActions();
     bindOperationForms();
+    bindNewRequestForm();
     bindStatusButtons();
+    });
 </script>

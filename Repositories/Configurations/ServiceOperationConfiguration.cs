@@ -32,5 +32,9 @@ public class ServiceOperationConfiguration : IEntityTypeConfiguration<ServiceOpe
             .WithMany(x => x.Operations)
             .HasForeignKey(x => x.ServiceRequestItemId)
             .OnDelete(DeleteBehavior.NoAction);
+        builder.HasOne(x => x.StockItem)
+            .WithMany()
+            .HasForeignKey(x => x.StockItemId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

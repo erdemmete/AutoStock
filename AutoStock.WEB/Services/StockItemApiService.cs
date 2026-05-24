@@ -159,6 +159,26 @@ namespace AutoStock.WEB.Services
 
             return response.IsSuccessStatusCode;
         }
+        public async Task<List<StockItemSelectViewModel>> GetSelectListAsync()
+        {
+            var client = CreateApiClient();
+
+            var response = await client.GetAsync("/api/StockItems/select-list");
+
+            if (!response.IsSuccessStatusCode)
+                return new List<StockItemSelectViewModel>();
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            var result = JsonSerializer.Deserialize<List<StockItemSelectViewModel>>(
+                json,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            return result ?? new List<StockItemSelectViewModel>();
+        }
 
         private HttpClient CreateApiClient()
         {

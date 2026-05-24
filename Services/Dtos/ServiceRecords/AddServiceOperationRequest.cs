@@ -15,4 +15,5 @@ public class AddServiceOperationRequest
     public decimal UnitPrice { get; set; }
 
     public string? Note { get; set; }
+    public int? StockItemId { get; set; }
 }

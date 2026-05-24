@@ -16,5 +16,8 @@ namespace Services.Interfaces.StockItems
         Task<ServiceResult<int>> StockInAsync(int stockItemId, StockTransactionDto dto, int workshopId);
 
         Task<ServiceResult<int>> StockOutAsync(int stockItemId, StockTransactionDto dto, int workshopId);
+        Task<ServiceResult<int>> UseForInvoiceAsync(int stockItemId, decimal quantity, decimal? unitPrice, int invoiceId, int workshopId);
+        Task<List<StockItemSelectDto>> GetSelectListAsync(int workshopId);
+        Task<List<StockItemSelectDto>> SearchAsync(int workshopId, string? query);
     }
 }

@@ -179,9 +179,7 @@ public class ServiceRecordService : IServiceRecordService
     }
 
 
-    public async Task<ServiceResult<ServiceRecordDetailDto>> GetDetailAsync(
-    int serviceRecordId,
-    int workshopId)
+    public async Task<ServiceResult<ServiceRecordDetailDto>> GetDetailAsync(int serviceRecordId, int workshopId)
     {
         var serviceRecord = await _context.ServiceRecords
     .Include(x => x.Customer)
@@ -248,6 +246,7 @@ public class ServiceRecordService : IServiceRecordService
                     TotalPrice = x.TotalPrice,
                     Note = x.Note,
                     ServiceRequestItemId = x.ServiceRequestItemId,
+                    StockItemId = x.StockItemId
                 })
                 .ToList(),
 
@@ -296,10 +295,7 @@ public class ServiceRecordService : IServiceRecordService
         return ServiceResult<List<ServiceRecordListItemDto>>.Success(records);
     }
 
-    public async Task<ServiceResult<bool>> UpdateRequestItemAsync(
-    int requestItemId,
-    UpdateServiceRequestItemRequest request,
-    int workshopId)
+    public async Task<ServiceResult<bool>> UpdateRequestItemAsync(int requestItemId, UpdateServiceRequestItemRequest request, int workshopId)
     {
         var requestItem = await _context.ServiceRequestItems
             .Include(x => x.ServiceRecord)
@@ -356,10 +352,7 @@ public class ServiceRecordService : IServiceRecordService
         return ServiceResult<int>.Success(requestItem.Id);
     }
 
-    public async Task<ServiceResult<ServiceOperationDto>> AddOperationAsync(
-    int serviceRecordId,
-    AddServiceOperationRequest request,
-    int workshopId)
+    public async Task<ServiceResult<ServiceOperationDto>> AddOperationAsync(int serviceRecordId, AddServiceOperationRequest request, int workshopId)
     {
         if (string.IsNullOrWhiteSpace(request.Description))
             return ServiceResult<ServiceOperationDto>.Fail("İşlem açıklaması zorunludur.");
@@ -392,15 +385,28 @@ public class ServiceRecordService : IServiceRecordService
 
         var totalPrice = request.Quantity * request.UnitPrice;
 
+        if (request.Type != OperationType.Part)
+        {
+            request.StockItemId = null;
+        }
+
         var operation = new ServiceOperation
         {
             ServiceRequestItemId = request.ServiceRequestItemId,
+
             Type = request.Type,
+
             Description = request.Description.Trim(),
+
             Quantity = request.Quantity,
+
             UnitPrice = request.UnitPrice,
+
             TotalPrice = totalPrice,
-            Note = request.Note?.Trim()
+
+            Note = request.Note?.Trim(),
+
+            StockItemId = request.StockItemId
         };
 
         serviceRecord.Operations.Add(operation);
@@ -414,13 +420,22 @@ public class ServiceRecordService : IServiceRecordService
         return ServiceResult<ServiceOperationDto>.Success(new ServiceOperationDto
         {
             Id = operation.Id,
+
             Type = operation.Type,
+
             Description = operation.Description,
+
             Quantity = operation.Quantity,
+
             UnitPrice = operation.UnitPrice,
+
             TotalPrice = operation.TotalPrice,
+
             Note = operation.Note,
-            ServiceRequestItemId = operation.ServiceRequestItemId
+
+            ServiceRequestItemId = operation.ServiceRequestItemId,
+
+            StockItemId = operation.StockItemId
         });
     }
     public async Task<ServiceResult<bool>> CompleteAsync(int serviceRecordId, int workshopId)
@@ -445,10 +460,7 @@ public class ServiceRecordService : IServiceRecordService
         return ServiceResult<bool>.Success(true);
     }
 
-    public async Task<ServiceResult<bool>> UpdateStatusAsync(
-    int serviceRecordId,
-    UpdateServiceRecordStatusRequest request,
-    int workshopId)
+    public async Task<ServiceResult<bool>> UpdateStatusAsync(int serviceRecordId, UpdateServiceRecordStatusRequest request, int workshopId)
     {
         var serviceRecord = await _context.ServiceRecords
             .FirstOrDefaultAsync(x =>
@@ -477,9 +489,7 @@ public class ServiceRecordService : IServiceRecordService
         return ServiceResult<bool>.Success(true);
     }
 
-    public async Task<ServiceResult<DeleteServiceOperationResponse>> DeleteOperationAsync(
-    int operationId,
-    int workshopId)
+    public async Task<ServiceResult<DeleteServiceOperationResponse>> DeleteOperationAsync(int operationId, int workshopId)
     {
         var operation = await _context.ServiceOperations
             .Include(x => x.ServiceRecord)
@@ -532,9 +542,7 @@ public class ServiceRecordService : IServiceRecordService
             });
     }
 
-    public async Task<ServiceResult<DeleteServiceRequestItemResponse>> DeleteRequestItemAsync(
-    int requestItemId,
-    int workshopId)
+    public async Task<ServiceResult<DeleteServiceRequestItemResponse>> DeleteRequestItemAsync(int requestItemId, int workshopId)
     {
         var requestItem = await _context.ServiceRequestItems
             .Include(x => x.ServiceRecord)

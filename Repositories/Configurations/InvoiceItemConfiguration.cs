@@ -37,6 +37,11 @@ namespace AutoStock.Repositories.Configurations
 
             builder.Property(x => x.LineTotal)
                 .HasColumnType("decimal(18,2)");
+
+            builder.HasOne(x => x.StockItem)
+    .WithMany()
+    .HasForeignKey(x => x.StockItemId)
+    .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

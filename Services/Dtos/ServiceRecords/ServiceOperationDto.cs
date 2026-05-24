@@ -1,22 +1,22 @@
 ﻿using AutoStock.Repositories.Enums;
 
-namespace AutoStock.Services.Dtos.ServiceRecords
+public class ServiceOperationDto
 {
-    public class ServiceOperationDto
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public OperationType Type { get; set; }
+    public OperationType Type { get; set; }
 
-        public string Description { get; set; } = null!;
+    public string Description { get; set; } = null!;
 
-        public int Quantity { get; set; }
+    public int Quantity { get; set; }
 
-        public decimal UnitPrice { get; set; }
+    public decimal UnitPrice { get; set; }
 
-        public decimal TotalPrice { get; set; }
+    public decimal TotalPrice { get; set; }
 
-        public string? Note { get; set; }
-        public int? ServiceRequestItemId { get; set; }
-    }
+    public string? Note { get; set; }
+
+    public int? ServiceRequestItemId { get; set; }
+
+    public int? StockItemId { get; set; }
 }

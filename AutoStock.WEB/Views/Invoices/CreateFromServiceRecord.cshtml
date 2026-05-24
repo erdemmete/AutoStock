@@ -121,9 +121,9 @@
 
                     @if (Model.Items.Any())
                     {
-                        foreach (var item in Model.Items)
+                        @foreach (var item in Model.Items)
                         {
-                            <div class="invoice-row">
+                            <div class="invoice-row" data-stock-item-id="@item.StockItemId">
                                 <select class="item-type">
                                     <option value="1" selected="@(item.ItemType == 1)">İşçilik</option>
                                     <option value="2" selected="@(item.ItemType == 2)">Parça</option>
@@ -654,6 +654,7 @@
 
         const row = document.createElement("div");
         row.className = "invoice-row";
+        row.dataset.stockItemId = "";
 
         row.innerHTML = `
             <select class="item-type">
@@ -704,15 +705,23 @@
                 return;
             }
 
-            items.push({
-                itemType: Number(row.querySelector(".item-type")?.value || 3),
-                description: description,
-                quantity: toNumber(row.querySelector(".quantity")?.value),
-                unit: row.querySelector(".unit")?.value || "Adet",
-                unitPrice: toNumber(row.querySelector(".unit-price")?.value),
-                discountRate: toNumber(row.querySelector(".discount-rate")?.value),
-                vatRate: toNumber(row.querySelector(".vat-rate")?.value)
-            });
+                const itemType = Number(row.querySelector(".item-type")?.value || 3);
+
+    const stockItemId =
+        row.dataset.stockItemId
+            ? Number(row.dataset.stockItemId)
+            : null;
+
+    items.push({
+        itemType: itemType,
+        description: description,
+        quantity: toNumber(row.querySelector(".quantity")?.value),
+        unit: row.querySelector(".unit")?.value || "Adet",
+        unitPrice: toNumber(row.querySelector(".unit-price")?.value),
+        discountRate: toNumber(row.querySelector(".discount-rate")?.value),
+        vatRate: toNumber(row.querySelector(".vat-rate")?.value),
+        stockItemId: stockItemId
+    });
         });
 
         return {
@@ -737,6 +746,8 @@
     async function saveInvoice() {
         const button = document.getElementById("saveInvoiceBtn");
         const payload = collectInvoicePayload();
+
+       
 
         if (!payload.items.length) {
             alert("En az bir fatura kalemi girilmelidir.");

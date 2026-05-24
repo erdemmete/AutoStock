@@ -28,4 +28,5 @@ public class InvoiceCreateItemViewModel
     public decimal UnitPrice { get; set; }
     public decimal DiscountRate { get; set; }
     public decimal VatRate { get; set; } = 20;
+    public int? StockItemId { get; set; }
 }
