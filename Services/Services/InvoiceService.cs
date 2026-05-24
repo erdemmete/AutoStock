@@ -299,20 +299,25 @@ namespace AutoStock.Services.Services
 
             invoice.Status = InvoiceStatus.Issued;
 
-            foreach (var item in invoice.Items)
+            var shouldDecreaseStockOnIssue = !invoice.ServiceRecordId.HasValue;
+
+            if (shouldDecreaseStockOnIssue)
             {
-                if (item.StockItemId == null)
-                    continue;
+                foreach (var item in invoice.Items)
+                {
+                    if (item.StockItemId == null)
+                        continue;
 
-                var stockResult = await _stockItemService.UseForInvoiceAsync(
-                    item.StockItemId.Value,
-                    item.Quantity,
-                    item.UnitPrice,
-                    invoice.Id,
-                    workshopId);
+                    var stockResult = await _stockItemService.UseForInvoiceAsync(
+                        item.StockItemId.Value,
+                        item.Quantity,
+                        item.UnitPrice,
+                        invoice.Id,
+                        workshopId);
 
-                if (!stockResult.IsSuccess)
-                    return ServiceResult<IssueInvoiceResponseDto>.Fail(stockResult.ErrorMessage);
+                    if (!stockResult.IsSuccess)
+                        return ServiceResult<IssueInvoiceResponseDto>.Fail(stockResult.ErrorMessage);
+                }
             }
 
 

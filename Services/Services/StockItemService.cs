@@ -345,5 +345,112 @@ namespace Services.Services.StockItems
                 })
                 .ToListAsync();
         }
+
+        public async Task<ServiceResult<bool>> UseForServiceOperationAsync(
+    int stockItemId,
+    decimal quantity,
+    decimal unitPrice,
+    int serviceOperationId,
+    int workshopId)
+        {
+            if (quantity <= 0)
+                return ServiceResult<bool>.Fail("Stok çıkış miktarı 0'dan büyük olmalıdır.");
+
+            var stockItem = await _context.StockItems
+                .FirstOrDefaultAsync(x =>
+                    x.Id == stockItemId &&
+                    x.WorkshopId == workshopId &&
+                    x.IsActive);
+
+            if (stockItem is null)
+                return ServiceResult<bool>.Fail("Stok kartı bulunamadı.");
+
+            if (stockItem.Quantity < quantity)
+                return ServiceResult<bool>.Fail("Yetersiz stok.");
+
+            stockItem.Quantity -= quantity;
+
+            _context.StockMovements.Add(new StockMovement
+            {
+                WorkshopId = workshopId,
+                StockItemId = stockItem.Id,
+                MovementType = StockMovementType.ServiceUsage,
+                Quantity = quantity,
+                UnitPrice = unitPrice,
+                ReferenceType = "ServiceOperation",
+                ReferenceId = serviceOperationId,
+                Description = "Servis operasyonu kaynaklı stok çıkışı",
+                CreatedAt = DateTime.UtcNow
+            });
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<bool>> ReturnForServiceOperationAsync(
+            int stockItemId,
+            decimal quantity,
+            decimal unitPrice,
+            int serviceOperationId,
+            int workshopId)
+        {
+            if (quantity <= 0)
+                return ServiceResult<bool>.Fail("Stok iade miktarı 0'dan büyük olmalıdır.");
+
+            var stockItem = await _context.StockItems
+                .FirstOrDefaultAsync(x =>
+                    x.Id == stockItemId &&
+                    x.WorkshopId == workshopId);
+
+            if (stockItem is null)
+                return ServiceResult<bool>.Fail("Stok kartı bulunamadı.");
+
+            stockItem.Quantity += quantity;
+
+            _context.StockMovements.Add(new StockMovement
+            {
+                WorkshopId = workshopId,
+                StockItemId = stockItem.Id,
+                MovementType = StockMovementType.ServiceUsageReturn,
+                Quantity = quantity,
+                UnitPrice = unitPrice,
+                ReferenceType = "ServiceOperation",
+                ReferenceId = serviceOperationId,
+                Description = "Servis operasyonu silme kaynaklı stok iadesi",
+                CreatedAt = DateTime.UtcNow
+            });
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<bool>> ReturnForInvoiceCancellationAsync(int stockItemId, decimal quantity, decimal unitPrice, int invoiceId, int workshopId)
+        {
+            if (quantity <= 0)
+                return ServiceResult<bool>.Fail("Stok iade miktarı 0'dan büyük olmalıdır.");
+
+            var stockItem = await _context.StockItems
+                .FirstOrDefaultAsync(x =>
+                    x.Id == stockItemId &&
+                    x.WorkshopId == workshopId);
+
+            if (stockItem is null)
+                return ServiceResult<bool>.Fail("Stok kartı bulunamadı.");
+
+            stockItem.Quantity += quantity;
+
+            _context.StockMovements.Add(new StockMovement
+            {
+                WorkshopId = workshopId,
+                StockItemId = stockItem.Id,
+                MovementType = StockMovementType.InvoiceCancellation,
+                Quantity = quantity,
+                UnitPrice = unitPrice,
+                ReferenceType = "Invoice",
+                ReferenceId = invoiceId,
+                Description = "Hızlı fatura iptali kaynaklı stok iadesi",
+                CreatedAt = DateTime.UtcNow
+            });
+
+            return ServiceResult<bool>.Success(true);
+        }
     }
 }

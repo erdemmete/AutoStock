@@ -6,16 +6,20 @@ using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Services.Interfaces.StockItems;
 
 namespace AutoStock.Services.Services;
 
 public class ServiceRecordService : IServiceRecordService
 {
     private readonly AppDbContext _context;
+    private readonly IStockItemService _stockItemService;
 
-    public ServiceRecordService(AppDbContext context)
+    public ServiceRecordService(AppDbContext context,
+    IStockItemService stockItemService)
     {
         _context = context;
+        _stockItemService = stockItemService;
     }
 
     public async Task<ServiceResult<CreateServiceRecordResponse>> CreateAsync(CreateServiceRecordRequest request,int workshopId)
@@ -390,51 +394,57 @@ public class ServiceRecordService : IServiceRecordService
             request.StockItemId = null;
         }
 
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
         var operation = new ServiceOperation
         {
             ServiceRequestItemId = request.ServiceRequestItemId,
-
             Type = request.Type,
-
             Description = request.Description.Trim(),
-
             Quantity = request.Quantity,
-
             UnitPrice = request.UnitPrice,
-
             TotalPrice = totalPrice,
-
             Note = request.Note?.Trim(),
-
             StockItemId = request.StockItemId
         };
 
         serviceRecord.Operations.Add(operation);
 
-        serviceRecord.TotalAmount = serviceRecord.Operations.Sum(x => x.TotalPrice) + totalPrice;
-
+        serviceRecord.TotalAmount = serviceRecord.Operations.Sum(x => x.TotalPrice);
         serviceRecord.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
 
+if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
+{
+    var stockResult = await _stockItemService.UseForServiceOperationAsync(
+        operation.StockItemId.Value,
+        operation.Quantity,
+        operation.UnitPrice,
+        operation.Id,
+        workshopId);
+
+    if (!stockResult.IsSuccess)
+    {
+        await transaction.RollbackAsync();
+        return ServiceResult<ServiceOperationDto>.Fail(stockResult.ErrorMessage);
+    }
+
+    await _context.SaveChangesAsync();
+}
+
+await transaction.CommitAsync();
+
         return ServiceResult<ServiceOperationDto>.Success(new ServiceOperationDto
         {
             Id = operation.Id,
-
             Type = operation.Type,
-
             Description = operation.Description,
-
             Quantity = operation.Quantity,
-
             UnitPrice = operation.UnitPrice,
-
             TotalPrice = operation.TotalPrice,
-
             Note = operation.Note,
-
             ServiceRequestItemId = operation.ServiceRequestItemId,
-
             StockItemId = operation.StockItemId
         });
     }
@@ -503,6 +513,24 @@ public class ServiceRecordService : IServiceRecordService
         var serviceRecordId = operation.ServiceRecordId;
         var serviceRequestItemId = operation.ServiceRequestItemId;
 
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
+        {
+            var stockResult = await _stockItemService.ReturnForServiceOperationAsync(
+                operation.StockItemId.Value,
+                operation.Quantity,
+                operation.UnitPrice,
+                operation.Id,
+                workshopId);
+
+            if (!stockResult.IsSuccess)
+            {
+                await transaction.RollbackAsync();
+                return ServiceResult<DeleteServiceOperationResponse>.Fail(stockResult.ErrorMessage);
+            }
+        }
+
         _context.ServiceOperations.Remove(operation);
 
         await _context.SaveChangesAsync();
@@ -525,12 +553,17 @@ public class ServiceRecordService : IServiceRecordService
                 x.WorkshopId == workshopId);
 
         if (serviceRecord is null)
+        {
+            await transaction.RollbackAsync();
             return ServiceResult<DeleteServiceOperationResponse>.Fail("Servis kaydı bulunamadı.");
+        }
 
         serviceRecord.TotalAmount = recordTotal;
         serviceRecord.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
 
         return ServiceResult<DeleteServiceOperationResponse>.Success(
             new DeleteServiceOperationResponse

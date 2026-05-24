@@ -19,5 +19,10 @@ namespace Services.Interfaces.StockItems
         Task<ServiceResult<int>> UseForInvoiceAsync(int stockItemId, decimal quantity, decimal? unitPrice, int invoiceId, int workshopId);
         Task<List<StockItemSelectDto>> GetSelectListAsync(int workshopId);
         Task<List<StockItemSelectDto>> SearchAsync(int workshopId, string? query);
+        Task<ServiceResult<bool>> UseForServiceOperationAsync(int stockItemId, decimal quantity, decimal unitPrice, int serviceOperationId, int workshopId);
+
+        Task<ServiceResult<bool>> ReturnForServiceOperationAsync(int stockItemId, decimal quantity, decimal unitPrice, int serviceOperationId, int workshopId);
+
+        Task<ServiceResult<bool>> ReturnForInvoiceCancellationAsync(int stockItemId, decimal quantity, decimal unitPrice, int invoiceId, int workshopId);
     }
 }

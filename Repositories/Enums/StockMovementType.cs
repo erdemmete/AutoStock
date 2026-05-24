@@ -6,6 +6,8 @@
         Out = 2,
         Adjustment = 3,
         ServiceUsage = 4,
-        InvoiceUsage = 5
+        InvoiceUsage = 5,
+        InvoiceCancellation = 6,
+        ServiceUsageReturn = 7
     }
 }
