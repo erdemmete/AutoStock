@@ -1,80 +1,664 @@
 ﻿@model List<AutoStock.WEB.Models.StockItems.StockItemListViewModel>
 
 @{
-    ViewData["Title"] = "Stok Kartları";
+    ViewData["Title"] = "Stok Yönetimi";
+
+    var brands = Model
+        .Where(x => !string.IsNullOrWhiteSpace(x.Brand))
+        .Select(x => x.Brand)
+        .Distinct()
+        .OrderBy(x => x)
+        .ToList();
+
+    var units = Model
+        .Where(x => !string.IsNullOrWhiteSpace(x.Unit))
+        .Select(x => x.Unit)
+        .Distinct()
+        .OrderBy(x => x)
+        .ToList();
 }
 
-<div class="page-header">
-    <div>
-        <h1>Stok Kartları</h1>
-        <p>Takip edilen yedek parça ve ürün stokları</p>
+<div class="stock-page">
+    <div class="stock-header">
+        <div class="stock-title-area">
+            <div class="stock-icon">
+                <span>▱</span>
+            </div>
+
+            <div>
+                <h1>Stok Yönetimi</h1>
+                <p>Sistemde kayıtlı tüm yedek parça ve sarf malzemeleri buradan yönetebilirsiniz.</p>
+            </div>
+        </div>
+
+        <div class="stock-header-actions">
+            <a asp-controller="Dashboard"
+               asp-action="Index"
+               class="stock-secondary-btn">
+                Ana Sayfa
+            </a>
+
+            <a asp-controller="StockItems"
+               asp-action="Create"
+               class="stock-primary-btn">
+                <span>+</span>
+                Yeni Stok Kartı
+            </a>
+        </div>
     </div>
 
-    <a asp-controller="StockItems" asp-action="Create" class="btn btn-primary">
-        Yeni Stok Kartı
-    </a>
-</div>
+    <div class="stock-filter-card">
+        <div class="stock-search-box">
+            <span class="search-icon">⌕</span>
+            <input id="stockSearchInput"
+                   type="text"
+                   placeholder="Stok kodu, adı veya marka ara..." />
+        </div>
 
-<div class="card">
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Stok Adı</th>
-                    <th>Kod</th>
-                    <th>Marka</th>
-                    <th>Birim</th>
-                    <th>Miktar</th>
-                    <th>Satış Fiyatı</th>
-                    <th>Minimum</th>
-                    <th>Durum</th>
-                    <th>İşlem</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (!Model.Any())
-                {
+        <select id="brandFilter" class="stock-filter-select">
+            <option value="">Tüm Markalar</option>
+
+            @foreach (var brand in brands)
+            {
+                <option value="@brand">@brand</option>
+            }
+        </select>
+
+        <select id="unitFilter" class="stock-filter-select">
+            <option value="">Tüm Birimler</option>
+
+            @foreach (var unit in units)
+            {
+                <option value="@unit">@unit</option>
+            }
+        </select>
+
+        <button type="button"
+                id="clearFiltersBtn"
+                class="stock-filter-button"
+                title="Filtreleri temizle">
+            ⌄
+        </button>
+    </div>
+
+    <div class="stock-table-card">
+        <div class="table-responsive">
+            <table class="stock-table">
+                <thead>
                     <tr>
-                        <td colspan="9" class="text-center text-muted">
-                            Henüz stok kartı oluşturulmamış.
-                        </td>
+                        <th>Stok Kodu</th>
+                        <th>Stok Adı</th>
+                        <th>Marka</th>
+                        <th>Miktar</th>
+                        <th>Fiyat</th>
+                        <th>Minimum</th>
+                        <th>Durum</th>
+                        <th class="text-right">İşlem</th>
                     </tr>
-                }
-                else
-                {
-                    foreach (var item in Model)
+                </thead>
+
+                <tbody id="stockTableBody">
+                    @if (!Model.Any())
                     {
                         <tr>
-                            <td>@item.Name</td>
-                            <td>@item.Code</td>
-                            <td>@item.Brand</td>
-                            <td>@item.Unit</td>
-                            <td>@item.Quantity</td>
-                            <td>@item.SalePrice.ToString("N2") ₺</td>
-                            <td>@item.MinimumQuantity</td>
-                            <td>
-                                @if (item.IsCritical)
-                                {
-                                    <span class="badge bg-danger">Kritik</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-success">Normal</span>
-                                }
-                            </td>
-
-                            <td>
-                                <a asp-controller="StockItems"
-                                   asp-action="Details"
-                                   asp-route-id="@item.Id"
-                                   class="btn btn-sm btn-outline-primary">
-                                    Detay
-                                </a>
+                            <td colspan="8" class="empty-cell">
+                                Henüz stok kartı oluşturulmamış.
                             </td>
                         </tr>
                     }
-                }
-            </tbody>
-        </table>
+                    else
+                    {
+                        foreach (var item in Model)
+                        {
+                            var brandValue = item.Brand ?? "";
+                            var unitValue = item.Unit ?? "";
+
+                            <tr class="stock-row"
+                                data-search="@($"{item.Code} {item.Name} {item.Brand}".ToLowerInvariant())"
+                                data-brand="@brandValue"
+                                data-unit="@unitValue">
+
+                                <td>
+                                    <span class="stock-code">@item.Code</span>
+                                </td>
+
+                                <td>
+                                    <div class="stock-name">@item.Name</div>
+                                </td>
+
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(item.Brand))
+                                    {
+                                        <span class="brand-pill">@item.Brand</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="brand-pill muted">Marka yok</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (item.IsCritical)
+                                    {
+                                        <div class="quantity danger">
+                                            <span class="warning-icon">⚠</span>
+                                            <strong>@item.Quantity</strong>
+                                            <span>@item.Unit</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="quantity">
+                                            <strong>@item.Quantity</strong>
+                                            <span>@item.Unit</span>
+                                        </div>
+                                    }
+                                </td>
+
+                                <td>
+                                    <strong class="price">
+                                        ₺@item.SalePrice.ToString("N2")
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <span class="minimum-text">@item.MinimumQuantity</span>
+                                </td>
+
+                                <td>
+                                    @if (item.IsCritical)
+                                    {
+                                        <span class="status-badge danger">Kritik</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-badge success">Normal</span>
+                                    }
+                                </td>
+
+                                <td class="text-right">
+                                    <a asp-controller="StockItems"
+                                       asp-action="Details"
+                                       asp-route-id="@item.Id"
+                                       class="detail-btn">
+                                        Detay
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="stock-table-footer">
+            <div>
+                <span id="visibleCount">@Model.Count</span> stok kartı gösteriliyor
+                <span class="footer-muted">(Toplam @Model.Count kayıt)</span>
+            </div>
+
+            <div class="pagination-preview">
+                <button type="button" disabled>‹</button>
+                <button type="button" class="active">1</button>
+                <button type="button" disabled>›</button>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .stock-page {
+        padding-top: 28px;
+        padding-bottom: 32px;
+    }
+
+    .stock-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .stock-title-area {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .stock-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: #eef2ff;
+        color: #4f46e5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 800;
+    }
+
+    .stock-header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .stock-header p {
+        margin: 8px 0 0;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .stock-primary-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #4f46e5;
+        color: #fff;
+        border: none;
+        border-radius: 13px;
+        padding: 13px 20px;
+        font-weight: 800;
+        text-decoration: none;
+        box-shadow: 0 10px 24px rgba(79, 70, 229, .24);
+        transition: .18s ease;
+        white-space: nowrap;
+    }
+
+        .stock-primary-btn:hover {
+            background: #4338ca;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+    .stock-filter-card {
+        display: grid;
+        grid-template-columns: minmax(320px, 1fr) 170px 170px 48px;
+        gap: 12px;
+        background: #fff;
+        border: 1px solid #dbe3ef;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
+    }
+
+    .stock-search-box {
+        position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 22px;
+    }
+
+    .stock-search-box input,
+    .stock-filter-select {
+        width: 100%;
+        height: 48px;
+        border: 1px solid #cfd8e6;
+        border-radius: 13px;
+        background: #fff;
+        color: #0f172a;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .stock-search-box input {
+        padding: 0 16px 0 48px;
+    }
+
+    .stock-filter-select {
+        padding: 0 14px;
+    }
+
+        .stock-search-box input:focus,
+        .stock-filter-select:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
+        }
+
+    .stock-filter-button {
+        width: 48px;
+        height: 48px;
+        border: 1px solid #cfd8e6;
+        border-radius: 13px;
+        background: #f8fafc;
+        color: #475569;
+        font-size: 20px;
+        cursor: pointer;
+        transform: rotate(90deg);
+    }
+
+        .stock-filter-button:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #4f46e5;
+        }
+
+    .stock-table-card {
+        background: #fff;
+        border: 1px solid #dbe3ef;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
+    }
+
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .stock-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 960px;
+    }
+
+        .stock-table thead {
+            background: #f8fafc;
+        }
+
+        .stock-table th {
+            padding: 17px 24px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: #64748b;
+            font-weight: 800;
+            text-align: left;
+            border-bottom: 1px solid #dbe3ef;
+        }
+
+        .stock-table td {
+            padding: 20px 24px;
+            border-bottom: 1px solid #edf2f7;
+            vertical-align: middle;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+        .stock-table tr:last-child td {
+            border-bottom: none;
+        }
+
+    .stock-row:hover {
+        background: #fafbff;
+    }
+
+    .stock-code {
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .stock-name {
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .brand-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 8px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+        .brand-pill.muted {
+            color: #94a3b8;
+        }
+
+    
+
+    .quantity {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: #0f172a;
+    }
+
+        .quantity strong {
+            font-weight: 800;
+        }
+
+        .quantity span {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .quantity.danger {
+            color: #e11d48;
+        }
+
+            .quantity.danger span {
+                color: #e11d48;
+            }
+
+    .warning-icon {
+        font-size: 15px;
+    }
+
+    .price {
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .minimum-text {
+        color: #64748b;
+        font-weight: 700;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+        .status-badge.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.danger {
+            background: #ffe4e6;
+            color: #be123c;
+        }
+
+    .detail-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 74px;
+        height: 40px;
+        border: 1px solid #cfd8e6;
+        border-radius: 10px;
+        color: #334155;
+        background: #fff;
+        text-decoration: none;
+        font-weight: 800;
+        font-size: 13px;
+        transition: .18s ease;
+    }
+
+        .detail-btn:hover {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+
+    .text-right {
+        text-align: right !important;
+    }
+
+    .empty-cell {
+        padding: 38px !important;
+        text-align: center;
+        color: #64748b !important;
+    }
+
+    .stock-table-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 24px;
+        border-top: 1px solid #edf2f7;
+        color: #0f172a;
+        font-size: 14px;
+    }
+
+    .footer-muted {
+        color: #64748b;
+    }
+
+    .pagination-preview {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #cfd8e6;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+        .pagination-preview button {
+            width: 42px;
+            height: 36px;
+            border: none;
+            border-right: 1px solid #cfd8e6;
+            background: #fff;
+            color: #334155;
+            font-weight: 800;
+        }
+
+            .pagination-preview button:last-child {
+                border-right: none;
+            }
+
+            .pagination-preview button.active {
+                background: #4f46e5;
+                color: #fff;
+            }
+
+            .pagination-preview button:disabled {
+                color: #94a3b8;
+            }
+
+    .stock-row.is-hidden {
+        display: none;
+    }
+
+    @@media (max-width: 900px) {
+        .stock-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .stock-filter-card {
+            grid-template-columns: 1fr;
+        }
+
+        .stock-filter-button {
+            width: 100%;
+            transform: none;
+        }
+
+        .stock-table-footer {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+
+    .stock-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .stock-secondary-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #cfd8e6;
+        border-radius: 13px;
+        padding: 13px 18px;
+        font-weight: 800;
+        text-decoration: none;
+        transition: .18s ease;
+        white-space: nowrap;
+    }
+
+        .stock-secondary-btn:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #4f46e5;
+        }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const searchInput = document.getElementById("stockSearchInput");
+        const brandFilter = document.getElementById("brandFilter");
+        const unitFilter = document.getElementById("unitFilter");
+        const clearButton = document.getElementById("clearFiltersBtn");
+        const visibleCount = document.getElementById("visibleCount");
+
+        function applyFilters() {
+            const searchValue = (searchInput?.value || "").trim().toLowerCase();
+            const brandValue = brandFilter?.value || "";
+            const unitValue = unitFilter?.value || "";
+
+            const rows = document.querySelectorAll(".stock-row");
+            let count = 0;
+
+            rows.forEach(row => {
+                const rowSearch = row.dataset.search || "";
+                const rowBrand = row.dataset.brand || "";
+                const rowUnit = row.dataset.unit || "";
+
+                const matchesSearch = !searchValue || rowSearch.includes(searchValue);
+                const matchesBrand = !brandValue || rowBrand === brandValue;
+                const matchesUnit = !unitValue || rowUnit === unitValue;
+
+                const visible = matchesSearch && matchesBrand && matchesUnit;
+
+                row.classList.toggle("is-hidden", !visible);
+
+                if (visible) {
+                    count++;
+                }
+            });
+
+            if (visibleCount) {
+                visibleCount.textContent = count;
+            }
+        }
+
+        searchInput?.addEventListener("input", applyFilters);
+        brandFilter?.addEventListener("change", applyFilters);
+        unitFilter?.addEventListener("change", applyFilters);
+
+        clearButton?.addEventListener("click", function () {
+            if (searchInput) searchInput.value = "";
+            if (brandFilter) brandFilter.value = "";
+            if (unitFilter) unitFilter.value = "";
+
+            applyFilters();
+        });
+    });
+</script>

@@ -4,78 +4,407 @@
     ViewData["Title"] = "Stok Kartı Düzenle";
 }
 
-<div class="page-header">
-    <div>
-        <h1>Stok Kartı Düzenle</h1>
-        <p>Stok kartı bilgilerini güncelleyin. Miktar bu ekrandan değiştirilemez.</p>
+<div class="stock-form-page">
+    <div class="stock-form-header">
+        <div>
+            <div class="breadcrumb-lite">
+                <a asp-controller="Dashboard" asp-action="Index">Ana Sayfa</a>
+                <span>/</span>
+                <a asp-controller="StockItems" asp-action="Index">Stok Yönetimi</a>
+                <span>/</span>
+                <a asp-controller="StockItems" asp-action="Details" asp-route-id="@Model.Id">Stok Detayı</a>
+                <span>/</span>
+                <strong>Düzenle</strong>
+            </div>
+
+            <h1>Stok Kartı Düzenle</h1>
+            <p>Stok kartı bilgilerini güncelleyin. Stok miktarı bu ekrandan değiştirilemez.</p>
+        </div>
+
+        <div class="stock-header-actions">
+            <a asp-controller="Dashboard"
+               asp-action="Index"
+               class="stock-secondary-btn">
+                Ana Sayfa
+            </a>
+
+            <a asp-controller="StockItems"
+               asp-action="Details"
+               asp-route-id="@Model.Id"
+               class="stock-secondary-btn">
+                Detaya Dön
+            </a>
+        </div>
     </div>
 
-    <a asp-controller="StockItems"
-       asp-action="Details"
-       asp-route-id="@Model.Id"
-       class="btn btn-secondary">
-        Geri
-    </a>
+    <div class="stock-info-alert">
+        <strong>Bilgi:</strong>
+        Mevcut stok miktarı bu ekrandan düzenlenmez. Miktar değişiklikleri için stok detay ekranındaki
+        <strong>Stok Düzelt</strong> işlemini kullanın.
+    </div>
+
+    <form asp-controller="StockItems"
+          asp-action="Edit"
+          asp-route-id="@Model.Id"
+          method="post"
+          class="stock-form-card">
+
+        <input type="hidden" asp-for="Id" />
+
+        <div class="form-card-header">
+            <div>
+                <h2>Stok Bilgileri</h2>
+                <p>Stok adı, kod, marka, birim ve fiyat bilgilerini güncelleyin.</p>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group full">
+                <label>Stok Adı</label>
+                <input asp-for="Name"
+                       class="form-control-custom"
+                       placeholder="Örn: Motor Yağı 5W-30 (4L)" />
+                <span asp-validation-for="Name" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Stok Kodu</label>
+                <input asp-for="Code"
+                       class="form-control-custom"
+                       placeholder="Örn: YG-001" />
+                <span asp-validation-for="Code" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Barkod</label>
+                <input asp-for="Barcode"
+                       class="form-control-custom"
+                       placeholder="Varsa barkod numarası" />
+                <span asp-validation-for="Barcode" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Marka</label>
+                <input asp-for="Brand"
+                       class="form-control-custom"
+                       placeholder="Örn: Castrol, Bosch, Renault" />
+                <span asp-validation-for="Brand" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Birim</label>
+                <input asp-for="Unit"
+                       class="form-control-custom"
+                       placeholder="Örn: Adet, Takım, Litre" />
+                <span asp-validation-for="Unit" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Minimum Stok</label>
+                <input asp-for="MinimumQuantity"
+                       class="form-control-custom"
+                       type="number"
+                       step="0.01"
+                       min="0"
+                       placeholder="0" />
+                <span asp-validation-for="MinimumQuantity" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Alış Fiyatı</label>
+                <div class="money-input">
+                    <span>₺</span>
+                    <input asp-for="PurchasePrice"
+                           type="number"
+                           step="0.01"
+                           min="0"
+                           placeholder="0.00" />
+                </div>
+                <span asp-validation-for="PurchasePrice" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Satış Fiyatı</label>
+                <div class="money-input">
+                    <span>₺</span>
+                    <input asp-for="SalePrice"
+                           type="number"
+                           step="0.01"
+                           min="0"
+                           placeholder="0.00" />
+                </div>
+                <span asp-validation-for="SalePrice" class="validation-message"></span>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a asp-controller="StockItems"
+               asp-action="Details"
+               asp-route-id="@Model.Id"
+               class="stock-secondary-btn">
+                Vazgeç
+            </a>
+
+            <button type="submit" class="stock-primary-btn">
+                Değişiklikleri Kaydet
+            </button>
+        </div>
+    </form>
 </div>
 
-<div class="alert alert-info">
-    Mevcut stok miktarı bu ekrandan düzenlenmez. Miktar değişiklikleri için stok detay ekranındaki
-    <strong>Stok Düzelt</strong> işlemini kullanın.
-</div>
+<style>
+    .stock-form-page {
+        padding-top: 28px;
+        padding-bottom: 32px;
+    }
 
-<form asp-controller="StockItems"
-      asp-action="Edit"
-      asp-route-id="@Model.Id"
-      method="post"
-      class="card form-card">
+    .stock-form-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 26px;
+    }
 
-    <input type="hidden" asp-for="Id" />
+    .breadcrumb-lite {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #94a3b8;
+        font-size: 13px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
 
-    <div class="form-grid">
-        <div class="form-group">
-            <label>Stok Adı</label>
-            <input asp-for="Name" class="form-control" />
-        </div>
+        .breadcrumb-lite a {
+            color: #64748b;
+            text-decoration: none;
+            font-weight: 700;
+        }
 
-        <div class="form-group">
-            <label>Stok Kodu</label>
-            <input asp-for="Code" class="form-control" />
-        </div>
+            .breadcrumb-lite a:hover {
+                color: #4f46e5;
+            }
 
-        <div class="form-group">
-            <label>Barkod</label>
-            <input asp-for="Barcode" class="form-control" />
-        </div>
+    .stock-form-header h1 {
+        margin: 0;
+        font-size: 30px;
+        font-weight: 900;
+        color: #0f172a;
+    }
 
-        <div class="form-group">
-            <label>Marka</label>
-            <input asp-for="Brand" class="form-control" />
-        </div>
+    .stock-form-header p {
+        margin: 8px 0 0;
+        color: #64748b;
+        font-size: 14px;
+    }
 
-        <div class="form-group">
-            <label>Birim</label>
-            <input asp-for="Unit" class="form-control" />
-        </div>
+    .stock-header-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
 
-        <div class="form-group">
-            <label>Alış Fiyatı</label>
-            <input asp-for="PurchasePrice" class="form-control" type="number" step="0.01" />
-        </div>
+    .stock-info-alert {
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        line-height: 1.5;
+    }
 
-        <div class="form-group">
-            <label>Satış Fiyatı</label>
-            <input asp-for="SalePrice" class="form-control" type="number" step="0.01" />
-        </div>
+    .stock-form-card {
+        background: #fff;
+        border: 1px solid #dbe3ef;
+        border-radius: 18px;
+        padding: 26px;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
+    }
 
-        <div class="form-group">
-            <label>Minimum Stok</label>
-            <input asp-for="MinimumQuantity" class="form-control" type="number" step="0.01" />
-        </div>
-    </div>
+    .form-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid #edf2f7;
+    }
 
-    <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
-            Güncelle
-        </button>
-    </div>
-</form>
+        .form-card-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        .form-card-header p {
+            margin: 6px 0 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .form-group.full {
+        grid-column: span 2;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 900;
+        font-size: 14px;
+        color: #0f172a;
+    }
+
+    .form-control-custom {
+        width: 100%;
+        height: 48px;
+        border: 1px solid #cfd8e6;
+        border-radius: 13px;
+        padding: 0 14px;
+        font-size: 14px;
+        outline: none;
+        background: #fff;
+        color: #0f172a;
+    }
+
+        .form-control-custom:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
+        }
+
+    .money-input {
+        height: 48px;
+        display: flex;
+        align-items: center;
+        border: 1px solid #cfd8e6;
+        border-radius: 13px;
+        background: #fff;
+        overflow: hidden;
+    }
+
+        .money-input:focus-within {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
+        }
+
+        .money-input span {
+            width: 46px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            color: #64748b;
+            font-weight: 900;
+            border-right: 1px solid #edf2f7;
+        }
+
+        .money-input input {
+            flex: 1;
+            height: 100%;
+            border: none;
+            outline: none;
+            padding: 0 14px;
+            font-size: 14px;
+            color: #0f172a;
+        }
+
+    .validation-message {
+        display: block;
+        margin-top: 6px;
+        color: #e11d48;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 12px;
+        margin-top: 26px;
+        padding-top: 20px;
+        border-top: 1px solid #edf2f7;
+    }
+
+    .stock-primary-btn,
+    .stock-secondary-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 11px 18px;
+        border-radius: 12px;
+        font-weight: 900;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: .18s ease;
+        white-space: nowrap;
+    }
+
+    .stock-primary-btn {
+        background: #4f46e5;
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(79, 70, 229, .22);
+    }
+
+        .stock-primary-btn:hover {
+            background: #4338ca;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+    .stock-secondary-btn {
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #cfd8e6;
+    }
+
+        .stock-secondary-btn:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #4f46e5;
+        }
+
+    @@media (max-width: 768px) {
+        .stock-form-header {
+            flex-direction: column;
+        }
+
+        .stock-header-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group.full {
+            grid-column: span 1;
+        }
+
+        .form-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .stock-primary-btn,
+        .stock-secondary-btn {
+            width: 100%;
+        }
+    }
+</style>
