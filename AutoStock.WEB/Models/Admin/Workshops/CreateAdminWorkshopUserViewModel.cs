@@ -15,6 +15,8 @@ namespace AutoStock.WEB.Models.Admin.Workshops
         [EmailAddress(ErrorMessage = "Geçerli bir e-posta adresi giriniz.")]
         public string? Email { get; set; }
 
+        public string? PhoneNumber { get; set; }
+
         [Required(ErrorMessage = "Şifre zorunludur.")]
         public string Password { get; set; } = string.Empty;
 

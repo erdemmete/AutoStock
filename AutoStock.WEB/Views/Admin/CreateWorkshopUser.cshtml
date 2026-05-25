@@ -64,6 +64,18 @@
             </div>
 
             <div class="form-group">
+                <label>Cep Telefonu</label>
+                <input asp-for="PhoneNumber"
+                       class="form-control-custom mobile-phone-input"
+                       value="05"
+                       maxlength="14"
+                       inputmode="numeric"
+                       autocomplete="tel"
+                       placeholder="0534 888 77 99" />
+                <small>WhatsApp ile gönder butonu için kullanılır.</small>
+            </div>
+
+            <div class="form-group">
                 <label>Şifre</label>
                 <input asp-for="Password"
                        id="Password"
@@ -297,4 +309,128 @@
             }
         });
     });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initializeCredentialGenerator();
+        initializeMobilePhoneInputs();
+    });
+
+    function initializeCredentialGenerator() {
+        const generateButton = document.getElementById("generateCredentialsBtn");
+        const fullNameInput = document.getElementById("FullName");
+        const userNameInput = document.getElementById("UserName");
+        const passwordInput = document.getElementById("Password");
+
+        if (!generateButton || !fullNameInput || !userNameInput || !passwordInput) {
+            return;
+        }
+
+        generateButton.addEventListener("click", async function () {
+            const fullName = fullNameInput.value.trim();
+
+            if (!fullName) {
+                alert("Önce ad soyad gir.");
+                fullNameInput.focus();
+                return;
+            }
+
+            generateButton.disabled = true;
+            generateButton.textContent = "Oluşturuluyor...";
+
+            try {
+                const response = await fetch(`/Admin/Workshops/@Model.WorkshopId/Users/SuggestCredentials?fullName=${encodeURIComponent(fullName)}`);
+                const result = await response.json();
+
+                if (!result.isSuccess) {
+                    alert(result.errorMessage || "Kullanıcı adı ve şifre oluşturulamadı.");
+                    return;
+                }
+
+                userNameInput.value = result.userName;
+                passwordInput.value = result.password;
+            }
+            catch {
+                alert("Kullanıcı adı ve şifre oluşturulurken hata oluştu.");
+            }
+            finally {
+                generateButton.disabled = false;
+                generateButton.textContent = "Oluştur";
+            }
+        });
+    }
+
+    function initializeMobilePhoneInputs() {
+        const inputs = document.querySelectorAll(".mobile-phone-input");
+
+        inputs.forEach(input => {
+            if (!input.value || input.value.trim() === "") {
+                input.value = "05";
+            }
+
+            input.value = formatMobilePhone(input.value);
+
+            input.addEventListener("focus", function () {
+                if (!input.value || input.value.trim() === "") {
+                    input.value = "05";
+                }
+
+                setCursorToEnd(input);
+            });
+
+            input.addEventListener("input", function () {
+                input.value = formatMobilePhone(input.value);
+                setCursorToEnd(input);
+            });
+
+            input.addEventListener("blur", function () {
+                if (!input.value || input.value.replace(/\D/g, "").length <= 2) {
+                    input.value = "05";
+                }
+            });
+        });
+    }
+
+    function formatMobilePhone(value) {
+        let digits = value.replace(/\D/g, "");
+
+        if (digits.startsWith("90")) {
+            digits = "0" + digits.substring(2);
+        }
+
+        if (digits.startsWith("5")) {
+            digits = "0" + digits;
+        }
+
+        if (!digits.startsWith("05")) {
+            digits = "05" + digits.replace(/^0+/, "");
+        }
+
+        digits = digits.substring(0, 11);
+
+        if (digits.length <= 4) {
+            return digits;
+        }
+
+        if (digits.length <= 7) {
+            return digits.substring(0, 4) + " " + digits.substring(4);
+        }
+
+        if (digits.length <= 9) {
+            return digits.substring(0, 4) + " " +
+                digits.substring(4, 7) + " " +
+                digits.substring(7);
+        }
+
+        return digits.substring(0, 4) + " " +
+            digits.substring(4, 7) + " " +
+            digits.substring(7, 9) + " " +
+            digits.substring(9, 11);
+    }
+
+    function setCursorToEnd(input) {
+        setTimeout(() => {
+            input.selectionStart = input.value.length;
+            input.selectionEnd = input.value.length;
+        }, 0);
+    }
 </script>

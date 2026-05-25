@@ -255,8 +255,14 @@ namespace AutoStock.WEB.Controllers
             }
 
             TempData["SuccessMessage"] = "Kullanıcı başarıyla oluşturuldu.";
+            TempData["CreatedUserFullName"] = model.FullName;
+            TempData["CreatedUserName"] = model.UserName;
+            TempData["CreatedUserPassword"] = model.Password;
+            TempData["CreatedUserPhone"] = model.PhoneNumber;
 
-            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });  
+
+          
         }
 
         [HttpPost("Admin/Workshops/UpdateUserStatus")]
@@ -291,9 +297,7 @@ namespace AutoStock.WEB.Controllers
         }
 
         [HttpGet("Admin/Workshops/{workshopId:int}/Users/SuggestCredentials")]
-        public async Task<IActionResult> SuggestWorkshopUserCredentials(
-    int workshopId,
-    string fullName)
+        public async Task<IActionResult> SuggestWorkshopUserCredentials(int workshopId, string fullName)
         {
             if (!IsAdmin())
             {

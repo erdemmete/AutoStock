@@ -18,6 +18,49 @@
         (4, "Expired"),
         (5, "Cancelled")
     };
+
+    var createdUserFullName = TempData["CreatedUserFullName"] as string;
+    var createdUserName = TempData["CreatedUserName"] as string;
+    var createdUserPassword = TempData["CreatedUserPassword"] as string;
+    var createdUserPhone = TempData["CreatedUserPhone"] as string;
+
+    var loginUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/Auth/Login";
+
+    string? createdUserMessage = null;
+    string? whatsappUrl = null;
+
+    if (!string.IsNullOrWhiteSpace(createdUserName) &&
+        !string.IsNullOrWhiteSpace(createdUserPassword))
+    {
+        createdUserMessage =
+    $@"Merhaba {createdUserFullName},
+
+Sente360 servis yönetim hesabınız oluşturuldu.
+
+Giriş adresi: {loginUrl}
+Kullanıcı adı: {createdUserName}
+Geçici şifre: {createdUserPassword}
+
+Giriş yaptıktan sonra şifrenizi değiştirmeniz önerilir.";
+
+        var phoneDigits = new string((createdUserPhone ?? "")
+            .Where(char.IsDigit)
+            .ToArray());
+
+        if (phoneDigits.StartsWith("0"))
+        {
+            phoneDigits = "90" + phoneDigits.Substring(1);
+        }
+        else if (phoneDigits.StartsWith("5"))
+        {
+            phoneDigits = "90" + phoneDigits;
+        }
+
+        if (!string.IsNullOrWhiteSpace(phoneDigits) && phoneDigits.Length >= 12)
+        {
+            whatsappUrl = $"https://wa.me/{phoneDigits}?text={Uri.EscapeDataString(createdUserMessage)}";
+        }
+    }
 }
 
 <div class="page-header">
@@ -42,6 +85,41 @@
 {
     <div class="alert-error">
         @Html.Raw(TempData["ErrorMessage"])
+    </div>
+}
+@if (!string.IsNullOrWhiteSpace(createdUserMessage))
+{
+    <div class="credential-card">
+        <div>
+            <h2>Yeni Kullanıcı Bilgileri</h2>
+            <p>Bu bilgiler sadece oluşturma sonrası gösterilir. Kopyalayıp kullanıcıya iletebilirsin.</p>
+        </div>
+
+        <pre id="createdCredentialsText">@createdUserMessage</pre>
+
+        <div class="credential-actions">
+            <button type="button"
+                    id="copyCredentialsBtn"
+                    class="btn-secondary-custom"
+                    data-message="@createdUserMessage">
+                Bilgileri Kopyala
+            </button>
+
+            @if (!string.IsNullOrWhiteSpace(whatsappUrl))
+            {
+                <a href="@whatsappUrl"
+                   target="_blank"
+                   class="btn-whatsapp-custom">
+                    WhatsApp ile Gönder
+                </a>
+            }
+            else
+            {
+                <span class="text-muted">
+                    WhatsApp için geçerli cep telefonu girilmemiş.
+                </span>
+            }
+        </div>
     </div>
 }
 
@@ -998,12 +1076,69 @@
         .btn-danger-custom:hover {
             background: #fecaca;
         }
+
+    .credential-card {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+        .credential-card h2 {
+            font-size: 18px;
+            margin: 0 0 6px;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+
+        .credential-card p {
+            margin: 0 0 16px;
+            color: #1e40af;
+        }
+
+        .credential-card pre {
+            background: #fff;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 14px;
+            white-space: pre-wrap;
+            font-family: inherit;
+            color: #111827;
+            margin: 0 0 16px;
+        }
+
+    .credential-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .btn-whatsapp-custom {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 11px 18px;
+        border-radius: 10px;
+        background: #22c55e;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 700;
+        border: none;
+    }
+
+        .btn-whatsapp-custom:hover {
+            background: #16a34a;
+            color: #fff;
+        }
 </style>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         makeAdminCardsCollapsible();
         initializeMobilePhoneInputs();
+        initializeCredentialActions();
     });
 
     function makeAdminCardsCollapsible() {
@@ -1130,5 +1265,35 @@
             input.selectionStart = input.value.length;
             input.selectionEnd = input.value.length;
         }, 0);
+    }
+
+     function initializeCredentialActions() {
+        const copyButton = document.getElementById("copyCredentialsBtn");
+
+        if (!copyButton) {
+            return;
+        }
+
+        copyButton.addEventListener("click", async function () {
+            const message = copyButton.dataset.message;
+
+            if (!message) {
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(message);
+
+                const originalText = copyButton.textContent;
+                copyButton.textContent = "Kopyalandı";
+
+                setTimeout(() => {
+                    copyButton.textContent = originalText;
+                }, 1500);
+            }
+            catch {
+                alert("Kopyalama başarısız oldu. Bilgileri manuel seçip kopyalayabilirsin.");
+            }
+        });
     }
 </script>

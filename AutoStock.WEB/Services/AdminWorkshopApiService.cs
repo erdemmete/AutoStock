@@ -210,8 +210,7 @@ namespace AutoStock.WEB.Services
             return ParseApiResponse(responseText);
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> CreateUserAsync(
-    CreateAdminWorkshopUserViewModel model)
+        public async Task<(bool IsSuccess, string ErrorMessage)> CreateUserAsync(CreateAdminWorkshopUserViewModel model)
         {
             var client = CreateApiClient();
 
@@ -220,6 +219,7 @@ namespace AutoStock.WEB.Services
                 fullName = model.FullName,
                 userName = model.UserName,
                 email = model.Email,
+                phoneNumber = model.PhoneNumber,
                 password = model.Password,
                 role = model.Role
             };

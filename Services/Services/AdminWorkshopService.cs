@@ -309,8 +309,11 @@ namespace AutoStock.Services.Services
                 FullName = request.FullName.Trim(),
                 UserName = request.UserName.Trim(),
                 Email = string.IsNullOrWhiteSpace(request.Email)
-                    ? null
-                    : request.Email.Trim(),
+        ? null
+        : request.Email.Trim(),
+                PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber)
+        ? null
+        : request.PhoneNumber.Trim(),
                 IsActive = true
             };
 
@@ -562,9 +565,7 @@ namespace AutoStock.Services.Services
             return ServiceResult<bool>.Success(true);
         }
 
-        public async Task<ServiceResult<SuggestedAdminWorkshopCredentialsDto>> SuggestUserCredentialsAsync(
-    int workshopId,
-    string fullName)
+        public async Task<ServiceResult<SuggestedAdminWorkshopCredentialsDto>> SuggestUserCredentialsAsync(int workshopId, string fullName)
         {
             if (string.IsNullOrWhiteSpace(fullName))
                 return ServiceResult<SuggestedAdminWorkshopCredentialsDto>.Fail("Ad soyad zorunludur.");
@@ -593,9 +594,7 @@ namespace AutoStock.Services.Services
             return ServiceResult<SuggestedAdminWorkshopCredentialsDto>.Success(result);
         }
 
-        private async Task<string> GetAvailableShortUserNameAsync(
-     string baseUserName,
-     string fullName)
+        private async Task<string> GetAvailableShortUserNameAsync(string baseUserName, string fullName)
         {
             var normalizedFullName = NormalizeTurkish(fullName);
 
