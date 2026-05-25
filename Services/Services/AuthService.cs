@@ -80,8 +80,11 @@ public class AuthService : IAuthService
         var workshopUser = new WorkshopUser
         {
             UserId = user.Id,
-            WorkshopId = request.WorkshopId
+            WorkshopId = request.WorkshopId,
+            Role = AppRoles.Owner
         };
+
+        await _userManager.AddToRoleAsync(user, AppRoles.Owner);
 
         await _userManager.AddToRoleAsync(user, AppRoles.User);
 
@@ -93,7 +96,7 @@ public class AuthService : IAuthService
     user.Email ?? string.Empty,
     user.FullName,
     request.WorkshopId,
-    AppRoles.User);
+    AppRoles.Owner);
 
         return new AuthResponseDto
         {
@@ -102,7 +105,7 @@ public class AuthService : IAuthService
             FullName = user.FullName,
             Email = user.Email ?? string.Empty,
             WorkshopId = request.WorkshopId,
-            Role = AppRoles.User
+            Role = AppRoles.Owner
         };
     }
 
@@ -135,7 +138,7 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("Kullanıcı adı/e-posta veya şifre hatalı.");
 
         var roles = await _userManager.GetRolesAsync(user);
-        var role = roles.FirstOrDefault() ?? "User";
+        var role = roles.FirstOrDefault() ?? AppRoles.Staff;
 
         int workshopId = 0;
 

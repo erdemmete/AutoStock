@@ -1,0 +1,494 @@
+﻿using AutoStock.Repositories;
+using AutoStock.Repositories.Entities;
+using AutoStock.Repositories.Enums;
+using AutoStock.Services.Constants;
+using AutoStock.Services.Dtos.Admin.Workshops;
+using AutoStock.Services.Dtos.Common;
+using AutoStock.Services.Interfaces;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System.Net;
+
+namespace AutoStock.Services.Services
+{
+    public class AdminWorkshopService : IAdminWorkshopService
+    {
+        private readonly AppDbContext _context;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly RoleManager<IdentityRole<int>> _roleManager;
+
+        public AdminWorkshopService(
+            AppDbContext context,
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole<int>> roleManager)
+        {
+            _context = context;
+            _userManager = userManager;
+            _roleManager = roleManager;
+        }
+
+        public async Task<ServiceResult<List<AdminWorkshopListItemDto>>> GetListAsync()
+        {
+            var workshops = await _context.Workshops
+                .AsNoTracking()
+                .Select(x => new AdminWorkshopListItemDto
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    IsActive = x.IsActive,
+                    SubscriptionStatus = x.SubscriptionStatus,
+                    SubscriptionStartDate = x.SubscriptionStartDate,
+                    SubscriptionEndDate = x.SubscriptionEndDate,
+                    CreatedAt = x.CreatedAt,
+                    UserCount = _context.WorkshopUsers.Count(u => u.WorkshopId == x.Id)
+                })
+                .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+
+            return ServiceResult<List<AdminWorkshopListItemDto>>.Success(workshops);
+        }
+
+        public async Task<ServiceResult<AdminWorkshopDetailDto>> GetByIdAsync(int id)
+        {
+            var workshop = await _context.Workshops
+                .AsNoTracking()
+                .Where(x => x.Id == id)
+                .Select(x => new AdminWorkshopDetailDto
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    IsActive = x.IsActive,
+                    SubscriptionStatus = x.SubscriptionStatus,
+                    SubscriptionStartDate = x.SubscriptionStartDate,
+                    SubscriptionEndDate = x.SubscriptionEndDate,
+                    SubscriptionNote = x.SubscriptionNote,
+                    CreatedAt = x.CreatedAt,
+
+                    Profile = x.Profile == null
+                        ? null
+                        : new AdminWorkshopProfileDto
+                        {
+                            Id = x.Profile.Id,
+                            WorkshopId = x.Profile.WorkshopId,
+
+                            DisplayName = x.Profile.DisplayName,
+                            LegalTitle = x.Profile.LegalTitle,
+
+                            TaxOffice = x.Profile.TaxOffice,
+                            TaxNumber = x.Profile.TaxNumber,
+
+                            TradeRegistryNumber = x.Profile.TradeRegistryNumber,
+                            MersisNumber = x.Profile.MersisNumber,
+
+                            Email = x.Profile.Email,
+                            PhoneNumber = x.Profile.PhoneNumber,
+                            FaxNumber = x.Profile.FaxNumber,
+                            Website = x.Profile.Website,
+
+                            AddressLine = x.Profile.AddressLine,
+                            City = x.Profile.City,
+                            District = x.Profile.District,
+                            PostalCode = x.Profile.PostalCode,
+                            Country = x.Profile.Country
+                        },
+
+                    Users = x.WorkshopUsers
+                        .Select(u => new AdminWorkshopUserDto
+                        {
+                            UserId = u.UserId,
+                            FullName = u.User.FullName,
+                            UserName = u.User.UserName!,
+                            Email = u.User.Email,
+                            Role = u.Role,
+                            IsActive = u.User.IsActive,
+                            CreatedAt = u.CreatedAt
+                        })
+                        .OrderBy(u => u.FullName)
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (workshop == null)
+                return ServiceResult<AdminWorkshopDetailDto>.Fail(
+                    "Servis bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            return ServiceResult<AdminWorkshopDetailDto>.Success(workshop);
+        }
+
+        public async Task<ServiceResult<int>> CreateAsync(CreateAdminWorkshopRequestDto request)
+        {
+            var validationResult = await ValidateCreateRequestAsync(request);
+
+            if (validationResult.IsFailure)
+                return validationResult;
+
+            var role = request.FirstUserRole.Trim();
+
+            var subscriptionStartDate = DateTime.UtcNow;
+
+            DateTime? subscriptionEndDate = request.SubscriptionEndDate;
+
+            if (request.TrialDays.HasValue && request.TrialDays.Value > 0)
+            {
+                subscriptionEndDate = subscriptionStartDate.AddDays(request.TrialDays.Value);
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            var workshop = new Workshop
+            {
+                Name = request.WorkshopName.Trim(),
+                IsActive = request.IsActive,
+                SubscriptionStatus = request.SubscriptionStatus,
+                SubscriptionStartDate = subscriptionStartDate,
+                SubscriptionEndDate = subscriptionEndDate,
+                SubscriptionNote = request.SubscriptionNote?.Trim()
+            };
+
+            _context.Workshops.Add(workshop);
+
+            await _context.SaveChangesAsync();
+
+            var workshopProfile = new WorkshopProfile
+            {
+                WorkshopId = workshop.Id,
+                DisplayName = workshop.Name,
+                Country = "Türkiye"
+            };
+
+            _context.WorkshopProfiles.Add(workshopProfile);
+
+            await _context.SaveChangesAsync();
+
+            var user = new AppUser
+            {
+                FullName = request.FirstUserFullName.Trim(),
+                UserName = request.FirstUserName.Trim(),
+                Email = string.IsNullOrWhiteSpace(request.FirstUserEmail)
+                    ? null
+                    : request.FirstUserEmail.Trim(),
+                IsActive = true
+            };
+
+            var createUserResult = await _userManager.CreateAsync(user, request.FirstUserPassword);
+
+            if (!createUserResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+
+                var errors = createUserResult.Errors
+                    .Select(x => x.Description)
+                    .ToList();
+
+                return ServiceResult<int>.Fail(errors);
+            }
+
+            var addRoleResult = await _userManager.AddToRoleAsync(user, role);
+
+            if (!addRoleResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+
+                var errors = addRoleResult.Errors
+                    .Select(x => x.Description)
+                    .ToList();
+
+                return ServiceResult<int>.Fail(errors);
+            }
+
+            var workshopUser = new WorkshopUser
+            {
+                WorkshopId = workshop.Id,
+                UserId = user.Id,
+                Role = role
+            };
+
+            _context.WorkshopUsers.Add(workshopUser);
+
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+
+            return ServiceResult<int>.Success(workshop.Id, HttpStatusCode.Created);
+        }
+
+        public async Task<ServiceResult<bool>> UpdateSubscriptionAsync(int id, UpdateAdminWorkshopSubscriptionRequestDto request)
+        {
+            var workshop = await _context.Workshops
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (workshop == null)
+                return ServiceResult<bool>.Fail(
+                    "Servis bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            if (request.SubscriptionEndDate.HasValue &&
+                request.SubscriptionEndDate.Value <= DateTime.UtcNow)
+            {
+                return ServiceResult<bool>.Fail("Üyelik bitiş tarihi geçmişte olamaz.");
+            }
+
+            workshop.IsActive = request.IsActive;
+            workshop.SubscriptionStatus = request.SubscriptionStatus;
+            workshop.SubscriptionEndDate = request.SubscriptionEndDate;
+            workshop.SubscriptionNote = request.SubscriptionNote?.Trim();
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<List<AdminWorkshopUserDto>>> GetUsersAsync(int workshopId)
+        {
+            var workshopExists = await _context.Workshops
+                .AnyAsync(x => x.Id == workshopId);
+
+            if (!workshopExists)
+                return ServiceResult<List<AdminWorkshopUserDto>>.Fail(
+                    "Servis bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            var users = await _context.WorkshopUsers
+                .AsNoTracking()
+                .Where(x => x.WorkshopId == workshopId)
+                .Select(x => new AdminWorkshopUserDto
+                {
+                    UserId = x.UserId,
+                    FullName = x.User.FullName,
+                    UserName = x.User.UserName!,
+                    Email = x.User.Email,
+                    Role = x.Role,
+                    IsActive = x.User.IsActive,
+                    CreatedAt = x.CreatedAt
+                })
+                .OrderBy(x => x.FullName)
+                .ToListAsync();
+
+            return ServiceResult<List<AdminWorkshopUserDto>>.Success(users);
+        }
+
+        public async Task<ServiceResult<int>> CreateUserAsync(int workshopId, CreateAdminWorkshopUserRequestDto request)
+        {
+            var workshopExists = await _context.Workshops
+                .AnyAsync(x => x.Id == workshopId);
+
+            if (!workshopExists)
+                return ServiceResult<int>.Fail(
+                    "Servis bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            var validationResult = await ValidateCreateUserRequestAsync(request);
+
+            if (validationResult.IsFailure)
+                return validationResult;
+
+            var role = request.Role.Trim();
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            var user = new AppUser
+            {
+                FullName = request.FullName.Trim(),
+                UserName = request.UserName.Trim(),
+                Email = string.IsNullOrWhiteSpace(request.Email)
+                    ? null
+                    : request.Email.Trim(),
+                IsActive = true
+            };
+
+            var createUserResult = await _userManager.CreateAsync(user, request.Password);
+
+            if (!createUserResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+
+                var errors = createUserResult.Errors
+                    .Select(x => x.Description)
+                    .ToList();
+
+                return ServiceResult<int>.Fail(errors);
+            }
+
+            var addRoleResult = await _userManager.AddToRoleAsync(user, role);
+
+            if (!addRoleResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+
+                var errors = addRoleResult.Errors
+                    .Select(x => x.Description)
+                    .ToList();
+
+                return ServiceResult<int>.Fail(errors);
+            }
+
+            var workshopUser = new WorkshopUser
+            {
+                WorkshopId = workshopId,
+                UserId = user.Id,
+                Role = role
+            };
+
+            _context.WorkshopUsers.Add(workshopUser);
+
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+
+            return ServiceResult<int>.Success(user.Id, HttpStatusCode.Created);
+        }
+
+        public async Task<ServiceResult<bool>> UpdateUserStatusAsync(int workshopId, int userId, UpdateAdminWorkshopUserStatusRequestDto request)
+        {
+            var workshopUser = await _context.WorkshopUsers
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.UserId == userId);
+
+            if (workshopUser == null)
+                return ServiceResult<bool>.Fail(
+                    "Kullanıcı bu serviste bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            workshopUser.User.IsActive = request.IsActive;
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<bool>> UpdateProfileAsync(int id, UpdateAdminWorkshopProfileRequestDto request)
+        {
+            var workshop = await _context.Workshops
+                .Include(x => x.Profile)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (workshop == null)
+                return ServiceResult<bool>.Fail(
+                    "Servis bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            if (workshop.Profile == null)
+            {
+                workshop.Profile = new WorkshopProfile
+                {
+                    WorkshopId = workshop.Id,
+                    DisplayName = workshop.Name,
+                    Country = "Türkiye"
+                };
+            }
+
+            workshop.Profile.DisplayName = request.DisplayName?.Trim();
+            workshop.Profile.LegalTitle = request.LegalTitle?.Trim();
+            workshop.Profile.TaxOffice = request.TaxOffice?.Trim();
+            workshop.Profile.TaxNumber = request.TaxNumber?.Trim();
+            workshop.Profile.TradeRegistryNumber = request.TradeRegistryNumber?.Trim();
+            workshop.Profile.MersisNumber = request.MersisNumber?.Trim();
+
+            workshop.Profile.Email = request.Email?.Trim();
+            workshop.Profile.PhoneNumber = request.PhoneNumber?.Trim();
+            workshop.Profile.FaxNumber = request.FaxNumber?.Trim();
+            workshop.Profile.Website = request.Website?.Trim();
+
+            workshop.Profile.AddressLine = request.AddressLine?.Trim();
+            workshop.Profile.City = request.City?.Trim();
+            workshop.Profile.District = request.District?.Trim();
+            workshop.Profile.PostalCode = request.PostalCode?.Trim();
+            workshop.Profile.Country = string.IsNullOrWhiteSpace(request.Country)
+                ? "Türkiye"
+                : request.Country.Trim();
+
+            workshop.Profile.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        private async Task<ServiceResult<int>> ValidateCreateUserRequestAsync(CreateAdminWorkshopUserRequestDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request.FullName))
+                return ServiceResult<int>.Fail("Ad soyad zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(request.UserName))
+                return ServiceResult<int>.Fail("Kullanıcı adı zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(request.Password))
+                return ServiceResult<int>.Fail("Şifre zorunludur.");
+
+            var role = request.Role?.Trim();
+
+            if (role != AppRoles.Owner && role != AppRoles.Staff)
+                return ServiceResult<int>.Fail("Kullanıcı rolü sadece Owner veya Staff olabilir.");
+
+            var roleExists = await _roleManager.RoleExistsAsync(role);
+
+            if (!roleExists)
+                return ServiceResult<int>.Fail($"{role} rolü sistemde bulunamadı.");
+
+            var userNameExists = await _userManager.FindByNameAsync(request.UserName.Trim());
+
+            if (userNameExists is not null)
+                return ServiceResult<int>.Fail("Bu kullanıcı adı zaten kullanılıyor.");
+
+            if (!string.IsNullOrWhiteSpace(request.Email))
+            {
+                var emailExists = await _userManager.FindByEmailAsync(request.Email.Trim());
+
+                if (emailExists is not null)
+                    return ServiceResult<int>.Fail("Bu e-posta adresi zaten kullanılıyor.");
+            }
+
+            return ServiceResult<int>.Success(0);
+        }
+
+        private async Task<ServiceResult<int>> ValidateCreateRequestAsync(CreateAdminWorkshopRequestDto request)
+        {
+            if (string.IsNullOrWhiteSpace(request.WorkshopName))
+                return ServiceResult<int>.Fail("Servis adı zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(request.FirstUserFullName))
+                return ServiceResult<int>.Fail("İlk kullanıcı adı soyadı zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(request.FirstUserName))
+                return ServiceResult<int>.Fail("İlk kullanıcı kullanıcı adı zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(request.FirstUserPassword))
+                return ServiceResult<int>.Fail("İlk kullanıcı şifresi zorunludur.");
+
+            var role = request.FirstUserRole?.Trim();
+
+            if (role != AppRoles.Owner && role != AppRoles.Staff)
+                return ServiceResult<int>.Fail("İlk kullanıcı rolü sadece Owner veya Staff olabilir.");
+
+            var roleExists = await _roleManager.RoleExistsAsync(role);
+
+            if (!roleExists)
+                return ServiceResult<int>.Fail($"{role} rolü sistemde bulunamadı.");
+
+            var userNameExists = await _userManager.FindByNameAsync(request.FirstUserName.Trim());
+
+            if (userNameExists is not null)
+                return ServiceResult<int>.Fail("Bu kullanıcı adı zaten kullanılıyor.");
+
+            if (!string.IsNullOrWhiteSpace(request.FirstUserEmail))
+            {
+                var emailExists = await _userManager.FindByEmailAsync(request.FirstUserEmail.Trim());
+
+                if (emailExists is not null)
+                    return ServiceResult<int>.Fail("Bu e-posta adresi zaten kullanılıyor.");
+            }
+
+            if (request.TrialDays.HasValue && request.TrialDays.Value < 0)
+                return ServiceResult<int>.Fail("Trial gün sayısı negatif olamaz.");
+
+            if (request.SubscriptionEndDate.HasValue &&
+                request.SubscriptionEndDate.Value <= DateTime.UtcNow)
+                return ServiceResult<int>.Fail("Üyelik bitiş tarihi geçmişte olamaz.");
+
+            return ServiceResult<int>.Success(0);
+        }
+    }
+}

@@ -15,6 +15,10 @@ namespace AutoStock.API.Extensions
             var roles = new[]
             {
                 AppRoles.Admin,
+                AppRoles.Owner,
+                AppRoles.Staff,
+
+                // Eski kayıtlarla uyumluluk için şimdilik kalsın.
                 AppRoles.User
             };
 

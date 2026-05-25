@@ -1,0 +1,692 @@
+﻿@model AutoStock.WEB.Models.Admin.Workshops.AdminWorkshopDetailViewModel
+
+@{
+    ViewData["Title"] = "Servis Detayı";
+
+    var profile = Model.Profile ?? new AutoStock.WEB.Models.Admin.Workshops.AdminWorkshopProfileViewModel
+    {
+        WorkshopId = Model.Id,
+        DisplayName = Model.Name,
+        Country = "Türkiye"
+    };
+
+    var subscriptionStatusOptions = new List<(int Value, string Text)>
+    {
+        (1, "Trial"),
+        (2, "Active"),
+        (3, "Suspended"),
+        (4, "Expired"),
+        (5, "Cancelled")
+    };
+}
+
+<div class="page-header">
+    <div>
+        <h1>@Model.Name</h1>
+        <p>Servis hesabı, üyelik bilgileri, işletme profili ve kullanıcılar</p>
+    </div>
+
+    <a href="/Admin/Workshops" class="btn-secondary-custom">
+        Geri Dön
+    </a>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert-error">
+        @Html.Raw(TempData["ErrorMessage"])
+    </div>
+}
+
+<div class="detail-grid">
+    <div class="admin-card">
+        <h2>Servis Bilgileri</h2>
+
+        <div class="info-list">
+            <div>
+                <span>Servis ID</span>
+                <strong>#@Model.Id</strong>
+            </div>
+
+            <div>
+                <span>Servis Adı</span>
+                <strong>@Model.Name</strong>
+            </div>
+
+            <div>
+                <span>Oluşturulma</span>
+                <strong>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</strong>
+            </div>
+
+            <div>
+                <span>Üyelik Başlangıcı</span>
+                <strong>@Model.SubscriptionStartDate.ToString("dd.MM.yyyy HH:mm")</strong>
+            </div>
+
+            <div>
+                <span>Mevcut Durum</span>
+                @if (Model.IsActive)
+                {
+                    <strong class="status-text success">Aktif</strong>
+                }
+                else
+                {
+                    <strong class="status-text danger">Pasif</strong>
+                }
+            </div>
+
+            <div>
+                <span>Üyelik</span>
+                <strong>@Model.SubscriptionStatusText</strong>
+            </div>
+
+            <div>
+                <span>Üyelik Bitişi</span>
+                @if (Model.SubscriptionEndDate.HasValue)
+                {
+                    <strong>@Model.SubscriptionEndDate.Value.ToString("dd.MM.yyyy HH:mm")</strong>
+                }
+                else
+                {
+                    <strong class="text-muted">Süresiz</strong>
+                }
+            </div>
+
+            <div>
+                <span>Kullanıcı Sayısı</span>
+                <strong>@Model.Users.Count</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-card">
+        <h2>Üyelik Güncelle</h2>
+
+        <form asp-action="UpdateWorkshopSubscription" asp-controller="Admin" method="post">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="WorkshopId" value="@Model.Id" />
+
+            <div class="form-group">
+                <label>Aktif mi?</label>
+                <select name="IsActive" class="form-control-custom">
+                    @if (Model.IsActive)
+                    {
+                        <option value="true" selected>Aktif</option>
+                        <option value="false">Pasif</option>
+                    }
+                    else
+                    {
+                        <option value="true">Aktif</option>
+                        <option value="false" selected>Pasif</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Üyelik Durumu</label>
+                <select name="SubscriptionStatus" class="form-control-custom">
+                    @foreach (var option in subscriptionStatusOptions)
+                    {
+                        if (Model.SubscriptionStatus == option.Value)
+                        {
+                            <option value="@option.Value" selected>@option.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@option.Value">@option.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Üyelik Bitiş Tarihi</label>
+                <input name="SubscriptionEndDate"
+                       type="datetime-local"
+                       class="form-control-custom"
+                       value="@(Model.SubscriptionEndDate.HasValue ? Model.SubscriptionEndDate.Value.ToString("yyyy-MM-ddTHH:mm") : "")" />
+                <small>Boş bırakırsan süresiz gibi davranır.</small>
+            </div>
+
+            <div class="form-group">
+                <label>Üyelik Notu</label>
+                <textarea name="SubscriptionNote"
+                          class="form-control-custom"
+                          rows="4"
+                          placeholder="Örn: 15 günlük deneme hesabı">@Model.SubscriptionNote</textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary-custom">
+                    Üyelik Bilgilerini Kaydet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="admin-card profile-card">
+    <h2>Resmi İşletme Bilgileri</h2>
+    <p class="section-description">
+        Bu bilgiler teklif, servis formu, fatura çıktısı ve resmi dokümanlarda kullanılacaktır.
+    </p>
+
+    <form asp-action="UpdateWorkshopProfile" asp-controller="Admin" method="post">
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" name="WorkshopId" value="@Model.Id" />
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Görünen Ad</label>
+                <input name="DisplayName"
+                       value="@profile.DisplayName"
+                       class="form-control-custom"
+                       placeholder="Örn: Mete Oto Servis" />
+            </div>
+
+            <div class="form-group">
+                <label>Ticari Ünvan</label>
+                <input name="LegalTitle"
+                       value="@profile.LegalTitle"
+                       class="form-control-custom"
+                       placeholder="Örn: Mete Otomotiv San. ve Tic. Ltd. Şti." />
+            </div>
+
+            <div class="form-group">
+                <label>Vergi Dairesi</label>
+                <input name="TaxOffice"
+                       value="@profile.TaxOffice"
+                       class="form-control-custom"
+                       placeholder="Örn: Tuzla" />
+            </div>
+
+            <div class="form-group">
+                <label>VKN / TCKN</label>
+                <input name="TaxNumber"
+                       value="@profile.TaxNumber"
+                       class="form-control-custom"
+                       placeholder="Örn: 1234567890" />
+            </div>
+
+            <div class="form-group">
+                <label>Ticaret Sicil No</label>
+                <input name="TradeRegistryNumber"
+                       value="@profile.TradeRegistryNumber"
+                       class="form-control-custom"
+                       placeholder="Örn: 223164-5" />
+            </div>
+
+            <div class="form-group">
+                <label>MERSİS No</label>
+                <input name="MersisNumber"
+                       value="@profile.MersisNumber"
+                       class="form-control-custom"
+                       placeholder="Örn: 0753-1061-9250-0001" />
+            </div>
+
+            <div class="form-group">
+                <label>E-posta</label>
+                <input name="Email"
+                       value="@profile.Email"
+                       class="form-control-custom"
+                       placeholder="Örn: info@servis.com" />
+            </div>
+
+            <div class="form-group">
+                <label>Web Sitesi</label>
+                <input name="Website"
+                       value="@profile.Website"
+                       class="form-control-custom"
+                       placeholder="Örn: https://servis.com" />
+            </div>
+
+            <div class="form-group">
+                <label>Sabit Telefon</label>
+                <input name="PhoneNumber"
+                       value="@profile.PhoneNumber"
+                       class="form-control-custom"
+                       placeholder="Örn: 02164900001" />
+            </div>
+
+            <div class="form-group">
+                <label>Fax</label>
+                <input name="FaxNumber"
+                       value="@profile.FaxNumber"
+                       class="form-control-custom"
+                       placeholder="Örn: 02164940626" />
+            </div>
+
+            <div class="form-group full">
+                <label>Adres</label>
+                <textarea name="AddressLine"
+                          class="form-control-custom"
+                          rows="3"
+                          placeholder="Örn: Aydıntepe Mah. Aydınlı Yolu Cad. No:25/A">@profile.AddressLine</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>İl</label>
+                <input name="City"
+                       value="@profile.City"
+                       class="form-control-custom"
+                       placeholder="Örn: İstanbul" />
+            </div>
+
+            <div class="form-group">
+                <label>İlçe</label>
+                <input name="District"
+                       value="@profile.District"
+                       class="form-control-custom"
+                       placeholder="Örn: Tuzla" />
+            </div>
+
+            <div class="form-group">
+                <label>Posta Kodu</label>
+                <input name="PostalCode"
+                       value="@profile.PostalCode"
+                       class="form-control-custom"
+                       placeholder="Örn: 34947" />
+            </div>
+
+            <div class="form-group">
+                <label>Ülke</label>
+                <input name="Country"
+                       value="@(string.IsNullOrWhiteSpace(profile.Country) ? "Türkiye" : profile.Country)"
+                       class="form-control-custom" />
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary-custom">
+                İşletme Bilgilerini Kaydet
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="admin-card users-card">
+    <div class="card-header-row">
+        <div>
+            <h2>Kullanıcılar</h2>
+            <p>Bu servise bağlı Owner ve Staff kullanıcıları</p>
+        </div>
+
+        <a href="/Admin/Workshops/@Model.Id/Users/Create" class="btn-primary-custom">
+            Kullanıcı Ekle
+        </a>
+    </div>
+
+    @if (!Model.Users.Any())
+    {
+        <div class="empty-state">
+            Bu servise bağlı kullanıcı yok.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Kullanıcı</th>
+                        <th>E-posta</th>
+                        <th>Rol</th>
+                        <th>Durum</th>
+                        <th>Oluşturulma</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@user.FullName</strong>
+                                <div class="text-muted">@user.UserName</div>
+                            </td>
+
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(user.Email))
+                                {
+                                    @user.Email
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Yok</span>
+                                }
+                            </td>
+
+                            <td>
+                                <span class="status-badge secondary">@user.Role</span>
+                            </td>
+
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="status-badge success">Aktif</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge danger">Pasif</span>
+                                }
+                            </td>
+
+                            <td>@user.CreatedAt.ToString("dd.MM.yyyy")</td>
+
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="text-muted">Pasifleştir yakında</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Aktifleştir yakında</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<style>
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            margin: 6px 0 0;
+            color: #6b7280;
+        }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .admin-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        padding: 24px;
+    }
+
+    .profile-card,
+    .users-card {
+        margin-top: 20px;
+    }
+
+    .admin-card h2 {
+        font-size: 18px;
+        margin: 0 0 20px;
+        font-weight: 700;
+    }
+
+    .section-description {
+        margin-top: -10px;
+        margin-bottom: 20px;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .info-list {
+        display: grid;
+        gap: 14px;
+    }
+
+        .info-list div {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+            .info-list div:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+        .info-list span {
+            color: #6b7280;
+        }
+
+    .status-text.success {
+        color: #166534;
+    }
+
+    .status-text.danger {
+        color: #991b1b;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+        .form-group.full {
+            grid-column: span 2;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 6px;
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+    .form-control-custom {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        padding: 11px 12px;
+        font-size: 14px;
+        outline: none;
+    }
+
+        .form-control-custom:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 18px;
+    }
+
+    .card-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+        .card-header-row h2 {
+            margin-bottom: 6px;
+        }
+
+        .card-header-row p {
+            margin: 0;
+            color: #6b7280;
+        }
+
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .admin-table th {
+            text-align: left;
+            padding: 14px 16px;
+            font-size: 13px;
+            color: #6b7280;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .admin-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+
+    .text-muted {
+        color: #6b7280;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+        .status-badge.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-badge.secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+    .btn-primary-custom,
+    .btn-secondary-custom {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 11px 18px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary-custom {
+        background: #2563eb;
+        color: #fff;
+    }
+
+        .btn-primary-custom:hover {
+            background: #1d4ed8;
+            color: #fff;
+        }
+
+    .btn-secondary-custom {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+
+        .btn-secondary-custom:hover {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+    .alert-success {
+        background: #dcfce7;
+        color: #166534;
+        padding: 14px 16px;
+        border-radius: 12px;
+        margin-bottom: 18px;
+        border: 1px solid #bbf7d0;
+        font-weight: 600;
+    }
+
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 14px 16px;
+        border-radius: 12px;
+        margin-bottom: 18px;
+        border: 1px solid #fecaca;
+        font-weight: 600;
+    }
+
+    .empty-state {
+        padding: 24px;
+        color: #6b7280;
+        text-align: center;
+    }
+
+    @@media (max-width: 900px) {
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header,
+        .card-header-row {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group.full {
+            grid-column: span 1;
+        }
+    }
+</style>

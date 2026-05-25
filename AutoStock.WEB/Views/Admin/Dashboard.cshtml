@@ -1,0 +1,135 @@
+﻿@{
+    ViewData["Title"] = "Admin Panel";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Admin Panel</h1>
+        <p>Sente360 sistem yönetimi</p>
+    </div>
+
+    <form asp-controller="Auth" asp-action="Logout" method="post">
+        <button type="submit" class="btn-logout">
+            Çıkış Yap
+        </button>
+    </form>
+</div>
+
+<div class="dashboard-grid">
+    <a href="/Admin/Workshops" class="dashboard-card">
+        <div class="dashboard-card-icon">🏢</div>
+
+        <div>
+            <h3>Servisleri Yönet</h3>
+            <p>Workshop oluştur, üyelik durumlarını yönet ve servis kullanıcılarını kontrol et.</p>
+        </div>
+    </a>
+
+    <div class="dashboard-card disabled">
+        <div class="dashboard-card-icon">👥</div>
+
+        <div>
+            <h3>Kullanıcı Yönetimi</h3>
+            <p>Owner ve Staff kullanıcılarını detaylı yönetme ekranı ileride geliştirilecek.</p>
+        </div>
+    </div>
+
+    <div class="dashboard-card disabled">
+        <div class="dashboard-card-icon">📊</div>
+
+        <div>
+            <h3>Sistem Raporları</h3>
+            <p>Aktif servisler, trial hesaplar ve kullanım istatistikleri ileride eklenecek.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            margin: 6px 0 0;
+            color: #6b7280;
+        }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+    }
+
+    .dashboard-card {
+        display: flex;
+        gap: 16px;
+        padding: 20px;
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        text-decoration: none;
+        color: inherit;
+        transition: 0.2s ease;
+    }
+
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
+        }
+
+        .dashboard-card.disabled {
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+    .dashboard-card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .dashboard-card h3 {
+        margin: 0 0 8px;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .dashboard-card p {
+        margin: 0;
+        color: #6b7280;
+        line-height: 1.45;
+    }
+
+    .btn-logout {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        border-radius: 10px;
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+        .btn-logout:hover {
+            background: #fecaca;
+        }
+</style>

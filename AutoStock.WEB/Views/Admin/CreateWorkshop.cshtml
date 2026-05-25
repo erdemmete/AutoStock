@@ -1,0 +1,265 @@
+﻿@model AutoStock.WEB.Models.Admin.Workshops.CreateAdminWorkshopViewModel
+
+@{
+    ViewData["Title"] = "Yeni Servis Oluştur";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Yeni Servis Oluştur</h1>
+        <p>Workshop hesabı ve ilk kullanıcıyı oluştur.</p>
+    </div>
+
+    <a href="/Admin/Workshops" class="btn-secondary-custom">
+        Geri Dön
+    </a>
+</div>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert-error">
+        @Html.Raw(ViewBag.Error)
+    </div>
+}
+
+<form asp-action="CreateWorkshop" asp-controller="Admin" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="admin-form-card">
+        <h2>Servis Bilgileri</h2>
+
+        <div class="form-grid">
+            <div class="form-group full">
+                <label>Servis Adı</label>
+                <input asp-for="WorkshopName" class="form-control-custom" placeholder="Örn: Mete Oto Servis" />
+                <span asp-validation-for="WorkshopName" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Üyelik Durumu</label>
+                <select asp-for="SubscriptionStatus" class="form-control-custom">
+                    <option value="1">Trial</option>
+                    <option value="2">Active</option>
+                    <option value="3">Suspended</option>
+                    <option value="4">Expired</option>
+                    <option value="5">Cancelled</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Trial Gün Sayısı</label>
+                <input asp-for="TrialDays" type="number" min="0" class="form-control-custom" />
+                <small>Girildiyse bitiş tarihi buna göre hesaplanır.</small>
+            </div>
+
+            <div class="form-group">
+                <label>Manuel Bitiş Tarihi</label>
+                <input asp-for="SubscriptionEndDate" type="datetime-local" class="form-control-custom" />
+                <small>Trial gün sayısı boşsa kullanılır.</small>
+            </div>
+
+            <div class="form-group">
+                <label>Aktif mi?</label>
+                <select asp-for="IsActive" class="form-control-custom">
+                    <option value="true">Aktif</option>
+                    <option value="false">Pasif</option>
+                </select>
+            </div>
+
+            <div class="form-group full">
+                <label>Üyelik Notu</label>
+                <textarea asp-for="SubscriptionNote" class="form-control-custom" rows="3" placeholder="Örn: 15 günlük deneme hesabı"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-form-card">
+        <h2>İlk Kullanıcı</h2>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Ad Soyad</label>
+                <input asp-for="FirstUserFullName" class="form-control-custom" placeholder="Örn: Ahmet Yılmaz" />
+                <span asp-validation-for="FirstUserFullName" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Kullanıcı Adı</label>
+                <input asp-for="FirstUserName" class="form-control-custom" placeholder="Örn: ahmetyilmaz" />
+                <span asp-validation-for="FirstUserName" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>E-posta</label>
+                <input asp-for="FirstUserEmail" class="form-control-custom" placeholder="ornek@mail.com" />
+                <span asp-validation-for="FirstUserEmail" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Şifre</label>
+                <input asp-for="FirstUserPassword" type="password" class="form-control-custom" />
+                <span asp-validation-for="FirstUserPassword" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Rol</label>
+                <select asp-for="FirstUserRole" class="form-control-custom">
+                    <option value="Owner">Owner</option>
+                    <option value="Staff">Staff</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn-primary-custom">
+            Servisi Oluştur
+        </button>
+    </div>
+</form>
+
+<style>
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .page-header p {
+            margin: 6px 0 0;
+            color: #6b7280;
+        }
+
+    .admin-form-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        padding: 24px;
+        margin-bottom: 20px;
+    }
+
+        .admin-form-card h2 {
+            font-size: 18px;
+            margin: 0 0 20px;
+            font-weight: 700;
+        }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .form-group.full {
+        grid-column: span 2;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .form-group small {
+        display: block;
+        margin-top: 6px;
+        color: #6b7280;
+        font-size: 12px;
+    }
+
+    .form-control-custom {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        padding: 11px 12px;
+        font-size: 14px;
+        outline: none;
+    }
+
+        .form-control-custom:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+    .validation-message {
+        color: #dc2626;
+        font-size: 13px;
+        margin-top: 6px;
+        display: block;
+    }
+
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 14px 16px;
+        border-radius: 12px;
+        margin-bottom: 18px;
+        border: 1px solid #fecaca;
+        font-weight: 600;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 20px;
+    }
+
+    .btn-primary-custom,
+    .btn-secondary-custom {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 11px 18px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-primary-custom {
+        background: #2563eb;
+        color: #fff;
+    }
+
+        .btn-primary-custom:hover {
+            background: #1d4ed8;
+            color: #fff;
+        }
+
+    .btn-secondary-custom {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+
+        .btn-secondary-custom:hover {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+    @@media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group.full {
+            grid-column: span 1;
+        }
+
+        .page-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>

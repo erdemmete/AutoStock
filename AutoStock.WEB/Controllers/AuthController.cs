@@ -23,6 +23,13 @@ namespace AutoStock.WEB.Controllers
 
             if (!string.IsNullOrWhiteSpace(token))
             {
+                var role = HttpContext.Session.GetString("UserRole");
+
+                if (role == "Admin")
+                {
+                    return RedirectToAction("Dashboard", "Admin");
+                }
+
                 return RedirectToAction("Index", "Dashboard");
             }
 
@@ -104,7 +111,7 @@ namespace AutoStock.WEB.Controllers
 
                 if (loginResult.Role == "Admin")
                 {
-                    return RedirectToAction("Index", "Admin");
+                    return RedirectToAction("Dashboard", "Admin");
                 }
 
                 return RedirectToAction("Index", "Dashboard");
@@ -129,7 +136,8 @@ namespace AutoStock.WEB.Controllers
         [HttpPost]
         public IActionResult Logout()
         {
-            HttpContext.Session.Remove("AuthToken");
+            HttpContext.Session.Clear();
+
             return RedirectToAction("Login", "Auth");
         }
     }

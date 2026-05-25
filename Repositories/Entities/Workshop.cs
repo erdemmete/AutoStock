@@ -1,4 +1,6 @@
-﻿namespace AutoStock.Repositories.Entities
+﻿using AutoStock.Repositories.Enums;
+
+namespace AutoStock.Repositories.Entities
 {
     public class Workshop
     {
@@ -10,5 +12,18 @@
 
         // ilişkiler
         public ICollection<WorkshopUser> WorkshopUsers { get; set; } = new List<WorkshopUser>();
+        public bool IsActive { get; set; } = true;
+
+        public WorkshopSubscriptionStatus SubscriptionStatus { get; set; }
+            = WorkshopSubscriptionStatus.Trial;
+
+        public DateTime SubscriptionStartDate { get; set; } = DateTime.UtcNow;
+
+        public DateTime? SubscriptionEndDate { get; set; }
+
+        public string? SubscriptionNote { get; set; }
+        public WorkshopProfile? Profile { get; set; }
+
+        public ICollection<WorkshopPartner> Partners { get; set; } = new List<WorkshopPartner>();
     }
 }

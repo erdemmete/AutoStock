@@ -20,6 +20,7 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<ICurrentAccountService, CurrentAccountService>();
             services.AddScoped<IStockItemService, StockItemService>();
+            services.AddScoped<IAdminWorkshopService, AdminWorkshopService>();
 
             return services;
 

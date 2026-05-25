@@ -31,6 +31,9 @@ namespace AutoStock.Repositories
         public DbSet<CurrentAccountTransaction> CurrentAccountTransactions { get; set; }
         public DbSet<StockItem> StockItems { get; set; }
         public DbSet<StockMovement> StockMovements { get; set; }
+        public DbSet<WorkshopProfile> WorkshopProfiles { get; set; }
+
+        public DbSet<WorkshopPartner> WorkshopPartners { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder builder)
