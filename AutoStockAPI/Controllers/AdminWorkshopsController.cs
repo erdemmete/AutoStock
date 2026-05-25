@@ -59,9 +59,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost("{workshopId:int}/users")]
-        public async Task<IActionResult> CreateUser(
-            int workshopId,
-            CreateAdminWorkshopUserRequestDto request)
+        public async Task<IActionResult> CreateUser(int workshopId, CreateAdminWorkshopUserRequestDto request)
         {
             var result = await _adminWorkshopService.CreateUserAsync(workshopId, request);
 
@@ -69,10 +67,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPut("{workshopId:int}/users/{userId:int}/status")]
-        public async Task<IActionResult> UpdateUserStatus(
-            int workshopId,
-            int userId,
-            UpdateAdminWorkshopUserStatusRequestDto request)
+        public async Task<IActionResult> UpdateUserStatus(int workshopId, int userId, UpdateAdminWorkshopUserStatusRequestDto request)
         {
             var result = await _adminWorkshopService.UpdateUserStatusAsync(
                 workshopId,
@@ -99,9 +94,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost("{workshopId:int}/partners")]
-        public async Task<IActionResult> CreatePartner(
-            int workshopId,
-            CreateAdminWorkshopPartnerRequestDto request)
+        public async Task<IActionResult> CreatePartner(int workshopId, CreateAdminWorkshopPartnerRequestDto request)
         {
             var result = await _adminWorkshopService.CreatePartnerAsync(
                 workshopId,
@@ -111,10 +104,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPut("{workshopId:int}/partners/{partnerId:int}")]
-        public async Task<IActionResult> UpdatePartner(
-            int workshopId,
-            int partnerId,
-            UpdateAdminWorkshopPartnerRequestDto request)
+        public async Task<IActionResult> UpdatePartner(int workshopId, int partnerId, UpdateAdminWorkshopPartnerRequestDto request)
         {
             var result = await _adminWorkshopService.UpdatePartnerAsync(
                 workshopId,
@@ -125,13 +115,21 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpDelete("{workshopId:int}/partners/{partnerId:int}")]
-        public async Task<IActionResult> DeletePartner(
-            int workshopId,
-            int partnerId)
+        public async Task<IActionResult> DeletePartner(int workshopId, int partnerId)
         {
             var result = await _adminWorkshopService.DeletePartnerAsync(
                 workshopId,
                 partnerId);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
+        [HttpGet("{workshopId:int}/users/suggest-credentials")]
+        public async Task<IActionResult> SuggestUserCredentials(int workshopId, [FromQuery] string fullName)
+        {
+            var result = await _adminWorkshopService.SuggestUserCredentialsAsync(
+                workshopId,
+                fullName);
 
             return StatusCode((int)result.StatusCode, result);
         }

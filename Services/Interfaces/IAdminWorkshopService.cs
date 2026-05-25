@@ -24,5 +24,7 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<bool>> UpdatePartnerAsync(int workshopId, int partnerId, UpdateAdminWorkshopPartnerRequestDto request);
 
         Task<ServiceResult<bool>> DeletePartnerAsync(int workshopId, int partnerId);
+
+        Task<ServiceResult<SuggestedAdminWorkshopCredentialsDto>> SuggestUserCredentialsAsync(int workshopId, string fullName);
     }
 }

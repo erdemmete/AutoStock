@@ -8,6 +8,8 @@ using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 namespace AutoStock.Services.Services
 {
@@ -453,9 +455,7 @@ namespace AutoStock.Services.Services
             return ServiceResult<List<AdminWorkshopPartnerDto>>.Success(partners);
         }
 
-        public async Task<ServiceResult<int>> CreatePartnerAsync(
-            int workshopId,
-            CreateAdminWorkshopPartnerRequestDto request)
+        public async Task<ServiceResult<int>> CreatePartnerAsync(int workshopId, CreateAdminWorkshopPartnerRequestDto request)
         {
             var workshopExists = await _context.Workshops
                 .AnyAsync(x => x.Id == workshopId);
@@ -499,10 +499,7 @@ namespace AutoStock.Services.Services
             return ServiceResult<int>.Success(partner.Id, HttpStatusCode.Created);
         }
 
-        public async Task<ServiceResult<bool>> UpdatePartnerAsync(
-            int workshopId,
-            int partnerId,
-            UpdateAdminWorkshopPartnerRequestDto request)
+        public async Task<ServiceResult<bool>> UpdatePartnerAsync(int workshopId, int partnerId, UpdateAdminWorkshopPartnerRequestDto request)
         {
             var partner = await _context.WorkshopPartners
                 .FirstOrDefaultAsync(x =>
@@ -546,9 +543,7 @@ namespace AutoStock.Services.Services
             return ServiceResult<bool>.Success(true);
         }
 
-        public async Task<ServiceResult<bool>> DeletePartnerAsync(
-            int workshopId,
-            int partnerId)
+        public async Task<ServiceResult<bool>> DeletePartnerAsync(int workshopId, int partnerId)
         {
             var partner = await _context.WorkshopPartners
                 .FirstOrDefaultAsync(x =>
@@ -565,6 +560,154 @@ namespace AutoStock.Services.Services
             await _context.SaveChangesAsync();
 
             return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<SuggestedAdminWorkshopCredentialsDto>> SuggestUserCredentialsAsync(
+    int workshopId,
+    string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+                return ServiceResult<SuggestedAdminWorkshopCredentialsDto>.Fail("Ad soyad zorunludur.");
+
+            var workshopExists = await _context.Workshops
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == workshopId);
+
+            if (!workshopExists)
+                return ServiceResult<SuggestedAdminWorkshopCredentialsDto>.Fail(
+                    "Servis bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            var baseUserName = CreateShortUserName(fullName);
+
+            var userName = await GetAvailableShortUserNameAsync(baseUserName, fullName);
+
+            var password = GenerateShortTemporaryPassword(fullName);
+
+            var result = new SuggestedAdminWorkshopCredentialsDto
+            {
+                UserName = userName,
+                Password = password
+            };
+
+            return ServiceResult<SuggestedAdminWorkshopCredentialsDto>.Success(result);
+        }
+
+        private async Task<string> GetAvailableShortUserNameAsync(
+     string baseUserName,
+     string fullName)
+        {
+            var normalizedFullName = NormalizeTurkish(fullName);
+
+            var parts = normalizedFullName
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .ToList();
+
+            var firstName = parts.FirstOrDefault() ?? "User";
+            var lastName = parts.Count > 1 ? parts.Last() : "User";
+
+            var candidate = baseUserName;
+
+            if (await _userManager.FindByNameAsync(candidate) == null)
+                return candidate;
+
+            // Örn: OrhanG doluysa OrhanGa, OrhanGaz, OrhanGazi diye dener.
+            for (var i = 2; i <= lastName.Length; i++)
+            {
+                candidate = ToPascalCase(firstName) + ToPascalCase(lastName[..i]);
+
+                if (await _userManager.FindByNameAsync(candidate) == null)
+                    return candidate;
+            }
+
+            // Hepsi doluysa OrhanG2, OrhanG3 diye gider.
+            var counter = 2;
+
+            while (true)
+            {
+                candidate = $"{baseUserName}{counter}";
+
+                if (await _userManager.FindByNameAsync(candidate) == null)
+                    return candidate;
+
+                counter++;
+            }
+        }
+
+        private static string CreateShortUserName(string fullName)
+        {
+            var normalizedFullName = NormalizeTurkish(fullName);
+
+            var parts = normalizedFullName
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .ToList();
+
+            if (!parts.Any())
+                return "User1";
+
+            var firstName = parts.First();
+
+            if (parts.Count == 1)
+                return ToPascalCase(firstName);
+
+            var lastName = parts.Last();
+
+            return ToPascalCase(firstName) + ToPascalCase(lastName[..1]);
+        }
+
+        private static string GenerateShortTemporaryPassword(string fullName)
+        {
+            var normalizedFullName = NormalizeTurkish(fullName);
+
+            var firstName = normalizedFullName
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault() ?? "User";
+
+            var passwordName = ToPascalCase(firstName);
+
+            if (passwordName.Length < 4)
+                passwordName = passwordName.PadRight(4, 'x');
+
+            var number = RandomNumberGenerator.GetInt32(100, 1000);
+
+            return $"{passwordName}{number}.";
+        }
+
+        private static string NormalizeTurkish(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            var normalized = value.Trim();
+
+            normalized = normalized
+                .Replace("ç", "c")
+                .Replace("Ç", "C")
+                .Replace("ğ", "g")
+                .Replace("Ğ", "G")
+                .Replace("ı", "i")
+                .Replace("İ", "I")
+                .Replace("ö", "o")
+                .Replace("Ö", "O")
+                .Replace("ş", "s")
+                .Replace("Ş", "S")
+                .Replace("ü", "u")
+                .Replace("Ü", "U");
+
+            normalized = Regex.Replace(normalized, @"[^a-zA-Z0-9\s]", " ");
+            normalized = Regex.Replace(normalized, @"\s+", " ");
+
+            return normalized.Trim();
+        }
+
+        private static string ToPascalCase(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            value = value.Trim().ToLowerInvariant();
+
+            return char.ToUpperInvariant(value[0]) + value[1..];
         }
 
         private async Task<ServiceResult<int>> ValidateCreateUserRequestAsync(CreateAdminWorkshopUserRequestDto request)

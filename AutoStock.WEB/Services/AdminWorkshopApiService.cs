@@ -240,10 +240,7 @@ namespace AutoStock.WEB.Services
             return ParseApiResponse(responseText);
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateUserStatusAsync(
-            int workshopId,
-            int userId,
-            bool isActive)
+        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateUserStatusAsync(int workshopId, int userId, bool isActive)
         {
             var client = CreateApiClient();
 
@@ -266,6 +263,32 @@ namespace AutoStock.WEB.Services
                 return (false, "API boş cevap döndü.");
 
             return ParseApiResponse(responseText);
+        }
+
+        public async Task<(bool IsSuccess, SuggestedAdminWorkshopCredentialsViewModel? Data, string ErrorMessage)> SuggestCredentialsAsync(int workshopId, string fullName)
+        {
+            var client = CreateApiClient();
+
+            var url = $"/api/admin/workshops/{workshopId}/users/suggest-credentials?fullName={Uri.EscapeDataString(fullName)}";
+
+            var response = await client.GetAsync(url);
+
+            var responseText = await response.Content.ReadAsStringAsync();
+
+            if (string.IsNullOrWhiteSpace(responseText))
+                return (false, null, "API boş cevap döndü.");
+
+            var result = JsonSerializer.Deserialize<ApiResponse<SuggestedAdminWorkshopCredentialsViewModel>>(
+                responseText,
+                _jsonOptions);
+
+            if (result == null)
+                return (false, null, "API cevabı okunamadı.");
+
+            if (!result.IsSuccess || result.Data == null)
+                return (false, null, result.ErrorMessage ?? "Kullanıcı adı ve şifre oluşturulamadı.");
+
+            return (true, result.Data, string.Empty);
         }
 
         private (bool IsSuccess, string ErrorMessage) ParseApiResponse(string responseText)

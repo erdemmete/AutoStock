@@ -236,9 +236,7 @@ namespace AutoStock.WEB.Controllers
 
         [HttpPost("Admin/Workshops/{workshopId:int}/Users/Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateWorkshopUser(
-            int workshopId,
-            CreateAdminWorkshopUserViewModel model)
+        public async Task<IActionResult> CreateWorkshopUser(int workshopId, CreateAdminWorkshopUserViewModel model)
         {
             if (!IsAdmin())
                 return RedirectToLogin();
@@ -263,10 +261,7 @@ namespace AutoStock.WEB.Controllers
 
         [HttpPost("Admin/Workshops/UpdateUserStatus")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateWorkshopUserStatus(
-            int workshopId,
-            int userId,
-            bool isActive)
+        public async Task<IActionResult> UpdateWorkshopUserStatus(int workshopId, int userId, bool isActive)
         {
             if (!IsAdmin())
                 return RedirectToLogin();
@@ -293,6 +288,41 @@ namespace AutoStock.WEB.Controllers
                 : "Kullanıcı pasifleştirildi.";
 
             return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+        }
+
+        [HttpGet("Admin/Workshops/{workshopId:int}/Users/SuggestCredentials")]
+        public async Task<IActionResult> SuggestWorkshopUserCredentials(
+    int workshopId,
+    string fullName)
+        {
+            if (!IsAdmin())
+            {
+                return Json(new
+                {
+                    isSuccess = false,
+                    errorMessage = "Yetkisiz işlem."
+                });
+            }
+
+            var result = await _adminWorkshopApiService.SuggestCredentialsAsync(
+                workshopId,
+                fullName);
+
+            if (!result.IsSuccess || result.Data == null)
+            {
+                return Json(new
+                {
+                    isSuccess = false,
+                    errorMessage = result.ErrorMessage
+                });
+            }
+
+            return Json(new
+            {
+                isSuccess = true,
+                userName = result.Data.UserName,
+                password = result.Data.Password
+            });
         }
 
         private bool IsAdmin()

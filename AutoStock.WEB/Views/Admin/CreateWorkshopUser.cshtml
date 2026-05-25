@@ -44,7 +44,16 @@
 
             <div class="form-group">
                 <label>Kullanıcı Adı</label>
-                <input asp-for="UserName" class="form-control-custom" placeholder="Örn: ahmetyilmaz" />
+                <div class="input-with-button">
+                    <input asp-for="UserName"
+                           id="UserName"
+                           class="form-control-custom"
+                           placeholder="Örn: testoto.ahmet.yilmaz" />
+
+                    <button type="button" id="generateCredentialsBtn" class="btn-secondary-small">
+                        Oluştur
+                    </button>
+                </div>
                 <span asp-validation-for="UserName" class="validation-message"></span>
             </div>
 
@@ -56,7 +65,11 @@
 
             <div class="form-group">
                 <label>Şifre</label>
-                <input asp-for="Password" type="password" class="form-control-custom" />
+                <input asp-for="Password"
+                       id="Password"
+                       type="text"
+                       class="form-control-custom"
+                       placeholder="Oluştur butonuyla otomatik üretilebilir" />
                 <span asp-validation-for="Password" class="validation-message"></span>
             </div>
 
@@ -213,4 +226,75 @@
             flex-direction: column;
         }
     }
+
+    .input-with-button {
+        display: flex;
+        gap: 8px;
+    }
+
+        .input-with-button .form-control-custom {
+            flex: 1;
+        }
+
+    .btn-secondary-small {
+        padding: 0 14px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        background: #f3f4f6;
+        color: #374151;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+        .btn-secondary-small:hover {
+            background: #e5e7eb;
+        }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const generateButton = document.getElementById("generateCredentialsBtn");
+        const fullNameInput = document.getElementById("FullName");
+        const userNameInput = document.getElementById("UserName");
+        const passwordInput = document.getElementById("Password");
+
+        if (!generateButton || !fullNameInput || !userNameInput || !passwordInput) {
+            return;
+        }
+
+        generateButton.addEventListener("click", async function () {
+            const fullName = fullNameInput.value.trim();
+
+            if (!fullName) {
+                alert("Önce ad soyad gir.");
+                fullNameInput.focus();
+                return;
+            }
+
+            generateButton.disabled = true;
+            generateButton.textContent = "Oluşturuluyor...";
+
+            try {
+                const response = await fetch(`/Admin/Workshops/@Model.WorkshopId/Users/SuggestCredentials?fullName=${encodeURIComponent(fullName)}`);
+
+                const result = await response.json();
+
+                if (!result.isSuccess) {
+                    alert(result.errorMessage || "Kullanıcı adı ve şifre oluşturulamadı.");
+                    return;
+                }
+
+                userNameInput.value = result.userName;
+                passwordInput.value = result.password;
+            }
+            catch {
+                alert("Kullanıcı adı ve şifre oluşturulurken hata oluştu.");
+            }
+            finally {
+                generateButton.disabled = false;
+                generateButton.textContent = "Oluştur";
+            }
+        });
+    });
+</script>
