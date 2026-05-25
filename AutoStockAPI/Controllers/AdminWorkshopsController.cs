@@ -89,5 +89,51 @@ namespace AutoStock.API.Controllers
 
             return StatusCode((int)result.StatusCode, result);
         }
+
+        [HttpGet("{workshopId:int}/partners")]
+        public async Task<IActionResult> GetPartners(int workshopId)
+        {
+            var result = await _adminWorkshopService.GetPartnersAsync(workshopId);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
+        [HttpPost("{workshopId:int}/partners")]
+        public async Task<IActionResult> CreatePartner(
+            int workshopId,
+            CreateAdminWorkshopPartnerRequestDto request)
+        {
+            var result = await _adminWorkshopService.CreatePartnerAsync(
+                workshopId,
+                request);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
+        [HttpPut("{workshopId:int}/partners/{partnerId:int}")]
+        public async Task<IActionResult> UpdatePartner(
+            int workshopId,
+            int partnerId,
+            UpdateAdminWorkshopPartnerRequestDto request)
+        {
+            var result = await _adminWorkshopService.UpdatePartnerAsync(
+                workshopId,
+                partnerId,
+                request);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
+        [HttpDelete("{workshopId:int}/partners/{partnerId:int}")]
+        public async Task<IActionResult> DeletePartner(
+            int workshopId,
+            int partnerId)
+        {
+            var result = await _adminWorkshopService.DeletePartnerAsync(
+                workshopId,
+                partnerId);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
     }
 }

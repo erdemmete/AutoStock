@@ -99,8 +99,7 @@ namespace AutoStock.WEB.Controllers
 
         [HttpPost("Admin/Workshops/UpdateSubscription")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateWorkshopSubscription(
-            UpdateAdminWorkshopSubscriptionViewModel model)
+        public async Task<IActionResult> UpdateWorkshopSubscription(UpdateAdminWorkshopSubscriptionViewModel model)
         {
             if (!IsAdmin())
                 return RedirectToLogin();
@@ -126,8 +125,7 @@ namespace AutoStock.WEB.Controllers
 
         [HttpPost("Admin/Workshops/UpdateProfile")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateWorkshopProfile(
-            UpdateAdminWorkshopProfileViewModel model)
+        public async Task<IActionResult> UpdateWorkshopProfile(UpdateAdminWorkshopProfileViewModel model)
         {
             if (!IsAdmin())
                 return RedirectToLogin();
@@ -149,6 +147,152 @@ namespace AutoStock.WEB.Controllers
             TempData["SuccessMessage"] = "İşletme bilgileri güncellendi.";
 
             return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
+        }
+
+        [HttpPost("Admin/Workshops/AddPartner")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddWorkshopPartner(CreateAdminWorkshopPartnerViewModel model)
+        {
+            if (!IsAdmin())
+                return RedirectToLogin();
+
+            if (model.WorkshopId <= 0)
+            {
+                TempData["ErrorMessage"] = "Geçersiz servis bilgisi.";
+                return RedirectToAction(nameof(Workshops));
+            }
+
+            if (string.IsNullOrWhiteSpace(model.FullName))
+            {
+                TempData["ErrorMessage"] = "Yetkili/ortak adı zorunludur.";
+                return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
+            }
+
+            var result = await _adminWorkshopApiService.CreatePartnerAsync(model);
+
+            if (!result.IsSuccess)
+            {
+                TempData["ErrorMessage"] = result.ErrorMessage;
+                return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
+            }
+
+            TempData["SuccessMessage"] = "Yetkili/ortak başarıyla eklendi.";
+
+            return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
+        }
+
+        [HttpPost("Admin/Workshops/DeletePartner")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteWorkshopPartner(int workshopId, int partnerId)
+        {
+            if (!IsAdmin())
+                return RedirectToLogin();
+
+            if (workshopId <= 0 || partnerId <= 0)
+            {
+                TempData["ErrorMessage"] = "Geçersiz yetkili/ortak bilgisi.";
+                return RedirectToAction(nameof(Workshops));
+            }
+
+            var result = await _adminWorkshopApiService.DeletePartnerAsync(
+                workshopId,
+                partnerId);
+
+            if (!result.IsSuccess)
+            {
+                TempData["ErrorMessage"] = result.ErrorMessage;
+                return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+            }
+
+            TempData["SuccessMessage"] = "Yetkili/ortak silindi.";
+
+            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+        }
+
+        [HttpGet("Admin/Workshops/{workshopId:int}/Users/Create")]
+        public async Task<IActionResult> CreateWorkshopUser(int workshopId)
+        {
+            if (!IsAdmin())
+                return RedirectToLogin();
+
+            var workshop = await _adminWorkshopApiService.GetByIdAsync(workshopId);
+
+            if (workshop == null)
+            {
+                TempData["ErrorMessage"] = "Servis bulunamadı.";
+                return RedirectToAction(nameof(Workshops));
+            }
+
+            var model = new CreateAdminWorkshopUserViewModel
+            {
+                WorkshopId = workshopId,
+                Role = "Staff"
+            };
+
+            ViewBag.WorkshopName = workshop.Name;
+
+            return View(model);
+        }
+
+        [HttpPost("Admin/Workshops/{workshopId:int}/Users/Create")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateWorkshopUser(
+            int workshopId,
+            CreateAdminWorkshopUserViewModel model)
+        {
+            if (!IsAdmin())
+                return RedirectToLogin();
+
+            model.WorkshopId = workshopId;
+
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var result = await _adminWorkshopApiService.CreateUserAsync(model);
+
+            if (!result.IsSuccess)
+            {
+                ViewBag.Error = result.ErrorMessage;
+                return View(model);
+            }
+
+            TempData["SuccessMessage"] = "Kullanıcı başarıyla oluşturuldu.";
+
+            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+        }
+
+        [HttpPost("Admin/Workshops/UpdateUserStatus")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateWorkshopUserStatus(
+            int workshopId,
+            int userId,
+            bool isActive)
+        {
+            if (!IsAdmin())
+                return RedirectToLogin();
+
+            if (workshopId <= 0 || userId <= 0)
+            {
+                TempData["ErrorMessage"] = "Geçersiz kullanıcı bilgisi.";
+                return RedirectToAction(nameof(Workshops));
+            }
+
+            var result = await _adminWorkshopApiService.UpdateUserStatusAsync(
+                workshopId,
+                userId,
+                isActive);
+
+            if (!result.IsSuccess)
+            {
+                TempData["ErrorMessage"] = result.ErrorMessage;
+                return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+            }
+
+            TempData["SuccessMessage"] = isActive
+                ? "Kullanıcı aktifleştirildi."
+                : "Kullanıcı pasifleştirildi.";
+
+            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
         }
 
         private bool IsAdmin()

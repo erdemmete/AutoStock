@@ -23,5 +23,6 @@
         public AdminWorkshopProfileViewModel? Profile { get; set; }
 
         public List<AdminWorkshopUserViewModel> Users { get; set; } = new();
+        public List<AdminWorkshopPartnerViewModel> Partners { get; set; } = new();
     }
 }

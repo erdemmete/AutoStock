@@ -63,8 +63,7 @@ namespace AutoStock.WEB.Services
             return result?.Data;
         }
 
-        public async Task<(bool IsSuccess, int? WorkshopId, string ErrorMessage)> CreateAsync(
-            CreateAdminWorkshopViewModel model)
+        public async Task<(bool IsSuccess, int? WorkshopId, string ErrorMessage)> CreateAsync(CreateAdminWorkshopViewModel model)
         {
             var client = CreateApiClient();
 
@@ -99,8 +98,7 @@ namespace AutoStock.WEB.Services
             return (false, null, parsedResult.ErrorMessage);
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateSubscriptionAsync(
-            UpdateAdminWorkshopSubscriptionViewModel model)
+        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateSubscriptionAsync(UpdateAdminWorkshopSubscriptionViewModel model)
         {
             var client = CreateApiClient();
 
@@ -128,8 +126,7 @@ namespace AutoStock.WEB.Services
             return ParseApiResponse(responseText);
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateProfileAsync(
-            UpdateAdminWorkshopProfileViewModel model)
+        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateProfileAsync(UpdateAdminWorkshopProfileViewModel model)
         {
             var client = CreateApiClient();
 
@@ -158,6 +155,109 @@ namespace AutoStock.WEB.Services
 
             var response = await client.PutAsync(
                 $"/api/admin/workshops/{model.WorkshopId}/profile",
+                content);
+
+            var responseText = await response.Content.ReadAsStringAsync();
+
+            if (string.IsNullOrWhiteSpace(responseText))
+                return (false, "API boş cevap döndü.");
+
+            return ParseApiResponse(responseText);
+        }
+
+        public async Task<(bool IsSuccess, string ErrorMessage)> CreatePartnerAsync(CreateAdminWorkshopPartnerViewModel model)
+        {
+            var client = CreateApiClient();
+
+            var requestBody = new
+            {
+                fullName = model.FullName,
+                title = model.Title,
+                phoneNumber = model.PhoneNumber,
+                email = model.Email,
+                isPrimary = model.IsPrimary,
+                note = model.Note
+            };
+
+            var json = JsonSerializer.Serialize(requestBody);
+
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync(
+                $"/api/admin/workshops/{model.WorkshopId}/partners",
+                content);
+
+            var responseText = await response.Content.ReadAsStringAsync();
+
+            if (string.IsNullOrWhiteSpace(responseText))
+                return (false, "API boş cevap döndü.");
+
+            return ParseApiResponse(responseText);
+        }
+
+        public async Task<(bool IsSuccess, string ErrorMessage)> DeletePartnerAsync(int workshopId, int partnerId)
+        {
+            var client = CreateApiClient();
+
+            var response = await client.DeleteAsync(
+                $"/api/admin/workshops/{workshopId}/partners/{partnerId}");
+
+            var responseText = await response.Content.ReadAsStringAsync();
+
+            if (string.IsNullOrWhiteSpace(responseText))
+                return (false, "API boş cevap döndü.");
+
+            return ParseApiResponse(responseText);
+        }
+
+        public async Task<(bool IsSuccess, string ErrorMessage)> CreateUserAsync(
+    CreateAdminWorkshopUserViewModel model)
+        {
+            var client = CreateApiClient();
+
+            var requestBody = new
+            {
+                fullName = model.FullName,
+                userName = model.UserName,
+                email = model.Email,
+                password = model.Password,
+                role = model.Role
+            };
+
+            var json = JsonSerializer.Serialize(requestBody);
+
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync(
+                $"/api/admin/workshops/{model.WorkshopId}/users",
+                content);
+
+            var responseText = await response.Content.ReadAsStringAsync();
+
+            if (string.IsNullOrWhiteSpace(responseText))
+                return (false, "API boş cevap döndü.");
+
+            return ParseApiResponse(responseText);
+        }
+
+        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateUserStatusAsync(
+            int workshopId,
+            int userId,
+            bool isActive)
+        {
+            var client = CreateApiClient();
+
+            var requestBody = new
+            {
+                isActive
+            };
+
+            var json = JsonSerializer.Serialize(requestBody);
+
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await client.PutAsync(
+                $"/api/admin/workshops/{workshopId}/users/{userId}/status",
                 content);
 
             var responseText = await response.Content.ReadAsStringAsync();

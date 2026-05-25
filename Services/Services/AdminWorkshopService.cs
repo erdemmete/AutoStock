@@ -91,7 +91,22 @@ namespace AutoStock.Services.Services
                             PostalCode = x.Profile.PostalCode,
                             Country = x.Profile.Country
                         },
-
+                    Partners = x.Partners
+                        .Select(p => new AdminWorkshopPartnerDto
+                        {
+                            Id = p.Id,
+                            WorkshopId = p.WorkshopId,
+                            FullName = p.FullName,
+                            Title = p.Title,
+                            PhoneNumber = p.PhoneNumber,
+                            Email = p.Email,
+                            IsPrimary = p.IsPrimary,
+                            Note = p.Note,
+                            CreatedAt = p.CreatedAt
+                        })
+                        .OrderByDescending(p => p.IsPrimary)
+                        .ThenBy(p => p.FullName)
+                        .ToList(),
                     Users = x.WorkshopUsers
                         .Select(u => new AdminWorkshopUserDto
                         {
@@ -401,6 +416,151 @@ namespace AutoStock.Services.Services
                 : request.Country.Trim();
 
             workshop.Profile.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<bool>.Success(true);
+        }
+        public async Task<ServiceResult<List<AdminWorkshopPartnerDto>>> GetPartnersAsync(int workshopId)
+        {
+            var workshopExists = await _context.Workshops
+                .AnyAsync(x => x.Id == workshopId);
+
+            if (!workshopExists)
+                return ServiceResult<List<AdminWorkshopPartnerDto>>.Fail(
+                    "Servis bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            var partners = await _context.WorkshopPartners
+                .AsNoTracking()
+                .Where(x => x.WorkshopId == workshopId)
+                .Select(x => new AdminWorkshopPartnerDto
+                {
+                    Id = x.Id,
+                    WorkshopId = x.WorkshopId,
+                    FullName = x.FullName,
+                    Title = x.Title,
+                    PhoneNumber = x.PhoneNumber,
+                    Email = x.Email,
+                    IsPrimary = x.IsPrimary,
+                    Note = x.Note,
+                    CreatedAt = x.CreatedAt
+                })
+                .OrderByDescending(x => x.IsPrimary)
+                .ThenBy(x => x.FullName)
+                .ToListAsync();
+
+            return ServiceResult<List<AdminWorkshopPartnerDto>>.Success(partners);
+        }
+
+        public async Task<ServiceResult<int>> CreatePartnerAsync(
+            int workshopId,
+            CreateAdminWorkshopPartnerRequestDto request)
+        {
+            var workshopExists = await _context.Workshops
+                .AnyAsync(x => x.Id == workshopId);
+
+            if (!workshopExists)
+                return ServiceResult<int>.Fail(
+                    "Servis bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            if (string.IsNullOrWhiteSpace(request.FullName))
+                return ServiceResult<int>.Fail("Yetkili/ortak adı zorunludur.");
+
+            if (request.IsPrimary)
+            {
+                var currentPrimaryPartners = await _context.WorkshopPartners
+                    .Where(x => x.WorkshopId == workshopId && x.IsPrimary)
+                    .ToListAsync();
+
+                foreach (var currentPrimary in currentPrimaryPartners)
+                {
+                    currentPrimary.IsPrimary = false;
+                    currentPrimary.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            var partner = new WorkshopPartner
+            {
+                WorkshopId = workshopId,
+                FullName = request.FullName.Trim(),
+                Title = request.Title?.Trim(),
+                PhoneNumber = request.PhoneNumber?.Trim(),
+                Email = request.Email?.Trim(),
+                IsPrimary = request.IsPrimary,
+                Note = request.Note?.Trim()
+            };
+
+            _context.WorkshopPartners.Add(partner);
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<int>.Success(partner.Id, HttpStatusCode.Created);
+        }
+
+        public async Task<ServiceResult<bool>> UpdatePartnerAsync(
+            int workshopId,
+            int partnerId,
+            UpdateAdminWorkshopPartnerRequestDto request)
+        {
+            var partner = await _context.WorkshopPartners
+                .FirstOrDefaultAsync(x =>
+                    x.Id == partnerId &&
+                    x.WorkshopId == workshopId);
+
+            if (partner == null)
+                return ServiceResult<bool>.Fail(
+                    "Yetkili/ortak kaydı bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            if (string.IsNullOrWhiteSpace(request.FullName))
+                return ServiceResult<bool>.Fail("Yetkili/ortak adı zorunludur.");
+
+            if (request.IsPrimary)
+            {
+                var currentPrimaryPartners = await _context.WorkshopPartners
+                    .Where(x =>
+                        x.WorkshopId == workshopId &&
+                        x.IsPrimary &&
+                        x.Id != partnerId)
+                    .ToListAsync();
+
+                foreach (var currentPrimary in currentPrimaryPartners)
+                {
+                    currentPrimary.IsPrimary = false;
+                    currentPrimary.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            partner.FullName = request.FullName.Trim();
+            partner.Title = request.Title?.Trim();
+            partner.PhoneNumber = request.PhoneNumber?.Trim();
+            partner.Email = request.Email?.Trim();
+            partner.IsPrimary = request.IsPrimary;
+            partner.Note = request.Note?.Trim();
+            partner.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<bool>> DeletePartnerAsync(
+            int workshopId,
+            int partnerId)
+        {
+            var partner = await _context.WorkshopPartners
+                .FirstOrDefaultAsync(x =>
+                    x.Id == partnerId &&
+                    x.WorkshopId == workshopId);
+
+            if (partner == null)
+                return ServiceResult<bool>.Fail(
+                    "Yetkili/ortak kaydı bulunamadı.",
+                    HttpStatusCode.NotFound);
+
+            _context.WorkshopPartners.Remove(partner);
 
             await _context.SaveChangesAsync();
 
