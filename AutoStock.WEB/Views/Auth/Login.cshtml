@@ -16,7 +16,8 @@
                 box-sizing: border-box;
             }
 
-            html, body {
+            html,
+            body {
                 margin: 0;
                 min-height: 100%;
                 font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -25,7 +26,7 @@
 
             body {
                 min-height: 100vh;
-                background: radial-gradient(circle at top left, rgba(37, 99, 235, .35), transparent 34%), radial-gradient(circle at bottom right, rgba(22, 163, 74, .22), transparent 30%), linear-gradient(135deg, #020617, #0f172a 45%, #1e3a8a);
+                background: radial-gradient(circle at 14% 8%, rgba(79, 70, 229, .24), transparent 34rem), radial-gradient(circle at 86% 90%, rgba(37, 99, 235, .18), transparent 34rem), linear-gradient(135deg, #020617 0%, #0f172a 48%, #172554 100%);
             }
 
             .login-page {
@@ -36,79 +37,172 @@
             }
 
             .login-shell {
-                width: min(1080px, 100%);
+                width: min(1120px, 100%);
+                min-height: 610px;
                 display: grid;
-                grid-template-columns: 1.05fr .95fr;
-                background: rgba(255,255,255,.08);
-                border: 1px solid rgba(255,255,255,.14);
+                grid-template-columns: 1fr .9fr;
                 border-radius: 34px;
                 overflow: hidden;
-                box-shadow: 0 40px 90px rgba(0,0,0,.35);
+                background: rgba(255, 255, 255, .08);
+                border: 1px solid rgba(255, 255, 255, .13);
+                box-shadow: 0 42px 100px rgba(0, 0, 0, .38);
                 backdrop-filter: blur(18px);
             }
 
             .brand-panel {
-                padding: 56px;
-                color: white;
                 position: relative;
                 overflow: hidden;
+                padding: 58px;
+                color: white;
+                background: radial-gradient(circle at 22% 12%, rgba(255, 255, 255, .12), transparent 18rem), linear-gradient(145deg, rgba(15, 23, 42, .96), rgba(30, 41, 59, .94));
+            }
+
+                .brand-panel::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+                    background-size: 48px 48px;
+                    mask-image: linear-gradient(180deg, rgba(0,0,0,.72), transparent 82%);
+                }
+
+                .brand-panel::after {
+                    content: "";
+                    position: absolute;
+                    width: 380px;
+                    height: 380px;
+                    right: -160px;
+                    bottom: -170px;
+                    border-radius: 999px;
+                    background: radial-gradient(circle, rgba(79, 70, 229, .42), transparent 70%);
+                }
+
+            .brand-content {
+                position: relative;
+                z-index: 2;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+
+            .brand-top {
+                display: flex;
+                align-items: center;
+                gap: 14px;
             }
 
             .brand-badge {
-                width: 64px;
-                height: 64px;
-                border-radius: 22px;
+                width: 58px;
+                height: 58px;
+                border-radius: 20px;
                 display: grid;
                 place-items: center;
-                font-weight: 900;
+                font-weight: 950;
+                font-size: 20px;
+                letter-spacing: -.6px;
+                background: linear-gradient(135deg, #4f46e5, #2563eb);
+                box-shadow: 0 20px 44px rgba(79, 70, 229, .34);
+            }
+
+            .brand-top strong {
+                display: block;
                 font-size: 22px;
-                background: linear-gradient(135deg, #2563eb, #16a34a);
-                box-shadow: 0 20px 45px rgba(37,99,235,.35);
-                margin-bottom: 28px;
+                font-weight: 950;
+                letter-spacing: -.7px;
             }
 
-            .brand-panel h1 {
-                font-size: clamp(38px, 5vw, 62px);
-                line-height: .95;
-                letter-spacing: -2px;
-                margin: 0 0 18px;
+            .brand-top span {
+                display: block;
+                margin-top: 3px;
+                color: rgba(255, 255, 255, .60);
+                font-size: 13px;
+                font-weight: 750;
             }
 
-            .brand-panel p {
-                max-width: 460px;
-                color: #cbd5e1;
-                font-size: 16px;
-                line-height: 1.7;
-                margin: 0;
+            .brand-center {
+                position: relative;
+                min-height: 330px;
+                display: flex;
+                align-items: center;
             }
 
-            .mini-stats {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 14px;
-                margin-top: 44px;
-            }
-
-            .stat {
-                padding: 16px;
-                border-radius: 20px;
-                background: rgba(255,255,255,.08);
+            .orbit {
+                position: absolute;
+                width: 330px;
+                height: 330px;
+                border-radius: 999px;
                 border: 1px solid rgba(255,255,255,.12);
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
             }
 
-                .stat strong {
-                    display: block;
-                    font-size: 22px;
+                .orbit::before,
+                .orbit::after {
+                    content: "";
+                    position: absolute;
+                    border-radius: 999px;
+                    border: 1px solid rgba(255,255,255,.10);
+                    inset: 38px;
                 }
 
-                .stat span {
-                    color: #cbd5e1;
-                    font-size: 12px;
+                .orbit::after {
+                    inset: 82px;
+                    background: rgba(255,255,255,.035);
                 }
+
+            .orbit-dot {
+                position: absolute;
+                width: 13px;
+                height: 13px;
+                border-radius: 999px;
+                background: #818cf8;
+                box-shadow: 0 0 34px rgba(129, 140, 248, .95);
+            }
+
+                .orbit-dot.one {
+                    right: 44px;
+                    top: 54px;
+                }
+
+                .orbit-dot.two {
+                    left: 42px;
+                    bottom: 62px;
+                    background: #38bdf8;
+                }
+
+            .brand-wordmark {
+                position: relative;
+                z-index: 2;
+            }
+
+                .brand-wordmark h1 {
+                    margin: 0;
+                    font-size: clamp(48px, 6vw, 76px);
+                    line-height: .95;
+                    letter-spacing: -2.7px;
+                    font-weight: 950;
+                }
+
+                .brand-wordmark p {
+                    max-width: 390px;
+                    margin: 18px 0 0;
+                    color: rgba(255,255,255,.64);
+                    font-size: 17px;
+                    line-height: 1.6;
+                    font-weight: 750;
+                }
+
+            .brand-bottom {
+                color: rgba(255, 255, 255, .44);
+                font-size: 12px;
+                font-weight: 750;
+            }
 
             .form-panel {
-                padding: 48px;
-                background: rgba(255,255,255,.96);
+                padding: 58px;
+                background: rgba(255, 255, 255, .97);
                 display: flex;
                 align-items: center;
             }
@@ -119,14 +213,19 @@
 
                 .login-card h2 {
                     margin: 0;
-                    font-size: 30px;
-                    letter-spacing: -.8px;
+                    font-size: 34px;
+                    line-height: 1.1;
+                    letter-spacing: -1.1px;
+                    font-weight: 950;
+                    color: #0f172a;
                 }
 
             .subtitle {
-                margin: 10px 0 30px;
+                margin: 10px 0 34px;
                 color: #64748b;
                 line-height: 1.5;
+                font-size: 15px;
+                font-weight: 650;
             }
 
             .field {
@@ -135,82 +234,117 @@
 
                 .field label {
                     display: block;
-                    font-size: 13px;
-                    font-weight: 800;
-                    color: #334155;
                     margin-bottom: 8px;
+                    color: #334155;
+                    font-size: 13px;
+                    font-weight: 900;
                 }
 
                 .field input {
                     width: 100%;
-                    height: 54px;
-                    border: 1px solid #dbe3ef;
+                    height: 56px;
+                    border: 1px solid #cfd8e6;
                     border-radius: 16px;
                     padding: 0 16px;
-                    font-size: 15px;
                     background: #f8fafc;
+                    color: #0f172a;
+                    font-size: 15px;
                     outline: none;
                     transition: .18s ease;
                 }
 
                     .field input:focus {
-                        border-color: #2563eb;
-                        background: white;
-                        box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+                        border-color: #4f46e5;
+                        background: #fff;
+                        box-shadow: 0 0 0 4px rgba(79, 70, 229, .12);
                     }
 
             .login-button {
                 width: 100%;
-                height: 56px;
+                height: 58px;
+                margin-top: 10px;
                 border: none;
                 border-radius: 16px;
-                margin-top: 8px;
-                background: linear-gradient(135deg, #0f172a, #2563eb);
+                background: linear-gradient(135deg, #111827, #4f46e5);
                 color: white;
                 font-size: 16px;
-                font-weight: 900;
+                font-weight: 950;
                 cursor: pointer;
-                box-shadow: 0 18px 35px rgba(37,99,235,.25);
+                box-shadow: 0 18px 38px rgba(79, 70, 229, .26);
                 transition: .18s ease;
             }
 
                 .login-button:hover {
                     transform: translateY(-1px);
-                    box-shadow: 0 22px 45px rgba(37,99,235,.32);
+                    box-shadow: 0 24px 48px rgba(79, 70, 229, .34);
                 }
 
             .error {
-                margin-top: 16px;
-                padding: 12px 14px;
+                margin-top: 18px;
+                padding: 13px 15px;
                 border-radius: 14px;
                 background: #fee2e2;
+                border: 1px solid #fecaca;
                 color: #991b1b;
                 font-size: 14px;
-                font-weight: 700;
+                font-weight: 800;
             }
 
             .footer-note {
-                margin-top: 24px;
-                font-size: 12px;
-                color: #94a3b8;
+                margin-top: 26px;
                 text-align: center;
+                color: #94a3b8;
+                font-size: 12px;
+                font-weight: 700;
             }
 
-            @@media (max-width: 860px) {
+            @@media (max-width: 900px) {
                 .login-shell {
                     grid-template-columns: 1fr;
                 }
 
                 .brand-panel {
-                    padding: 34px;
+                    padding: 36px;
                 }
 
-                .mini-stats {
-                    display: none;
+                .brand-center {
+                    min-height: 260px;
+                }
+
+                .orbit {
+                    width: 260px;
+                    height: 260px;
                 }
 
                 .form-panel {
-                    padding: 30px;
+                    padding: 34px;
+                }
+
+                .brand-bottom {
+                    display: none;
+                }
+            }
+
+            @@media (max-width: 560px) {
+                .login-page {
+                    padding: 16px;
+                }
+
+                .login-shell {
+                    border-radius: 26px;
+                }
+
+                .brand-panel,
+                .form-panel {
+                    padding: 28px;
+                }
+
+                .brand-wordmark h1 {
+                    font-size: 44px;
+                }
+
+                .brand-wordmark p {
+                    font-size: 15px;
                 }
             }
     </style>
@@ -220,45 +354,57 @@
     <main class="login-page">
         <section class="login-shell">
             <div class="brand-panel">
-                <div class="brand-badge">S360</div>
+                <div class="brand-content">
+                    <div class="brand-top">
+                        <div class="brand-badge">S360</div>
 
-                <h1>Sente360</h1>
-                <p>
-                    Araç servis operasyonlarını tek ekrandan yönetmek için geliştirilen modern servis takip platformu.
-                </p>
+                        <div>
+                            <strong>Sente360</strong>
+                            <span>Servis yönetim paneli</span>
+                        </div>
+                    </div>
 
-                <div class="mini-stats">
-                    <div class="stat">
-                        <strong>PDF</strong>
-                        <span>Servis formu</span>
+                    <div class="brand-center">
+                        <div class="orbit">
+                            <span class="orbit-dot one"></span>
+                            <span class="orbit-dot two"></span>
+                        </div>
+
+                        <div class="brand-wordmark">
+                            <h1>Sente360</h1>
+                            <p>Servisinin dijital kontrol merkezi.</p>
+                        </div>
                     </div>
-                    <div class="stat">
-                        <strong>QR</strong>
-                        <span>Müşteri erişimi</span>
-                    </div>
-                    <div class="stat">
-                        <strong>V2</strong>
-                        <span>Giriş sistemi</span>
+
+                    <div class="brand-bottom">
+                        © 2026 Sente360
                     </div>
                 </div>
             </div>
 
             <div class="form-panel">
                 <div class="login-card">
-                    <h2>Hoş Geldin</h2>
+                    <h2>Giriş Yap</h2>
+
                     <p class="subtitle">
-                        Devam etmek için giriş yap.
+                        Hesabına erişmek için bilgilerini gir.
                     </p>
 
                     <form asp-action="Login" method="post">
                         <div class="field">
                             <label asp-for="LoginName">Kullanıcı adı veya e-posta</label>
-                            <input asp-for="LoginName" type="text" placeholder="Kullanıcı adı veya e-posta" autocomplete="username" />
+                            <input asp-for="LoginName"
+                                   type="text"
+                                   placeholder="Kullanıcı adı veya e-posta"
+                                   autocomplete="username" />
                         </div>
 
                         <div class="field">
                             <label asp-for="Password">Şifre</label>
-                            <input asp-for="Password" type="password" placeholder="Şifreni gir" autocomplete="current-password" />
+                            <input asp-for="Password"
+                                   type="password"
+                                   placeholder="Şifreni gir"
+                                   autocomplete="current-password" />
                         </div>
 
                         <button class="login-button" type="submit">
@@ -268,11 +414,13 @@
 
                     @if (ViewBag.Error != null)
                     {
-                        <div class="error">@ViewBag.Error</div>
+                        <div class="error">
+                            @ViewBag.Error
+                        </div>
                     }
 
                     <div class="footer-note">
-                        © 2026 Sente360
+                        Güvenli servis erişimi
                     </div>
                 </div>
             </div>
