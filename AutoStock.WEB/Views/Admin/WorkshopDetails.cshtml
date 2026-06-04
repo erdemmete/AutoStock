@@ -24,7 +24,7 @@
     var createdUserPassword = TempData["CreatedUserPassword"] as string;
     var createdUserPhone = TempData["CreatedUserPhone"] as string;
 
-    var loginUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/Auth/Login";
+    var loginUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}/";
 
     string? createdUserMessage = null;
     string? whatsappUrl = null;

@@ -16,11 +16,12 @@ namespace AutoStock.WEB.Controllers
             _configuration = configuration;
         }
 
-        [HttpGet]
+        [HttpGet("/")]
+        [HttpGet("/Auth/Login")]
         public IActionResult Login()
         {
             var token = HttpContext.Session.GetString("AuthToken");
-
+ 
             if (!string.IsNullOrWhiteSpace(token))
             {
                 var role = HttpContext.Session.GetString("UserRole");
