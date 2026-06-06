@@ -14,9 +14,9 @@ namespace AutoStock.WEB.Services
         {
         }
 
-        public async Task<ApiResponse<List<AdminWorkshopListViewModel>>> GetListAsync()
+        public async Task<ApiResponse<List<AdminWorkshopListItemViewModel>>> GetListAsync()
         {
-            return await GetAsync<List<AdminWorkshopListViewModel>>(
+            return await GetAsync<List<AdminWorkshopListItemViewModel>>(
                 "/api/admin/workshops",
                 "Servis listesi alınırken hata oluştu.");
         }
@@ -135,9 +135,7 @@ namespace AutoStock.WEB.Services
                 "Kullanıcı durumu güncellenirken hata oluştu.");
         }
 
-        public async Task<ApiResponse<SuggestedAdminWorkshopCredentialsViewModel>> SuggestCredentialsAsync(
-            int workshopId,
-            string fullName)
+        public async Task<ApiResponse<SuggestedAdminWorkshopCredentialsViewModel>> SuggestCredentialsAsync(int workshopId, string fullName)
         {
             var url = BuildUrlWithQuery(
                 $"/api/admin/workshops/{workshopId}/users/suggest-credentials",
@@ -149,6 +147,25 @@ namespace AutoStock.WEB.Services
             return await GetAsync<SuggestedAdminWorkshopCredentialsViewModel>(
                 url,
                 "Kullanıcı adı ve geçici şifre oluşturulurken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<PagedResultViewModel<AdminWorkshopListItemViewModel>>> GetPagedAsync(
+    AdminWorkshopListQueryViewModel query)
+        {
+            var url = BuildUrlWithQuery(
+                "/api/admin/workshops",
+                new Dictionary<string, string?>
+                {
+                    ["search"] = query.Search,
+                    ["isActive"] = query.IsActive?.ToString(),
+                    ["subscriptionStatus"] = query.SubscriptionStatus?.ToString(),
+                    ["pageNumber"] = query.PageNumber.ToString(),
+                    ["pageSize"] = query.PageSize.ToString()
+                });
+
+            return await GetAsync<PagedResultViewModel<AdminWorkshopListItemViewModel>>(
+                url,
+                "Servis listesi alınırken hata oluştu.");
         }
     }
 }

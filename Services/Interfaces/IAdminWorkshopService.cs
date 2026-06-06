@@ -26,5 +26,7 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<bool>> DeletePartnerAsync(int workshopId, int partnerId);
 
         Task<ServiceResult<SuggestedAdminWorkshopCredentialsDto>> SuggestUserCredentialsAsync(int workshopId, string fullName);
+        Task<ServiceResult<PagedResult<AdminWorkshopListItemDto>>> GetPagedAsync(AdminWorkshopListQueryDto query);
+
     }
 }

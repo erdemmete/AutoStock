@@ -7,12 +7,15 @@ namespace AutoStock.WEB.Controllers
     public class AdminController : BaseController
     {
         private readonly AdminWorkshopApiService _adminWorkshopApiService;
+        private readonly AdminWorkshopPageService _adminWorkshopPageService;
 
-        public AdminController(AdminWorkshopApiService adminWorkshopApiService)
+        public AdminController(
+            AdminWorkshopApiService adminWorkshopApiService,
+            AdminWorkshopPageService adminWorkshopPageService)
         {
             _adminWorkshopApiService = adminWorkshopApiService;
+            _adminWorkshopPageService = adminWorkshopPageService;
         }
-
         [HttpGet("Admin")]
         [HttpGet("Admin/Dashboard")]
         public IActionResult Dashboard()
@@ -30,16 +33,17 @@ namespace AutoStock.WEB.Controllers
         }
 
         [HttpGet("Admin/Workshops")]
-        public async Task<IActionResult> Workshops()
+        public async Task<IActionResult> Workshops(AdminWorkshopListQueryViewModel query)
         {
             if (!IsAdmin())
                 return RedirectToLogin();
 
-            var result = await _adminWorkshopApiService.GetListAsync();
+            var pageResult = await _adminWorkshopPageService.GetIndexPageAsync(query);
 
-            return ViewListResult(
-                result,
-                "Servis listesi alınırken hata oluştu.");
+            if (pageResult.HasErrors)
+                ShowErrors(pageResult.ErrorMessages);
+
+            return View(pageResult.ViewModel);
         }
 
         [HttpGet("Admin/Workshops/Create")]

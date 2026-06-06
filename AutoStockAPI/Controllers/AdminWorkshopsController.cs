@@ -19,9 +19,9 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetList()
+        public async Task<IActionResult> GetList([FromQuery] AdminWorkshopListQueryDto query)
         {
-            var result = await _adminWorkshopService.GetListAsync();
+            var result = await _adminWorkshopService.GetPagedAsync(query);
 
             return StatusCode((int)result.StatusCode, result);
         }

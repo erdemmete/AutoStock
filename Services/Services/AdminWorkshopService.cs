@@ -4,6 +4,7 @@ using AutoStock.Repositories.Enums;
 using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Admin.Workshops;
 using AutoStock.Services.Dtos.Common;
+
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -581,6 +582,63 @@ namespace AutoStock.Services.Services
             };
 
             return ServiceResult<SuggestedAdminWorkshopCredentialsDto>.Success(result);
+        }
+
+        public async Task<ServiceResult<PagedResult<AdminWorkshopListItemDto>>> GetPagedAsync(AdminWorkshopListQueryDto query)
+        {
+            query.PageNumber = query.PageNumber <= 0 ? 1 : query.PageNumber;
+            query.PageSize = query.PageSize <= 0 ? 10 : query.PageSize;
+            query.PageSize = query.PageSize > 100 ? 100 : query.PageSize;
+
+            var workshopsQuery = _context.Workshops
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var search = query.Search.Trim();
+
+                workshopsQuery = workshopsQuery.Where(x =>
+                    x.Name.Contains(search));
+            }
+
+            if (query.IsActive.HasValue)
+            {
+                workshopsQuery = workshopsQuery.Where(x => x.IsActive == query.IsActive.Value);
+            }
+
+            if (query.SubscriptionStatus.HasValue)
+            {
+                workshopsQuery = workshopsQuery.Where(x => x.SubscriptionStatus == query.SubscriptionStatus.Value);
+            }
+
+            var totalCount = await workshopsQuery.CountAsync();
+
+            var items = await workshopsQuery
+                .OrderByDescending(x => x.CreatedAt)
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(x => new AdminWorkshopListItemDto
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    IsActive = x.IsActive,
+                    SubscriptionStatus = x.SubscriptionStatus,
+                    SubscriptionStartDate = x.SubscriptionStartDate,
+                    SubscriptionEndDate = x.SubscriptionEndDate,
+                    CreatedAt = x.CreatedAt
+                })
+                .ToListAsync();
+
+            var pagedResult = new PagedResult<AdminWorkshopListItemDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize
+            };
+
+            return ServiceResult<PagedResult<AdminWorkshopListItemDto>>.Success(pagedResult);
         }
 
         private async Task<string> GetAvailableShortUserNameAsync(string baseUserName, string fullName)

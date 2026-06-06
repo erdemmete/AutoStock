@@ -1,7 +1,10 @@
-﻿@model List<AutoStock.WEB.Models.Admin.Workshops.AdminWorkshopListItemViewModel>
+﻿@model AutoStock.WEB.Models.Admin.Workshops.AdminWorkshopIndexViewModel
 
 @{
     ViewData["Title"] = "Servisler";
+
+    var query = Model.Query;
+    var paged = Model.Workshops;
 }
 
 <div class="page-header">
@@ -22,15 +25,84 @@
     </div>
 }
 
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert-danger-custom">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<div class="filter-card">
+    <form method="get" action="/Admin/Workshops" class="filter-form">
+        <div class="filter-group search-group">
+            <label>Arama</label>
+            <input type="text"
+                   name="Search"
+                   value="@query.Search"
+                   placeholder="Servis adı ile ara..." />
+        </div>
+
+        <div class="filter-group">
+            <label>Durum</label>
+            <select name="IsActive">
+                <option value="">Tümü</option>
+                <option value="true" selected="@(query.IsActive == true)">Aktif</option>
+                <option value="false" selected="@(query.IsActive == false)">Pasif</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Üyelik</label>
+            <select name="SubscriptionStatus">
+                <option value="">Tümü</option>
+                <option value="1" selected="@(query.SubscriptionStatus == 1)">Trial</option>
+                <option value="2" selected="@(query.SubscriptionStatus == 2)">Active</option>
+                <option value="3" selected="@(query.SubscriptionStatus == 3)">Expired</option>
+                <option value="4" selected="@(query.SubscriptionStatus == 4)">Suspended</option>
+                <option value="5" selected="@(query.SubscriptionStatus == 5)">Cancelled</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Sayfa Boyutu</label>
+            <select name="PageSize">
+                <option value="10" selected="@(query.PageSize == 10)">10</option>
+                <option value="20" selected="@(query.PageSize == 20)">20</option>
+                <option value="50" selected="@(query.PageSize == 50)">50</option>
+                <option value="100" selected="@(query.PageSize == 100)">100</option>
+            </select>
+        </div>
+
+        <input type="hidden" name="PageNumber" value="1" />
+
+        <div class="filter-actions">
+            <button type="submit" class="btn-primary-custom">
+                Filtrele
+            </button>
+
+            <a href="/Admin/Workshops" class="btn-secondary-custom">
+                Temizle
+            </a>
+        </div>
+    </form>
+</div>
+
 <div class="admin-card">
-    @if (!Model.Any())
+    @if (!paged.Items.Any())
     {
         <div class="empty-state">
-            Henüz servis kaydı oluşturulmamış.
+            Kriterlere uygun servis kaydı bulunamadı.
         </div>
     }
     else
     {
+        <div class="table-summary">
+            <span>
+                @paged.TotalCount kayıt içinden
+                @paged.FirstItemNumber - @paged.LastItemNumber arası gösteriliyor.
+            </span>
+        </div>
+
         <div class="table-responsive">
             <table class="admin-table">
                 <thead>
@@ -46,7 +118,7 @@
                 </thead>
 
                 <tbody>
-                    @foreach (var item in Model)
+                    @foreach (var item in paged.Items)
                     {
                         <tr>
                             <td>
@@ -109,6 +181,61 @@
                 </tbody>
             </table>
         </div>
+
+        @if (paged.TotalPages > 1)
+        {
+            <div class="pagination-wrapper">
+                <a class="pagination-btn @(paged.HasPreviousPage ? "" : "disabled")"
+                   href="@(paged.HasPreviousPage
+                        ? Url.Action("Workshops", "Admin", new
+                        {
+                            Search = query.Search,
+                            IsActive = query.IsActive,
+                            SubscriptionStatus = query.SubscriptionStatus,
+                            PageNumber = paged.PageNumber - 1,
+                            PageSize = query.PageSize
+                        })
+                        : "#")">
+                    Önceki
+                </a>
+
+                <div class="pagination-pages">
+                    @for (var page = 1; page <= paged.TotalPages; page++)
+                    {
+                        if (page == 1 ||
+                            page == paged.TotalPages ||
+                            Math.Abs(page - paged.PageNumber) <= 2)
+                        {
+                            <a class="pagination-page @(page == paged.PageNumber ? "active" : "")"
+                               href="@Url.Action("Workshops", "Admin", new
+                               {
+                                   Search = query.Search,
+                                   IsActive = query.IsActive,
+                                   SubscriptionStatus = query.SubscriptionStatus,
+                                   PageNumber = page,
+                                   PageSize = query.PageSize
+                               })">
+                                @(page)
+                            </a>
+                        }
+                    }
+                </div>
+
+                <a class="pagination-btn @(paged.HasNextPage ? "" : "disabled")"
+                   href="@(paged.HasNextPage
+                        ? Url.Action("Workshops", "Admin", new
+                        {
+                            Search = query.Search,
+                            IsActive = query.IsActive,
+                            SubscriptionStatus = query.SubscriptionStatus,
+                            PageNumber = paged.PageNumber + 1,
+                            PageSize = query.PageSize
+                        })
+                        : "#")">
+                    Sonraki
+                </a>
+            </div>
+        }
     }
 </div>
 
@@ -121,16 +248,67 @@
         margin-bottom: 24px;
     }
 
-        .page-header h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 700;
-        }
+    .page-header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+    }
 
-        .page-header p {
-            margin: 6px 0 0;
-            color: #6b7280;
-        }
+    .page-header p {
+        margin: 6px 0 0;
+        color: #6b7280;
+    }
+
+    .filter-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        padding: 16px;
+        margin-bottom: 18px;
+    }
+
+    .filter-form {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .filter-group label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #374151;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        height: 42px;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        padding: 0 12px;
+        font-size: 14px;
+        outline: none;
+        background: #fff;
+    }
+
+    .filter-group input:focus,
+    .filter-group select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
 
     .admin-card {
         background: #fff;
@@ -138,6 +316,15 @@
         border-radius: 16px;
         box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
         overflow: hidden;
+    }
+
+    .table-summary {
+        padding: 14px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        color: #6b7280;
+        font-size: 13px;
+        font-weight: 600;
+        background: #f9fafb;
     }
 
     .table-responsive {
@@ -150,24 +337,24 @@
         border-collapse: collapse;
     }
 
-        .admin-table th {
-            text-align: left;
-            padding: 14px 16px;
-            font-size: 13px;
-            color: #6b7280;
-            background: #f9fafb;
-            border-bottom: 1px solid #e5e7eb;
-        }
+    .admin-table th {
+        text-align: left;
+        padding: 14px 16px;
+        font-size: 13px;
+        color: #6b7280;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+    }
 
-        .admin-table td {
-            padding: 16px;
-            border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle;
-        }
+    .admin-table td {
+        padding: 16px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
 
-        .admin-table tr:last-child td {
-            border-bottom: none;
-        }
+    .admin-table tr:last-child td {
+        border-bottom: none;
+    }
 
     .text-muted {
         color: #6b7280;
@@ -184,43 +371,64 @@
         font-weight: 700;
     }
 
-        .status-badge.success {
-            background: #dcfce7;
-            color: #166534;
-        }
+    .status-badge.success {
+        background: #dcfce7;
+        color: #166534;
+    }
 
-        .status-badge.warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
+    .status-badge.warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
 
-        .status-badge.danger {
-            background: #fee2e2;
-            color: #991b1b;
-        }
+    .status-badge.danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
 
-        .status-badge.secondary {
-            background: #f3f4f6;
-            color: #374151;
-        }
+    .status-badge.secondary {
+        background: #f3f4f6;
+        color: #374151;
+    }
 
     .btn-primary-custom {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         padding: 10px 16px;
+        min-height: 42px;
         border-radius: 10px;
         background: #2563eb;
         color: #fff;
         text-decoration: none;
         font-weight: 700;
         border: none;
+        cursor: pointer;
     }
 
-        .btn-primary-custom:hover {
-            background: #1d4ed8;
-            color: #fff;
-        }
+    .btn-primary-custom:hover {
+        background: #1d4ed8;
+        color: #fff;
+    }
+
+    .btn-secondary-custom {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        min-height: 42px;
+        border-radius: 10px;
+        background: #f3f4f6;
+        color: #374151;
+        text-decoration: none;
+        font-weight: 700;
+        border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary-custom:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
 
     .btn-detail {
         display: inline-flex;
@@ -233,10 +441,10 @@
         font-size: 13px;
     }
 
-        .btn-detail:hover {
-            background: #f9fafb;
-            color: #111827;
-        }
+    .btn-detail:hover {
+        background: #f9fafb;
+        color: #111827;
+    }
 
     .empty-state {
         padding: 32px;
@@ -252,5 +460,80 @@
         margin-bottom: 18px;
         border: 1px solid #bbf7d0;
         font-weight: 600;
+    }
+
+    .alert-danger-custom {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 14px 16px;
+        border-radius: 12px;
+        margin-bottom: 18px;
+        border: 1px solid #fecaca;
+        font-weight: 600;
+    }
+
+    .pagination-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px;
+        border-top: 1px solid #e5e7eb;
+        background: #fff;
+    }
+
+    .pagination-pages {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .pagination-page,
+    .pagination-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        color: #374151;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .pagination-page.active {
+        background: #2563eb;
+        color: #fff;
+        border-color: #2563eb;
+    }
+
+    .pagination-btn.disabled {
+        pointer-events: none;
+        opacity: 0.45;
+    }
+
+    @@media (max-width: 900px) {
+        .page-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .filter-form {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pagination-wrapper {
+            flex-direction: column;
+        }
     }
 </style>
