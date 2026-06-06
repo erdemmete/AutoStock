@@ -54,7 +54,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpGet("summary")]
-        public async Task<IActionResult> GetSummary()
+        public async Task<IActionResult> GetSummary([FromQuery] CurrentAccountListQueryDto query)
         {
             var workshopIdClaim =
                 User.FindFirst("WorkshopId")?.Value
@@ -63,10 +63,10 @@ namespace AutoStock.API.Controllers
             if (!int.TryParse(workshopIdClaim, out var workshopId))
                 return Unauthorized("Workshop bilgisi bulunamadı.");
 
-            var result = await _currentAccountService.GetSummaryAsync(workshopId);
+            var result = await _currentAccountService.GetPagedSummaryAsync(query, workshopId);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
+            if (result.IsFailure)
+                return StatusCode((int)result.StatusCode, result);
 
             return Ok(result);
         }

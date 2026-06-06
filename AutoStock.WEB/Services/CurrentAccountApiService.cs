@@ -1,91 +1,50 @@
 ﻿using AutoStock.Mobile.Models.CurrentAccounts;
 using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.CurrentAccounts;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 
 namespace AutoStock.WEB.Services
 {
-    public class CurrentAccountApiService
+    public class CurrentAccountApiService : BaseApiService
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-
         public CurrentAccountApiService(
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<CurrentAccountApiService> logger)
+            : base(httpClientFactory, configuration, httpContextAccessor, logger)
         {
-            _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
-            _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<CustomerCurrentAccountViewModel?> GetCustomerAccountAsync(int customerId)
+        public async Task<ApiResponse<CustomerCurrentAccountViewModel>> GetCustomerAccountAsync(int customerId)
         {
-            var client = CreateApiClient();
-
-            var response = await client.GetAsync($"/api/current-accounts/customers/{customerId}");
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<ApiResponse<CustomerCurrentAccountViewModel>>(
-                json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            return result?.Data;
+            return await GetAsync<CustomerCurrentAccountViewModel>(
+                $"/api/current-accounts/customers/{customerId}",
+                "Cari hesap bilgileri alınırken hata oluştu.");
         }
 
-        public async Task<bool> CreatePaymentAsync(CreatePaymentViewModel model)
+        public async Task<ApiResponse<object>> CreatePaymentAsync(CreatePaymentViewModel model)
         {
-            var client = CreateApiClient();
-
-            var json = JsonSerializer.Serialize(model);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync("/api/current-accounts/payments", content);
-
-            return response.IsSuccessStatusCode;
+            return await PostJsonAsync<CreatePaymentViewModel, object>(
+                "/api/current-accounts/payments",
+                model,
+                "Tahsilat kaydedilirken hata oluştu.");
         }
 
-        public async Task<CurrentAccountSummaryViewModel?> GetSummaryAsync()
+        public async Task<ApiResponse<CurrentAccountPagedSummaryViewModel>> GetSummaryAsync(
+            CurrentAccountListQueryViewModel query)
         {
-            var client = CreateApiClient();
+            query.Normalize();
 
-            var response = await client.GetAsync("/api/current-accounts/summary");
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<ApiResponse<CurrentAccountSummaryViewModel>>(
-                json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            return result?.Data;
-        }
-
-        private HttpClient CreateApiClient()
-        {
-            var client = _httpClientFactory.CreateClient();
-
-            client.BaseAddress = new Uri(_configuration["ApiSettings:BaseUrl"]!);
-
-            var token = _httpContextAccessor.HttpContext?.Session.GetString("AuthToken");
-
-            if (!string.IsNullOrWhiteSpace(token))
+            var url = BuildUrlWithQuery("/api/current-accounts/summary", new Dictionary<string, string?>
             {
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
-            }
+                ["search"] = query.Search,
+                ["pageNumber"] = query.PageNumber.ToString(),
+                ["pageSize"] = query.PageSize.ToString()
+            });
 
-            return client;
+            return await GetAsync<CurrentAccountPagedSummaryViewModel>(
+                url,
+                "Cari özet alınırken hata oluştu.");
         }
     }
 }

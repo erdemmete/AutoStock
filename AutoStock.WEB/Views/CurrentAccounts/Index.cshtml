@@ -1,7 +1,35 @@
-﻿@model AutoStock.WEB.Models.CurrentAccounts.CurrentAccountSummaryViewModel
+﻿@model AutoStock.WEB.Models.CurrentAccounts.CurrentAccountIndexViewModel
+@using AutoStock.WEB.Models.Common
+@using AutoStock.WEB.Models.CurrentAccounts
 
 @{
     ViewData["Title"] = "Cari Yönetimi";
+
+    var summary = Model.Summary;
+    var balances = summary.CustomerBalances.Items ?? new List<CustomerBalanceSummaryViewModel>();
+
+    var pageNumber = summary.CustomerBalances.PageNumber > 0
+        ? summary.CustomerBalances.PageNumber
+        : Model.Query.PageNumber;
+
+    var pageSize = summary.CustomerBalances.PageSize > 0
+        ? summary.CustomerBalances.PageSize
+        : Model.Query.PageSize;
+
+    var totalCount = summary.CustomerBalances.TotalCount;
+
+    var paginationModel = new PaginationViewModel
+    {
+        Controller = "CurrentAccounts",
+        Action = "Index",
+        PageNumber = pageNumber,
+        PageSize = pageSize,
+        TotalCount = totalCount,
+        RouteValues = new Dictionary<string, string?>
+        {
+            ["search"] = Model.Query.Search
+        }
+    };
 }
 
 <div class="ca-page">
@@ -11,27 +39,22 @@
             <p>Müşteri hesaplarını görüntüleyin, yönetin ve takip edin.</p>
         </div>
 
-        <button class="ca-btn ca-btn-outline" type="button">
-            Dışa Aktar
-        </button>
+        @await Html.PartialAsync("_PageActions", new PageActionViewModel
+        {
+            BackController = "Dashboard",
+            BackAction = "Index",
+            HomeController = "Dashboard",
+            HomeAction = "Index"
+        })
     </div>
 
     <div class="ca-stats">
         <div class="ca-card">
-            <div class="ca-icon ca-icon-green">↗</div>
-            <div>
-                <span>Toplam Açık Alacak</span>
-                <strong>@Model.TotalReceivableBalance.ToString("N2") TL</strong>
-                <small>bekleyen</small>
-            </div>
-        </div>
-
-        <div class="ca-card">
             <div class="ca-icon ca-icon-blue">₺</div>
             <div>
                 <span>Bu Ay Net Fatura</span>
-                <strong>@Model.ThisMonthInvoiceTotal.ToString("N2") TL</strong>
-                <small>kesilen</small>
+                <strong>@summary.ThisMonthInvoiceTotal.ToString("N2") TL</strong>
+                <small>kesilen - iptal</small>
             </div>
         </div>
 
@@ -39,23 +62,55 @@
             <div class="ca-icon ca-icon-purple">✓</div>
             <div>
                 <span>Bu Ay Tahsilat</span>
-                <strong>@Model.ThisMonthPaymentTotal.ToString("N2") TL</strong>
-                <small>alınan</small>
+                <strong>@summary.ThisMonthPaymentTotal.ToString("N2") TL</strong>
+                <small>gelen ödeme</small>
+            </div>
+        </div>
+
+        <div class="ca-card">
+            <div class="ca-icon ca-icon-green">↗</div>
+            <div>
+                <span>Toplam Açık Alacak</span>
+                <strong>@summary.TotalReceivableBalance.ToString("N2") TL</strong>
+                <small>tahsil edilecek</small>
             </div>
         </div>
     </div>
 
     <div class="ca-table-card">
-        <div class="ca-toolbar">
+        <form method="get"
+              asp-controller="CurrentAccounts"
+              asp-action="Index"
+              class="ca-toolbar">
+
             <div class="ca-search">
                 <span>⌕</span>
-                <input type="text" placeholder="Müşteri adı ile ara..." />
+                <input name="Search"
+                       value="@Model.Query.Search"
+                       type="text"
+                       placeholder="Müşteri adı, firma veya telefon ile ara..." />
             </div>
 
-            <button class="ca-btn ca-btn-outline" type="button">
+            <select name="PageSize" class="ca-page-size">
+                <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
+                <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
+                <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
+            </select>
+
+            <input type="hidden" name="PageNumber" value="1" />
+
+            <button class="ca-btn ca-btn-outline" type="submit">
                 Filtrele
             </button>
-        </div>
+
+            <a asp-controller="CurrentAccounts"
+               asp-action="Index"
+               class="ca-btn ca-btn-outline">
+                Temizle
+            </a>
+        </form>
+
+        @await Html.PartialAsync("_Pagination", paginationModel)
 
         <table class="ca-table">
             <thead>
@@ -66,47 +121,62 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model.CustomerBalances)
+                @if (!balances.Any())
                 {
-                    var balanceClass = item.Balance > 0 ? "positive" : "negative";
-                    var balanceText = item.Balance > 0 ? "Alacaklıyız" : "Borçluyuz";
-
                     <tr>
-                        <td>
-                            <div class="ca-customer">
-                                <div class="ca-avatar">
-                                    @(string.IsNullOrWhiteSpace(item.CustomerName) ? "?" : item.CustomerName.Substring(0, 1).ToUpper())
-                                </div>
-                                <div>
-                                    <strong>@item.CustomerName</strong>
-                                    <small>Müşteri hesabı</small>
-                                </div>
+                        <td colspan="3">
+                            <div class="empty-state">
+                                Kayıt bulunamadı. Arama kriterini değiştirerek tekrar deneyin.
                             </div>
-                        </td>
-
-                        <td>
-                            <div class="ca-balance @balanceClass">
-                                @item.Balance.ToString("N2") TL
-                            </div>
-                            <small>@balanceText</small>
-                        </td>
-
-                        <td class="text-end">
-                            <button type="button"
-                                    class="ca-btn ca-btn-success"
-                                    onclick="openPaymentModal(@item.CustomerId, '@item.CustomerName')">
-                                Tahsilat
-                            </button>
-
-                            <a class="ca-btn ca-btn-outline"
-                               href="/CurrentAccounts/Customer/@item.CustomerId">
-                                Ekstre
-                            </a>
                         </td>
                     </tr>
                 }
+                else
+                {
+                    foreach (var item in balances)
+                    {
+                        var balanceClass = item.Balance > 0 ? "positive" : "negative";
+                        var balanceText = item.Balance > 0 ? "Alacaklıyız" : "Borçluyuz";
+
+                        <tr>
+                            <td>
+                                <div class="ca-customer">
+                                    <div class="ca-avatar">
+                                        @(string.IsNullOrWhiteSpace(item.CustomerName) ? "?" : item.CustomerName.Substring(0, 1).ToUpper())
+                                    </div>
+                                    <div>
+                                        <strong>@item.CustomerName</strong>
+                                        <small>Müşteri hesabı</small>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="ca-balance @balanceClass">
+                                    @item.Balance.ToString("N2") TL
+                                </div>
+                                <small>@balanceText</small>
+                            </td>
+
+                            <td class="text-end">
+                                <button type="button"
+                                        class="ca-btn ca-btn-success"
+                                        onclick="openPaymentModal(@item.CustomerId, @Json.Serialize(item.CustomerName))">
+                                    Tahsilat
+                                </button>
+
+                                <a class="ca-btn ca-btn-outline"
+                                   href="/CurrentAccounts/Customer/@item.CustomerId">
+                                    Ekstre
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
             </tbody>
         </table>
+
+        @await Html.PartialAsync("_Pagination", paginationModel)
     </div>
 </div>
 
@@ -209,6 +279,7 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 36px;
+        gap: 20px;
     }
 
         .ca-header h1 {
@@ -299,6 +370,7 @@
         justify-content: space-between;
         gap: 16px;
         border-bottom: 1px solid #e5edf7;
+        flex-wrap: wrap;
     }
 
     .ca-search {
@@ -323,6 +395,18 @@
             .ca-search input::placeholder {
                 color: #8ca0bd;
             }
+
+    .ca-page-size {
+        width: 130px;
+        height: 48px;
+        border: 1px solid #cbd8ea;
+        border-radius: 12px;
+        padding: 0 14px;
+        color: #001632;
+        font-weight: 700;
+        background: #fff;
+        outline: none;
+    }
 
     .ca-table {
         width: 100%;
@@ -418,6 +502,13 @@
         margin-right: 8px;
     }
 
+    .empty-state {
+        padding: 26px;
+        text-align: center;
+        color: #536b8a;
+        font-weight: 700;
+    }
+
     .text-end {
         text-align: right !important;
     }
@@ -437,7 +528,8 @@
             flex-direction: column;
         }
 
-        .ca-search {
+        .ca-search,
+        .ca-page-size {
             width: 100%;
         }
 

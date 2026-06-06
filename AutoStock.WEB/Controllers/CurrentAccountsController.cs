@@ -5,30 +5,41 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AutoStock.WEB.Controllers
 {
-    public class CurrentAccountsController : Controller
+    public class CurrentAccountsController : BaseController
     {
         private readonly CurrentAccountApiService _currentAccountApiService;
+        private readonly CurrentAccountPageService _currentAccountPageService;
 
         public CurrentAccountsController(
-            CurrentAccountApiService currentAccountApiService)
+            CurrentAccountApiService currentAccountApiService,
+            CurrentAccountPageService currentAccountPageService)
         {
             _currentAccountApiService = currentAccountApiService;
+            _currentAccountPageService = currentAccountPageService;
+        }
+
+        [HttpGet("CurrentAccounts")]
+        public async Task<IActionResult> Index([FromQuery] CurrentAccountListQueryViewModel query)
+        {
+            var pageResult = await _currentAccountPageService.BuildIndexAsync(query);
+
+            if (pageResult.HasErrors)
+            {
+                ShowErrors(pageResult.ErrorMessages);
+            }
+
+            return View(pageResult.ViewModel);
         }
 
         [HttpGet("CurrentAccounts/Customer/{customerId:int}")]
         public async Task<IActionResult> Customer(int customerId)
         {
-            var model = await _currentAccountApiService
-                .GetCustomerAccountAsync(customerId);
+            var result = await _currentAccountApiService.GetCustomerAccountAsync(customerId);
 
-            if (model is null)
-            {
-                TempData["ErrorMessage"] = "Cari hesap bulunamadı.";
-
-                return RedirectToAction("Index", "Customers");
-            }
-
-            return View(model);
+            return ViewObjectResult(
+                result,
+                "Cari hesap bulunamadı.",
+                onFailure: () => RedirectToAction("Index", "Customers"));
         }
 
         [HttpPost("CurrentAccounts/CreatePayment")]
@@ -39,46 +50,19 @@ namespace AutoStock.WEB.Controllers
                 return BadRequest(new
                 {
                     isSuccess = false,
-                    errorMessage = new[]
+                    errorMessages = new[]
                     {
                         "Tahsilat tutarı 0'dan büyük olmalıdır."
                     }
                 });
             }
 
-            var success = await _currentAccountApiService
-                .CreatePaymentAsync(model);
+            var result = await _currentAccountApiService.CreatePaymentAsync(model);
 
-            if (!success)
-            {
-                return BadRequest(new
-                {
-                    isSuccess = false,
-                    errorMessage = new[]
-                    {
-                        "Tahsilat kaydedilemedi."
-                    }
-                });
-            }
+            if (result.IsFailure)
+                return BadRequest(result);
 
-            return Ok(new
-            {
-                isSuccess = true
-            });
-        }
-
-        [HttpGet("CurrentAccounts")]
-        public async Task<IActionResult> Index()
-        {
-            var model = await _currentAccountApiService.GetSummaryAsync();
-
-            if (model is null)
-            {
-                TempData["ErrorMessage"] = "Cari özet getirilemedi.";
-                return RedirectToAction("Index", "Dashboard");
-            }
-
-            return View(model);
+            return Ok(result);
         }
     }
 }

@@ -8,5 +8,6 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<bool>> CreatePaymentAsync(CreatePaymentRequestDto request, int workshopId);
         Task<ServiceResult<GetCustomerCurrentAccountResponseDto>> GetCustomerAccountAsync(int customerId, int workshopId);
         Task<ServiceResult<CurrentAccountSummaryDto>> GetSummaryAsync(int workshopId);
+        Task<ServiceResult<CurrentAccountPagedSummaryDto>> GetPagedSummaryAsync(CurrentAccountListQueryDto query, int workshopId);
     }
 }

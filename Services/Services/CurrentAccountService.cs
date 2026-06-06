@@ -168,5 +168,105 @@ namespace AutoStock.Services.Services
 
             return ServiceResult<CurrentAccountSummaryDto>.Success(response);
         }
+
+        public async Task<ServiceResult<CurrentAccountPagedSummaryDto>> GetPagedSummaryAsync(
+     CurrentAccountListQueryDto query,
+     int workshopId)
+        {
+            query ??= new CurrentAccountListQueryDto();
+            query.Normalize();
+
+            var now = DateTime.UtcNow;
+
+            var monthStart = new DateTime(now.Year, now.Month, 1);
+            var nextMonthStart = monthStart.AddMonths(1);
+
+            var thisMonthInvoiceTotal = await _context.CurrentAccountTransactions
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.TransactionDate >= monthStart &&
+                    x.TransactionDate < nextMonthStart &&
+                    (
+                        x.Type == CurrentAccountTransactionType.InvoiceDebit ||
+                        x.Type == CurrentAccountTransactionType.Cancel
+                    ))
+                .SumAsync(x => x.Debit - x.Credit);
+
+            var thisMonthPaymentTotal = await _context.CurrentAccountTransactions
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.Type == CurrentAccountTransactionType.Payment &&
+                    x.TransactionDate >= monthStart &&
+                    x.TransactionDate < nextMonthStart)
+                .SumAsync(x => x.Credit);
+
+            var totalReceivableBalance = await _context.CurrentAccountTransactions
+                .AsNoTracking()
+                .Where(x => x.WorkshopId == workshopId)
+                .GroupBy(x => x.CustomerId)
+                .Select(g => g.Sum(x => x.Debit - x.Credit))
+                .Where(balance => balance > 0)
+                .SumAsync();
+
+            var transactionsQuery = _context.CurrentAccountTransactions
+                .AsNoTracking()
+                .Where(x => x.WorkshopId == workshopId);
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var search = $"%{query.Search}%";
+
+                transactionsQuery = transactionsQuery.Where(x =>
+                    EF.Functions.Like(x.Customer.FullName ?? string.Empty, search) ||
+                    EF.Functions.Like(x.Customer.CompanyName ?? string.Empty, search) ||
+                    EF.Functions.Like(x.Customer.PhoneNumber ?? string.Empty, search));
+            }
+
+            var customerBalancesQuery = transactionsQuery
+                .GroupBy(x => new
+                {
+                    x.CustomerId,
+                    x.Customer.FullName,
+                    x.Customer.CompanyName
+                })
+                .Select(g => new CustomerBalanceSummaryDto
+                {
+                    CustomerId = g.Key.CustomerId,
+                    CustomerName =
+                        !string.IsNullOrWhiteSpace(g.Key.FullName)
+                            ? g.Key.FullName
+                            : g.Key.CompanyName ?? "İsimsiz Müşteri",
+
+                    Balance = g.Sum(x => x.Debit - x.Credit)
+                })
+                .Where(x => x.Balance != 0);
+
+            var totalCount = await customerBalancesQuery.CountAsync();
+
+            var customerBalances = await customerBalancesQuery
+                .OrderByDescending(x => x.Balance)
+                .ThenBy(x => x.CustomerName)
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            var response = new CurrentAccountPagedSummaryDto
+            {
+                ThisMonthInvoiceTotal = thisMonthInvoiceTotal,
+                ThisMonthPaymentTotal = thisMonthPaymentTotal,
+                TotalReceivableBalance = totalReceivableBalance,
+                CustomerBalances = new PagedResult<CustomerBalanceSummaryDto>
+                {
+                    Items = customerBalances,
+                    PageNumber = query.PageNumber,
+                    PageSize = query.PageSize,
+                    TotalCount = totalCount
+                }
+            };
+
+            return ServiceResult<CurrentAccountPagedSummaryDto>.Success(response);
+        }
     }
 }
