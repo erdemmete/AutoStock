@@ -14,7 +14,8 @@ namespace AutoStock.WEB.Services
 
         protected static readonly JsonSerializerOptions JsonOptions = new()
         {
-            PropertyNameCaseInsensitive = true
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
         protected BaseApiService(
@@ -177,12 +178,9 @@ namespace AutoStock.WEB.Services
                 defaultErrorMessage);
         }
 
-        protected async Task<ApiResponse<TResponse>> PostJsonAsync<TRequest, TResponse>(
-            string url,
-            TRequest model,
-            string defaultErrorMessage = "API işlemi başarısız oldu.")
+        protected async Task<ApiResponse<TResponse>> PostJsonAsync<TRequest, TResponse>(string url, TRequest model, string defaultErrorMessage = "API işlemi başarısız oldu.")
         {
-            var json = JsonSerializer.Serialize(model);
+            var json = JsonSerializer.Serialize(model, JsonOptions);
 
             using var content = new StringContent(
                 json,
@@ -195,12 +193,9 @@ namespace AutoStock.WEB.Services
                 defaultErrorMessage);
         }
 
-        protected async Task<ApiResponse<TResponse>> PutJsonAsync<TRequest, TResponse>(
-            string url,
-            TRequest model,
-            string defaultErrorMessage = "API işlemi başarısız oldu.")
+        protected async Task<ApiResponse<TResponse>> PutJsonAsync<TRequest, TResponse>(string url, TRequest model, string defaultErrorMessage = "API işlemi başarısız oldu.")
         {
-            var json = JsonSerializer.Serialize(model);
+            var json = JsonSerializer.Serialize(model, JsonOptions);
 
             using var content = new StringContent(
                 json,
@@ -235,6 +230,14 @@ namespace AutoStock.WEB.Services
                 return url;
 
             return $"{url}?{queryString}";
+        }
+
+        protected async Task<ApiResponse<TResponse>> DeleteAsync<TResponse>(string url, string defaultErrorMessage = "API işlemi başarısız oldu.")
+        {
+            return await SendAsync<TResponse>(
+                url,
+                client => client.DeleteAsync(url),
+                defaultErrorMessage);
         }
     }
 }

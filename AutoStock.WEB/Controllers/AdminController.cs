@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AutoStock.WEB.Controllers
 {
-    public class AdminController : Controller
+    public class AdminController : BaseController
     {
         private readonly AdminWorkshopApiService _adminWorkshopApiService;
 
@@ -35,9 +35,11 @@ namespace AutoStock.WEB.Controllers
             if (!IsAdmin())
                 return RedirectToLogin();
 
-            var workshops = await _adminWorkshopApiService.GetListAsync();
+            var result = await _adminWorkshopApiService.GetListAsync();
 
-            return View(workshops);
+            return ViewListResult(
+                result,
+                "Servis listesi alınırken hata oluştu.");
         }
 
         [HttpGet("Admin/Workshops/Create")]
@@ -69,15 +71,12 @@ namespace AutoStock.WEB.Controllers
 
             var result = await _adminWorkshopApiService.CreateAsync(model);
 
-            if (!result.IsSuccess)
-            {
-                ViewBag.Error = result.ErrorMessage;
-                return View(model);
-            }
-
-            TempData["SuccessMessage"] = "Servis başarıyla oluşturuldu.";
-
-            return RedirectToAction(nameof(Workshops));
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(WorkshopDetails), new { id = result.Data }),
+                onFailure: () => View(model),
+                defaultErrorMessage: "Servis oluşturulurken hata oluştu.",
+                successMessage: "Servis başarıyla oluşturuldu.");
         }
 
         [HttpGet("Admin/Workshops/Details/{id:int}")]
@@ -86,15 +85,12 @@ namespace AutoStock.WEB.Controllers
             if (!IsAdmin())
                 return RedirectToLogin();
 
-            var workshop = await _adminWorkshopApiService.GetByIdAsync(id);
+            var result = await _adminWorkshopApiService.GetByIdAsync(id);
 
-            if (workshop == null)
-            {
-                TempData["ErrorMessage"] = "Servis bulunamadı.";
-                return RedirectToAction(nameof(Workshops));
-            }
-
-            return View(workshop);
+            return ViewObjectResult(
+                result,
+                "Servis detayı alınırken hata oluştu.",
+                () => RedirectToAction(nameof(Workshops)));
         }
 
         [HttpPost("Admin/Workshops/UpdateSubscription")]
@@ -106,21 +102,18 @@ namespace AutoStock.WEB.Controllers
 
             if (model.WorkshopId <= 0)
             {
-                TempData["ErrorMessage"] = "Geçersiz servis bilgisi.";
+                ShowError("Geçersiz servis bilgisi.");
                 return RedirectToAction(nameof(Workshops));
             }
 
             var result = await _adminWorkshopApiService.UpdateSubscriptionAsync(model);
 
-            if (!result.IsSuccess)
-            {
-                TempData["ErrorMessage"] = result.ErrorMessage;
-                return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
-            }
-
-            TempData["SuccessMessage"] = "Üyelik bilgileri güncellendi.";
-
-            return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId }),
+                onFailure: () => RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId }),
+                defaultErrorMessage: "Servis abonelik bilgileri güncellenirken hata oluştu.",
+                successMessage: "Üyelik bilgileri güncellendi.");
         }
 
         [HttpPost("Admin/Workshops/UpdateProfile")]
@@ -132,21 +125,18 @@ namespace AutoStock.WEB.Controllers
 
             if (model.WorkshopId <= 0)
             {
-                TempData["ErrorMessage"] = "Geçersiz servis bilgisi.";
+                ShowError("Geçersiz servis bilgisi.");
                 return RedirectToAction(nameof(Workshops));
             }
 
             var result = await _adminWorkshopApiService.UpdateProfileAsync(model);
 
-            if (!result.IsSuccess)
-            {
-                TempData["ErrorMessage"] = result.ErrorMessage;
-                return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
-            }
-
-            TempData["SuccessMessage"] = "İşletme bilgileri güncellendi.";
-
-            return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId }),
+                onFailure: () => RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId }),
+                defaultErrorMessage: "İşletme bilgileri güncellenirken hata oluştu.",
+                successMessage: "İşletme bilgileri güncellendi.");
         }
 
         [HttpPost("Admin/Workshops/AddPartner")]
@@ -158,27 +148,24 @@ namespace AutoStock.WEB.Controllers
 
             if (model.WorkshopId <= 0)
             {
-                TempData["ErrorMessage"] = "Geçersiz servis bilgisi.";
+                ShowError("Geçersiz servis bilgisi.");
                 return RedirectToAction(nameof(Workshops));
             }
 
             if (string.IsNullOrWhiteSpace(model.FullName))
             {
-                TempData["ErrorMessage"] = "Yetkili/ortak adı zorunludur.";
+                ShowError("Yetkili/ortak adı zorunludur.");
                 return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
             }
 
             var result = await _adminWorkshopApiService.CreatePartnerAsync(model);
 
-            if (!result.IsSuccess)
-            {
-                TempData["ErrorMessage"] = result.ErrorMessage;
-                return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
-            }
-
-            TempData["SuccessMessage"] = "Yetkili/ortak başarıyla eklendi.";
-
-            return RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId });
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId }),
+                onFailure: () => RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId }),
+                defaultErrorMessage: "Yetkili/ortak eklenirken hata oluştu.",
+                successMessage: "Yetkili/ortak başarıyla eklendi.");
         }
 
         [HttpPost("Admin/Workshops/DeletePartner")]
@@ -190,23 +177,18 @@ namespace AutoStock.WEB.Controllers
 
             if (workshopId <= 0 || partnerId <= 0)
             {
-                TempData["ErrorMessage"] = "Geçersiz yetkili/ortak bilgisi.";
+                ShowError("Geçersiz yetkili/ortak bilgisi.");
                 return RedirectToAction(nameof(Workshops));
             }
 
-            var result = await _adminWorkshopApiService.DeletePartnerAsync(
-                workshopId,
-                partnerId);
+            var result = await _adminWorkshopApiService.DeletePartnerAsync(workshopId, partnerId);
 
-            if (!result.IsSuccess)
-            {
-                TempData["ErrorMessage"] = result.ErrorMessage;
-                return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
-            }
-
-            TempData["SuccessMessage"] = "Yetkili/ortak silindi.";
-
-            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(WorkshopDetails), new { id = workshopId }),
+                onFailure: () => RedirectToAction(nameof(WorkshopDetails), new { id = workshopId }),
+                defaultErrorMessage: "Yetkili/ortak silinirken hata oluştu.",
+                successMessage: "Yetkili/ortak silindi.");
         }
 
         [HttpGet("Admin/Workshops/{workshopId:int}/Users/Create")]
@@ -215,11 +197,11 @@ namespace AutoStock.WEB.Controllers
             if (!IsAdmin())
                 return RedirectToLogin();
 
-            var workshop = await _adminWorkshopApiService.GetByIdAsync(workshopId);
+            var result = await _adminWorkshopApiService.GetByIdAsync(workshopId);
 
-            if (workshop == null)
+            if (result.IsFailure || result.Data == null)
             {
-                TempData["ErrorMessage"] = "Servis bulunamadı.";
+                ShowError(result.ErrorMessage ?? "Servis bulunamadı.");
                 return RedirectToAction(nameof(Workshops));
             }
 
@@ -229,7 +211,7 @@ namespace AutoStock.WEB.Controllers
                 Role = "Staff"
             };
 
-            ViewBag.WorkshopName = workshop.Name;
+            ViewBag.WorkshopName = result.Data.Name;
 
             return View(model);
         }
@@ -244,25 +226,28 @@ namespace AutoStock.WEB.Controllers
             model.WorkshopId = workshopId;
 
             if (!ModelState.IsValid)
-                return View(model);
-
-            var result = await _adminWorkshopApiService.CreateUserAsync(model);
-
-            if (!result.IsSuccess)
             {
-                ViewBag.Error = result.ErrorMessage;
+                await PrepareWorkshopUserCreateViewAsync(workshopId);
                 return View(model);
             }
 
-            TempData["SuccessMessage"] = "Kullanıcı başarıyla oluşturuldu.";
+            var result = await _adminWorkshopApiService.CreateUserAsync(model);
+
+            if (result.IsFailure)
+            {
+                await PrepareWorkshopUserCreateViewAsync(workshopId);
+                ShowError(result.ErrorMessage ?? "Kullanıcı oluşturulurken hata oluştu.");
+                return View(model);
+            }
+
+            ShowSuccess("Kullanıcı başarıyla oluşturuldu.");
+
             TempData["CreatedUserFullName"] = model.FullName;
             TempData["CreatedUserName"] = model.UserName;
             TempData["CreatedUserPassword"] = model.Password;
             TempData["CreatedUserPhone"] = model.PhoneNumber;
 
-            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });  
-
-          
+            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
         }
 
         [HttpPost("Admin/Workshops/UpdateUserStatus")]
@@ -274,7 +259,7 @@ namespace AutoStock.WEB.Controllers
 
             if (workshopId <= 0 || userId <= 0)
             {
-                TempData["ErrorMessage"] = "Geçersiz kullanıcı bilgisi.";
+                ShowError("Geçersiz kullanıcı bilgisi.");
                 return RedirectToAction(nameof(Workshops));
             }
 
@@ -283,19 +268,15 @@ namespace AutoStock.WEB.Controllers
                 userId,
                 isActive);
 
-            if (!result.IsSuccess)
-            {
-                TempData["ErrorMessage"] = result.ErrorMessage;
-                return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
-            }
-
-            TempData["SuccessMessage"] = isActive
-                ? "Kullanıcı aktifleştirildi."
-                : "Kullanıcı pasifleştirildi.";
-
-            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(WorkshopDetails), new { id = workshopId }),
+                onFailure: () => RedirectToAction(nameof(WorkshopDetails), new { id = workshopId }),
+                defaultErrorMessage: "Kullanıcı durumu güncellenirken hata oluştu.",
+                successMessage: isActive
+                    ? "Kullanıcı aktifleştirildi."
+                    : "Kullanıcı pasifleştirildi.");
         }
-
         [HttpGet("Admin/Workshops/{workshopId:int}/Users/SuggestCredentials")]
         public async Task<IActionResult> SuggestWorkshopUserCredentials(int workshopId, string fullName)
         {
@@ -312,12 +293,12 @@ namespace AutoStock.WEB.Controllers
                 workshopId,
                 fullName);
 
-            if (!result.IsSuccess || result.Data == null)
+            if (result.IsFailure || result.Data == null)
             {
                 return Json(new
                 {
                     isSuccess = false,
-                    errorMessage = result.ErrorMessage
+                    errorMessage = result.ErrorMessage ?? "Kullanıcı adı ve geçici şifre oluşturulamadı."
                 });
             }
 
@@ -339,6 +320,15 @@ namespace AutoStock.WEB.Controllers
         private IActionResult RedirectToLogin()
         {
             return RedirectToAction("Login", "Auth");
+        }
+
+        private async Task PrepareWorkshopUserCreateViewAsync(int workshopId)
+        {
+            var result = await _adminWorkshopApiService.GetByIdAsync(workshopId);
+
+            ViewBag.WorkshopName = result.IsSuccess && result.Data != null
+                ? result.Data.Name
+                : "Servis";
         }
     }
 }

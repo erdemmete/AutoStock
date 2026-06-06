@@ -1,107 +1,43 @@
 ﻿using AutoStock.WEB.Models.Admin.Workshops;
 using AutoStock.WEB.Models.Common;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 
 namespace AutoStock.WEB.Services
 {
-    public class AdminWorkshopApiService
+    public class AdminWorkshopApiService : BaseApiService
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-
-        private readonly JsonSerializerOptions _jsonOptions = new()
-        {
-            PropertyNameCaseInsensitive = true
-        };
-
         public AdminWorkshopApiService(
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<AdminWorkshopApiService> logger)
+            : base(httpClientFactory, configuration, httpContextAccessor, logger)
         {
-            _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
-            _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<List<AdminWorkshopListItemViewModel>> GetListAsync()
+        public async Task<ApiResponse<List<AdminWorkshopListViewModel>>> GetListAsync()
         {
-            var client = CreateApiClient();
-
-            var response = await client.GetAsync("/api/admin/workshops");
-
-            if (!response.IsSuccessStatusCode)
-                return new List<AdminWorkshopListItemViewModel>();
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<ApiResponse<List<AdminWorkshopListItemViewModel>>>(
-                json,
-                _jsonOptions);
-
-            return result?.Data ?? new List<AdminWorkshopListItemViewModel>();
+            return await GetAsync<List<AdminWorkshopListViewModel>>(
+                "/api/admin/workshops",
+                "Servis listesi alınırken hata oluştu.");
         }
 
-        public async Task<AdminWorkshopDetailViewModel?> GetByIdAsync(int id)
+        public async Task<ApiResponse<AdminWorkshopDetailViewModel>> GetByIdAsync(int id)
         {
-            var client = CreateApiClient();
-
-            var response = await client.GetAsync($"/api/admin/workshops/{id}");
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<ApiResponse<AdminWorkshopDetailViewModel>>(
-                json,
-                _jsonOptions);
-
-            return result?.Data;
+            return await GetAsync<AdminWorkshopDetailViewModel>(
+                $"/api/admin/workshops/{id}",
+                "Servis detayı alınırken hata oluştu.");
         }
 
-        public async Task<(bool IsSuccess, int? WorkshopId, string ErrorMessage)> CreateAsync(CreateAdminWorkshopViewModel model)
+        public async Task<ApiResponse<int>> CreateAsync(CreateAdminWorkshopViewModel model)
         {
-            var client = CreateApiClient();
-
-            var json = JsonSerializer.Serialize(model);
-
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync("/api/admin/workshops", content);
-
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(responseText))
-                return (false, null, "API boş cevap döndü.");
-
-            var parsedResult = ParseApiResponse(responseText);
-
-            if (parsedResult.IsSuccess)
-            {
-                int? workshopId = null;
-
-                using var document = JsonDocument.Parse(responseText);
-
-                if (document.RootElement.TryGetProperty("data", out var dataElement) &&
-                    dataElement.ValueKind == JsonValueKind.Number)
-                {
-                    workshopId = dataElement.GetInt32();
-                }
-
-                return (true, workshopId, string.Empty);
-            }
-
-            return (false, null, parsedResult.ErrorMessage);
+            return await PostJsonAsync<CreateAdminWorkshopViewModel, int>(
+                "/api/admin/workshops",
+                model,
+                "Servis oluşturulurken hata oluştu.");
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateSubscriptionAsync(UpdateAdminWorkshopSubscriptionViewModel model)
+        public async Task<ApiResponse<object>> UpdateSubscriptionAsync(UpdateAdminWorkshopSubscriptionViewModel model)
         {
-            var client = CreateApiClient();
-
             var requestBody = new
             {
                 isActive = model.IsActive,
@@ -110,26 +46,14 @@ namespace AutoStock.WEB.Services
                 subscriptionNote = model.SubscriptionNote
             };
 
-            var json = JsonSerializer.Serialize(requestBody);
-
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PutAsync(
+            return await PutJsonAsync<object, object>(
                 $"/api/admin/workshops/{model.WorkshopId}/subscription",
-                content);
-
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(responseText))
-                return (false, "API boş cevap döndü.");
-
-            return ParseApiResponse(responseText);
+                requestBody,
+                "Servis abonelik bilgileri güncellenirken hata oluştu.");
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateProfileAsync(UpdateAdminWorkshopProfileViewModel model)
+        public async Task<ApiResponse<object>> UpdateProfileAsync(UpdateAdminWorkshopProfileViewModel model)
         {
-            var client = CreateApiClient();
-
             var requestBody = new
             {
                 displayName = model.DisplayName,
@@ -149,26 +73,14 @@ namespace AutoStock.WEB.Services
                 country = model.Country
             };
 
-            var json = JsonSerializer.Serialize(requestBody);
-
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PutAsync(
+            return await PutJsonAsync<object, object>(
                 $"/api/admin/workshops/{model.WorkshopId}/profile",
-                content);
-
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(responseText))
-                return (false, "API boş cevap döndü.");
-
-            return ParseApiResponse(responseText);
+                requestBody,
+                "Servis profil bilgileri güncellenirken hata oluştu.");
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> CreatePartnerAsync(CreateAdminWorkshopPartnerViewModel model)
+        public async Task<ApiResponse<object>> CreatePartnerAsync(CreateAdminWorkshopPartnerViewModel model)
         {
-            var client = CreateApiClient();
-
             var requestBody = new
             {
                 fullName = model.FullName,
@@ -179,41 +91,21 @@ namespace AutoStock.WEB.Services
                 note = model.Note
             };
 
-            var json = JsonSerializer.Serialize(requestBody);
-
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync(
+            return await PostJsonAsync<object, object>(
                 $"/api/admin/workshops/{model.WorkshopId}/partners",
-                content);
-
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(responseText))
-                return (false, "API boş cevap döndü.");
-
-            return ParseApiResponse(responseText);
+                requestBody,
+                "Servis yetkilisi oluşturulurken hata oluştu.");
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> DeletePartnerAsync(int workshopId, int partnerId)
+        public async Task<ApiResponse<object>> DeletePartnerAsync(int workshopId, int partnerId)
         {
-            var client = CreateApiClient();
-
-            var response = await client.DeleteAsync(
-                $"/api/admin/workshops/{workshopId}/partners/{partnerId}");
-
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(responseText))
-                return (false, "API boş cevap döndü.");
-
-            return ParseApiResponse(responseText);
+            return await DeleteAsync<object>(
+                $"/api/admin/workshops/{workshopId}/partners/{partnerId}",
+                "Servis yetkilisi silinirken hata oluştu.");
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> CreateUserAsync(CreateAdminWorkshopUserViewModel model)
+        public async Task<ApiResponse<object>> CreateUserAsync(CreateAdminWorkshopUserViewModel model)
         {
-            var client = CreateApiClient();
-
             var requestBody = new
             {
                 fullName = model.FullName,
@@ -224,124 +116,39 @@ namespace AutoStock.WEB.Services
                 role = model.Role
             };
 
-            var json = JsonSerializer.Serialize(requestBody);
-
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PostAsync(
+            return await PostJsonAsync<object, object>(
                 $"/api/admin/workshops/{model.WorkshopId}/users",
-                content);
-
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(responseText))
-                return (false, "API boş cevap döndü.");
-
-            return ParseApiResponse(responseText);
+                requestBody,
+                "Servis kullanıcısı oluşturulurken hata oluştu.");
         }
 
-        public async Task<(bool IsSuccess, string ErrorMessage)> UpdateUserStatusAsync(int workshopId, int userId, bool isActive)
+        public async Task<ApiResponse<object>> UpdateUserStatusAsync(int workshopId, int userId, bool isActive)
         {
-            var client = CreateApiClient();
-
             var requestBody = new
             {
                 isActive
             };
 
-            var json = JsonSerializer.Serialize(requestBody);
-
-            using var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await client.PutAsync(
+            return await PutJsonAsync<object, object>(
                 $"/api/admin/workshops/{workshopId}/users/{userId}/status",
-                content);
-
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(responseText))
-                return (false, "API boş cevap döndü.");
-
-            return ParseApiResponse(responseText);
+                requestBody,
+                "Kullanıcı durumu güncellenirken hata oluştu.");
         }
 
-        public async Task<(bool IsSuccess, SuggestedAdminWorkshopCredentialsViewModel? Data, string ErrorMessage)> SuggestCredentialsAsync(int workshopId, string fullName)
+        public async Task<ApiResponse<SuggestedAdminWorkshopCredentialsViewModel>> SuggestCredentialsAsync(
+            int workshopId,
+            string fullName)
         {
-            var client = CreateApiClient();
-
-            var url = $"/api/admin/workshops/{workshopId}/users/suggest-credentials?fullName={Uri.EscapeDataString(fullName)}";
-
-            var response = await client.GetAsync(url);
-
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(responseText))
-                return (false, null, "API boş cevap döndü.");
-
-            var result = JsonSerializer.Deserialize<ApiResponse<SuggestedAdminWorkshopCredentialsViewModel>>(
-                responseText,
-                _jsonOptions);
-
-            if (result == null)
-                return (false, null, "API cevabı okunamadı.");
-
-            if (!result.IsSuccess || result.Data == null)
-                return (false, null, result.ErrorMessage ?? "Kullanıcı adı ve şifre oluşturulamadı.");
-
-            return (true, result.Data, string.Empty);
-        }
-
-        private (bool IsSuccess, string ErrorMessage) ParseApiResponse(string responseText)
-        {
-            using var document = JsonDocument.Parse(responseText);
-
-            var root = document.RootElement;
-
-            var isSuccess = root.TryGetProperty("isSuccess", out var isSuccessElement)
-                            && isSuccessElement.ValueKind == JsonValueKind.True;
-
-            if (isSuccess)
-                return (true, string.Empty);
-
-            var errorMessage = "İşlem başarısız.";
-
-            if (root.TryGetProperty("errorMessage", out var errorElement))
-            {
-                if (errorElement.ValueKind == JsonValueKind.String)
+            var url = BuildUrlWithQuery(
+                $"/api/admin/workshops/{workshopId}/users/suggest-credentials",
+                new Dictionary<string, string?>
                 {
-                    errorMessage = errorElement.GetString() ?? errorMessage;
-                }
-                else if (errorElement.ValueKind == JsonValueKind.Array)
-                {
-                    var errors = errorElement
-                        .EnumerateArray()
-                        .Select(x => x.GetString())
-                        .Where(x => !string.IsNullOrWhiteSpace(x))
-                        .ToList();
+                    ["fullName"] = fullName
+                });
 
-                    if (errors.Any())
-                        errorMessage = string.Join("<br>", errors);
-                }
-            }
-
-            return (false, errorMessage);
-        }
-
-        private HttpClient CreateApiClient()
-        {
-            var client = _httpClientFactory.CreateClient();
-
-            client.BaseAddress = new Uri(_configuration["ApiSettings:BaseUrl"]!);
-
-            var token = _httpContextAccessor.HttpContext?.Session.GetString("AuthToken");
-
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
-            }
-
-            return client;
+            return await GetAsync<SuggestedAdminWorkshopCredentialsViewModel>(
+                url,
+                "Kullanıcı adı ve geçici şifre oluşturulurken hata oluştu.");
         }
     }
 }
