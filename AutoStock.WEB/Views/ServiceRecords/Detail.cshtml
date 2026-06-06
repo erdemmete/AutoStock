@@ -7,8 +7,8 @@
     {
         return status switch
         {
-            1 => "Açık",
-            2 => "İşlemde",
+            1 => "Aktif",
+            2 => "Aktif",
             3 => "Tamamlandı",
             4 => "İptal",
             _ => "Bilinmiyor"
@@ -19,8 +19,8 @@
     {
         return status switch
         {
-            1 => "open",
-            2 => "progress",
+            1 => "active",
+            2 => "active",
             3 => "completed",
             4 => "cancelled",
             _ => "unknown"
@@ -595,26 +595,12 @@
                         QR Tara
                     </button>
 
-                    @if (Model.Status == 1)
+                    @if (Model.Status == 1 || Model.Status == 2)
                     {
                         <button type="button"
-                                class="srx-secondary-action status-btn"
-                                data-status="2">
-                            İşleme Al
-                        </button>
-
-                        <button type="button"
-                                class="srx-secondary-action danger status-btn"
-                                data-status="4">
-                            İptal Et
-                        </button>
-                    }
-                    else if (Model.Status == 2)
-                    {
-                        <button type="button"
-                                class="srx-secondary-action status-btn"
+                                class="srx-secondary-action success status-btn"
                                 data-status="3">
-                            Tamamla
+                            Servisi Tamamla
                         </button>
 
                         <button type="button"
@@ -628,7 +614,7 @@
                         <button type="button"
                                 class="srx-secondary-action status-btn wide"
                                 data-status="1">
-                            Tekrar Aç
+                            Tekrar Aktif Yap
                         </button>
                     }
 
@@ -744,25 +730,25 @@
         font-weight: 900;
     }
 
-        .srx-status-badge.open {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        .srx-status-badge.progress {
-            background: #ffedd5;
-            color: #c2410c;
+        .srx-status-badge.active {
+            background: #dbeafe;
+            color: #1d4ed8;
         }
 
         .srx-status-badge.completed {
-            background: #dbeafe;
-            color: #1d4ed8;
+            background: #dcfce7;
+            color: #15803d;
         }
 
         .srx-status-badge.cancelled {
             background: #fee2e2;
             color: #b91c1c;
         }
+
+    .srx-secondary-action.success:hover {
+        border-color: #bbf7d0;
+        color: #15803d;
+    }
 
     .srx-info-card {
         margin-bottom: 24px;
@@ -1871,8 +1857,8 @@
     if (!badge) return;
 
     const statusMap = {
-    "1": { text: "Açık", className: "open" },
-    "2": { text: "İşlemde", className: "progress" },
+    "1": { text: "Aktif", className: "active" },
+    "2": { text: "Aktif", className: "active" },
     "3": { text: "Tamamlandı", className: "completed" },
     "4": { text: "İptal", className: "cancelled" }
     };
@@ -1889,28 +1875,12 @@
     function renderStatusButtons(status) {
     status = String(status);
 
-    if (status === "1") {
+    if (status === "1" || status === "2") {
     return `
     <button type="button"
-    class="srx-secondary-action status-btn"
-    data-status="2">
-    İşleme Al
-    </button>
-
-    <button type="button"
-    class="srx-secondary-action danger status-btn"
-    data-status="4">
-    İptal Et
-    </button>
-    `;
-    }
-
-    if (status === "2") {
-    return `
-    <button type="button"
-    class="srx-secondary-action status-btn"
+    class="srx-secondary-action success status-btn"
     data-status="3">
-    Tamamla
+    Servisi Tamamla
     </button>
 
     <button type="button"
@@ -1926,7 +1896,7 @@
     <button type="button"
     class="srx-secondary-action status-btn wide"
     data-status="1">
-    Tekrar Aç
+    Tekrar Aktif Yap
     </button>
     `;
     }

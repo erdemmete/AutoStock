@@ -1,82 +1,211 @@
-﻿@model List<AutoStock.Web.Models.ServiceRecords.ServiceRecordListItemViewModel>
+﻿@model AutoStock.Web.Models.ServiceRecords.ServiceRecordIndexViewModel
 
 @{
     ViewData["Title"] = "Servis Kayıtları";
+
+    var query = Model.Query;
+    var paged = Model.ServiceRecords;
 }
 
 <div class="page">
     <div class="premium-header">
-
         <div class="premium-brand">
-
             <a asp-controller="Dashboard"
-                   asp-action="Index"
-                   class="premium-logo premium-logo-link"
-                   title="Ana sayfa">
+               asp-action="Index"
+               class="premium-logo premium-logo-link"
+               title="Ana sayfa">
                 ⌂
             </a>
-
-            
 
             <div>
                 <span class="premium-eyebrow">SERVİS KAYITLARI</span>
                 <h1>Servis Kayıtları</h1>
-                <p>Açık ve tamamlanan servis kayıtlarını buradan takip edin.</p>
+                <p>Plaka, müşteri, telefon veya kayıt numarası ile servis sürecini hızlıca bulun.</p>
             </div>
-
         </div>
 
-        <a href="/ServiceRecords/Create" class="premium-home">+</a>
-
+        <a href="/ServiceRecords/Create" class="premium-home" title="Yeni servis kaydı oluştur">+</a>
     </div>
 
-    @if (ViewBag.ErrorMessage is not null)
+    @if (TempData["SuccessMessage"] is not null)
     {
-        <div class="alert-error">@ViewBag.ErrorMessage</div>
+        <div class="alert-success">@TempData["SuccessMessage"]</div>
     }
 
+    @if (TempData["ErrorMessage"] is not null)
+    {
+        <div class="alert-error">@Html.Raw(TempData["ErrorMessage"])</div>
+    }
+
+    <div class="filter-panel">
+        <form method="get" action="/ServiceRecords" class="filter-form">
+            <div class="filter-group search-group">
+                <label>Arama</label>
+                <input type="text"
+                       name="Search"
+                       value="@query.Search"
+                       placeholder="Plaka, müşteri, telefon, kayıt no..." />
+            </div>
+
+            <div class="filter-group">
+                <label>Durum</label>
+                <select name="StatusFilter">
+                    <option value="active" selected="@(query.StatusFilter == "active")">Aktif</option>
+                    <option value="completed" selected="@(query.StatusFilter == "completed")">Tamamlandı</option>
+                    <option value="cancelled" selected="@(query.StatusFilter == "cancelled")">İptal</option>
+                    <option value="all" selected="@(query.StatusFilter == "all")">Tümü</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Başlangıç</label>
+                <input type="date"
+                       name="CreatedFrom"
+                       value="@query.CreatedFrom?.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="filter-group">
+                <label>Bitiş</label>
+                <input type="date"
+                       name="CreatedTo"
+                       value="@query.CreatedTo?.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="filter-group">
+                <label>Sayfa</label>
+                <select name="PageSize">
+                    <option value="10" selected="@(query.PageSize == 10)">10</option>
+                    <option value="20" selected="@(query.PageSize == 20)">20</option>
+                    <option value="50" selected="@(query.PageSize == 50)">50</option>
+                    <option value="100" selected="@(query.PageSize == 100)">100</option>
+                </select>
+            </div>
+
+            <input type="hidden" name="PageNumber" value="1" />
+
+            <div class="filter-actions">
+                <button type="submit" class="btn-filter">Filtrele</button>
+                <a href="/ServiceRecords" class="btn-clear">Temizle</a>
+            </div>
+        </form>
+    </div>
+
     <div class="panel">
+        <div class="panel-summary">
+            @if (paged.TotalCount > 0)
+            {
+                <span>
+                    @paged.TotalCount kayıt içinden
+                    @paged.FirstItemNumber - @paged.LastItemNumber arası gösteriliyor.
+                </span>
+            }
+            else
+            {
+                <span>Kayıt bulunamadı.</span>
+            }
+        </div>
+
         <div class="record-list">
-            @foreach (var record in Model)
+            @foreach (var record in paged.Items)
             {
                 <a class="record-card" href="/ServiceRecords/Detail/@record.Id">
-                    <div>
-                        <strong>@(string.IsNullOrWhiteSpace(record.RecordNumber) ? $"SR-{record.Id}" : record.RecordNumber)</strong>
-                        <span>@record.CustomerName - @record.CustomerPhone</span>
+                    <div class="record-main">
+                        <div class="record-number">
+                            @(string.IsNullOrWhiteSpace(record.RecordNumber) ? $"SR-{record.Id}" : record.RecordNumber)
+                        </div>
+
+                        <strong class="customer-name">@record.CustomerName</strong>
+                        <span class="customer-phone">@record.CustomerPhone</span>
                     </div>
 
-                    <div>
-                        <strong>@record.VehiclePlate</strong>
+                    <div class="vehicle-block">
+                        <strong class="plate-badge">@record.VehiclePlate</strong>
                         <span>@record.VehicleBrandName @record.VehicleModelName</span>
                     </div>
 
-                    <div>
+                    <div class="amount-block">
                         <strong>@record.TotalAmount.ToString("N2") ₺</strong>
                         <span>@record.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
                     </div>
 
                     <div class="record-status status-@record.Status">
-
                         @(record.Status switch
                         {
-                            1 => "Açık",
-                            2 => "İşlemde",
+                            1 => "Aktif",
+                            2 => "Aktif",
                             3 => "Tamamlandı",
                             4 => "İptal",
                             _ => "Bilinmiyor"
                         })
-
                     </div>
                 </a>
             }
 
-            @if (!Model.Any())
+            @if (!paged.Items.Any())
             {
                 <div class="empty-state">
-                    Henüz servis kaydı bulunmuyor.
+                    Kriterlere uygun servis kaydı bulunamadı.
                 </div>
             }
         </div>
+
+        @if (paged.TotalPages > 1)
+        {
+            <div class="pagination-wrapper">
+                <a class="pagination-btn @(paged.HasPreviousPage ? "" : "disabled")"
+                   href="@(paged.HasPreviousPage
+                                           ? Url.Action("Index", "ServiceRecords", new
+                                           {
+                                               Search = query.Search,
+                                               StatusFilter = query.StatusFilter,
+                                               CreatedFrom = query.CreatedFrom?.ToString("yyyy-MM-dd"),
+                                               CreatedTo = query.CreatedTo?.ToString("yyyy-MM-dd"),
+                                               PageNumber = paged.PageNumber - 1,
+                                               PageSize = query.PageSize
+                                           })
+                                       : "#")">
+                    Önceki
+                </a>
+
+                <div class="pagination-pages">
+                    @for (var page = 1; page <= paged.TotalPages; page++)
+                    {
+                        if (page == 1 ||
+                            page == paged.TotalPages ||
+                            Math.Abs(page - paged.PageNumber) <= 2)
+                        {
+                            <a class="pagination-page @(page == paged.PageNumber ? "active" : "")"
+                               href="@Url.Action("Index", "ServiceRecords", new
+                               {
+                                   Search = query.Search,
+                                   StatusFilter = query.StatusFilter,
+                                   CreatedFrom = query.CreatedFrom?.ToString("yyyy-MM-dd"),
+                                   CreatedTo = query.CreatedTo?.ToString("yyyy-MM-dd"),
+                                   PageNumber = page,
+                                   PageSize = query.PageSize
+                               })">
+                                @(page)
+                            </a>
+                        }
+                    }
+                </div>
+
+                <a class="pagination-btn @(paged.HasNextPage ? "" : "disabled")"
+                   href="@(paged.HasNextPage
+                                           ? Url.Action("Index", "ServiceRecords", new
+                                           {
+                                               Search = query.Search,
+                                               StatusFilter = query.StatusFilter,
+                                               CreatedFrom = query.CreatedFrom?.ToString("yyyy-MM-dd"),
+                                               CreatedTo = query.CreatedTo?.ToString("yyyy-MM-dd"),
+                                               PageNumber = paged.PageNumber + 1,
+                                               PageSize = query.PageSize
+                                           })
+                                       : "#")">
+                    Sonraki
+                </a>
+            </div>
+        }
     </div>
 </div>
 
@@ -117,6 +246,17 @@
         font-size: 22px;
     }
 
+    .premium-logo-link {
+        text-decoration: none;
+        cursor: pointer;
+        transition: .18s ease;
+    }
+
+        .premium-logo-link:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 22px 46px rgba(37, 99, 235, .36);
+        }
+
     .premium-eyebrow {
         display: inline-flex;
         margin-bottom: 7px;
@@ -154,22 +294,110 @@
         font-weight: 900;
     }
 
+    .filter-panel {
+        background: rgba(255,255,255,.94);
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        padding: 20px;
+        margin-bottom: 18px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .07);
+    }
+
+    .filter-form {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr .8fr auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+        .filter-group label {
+            font-size: 13px;
+            font-weight: 900;
+            color: #334155;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            height: 44px;
+            border: 1px solid #cbd5e1;
+            border-radius: 14px;
+            padding: 0 13px;
+            background: white;
+            color: #0f172a;
+            font-weight: 700;
+            outline: none;
+        }
+
+            .filter-group input:focus,
+            .filter-group select:focus {
+                border-color: #2563eb;
+                box-shadow: 0 0 0 4px rgba(37, 99, 235, .11);
+            }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-filter,
+    .btn-clear {
+        height: 44px;
+        padding: 0 18px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .btn-filter {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-clear {
+        background: #f1f5f9;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+
     .panel {
         background: rgba(255,255,255,.92);
         border: 1px solid #e2e8f0;
         border-radius: 30px;
-        padding: 24px;
+        padding: 0;
         box-shadow: 0 22px 55px rgba(15, 23, 42, .08);
+        overflow: hidden;
+    }
+
+    .panel-summary {
+        padding: 16px 24px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 900;
     }
 
     .record-list {
         display: grid;
         gap: 12px;
+        padding: 24px;
     }
 
     .record-card {
         display: grid;
-        grid-template-columns: 1.5fr 1.2fr 1fr 100px;
+        grid-template-columns: 1.5fr 1.2fr 1fr 128px;
         gap: 18px;
         align-items: center;
         padding: 18px;
@@ -202,48 +430,40 @@
             font-weight: 700;
         }
 
-    .status {
+    .record-number {
         display: inline-flex;
-        justify-content: center;
-        padding: 8px 12px;
+        margin-bottom: 8px;
+        padding: 5px 9px;
         border-radius: 999px;
-        font-size: 12px !important;
-        font-weight: 900 !important;
+        background: #e0f2fe;
+        color: #075985;
+        font-size: 12px;
+        font-weight: 950;
     }
 
-    .status-open {
-        background: #dbeafe;
-        color: #1d4ed8 !important;
+    .customer-name {
+        font-size: 18px !important;
+        letter-spacing: -.2px;
     }
 
-    .empty-state {
-        padding: 40px;
-        border-radius: 22px;
-        background: #f8fafc;
-        color: #64748b;
-        text-align: center;
-        font-weight: 800;
+    .customer-phone {
+        color: #475569 !important;
     }
 
-    .alert-error {
-        margin-bottom: 20px;
-        padding: 16px 18px;
-        border-radius: 18px;
-        background: #fee2e2;
-        border: 1px solid #fecaca;
-        color: #991b1b;
-        font-weight: 800;
+    .plate-badge {
+        display: inline-flex !important;
+        width: fit-content;
+        padding: 8px 12px;
+        border-radius: 12px;
+        background: #0f172a;
+        color: white;
+        font-size: 20px !important;
+        letter-spacing: 1px;
+        line-height: 1;
     }
 
-    @@media (max-width: 900px) {
-        .record-card {
-            grid-template-columns: 1fr;
-        }
-
-        .page {
-            width: min(100% - 28px, 1420px);
-            padding-top: 20px;
-        }
+    .amount-block strong {
+        font-size: 17px !important;
     }
 
     .record-status {
@@ -256,14 +476,10 @@
         font-weight: 900;
     }
 
-        .record-status.status-1 {
+        .record-status.status-1,
+        .record-status.status-2 {
             background: #dbeafe;
             color: #1d4ed8;
-        }
-
-        .record-status.status-2 {
-            background: #fef3c7;
-            color: #b45309;
         }
 
         .record-status.status-3 {
@@ -276,14 +492,131 @@
             color: #b91c1c;
         }
 
-    .premium-logo-link {
-        text-decoration: none;
-        cursor: pointer;
-        transition: .18s ease;
+    .empty-state {
+        padding: 40px;
+        border-radius: 22px;
+        background: #f8fafc;
+        color: #64748b;
+        text-align: center;
+        font-weight: 800;
     }
 
-        .premium-logo-link:hover {
-            transform: translateY(-2px) scale(1.03);
-            box-shadow: 0 22px 46px rgba(37, 99, 235, .36);
+    .alert-error,
+    .alert-success {
+        margin-bottom: 20px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        font-weight: 800;
+    }
+
+    .alert-error {
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+    }
+
+    .alert-success {
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+    }
+
+    .pagination-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 24px;
+        border-top: 1px solid #e2e8f0;
+        background: white;
+    }
+
+    .pagination-pages {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .pagination-page,
+    .pagination-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 38px;
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        text-decoration: none;
+        font-weight: 900;
+        font-size: 13px;
+    }
+
+        .pagination-page.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
         }
+
+        .pagination-btn.disabled {
+            pointer-events: none;
+            opacity: .45;
+        }
+
+    @@media (max-width: 1100px) {
+        .filter-form {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .filter-actions {
+            grid-column: span 2;
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .record-card {
+            grid-template-columns: 1fr;
+        }
+
+        .record-status {
+            justify-self: start;
+        }
+
+        .page {
+            width: min(100% - 28px, 1420px);
+            padding-top: 20px;
+        }
+
+        .premium-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 18px;
+        }
+
+        .filter-form {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-actions {
+            grid-column: auto;
+            flex-direction: column;
+        }
+
+        .pagination-wrapper {
+            flex-direction: column;
+        }
+    }
 </style>
+
+<script>
+    window.addEventListener("pageshow", function (event) {
+        const navigation = performance.getEntriesByType("navigation")[0];
+
+        if (event.persisted || navigation?.type === "back_forward") {
+            window.location.reload();
+        }
+    });
+</script>

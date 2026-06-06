@@ -15,5 +15,6 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<bool>> UpdateStatusAsync(int serviceRecordId, UpdateServiceRecordStatusRequest request, int workshopId);
         Task<ServiceResult<DeleteServiceOperationResponse>> DeleteOperationAsync(int operationId, int workshopId);
         Task<ServiceResult<DeleteServiceRequestItemResponse>> DeleteRequestItemAsync(int requestItemId, int workshopId);
+        Task<ServiceResult<PagedResult<ServiceRecordListItemDto>>> GetPagedAsync(int workshopId, ServiceRecordListQueryDto query);
     }
 }

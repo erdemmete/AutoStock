@@ -626,6 +626,103 @@ await transaction.CommitAsync();
             });
     }
 
+    public async Task<ServiceResult<PagedResult<ServiceRecordListItemDto>>> GetPagedAsync(int workshopId, ServiceRecordListQueryDto query)
+    {
+        query.Search = string.IsNullOrWhiteSpace(query.Search)
+            ? null
+            : query.Search.Trim();
+
+        query.PageNumber = query.PageNumber <= 0 ? 1 : query.PageNumber;
+        query.PageSize = query.PageSize <= 0 ? 10 : query.PageSize;
+        query.PageSize = query.PageSize > 100 ? 100 : query.PageSize;
+
+        var recordsQuery = _context.ServiceRecords
+            .AsNoTracking()
+            .Where(x => x.WorkshopId == workshopId);
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var search = query.Search;
+            var normalizedPlateSearch = search.Replace(" ", "").ToUpperInvariant();
+
+            recordsQuery = recordsQuery.Where(x =>
+                x.RecordNumber.Contains(search) ||
+                x.CustomerNameSnapshot.Contains(search) ||
+                x.CustomerPhoneSnapshot.Contains(search) ||
+                x.VehiclePlateSnapshot.Contains(normalizedPlateSearch) ||
+                (x.VehicleBrandNameSnapshot != null && x.VehicleBrandNameSnapshot.Contains(search)) ||
+                (x.VehicleModelNameSnapshot != null && x.VehicleModelNameSnapshot.Contains(search)));
+        }
+
+        var statusFilter = string.IsNullOrWhiteSpace(query.StatusFilter)
+    ? "active"
+    : query.StatusFilter.Trim().ToLowerInvariant();
+
+        recordsQuery = statusFilter switch
+        {
+            "active" => recordsQuery.Where(x =>
+                x.Status == ServiceRecordStatus.Open ||
+                x.Status == ServiceRecordStatus.InProgress),
+
+            "completed" => recordsQuery.Where(x =>
+                x.Status == ServiceRecordStatus.Completed),
+
+            "cancelled" => recordsQuery.Where(x =>
+                x.Status == ServiceRecordStatus.Cancelled),
+
+            "all" => recordsQuery,
+
+            _ => recordsQuery.Where(x =>
+                x.Status == ServiceRecordStatus.Open ||
+                x.Status == ServiceRecordStatus.InProgress)
+        };
+
+        if (query.CreatedFrom.HasValue)
+        {
+            recordsQuery = recordsQuery.Where(x => x.CreatedAt >= query.CreatedFrom.Value.Date);
+        }
+
+        if (query.CreatedTo.HasValue)
+        {
+            var createdToExclusive = query.CreatedTo.Value.Date.AddDays(1);
+            recordsQuery = recordsQuery.Where(x => x.CreatedAt < createdToExclusive);
+        }
+
+        var totalCount = await recordsQuery.CountAsync();
+
+        var items = await recordsQuery
+            .OrderByDescending(x => x.CreatedAt)
+            .Skip((query.PageNumber - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .Select(x => new ServiceRecordListItemDto
+            {
+                Id = x.Id,
+                RecordNumber = x.RecordNumber,
+                Status = x.Status,
+
+                CustomerName = x.CustomerNameSnapshot,
+                CustomerPhone = x.CustomerPhoneSnapshot,
+
+                VehiclePlate = x.VehiclePlateSnapshot,
+                VehicleBrandName = x.VehicleBrandNameSnapshot,
+                VehicleModelName = x.VehicleModelNameSnapshot,
+
+                TotalAmount = x.TotalAmount,
+                CreatedAt = x.CreatedAt
+            })
+            .ToListAsync();
+
+        var pagedResult = new PagedResult<ServiceRecordListItemDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = query.PageNumber,
+            PageSize = query.PageSize
+        };
+
+        return ServiceResult<PagedResult<ServiceRecordListItemDto>>.Success(pagedResult);
+    }
+
     private async Task<string?> GetBrandNameAsync(int? brandId)
     {
         if (!brandId.HasValue)

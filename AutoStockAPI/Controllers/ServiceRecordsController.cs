@@ -32,17 +32,18 @@ public class ServiceRecordsController : ControllerBase
 
         return Ok(result);
     }
+
     [HttpGet]
-    public async Task<IActionResult> GetList()
+    public async Task<IActionResult> GetList([FromQuery] ServiceRecordListQueryDto query)
     {
         var workshopIdClaim = User.FindFirst("workshopId")?.Value;
 
         if (!int.TryParse(workshopIdClaim, out var workshopId))
             return Unauthorized("Workshop bilgisi bulunamadı.");
 
-        var result = await _serviceRecordService.GetListAsync(workshopId);
+        var result = await _serviceRecordService.GetPagedAsync(workshopId, query);
 
-        return Ok(result);
+        return StatusCode((int)result.StatusCode, result);
     }
 
     [HttpGet("{id:int}")]

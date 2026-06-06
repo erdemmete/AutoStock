@@ -5,6 +5,7 @@ using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.Invoices;
 using AutoStock.WEB.Models.ServiceRecords;
 using AutoStock.WEB.Models.StockItems;
+using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http.Headers;
 using System.Text;
@@ -17,36 +18,30 @@ public class ServiceRecordsController : Controller
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
+    private readonly ServiceRecordPageService _serviceRecordPageService;
 
     public ServiceRecordsController(
-        IHttpClientFactory httpClientFactory,
-        IConfiguration configuration)
+    IHttpClientFactory httpClientFactory,
+    IConfiguration configuration,
+    ServiceRecordPageService serviceRecordPageService)
     {
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
-
+        _serviceRecordPageService = serviceRecordPageService;
     }
 
     [HttpGet("ServiceRecords")]
-    public async Task<IActionResult> Index()
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
+    public async Task<IActionResult> Index(ServiceRecordListQueryViewModel query)
     {
-        var client = CreateApiClient();
+        var pageResult = await _serviceRecordPageService.GetIndexPageAsync(query);
 
-        var response = await client.GetAsync("/api/ServiceRecords");
-
-        if (!response.IsSuccessStatusCode)
+        if (pageResult.HasErrors)
         {
-            ViewBag.ErrorMessage = "Servis kayıtları getirilemedi.";
-            return View(new List<ServiceRecordListItemViewModel>());
+            TempData["ErrorMessage"] = string.Join("<br>", pageResult.ErrorMessages);
         }
 
-        var json = await response.Content.ReadAsStringAsync();
-
-        var result = JsonSerializer.Deserialize<ApiResponse<List<ServiceRecordListItemViewModel>>>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        return View(result?.Data ?? new List<ServiceRecordListItemViewModel>());
+        return View(pageResult.ViewModel);
     }
 
     [HttpGet]
@@ -150,6 +145,7 @@ public class ServiceRecordsController : Controller
         return Json(models ?? new List<VehicleModelViewModel>());
     }
     [HttpGet("ServiceRecords/Detail/{id:int}")]
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     public async Task<IActionResult> Detail(int id)
     {
         var client = CreateApiClient();
