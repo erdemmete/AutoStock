@@ -1,7 +1,30 @@
-﻿@model List<AutoStock.WEB.Models.Invoices.InvoiceListItemViewModel>
+﻿@model AutoStock.WEB.Models.Invoices.InvoiceIndexViewModel
+@using AutoStock.Repositories.Enums
+@using AutoStock.WEB.Models.Common
+@using AutoStock.WEB.Models.Invoices
 
 @{
     ViewData["Title"] = "Faturalar";
+
+    var invoices = Model.Invoices.Items ?? new List<InvoiceListItemViewModel>();
+
+    var totalCount = Model.Invoices.TotalCount;
+    var pageNumber = Model.Invoices.PageNumber > 0 ? Model.Invoices.PageNumber : Model.Query.PageNumber;
+    var pageSize = Model.Invoices.PageSize > 0 ? Model.Invoices.PageSize : Model.Query.PageSize;
+
+    var paginationModel = new PaginationViewModel
+    {
+        Controller = "Invoices",
+        Action = "Index",
+        PageNumber = pageNumber,
+        PageSize = pageSize,
+        TotalCount = totalCount,
+        RouteValues = new Dictionary<string, string?>
+        {
+            ["search"] = Model.Query.Search,
+            ["status"] = Model.Query.Status.HasValue ? ((int)Model.Query.Status.Value).ToString() : null
+        }
+    };
 
     string GetStatusText(int status)
     {
@@ -28,48 +51,81 @@
 
 <div class="invoice-list-page">
 
-    <section class="premium-header">
-        <a href="/Dashboard" class="header-back">←</a>
-
+    <section class="invoice-header">
         <div>
-            <span class="header-badge">FATURA YÖNETİMİ</span>
+            <span class="header-badge">🧾 Fatura Yönetimi</span>
             <h1>Faturalar</h1>
-            <p>Oluşturulan taslak ve kesilmiş faturaları yönetin.</p>
+            <p>Oluşturulan taslak, kesilmiş ve iptal edilmiş faturaları yönetin.</p>
         </div>
 
-        <a href="/Dashboard" class="header-home">⌂</a>
-    </section>
-
-    <section class="summary-grid">
-        <div class="summary-card">
-            <span>Toplam Fatura</span>
-            <strong>@Model.Count</strong>
-        </div>
-
-        <div class="summary-card">
-            <span>Taslak</span>
-            <strong>@Model.Count(x => x.Status == 1)</strong>
-        </div>
-
-        <div class="summary-card">
-            <span>Kesilmiş</span>
-            <strong>@Model.Count(x => x.Status == 2)</strong>
-        </div>
-
-        <div class="summary-card">
-            <span>Toplam Tutar</span>
-            <strong>@Model.Sum(x => x.GrandTotal).ToString("N2") ₺</strong>
-        </div>
-    </section>
-
-    <section class="panel">
-        <div class="panel-title">
-            <span class="title-icon">🧾</span>
-            <h2>Fatura Listesi</h2>
-        </div>
-
-        @if (Model.Any())
+        @await Html.PartialAsync("_PageActions", new PageActionViewModel
         {
+            BackController = "Dashboard",
+            BackAction = "Index",
+            HomeController = "Dashboard",
+            HomeAction = "Index"
+        })
+    </section>
+
+    <section class="invoice-panel">
+
+        <form method="get"
+              asp-controller="Invoices"
+              asp-action="Index"
+              class="invoice-filter-card">
+
+            <div class="invoice-search-box">
+                <span class="search-icon">⌕</span>
+                <input name="Search"
+                       value="@Model.Query.Search"
+                       type="text"
+                       placeholder="Fatura no, müşteri, plaka veya kayıt no ara..." />
+            </div>
+
+            <select name="Status" class="invoice-filter-select">
+                <option value="">Tüm Durumlar</option>
+
+                <option value="@((int)InvoiceStatus.Draft)"
+                        selected="@(Model.Query.Status == InvoiceStatus.Draft ? "selected" : null)">
+                    Taslak
+                </option>
+
+                <option value="@((int)InvoiceStatus.Issued)"
+                        selected="@(Model.Query.Status == InvoiceStatus.Issued ? "selected" : null)">
+                    Kesildi
+                </option>
+
+                <option value="@((int)InvoiceStatus.Cancelled)"
+                        selected="@(Model.Query.Status == InvoiceStatus.Cancelled ? "selected" : null)">
+                    İptal
+                </option>
+            </select>
+
+            <select name="PageSize" class="invoice-filter-select">
+                <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
+                <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
+                <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
+            </select>
+
+            <input type="hidden" name="PageNumber" value="1" />
+
+            <button type="submit"
+                    class="invoice-filter-button"
+                    title="Ara">
+                ⌕
+            </button>
+
+            <a asp-controller="Invoices"
+               asp-action="Index"
+               class="invoice-clear-button"
+               title="Filtreleri temizle">
+                ×
+            </a>
+        </form>
+
+        @await Html.PartialAsync("_Pagination", paginationModel)
+
+        <div class="invoice-table-card">
             <div class="invoice-table">
                 <div class="invoice-table-head">
                     <span>Fatura No</span>
@@ -82,188 +138,198 @@
                     <span></span>
                 </div>
 
-                @foreach (var invoice in Model)
+                @if (!invoices.Any())
                 {
-                    <div class="invoice-row">
-                        <span>
-                            <strong>@invoice.InvoiceNumber</strong>
-                        </span>
-
-                        <span>@invoice.CustomerTitle</span>
-
-                        <span>@(invoice.Plate ?? "-")</span>
-
-                        <span>@GetTypeText(invoice.Type)</span>
-
-                        <span>
-                            <b class="status-pill status-@invoice.Status">
-                                @GetStatusText(invoice.Status)
-                            </b>
-                        </span>
-
-                        <span>@invoice.InvoiceDate.AddHours(3).ToString("dd.MM.yyyy HH:mm")</span>
-
-                        <span>
-                            <strong>@invoice.GrandTotal.ToString("N2") ₺</strong>
-                        </span>
-
-                        <span>
-                            <a href="/Invoices/Detail/@invoice.Id" class="detail-btn">
-                                Detay
-                            </a>
-                        </span>
+                    <div class="empty-state">
+                        Kayıt bulunamadı. Arama veya filtre kriterlerini değiştirerek tekrar deneyin.
                     </div>
                 }
+                else
+                {
+                    foreach (var invoice in invoices)
+                    {
+                        <div class="invoice-row">
+                            <span>
+                                <strong>@invoice.InvoiceNumber</strong>
+                            </span>
+
+                            <span>@invoice.CustomerTitle</span>
+
+                            <span>@(invoice.Plate ?? "-")</span>
+
+                            <span>@GetTypeText(invoice.Type)</span>
+
+                            <span>
+                                <b class="status-pill status-@invoice.Status">
+                                    @GetStatusText(invoice.Status)
+                                </b>
+                            </span>
+
+                            <span>@invoice.InvoiceDate.AddHours(3).ToString("dd.MM.yyyy HH:mm")</span>
+
+                            <span>
+                                <strong>@invoice.GrandTotal.ToString("N2") ₺</strong>
+                            </span>
+
+                            <span>
+                                <a href="/Invoices/Detail/@invoice.Id" class="detail-btn">
+                                    Detay
+                                </a>
+                            </span>
+                        </div>
+                    }
+                }
             </div>
-        }
-        else
-        {
-            <div class="empty-state">
-                Henüz fatura oluşturulmamış.
-            </div>
-        }
+
+            @await Html.PartialAsync("_Pagination", paginationModel)
+        </div>
+
     </section>
 
 </div>
 
 <style>
-    * {
-        box-sizing: border-box;
-    }
-
-    body {
-        margin: 0;
-        background: radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 30rem), #f4f7fb;
-        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        color: #0f172a;
-    }
-
     .invoice-list-page {
         width: min(1540px, calc(100% - 48px));
         margin: 0 auto;
         padding: 26px 0 42px;
+        color: #0f172a;
     }
 
-    .premium-header {
-        min-height: 116px;
-        padding: 28px;
-        border-radius: 28px;
-        background: linear-gradient(135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
-        color: white;
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
+    .invoice-header {
+        display: flex;
         align-items: center;
-        gap: 22px;
-        box-shadow: 0 28px 80px rgba(15, 23, 42, .22);
-    }
-
-    .header-back,
-    .header-home {
-        width: 54px;
-        height: 54px;
-        border-radius: 18px;
-        display: grid;
-        place-items: center;
-        background: rgba(255,255,255,.13);
-        border: 1px solid rgba(255,255,255,.20);
-        color: white;
-        text-decoration: none;
-        font-size: 26px;
-        font-weight: 950;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 28px;
     }
 
     .header-badge {
         display: inline-flex;
-        margin-bottom: 7px;
-        padding: 6px 11px;
+        margin-bottom: 10px;
+        padding: 7px 13px;
         border-radius: 999px;
-        background: rgba(255,255,255,.13);
-        border: 1px solid rgba(255,255,255,.18);
-        color: rgba(255,255,255,.82);
-        font-size: 12px;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 13px;
         font-weight: 900;
-        letter-spacing: .4px;
     }
 
-    .premium-header h1 {
+    .invoice-header h1 {
         margin: 0;
         font-size: 32px;
+        font-weight: 950;
         letter-spacing: -1px;
     }
 
-    .premium-header p {
+    .invoice-header p {
         margin: 8px 0 0;
-        color: rgba(255,255,255,.82);
-        font-size: 14px;
+        color: #64748b;
+        font-size: 15px;
         font-weight: 700;
     }
 
-    .summary-grid {
-        margin-top: 18px;
+    .invoice-panel {
+        background: #fff;
+        border: 1px solid #dbe3ef;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
+    }
+
+    .invoice-filter-card {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
-    }
-
-    .summary-card,
-    .panel {
-        border-radius: 24px;
-        background: rgba(255,255,255,.94);
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 20px 50px rgba(15, 23, 42, .07);
-    }
-
-    .summary-card {
-        padding: 20px;
-    }
-
-        .summary-card span {
-            display: block;
-            color: #64748b;
-            font-size: 13px;
-            font-weight: 850;
-            margin-bottom: 8px;
-        }
-
-        .summary-card strong {
-            font-size: 24px;
-            font-weight: 950;
-            color: #1d4ed8;
-        }
-
-    .panel {
-        margin-top: 18px;
-        padding: 22px;
-    }
-
-    .panel-title {
-        display: flex;
-        align-items: center;
+        grid-template-columns: minmax(320px, 1fr) 170px 130px 48px 48px;
         gap: 12px;
-        margin-bottom: 18px;
+        background: #fff;
+        border-bottom: 1px solid #edf2f7;
+        padding: 16px;
     }
 
-        .panel-title h2 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 950;
+    .invoice-search-box {
+        position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 22px;
+    }
+
+    .invoice-search-box input,
+    .invoice-filter-select {
+        width: 100%;
+        height: 48px;
+        border: 1px solid #cfd8e6;
+        border-radius: 13px;
+        background: #fff;
+        color: #0f172a;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .invoice-search-box input {
+        padding: 0 16px 0 48px;
+    }
+
+    .invoice-filter-select {
+        padding: 0 14px;
+    }
+
+        .invoice-search-box input:focus,
+        .invoice-filter-select:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
         }
 
-    .title-icon {
-        width: 34px;
-        height: 34px;
-        border-radius: 12px;
-        display: grid;
-        place-items: center;
-        background: #eef4ff;
-        color: #1d4ed8;
-        font-weight: 950;
+    .invoice-filter-button,
+    .invoice-clear-button {
+        width: 48px;
+        height: 48px;
+        border: 1px solid #cfd8e6;
+        border-radius: 13px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        text-decoration: none;
+        cursor: pointer;
+        transition: .18s ease;
+    }
+
+    .invoice-filter-button {
+        background: #f8fafc;
+        color: #475569;
+        font-size: 20px;
+    }
+
+        .invoice-filter-button:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #4f46e5;
+        }
+
+    .invoice-clear-button {
+        background: #fff;
+        color: #64748b;
+        font-size: 22px;
+    }
+
+        .invoice-clear-button:hover {
+            background: #fff1f2;
+            border-color: #fecdd3;
+            color: #e11d48;
+        }
+
+    .invoice-table-card {
+        background: #fff;
     }
 
     .invoice-table {
         overflow-x: auto;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
     }
 
     .invoice-table-head,
@@ -276,19 +342,25 @@
     }
 
     .invoice-table-head {
-        padding: 12px;
+        padding: 14px 18px;
         background: #f8fafc;
         color: #64748b;
         font-size: 12px;
         font-weight: 950;
+        border-top: 1px solid #edf2f7;
+        border-bottom: 1px solid #edf2f7;
     }
 
     .invoice-row {
-        padding: 12px;
-        border-top: 1px solid #e2e8f0;
+        padding: 14px 18px;
+        border-bottom: 1px solid #edf2f7;
         background: white;
         font-size: 13px;
     }
+
+        .invoice-row:hover {
+            background: #fafbff;
+        }
 
         .invoice-row span {
             min-width: 0;
@@ -331,20 +403,33 @@
         justify-content: center;
     }
 
+        .detail-btn:hover {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
     .empty-state {
-        padding: 24px;
-        border-radius: 16px;
-        background: #f8fafc;
-        border: 1px dashed #cbd5e1;
+        padding: 32px;
         color: #64748b;
         text-align: center;
         font-size: 14px;
         font-weight: 850;
+        border-top: 1px solid #edf2f7;
     }
 
     @@media (max-width: 1000px) {
-        .summary-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        .invoice-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .invoice-filter-card {
+            grid-template-columns: 1fr;
+        }
+
+        .invoice-filter-button,
+        .invoice-clear-button {
+            width: 100%;
         }
     }
 
@@ -352,20 +437,6 @@
         .invoice-list-page {
             width: 100%;
             padding: 12px;
-        }
-
-        .premium-header {
-            grid-template-columns: auto 1fr;
-            padding: 20px;
-            border-radius: 22px;
-        }
-
-        .header-home {
-            display: none;
-        }
-
-        .summary-grid {
-            grid-template-columns: 1fr;
         }
 
         .invoice-table-head {

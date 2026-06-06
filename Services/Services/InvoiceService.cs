@@ -375,6 +375,68 @@ namespace AutoStock.Services.Services
             return ServiceResult<List<InvoiceListItemDto>>.Success(invoices);
         }
 
+        public async Task<ServiceResult<PagedResult<InvoiceListItemDto>>> GetPagedAsync(
+    InvoiceListQueryDto query,
+    int workshopId)
+        {
+            query ??= new InvoiceListQueryDto();
+            query.Normalize();
+
+            var invoicesQuery = _context.Invoices
+                .AsNoTracking()
+                .Where(x => x.WorkshopId == workshopId);
+
+            if (query.Status.HasValue)
+            {
+                invoicesQuery = invoicesQuery.Where(x => x.Status == query.Status.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var searchText = query.Search.Trim();
+                var search = $"%{searchText}%";
+                var isNumericSearch = int.TryParse(searchText, out var numericSearch);
+
+                invoicesQuery = invoicesQuery.Where(x =>
+                    EF.Functions.Like(x.InvoiceNumber ?? string.Empty, search) ||
+                    EF.Functions.Like(x.CustomerTitle ?? string.Empty, search) ||
+                    EF.Functions.Like(x.Plate ?? string.Empty, search) ||
+                    (isNumericSearch && x.Id == numericSearch) ||
+                    (isNumericSearch && x.ServiceRecordId.HasValue && x.ServiceRecordId.Value == numericSearch));
+            }
+
+            var totalCount = await invoicesQuery.CountAsync();
+
+            var items = await invoicesQuery
+                .OrderByDescending(x => x.InvoiceDate)
+                .ThenByDescending(x => x.Id)
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(x => new InvoiceListItemDto
+                {
+                    Id = x.Id,
+                    ServiceRecordId = x.ServiceRecordId,
+                    Type = (int)x.Type,
+                    Status = (int)x.Status,
+                    InvoiceNumber = x.InvoiceNumber,
+                    InvoiceDate = x.InvoiceDate,
+                    CustomerTitle = x.CustomerTitle,
+                    Plate = x.Plate,
+                    GrandTotal = x.GrandTotal
+                })
+                .ToListAsync();
+
+            var pagedResult = new PagedResult<InvoiceListItemDto>
+            {
+                Items = items,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize,
+                TotalCount = totalCount
+            };
+
+            return ServiceResult<PagedResult<InvoiceListItemDto>>.Success(pagedResult);
+        }
+
         public async Task<ServiceResult<List<InvoiceListItemDto>>> GetListByServiceRecordAsync(int serviceRecordId, int workshopId)
         {
             var invoices = await _context.Invoices

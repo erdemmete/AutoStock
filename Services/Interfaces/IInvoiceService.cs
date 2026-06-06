@@ -25,6 +25,7 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<CancelInvoiceResponseDto>> CancelAsync(int invoiceId, int workshopId);
 
         Task<ServiceResult<InvoiceDetailDto>> UpdateAsync(UpdateInvoiceDto request, int workshopId);
+        Task<ServiceResult<PagedResult<InvoiceListItemDto>>> GetPagedAsync(InvoiceListQueryDto query, int workshopId);
     }
 
 }

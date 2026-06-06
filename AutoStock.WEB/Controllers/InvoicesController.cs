@@ -1,52 +1,44 @@
-﻿using AutoStock.WEB.Models.Common;
-using AutoStock.WEB.Models.Invoices;
+﻿using AutoStock.WEB.Models.Invoices;
+using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 
 namespace AutoStock.WEB.Controllers;
 
-public class InvoicesController : Controller
+public class InvoicesController : BaseController
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IConfiguration _configuration;
+    private readonly InvoiceApiService _invoiceApiService;
+    private readonly InvoicePageService _invoicePageService;
 
     public InvoicesController(
-        IHttpClientFactory httpClientFactory,
-        IConfiguration configuration)
+        InvoiceApiService invoiceApiService,
+        InvoicePageService invoicePageService)
     {
-        _httpClientFactory = httpClientFactory;
-        _configuration = configuration;
+        _invoiceApiService = invoiceApiService;
+        _invoicePageService = invoicePageService;
+    }
+
+    [HttpGet("Invoices")]
+    public async Task<IActionResult> Index([FromQuery] InvoiceListQueryViewModel query)
+    {
+        var pageResult = await _invoicePageService.BuildIndexAsync(query);
+
+        if (pageResult.HasErrors)
+        {
+            ShowErrors(pageResult.ErrorMessages);
+        }
+
+        return View(pageResult.ViewModel);
     }
 
     [HttpGet("Invoices/CreateFromServiceRecord/{serviceRecordId:int}")]
     public async Task<IActionResult> CreateFromServiceRecord(int serviceRecordId)
     {
-        var client = CreateApiClient();
+        var result = await _invoiceApiService.GetCreateDraftFromServiceRecordAsync(serviceRecordId);
 
-        var response = await client.GetAsync(
-            $"/api/invoices/draft/from-service-record/{serviceRecordId}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            TempData["ErrorMessage"] = "Fatura taslağı oluşturulamadı.";
-            return RedirectToAction("Detail", "ServiceRecords", new { id = serviceRecordId });
-        }
-
-        var json = await response.Content.ReadAsStringAsync();
-
-        var result = JsonSerializer.Deserialize<ApiResponse<InvoiceCreateViewModel>>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        if (result is null || !result.IsSuccess || result.Data is null)
-        {
-            TempData["ErrorMessage"] = result?.ErrorMessage ?? "Fatura taslağı okunamadı.";
-            return RedirectToAction("Detail", "ServiceRecords", new { id = serviceRecordId });
-        }
-
-        return View(result.Data);
+        return ViewObjectResult(
+            result,
+            "Fatura taslağı oluşturulamadı.",
+            onFailure: () => RedirectToAction("Detail", "ServiceRecords", new { id = serviceRecordId }));
     }
 
     [HttpPost("Invoices/CreateFromServiceRecord")]
@@ -57,159 +49,76 @@ public class InvoicesController : Controller
             return BadRequest(new
             {
                 isSuccess = false,
-                errorMessage = new[] { "Fatura kalemi zorunludur." }
+                errorMessages = new[] { "Fatura kalemi zorunludur." }
             });
         }
 
-        var client = CreateApiClient();
+        var result = await _invoiceApiService.CreateAsync(model);
 
-        var json = JsonSerializer.Serialize(model);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        if (result.IsFailure)
+            return BadRequest(result);
 
-        var response = await client.PostAsync("/api/invoices", content);
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-            return StatusCode((int)response.StatusCode, responseJson);
-
-        return Content(responseJson, "application/json");
+        return Ok(result);
     }
 
     [HttpGet("Invoices/Print/{invoiceId:int}")]
     public async Task<IActionResult> Print(int invoiceId)
     {
-        var client = CreateApiClient();
+        var result = await _invoiceApiService.GetDetailAsync(invoiceId);
 
-        var response = await client.GetAsync($"/api/invoices/{invoiceId}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            TempData["ErrorMessage"] = "Fatura bulunamadı.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        var json = await response.Content.ReadAsStringAsync();
-
-        var result = JsonSerializer.Deserialize<ApiResponse<InvoiceDetailViewModel>>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        if (result is null || !result.IsSuccess || result.Data is null)
-        {
-            TempData["ErrorMessage"] = result?.ErrorMessage ?? "Fatura detayı okunamadı.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        return View(result.Data);
+        return ViewObjectResult(
+            result,
+            "Fatura bulunamadı.",
+            onFailure: () => RedirectToAction(nameof(Index)));
     }
-    
 
     [HttpGet("Invoices/Detail/{invoiceId:int}")]
     public async Task<IActionResult> Detail(int invoiceId)
     {
-        var client = CreateApiClient();
+        var result = await _invoiceApiService.GetDetailAsync(invoiceId);
 
-        var response = await client.GetAsync($"/api/invoices/{invoiceId}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            TempData["ErrorMessage"] = "Fatura bulunamadı.";
-            return RedirectToAction("Index", "Dashboard");
-        }
-
-        var json = await response.Content.ReadAsStringAsync();
-
-        var result = JsonSerializer.Deserialize<ApiResponse<InvoiceDetailViewModel>>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        if (result is null || !result.IsSuccess || result.Data is null)
-        {
-            TempData["ErrorMessage"] = result?.ErrorMessage ?? "Fatura detayı okunamadı.";
-            return RedirectToAction("Index", "Dashboard");
-        }
-
-        return View(result.Data);
+        return ViewObjectResult(
+            result,
+            "Fatura detayı alınırken hata oluştu.",
+            onFailure: () => RedirectToAction(nameof(Index)));
     }
 
     [HttpPost("Invoices/Issue/{invoiceId:int}")]
     public async Task<IActionResult> Issue(int invoiceId)
     {
-        var client = CreateApiClient();
+        var result = await _invoiceApiService.IssueAsync(invoiceId);
 
-        var response = await client.PostAsync($"/api/invoices/{invoiceId}/issue", null);
+        if (result.IsFailure)
+            return BadRequest(result);
 
-        var json = await response.Content.ReadAsStringAsync();
-
-        return Content(json, "application/json");
+        return Ok(result);
     }
 
-    [HttpGet("Invoices")]
-    public async Task<IActionResult> Index()
-    {
-        var client = CreateApiClient();
-
-        var response = await client.GetAsync("/api/invoices");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            ViewBag.ErrorMessage = "Faturalar getirilemedi.";
-            return View(new List<InvoiceListItemViewModel>());
-        }
-
-        var json = await response.Content.ReadAsStringAsync();
-
-        var result = JsonSerializer.Deserialize<ApiResponse<List<InvoiceListItemViewModel>>>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        return View(result?.Data ?? new List<InvoiceListItemViewModel>());
-    }
-
-    [HttpPost]
+    [HttpPost("Invoices/Cancel/{id:int}")]
     public async Task<IActionResult> Cancel(int id)
     {
-       
+        var result = await _invoiceApiService.CancelAsync(id);
 
-        var client = CreateApiClient();
+        if (result.IsFailure)
+            return BadRequest(result);
 
-        var response = await client.PostAsync($"/api/invoices/{id}/cancel", null);
-
-        if (!response.IsSuccessStatusCode)
-            return BadRequest();
-
-        return Ok();
+        return Ok(result);
     }
 
     [HttpGet("Invoices/Edit/{invoiceId:int}")]
     public async Task<IActionResult> Edit(int invoiceId)
     {
-        var client = CreateApiClient();
+        var result = await _invoiceApiService.GetDetailAsync(invoiceId);
 
-        var response = await client.GetAsync($"/api/invoices/{invoiceId}");
-
-        if (!response.IsSuccessStatusCode)
+        if (result.IsFailure || result.Data is null)
         {
-            TempData["ErrorMessage"] = "Fatura bulunamadı.";
-            return RedirectToAction(nameof(Index));
-        }
-
-        var json = await response.Content.ReadAsStringAsync();
-
-        var result = JsonSerializer.Deserialize<ApiResponse<InvoiceDetailViewModel>>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        if (result is null || !result.IsSuccess || result.Data is null)
-        {
-            TempData["ErrorMessage"] = result?.ErrorMessage ?? "Fatura detayı okunamadı.";
+            ShowError(result.ErrorMessage ?? "Fatura bulunamadı.");
             return RedirectToAction(nameof(Index));
         }
 
         if (result.Data.Status != 1)
         {
-            TempData["ErrorMessage"] = "Sadece taslak faturalar düzenlenebilir.";
+            ShowError("Sadece taslak faturalar düzenlenebilir.");
             return RedirectToAction(nameof(Detail), new { invoiceId });
         }
 
@@ -219,35 +128,11 @@ public class InvoicesController : Controller
     [HttpPut("Invoices/Edit/{invoiceId:int}")]
     public async Task<IActionResult> Edit(int invoiceId, [FromBody] InvoiceDetailViewModel model)
     {
-        var client = CreateApiClient();
+        var result = await _invoiceApiService.UpdateAsync(invoiceId, model);
 
-        var json = JsonSerializer.Serialize(model);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        if (result.IsFailure)
+            return BadRequest(result);
 
-        var response = await client.PutAsync($"/api/invoices/{invoiceId}", content);
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-            return StatusCode((int)response.StatusCode, responseJson);
-
-        return Content(responseJson, "application/json");
-    }
-
-    private HttpClient CreateApiClient()
-    {
-        var client = _httpClientFactory.CreateClient();
-
-        client.BaseAddress = new Uri(_configuration["ApiSettings:BaseUrl"]!);
-
-        var token = HttpContext.Session.GetString("AuthToken");
-
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-        }
-
-        return client;
+        return Ok(result);
     }
 }

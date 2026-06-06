@@ -89,7 +89,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetList()
+        public async Task<IActionResult> GetList([FromQuery] InvoiceListQueryDto query)
         {
             var workshopIdClaim =
                 User.FindFirst("WorkshopId")?.Value
@@ -98,10 +98,10 @@ namespace AutoStock.API.Controllers
             if (!int.TryParse(workshopIdClaim, out var workshopId))
                 return Unauthorized("Workshop bilgisi bulunamadı.");
 
-            var result = await _invoiceService.GetListAsync(workshopId);
+            var result = await _invoiceService.GetPagedAsync(query, workshopId);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
+            if (result.IsFailure)
+                return StatusCode((int)result.StatusCode, result);
 
             return Ok(result);
         }
