@@ -1,9 +1,23 @@
 using AutoStock.WEB.Extensions;
+using AutoStock.WEB.ModelBinders;
+using Microsoft.AspNetCore.Localization;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var supportedCultures = new[]
+{
+    new CultureInfo("tr-TR")
+};
+
+CultureInfo.DefaultThreadCurrentCulture = supportedCultures[0];
+CultureInfo.DefaultThreadCurrentUICulture = supportedCultures[0];
+
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.ModelBinderProviders.Insert(0, new FlexibleDecimalModelBinderProvider());
+});
 
 builder.Services.AddHttpClient();
 
@@ -15,6 +29,13 @@ var app = builder.Build();
 
 //app.Urls.Add("http://0.0.0.0:5018");
 
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture("tr-TR"),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+});
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -23,9 +44,8 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-
-
 app.UseHttpsRedirection();
+
 app.UseRouting();
 
 app.UseSession();
@@ -34,14 +54,8 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
-//app.MapControllerRoute(
-//    name: "default",
-//    pattern: "{controller=Home}/{action=Index}/{id?}")
-//    .WithStaticAssets();
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}");
-
 
 app.Run();

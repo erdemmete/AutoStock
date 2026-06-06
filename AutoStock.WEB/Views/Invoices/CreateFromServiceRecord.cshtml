@@ -1,4 +1,5 @@
 ﻿@model AutoStock.WEB.Models.Invoices.InvoiceCreateViewModel
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Fatura Oluştur";
@@ -131,11 +132,15 @@
                                 </select>
 
                                 <input class="description" value="@item.Description" />
-                                <input class="quantity calc-input" type="number" step="0.01" min="0" value="@item.Quantity" />
+                                <input class="quantity calc-input"
+                                       type="number"
+                                       step="0.01"
+                                       min="0"
+                                       value="@NumberInputValue(item.Quantity)" />
                                 <input class="unit" value="@item.Unit" />
-                                <input class="unit-price calc-input" type="number" step="0.01" min="0" value="@item.UnitPrice" />
-                                <input class="discount-rate calc-input" type="number" step="0.01" min="0" value="@item.DiscountRate" />
-                                <input class="vat-rate calc-input" type="number" step="0.01" min="0" value="@item.VatRate" />
+                                <input class="unit-price calc-input" type="number" step="0.01" min="0" value="@NumberInputValue(item.UnitPrice)" />
+                                <input class="discount-rate calc-input" type="number" step="0.01" min="0" value="@NumberInputValue(item.DiscountRate)" />
+                                <input class="vat-rate calc-input" type="number" step="0.01" min="0" value="@NumberInputValue(item.VatRate)" />
 
                                 <strong class="line-total">0,00 ₺</strong>
 
@@ -593,6 +598,20 @@
     }
 </style>
 
+@functions {
+    private static string NumberInputValue(decimal value)
+    {
+        return value.ToString("0.##", CultureInfo.InvariantCulture);
+    }
+
+    private static string NumberInputValue(decimal? value)
+    {
+        return value.HasValue
+            ? value.Value.ToString("0.##", CultureInfo.InvariantCulture)
+            : "";
+    }
+}
+
 <script>
     function toNumber(value) {
         if (!value) return 0;
@@ -817,4 +836,6 @@
         bindCalculationInputs();
         calculateInvoice();
     });
+
+    
 </script>
