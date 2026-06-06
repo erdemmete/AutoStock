@@ -69,14 +69,36 @@ namespace AutoStock.WEB.Services
                 "Fatura iptal edilirken hata oluştu.");
         }
 
-        public async Task<ApiResponse<InvoiceDetailViewModel>> UpdateAsync(
-            int invoiceId,
-            InvoiceDetailViewModel model)
+        public async Task<ApiResponse<InvoiceDetailViewModel>> UpdateAsync(int invoiceId, InvoiceDetailViewModel model)
         {
             return await PutJsonAsync<InvoiceDetailViewModel, InvoiceDetailViewModel>(
                 $"/api/Invoices/{invoiceId}",
                 model,
                 "Fatura güncellenirken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<List<InvoiceListItemViewModel>>> GetListByServiceRecordAsync(
+    int serviceRecordId)
+        {
+            return await GetAsync<List<InvoiceListItemViewModel>>(
+                $"/api/Invoices/by-service-record/{serviceRecordId}",
+                "Servis kaydına ait faturalar alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<InvoiceDetailViewModel>> GetDraftByServiceRecordAsync(
+            int serviceRecordId)
+        {
+            return await GetAsync<InvoiceDetailViewModel>(
+                $"/api/Invoices/draft/by-service-record/{serviceRecordId}",
+                "Taslak fatura bilgisi alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<InvoiceNavigationViewModel>> GetActiveInvoiceByServiceRecordAsync(
+            int serviceRecordId)
+        {
+            return await GetAsync<InvoiceNavigationViewModel>(
+                $"/api/Invoices/active/by-service-record/{serviceRecordId}",
+                "Aktif fatura bilgisi alınırken hata oluştu.");
         }
     }
 }

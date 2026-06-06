@@ -1,33 +1,28 @@
-﻿using AutoStock.Services.Dtos.Common;
-using AutoStock.Services.Dtos.ServiceRecords;
+﻿using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Web.Models.ServiceRecords;
-using AutoStock.WEB.Models.Common;
+using AutoStock.WEB.Controllers;
 using AutoStock.WEB.Models.Invoices;
 using AutoStock.WEB.Models.ServiceRecords;
 using AutoStock.WEB.Models.StockItems;
 using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 
 namespace AutoStock.Web.Controllers;
 
-
-public class ServiceRecordsController : Controller
+public class ServiceRecordsController : BaseController
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IConfiguration _configuration;
+    private readonly ServiceRecordApiService _serviceRecordApiService;
     private readonly ServiceRecordPageService _serviceRecordPageService;
+    private readonly InvoiceApiService _invoiceApiService;
 
     public ServiceRecordsController(
-    IHttpClientFactory httpClientFactory,
-    IConfiguration configuration,
-    ServiceRecordPageService serviceRecordPageService)
+        ServiceRecordApiService serviceRecordApiService,
+        ServiceRecordPageService serviceRecordPageService,
+        InvoiceApiService invoiceApiService)
     {
-        _httpClientFactory = httpClientFactory;
-        _configuration = configuration;
+        _serviceRecordApiService = serviceRecordApiService;
         _serviceRecordPageService = serviceRecordPageService;
+        _invoiceApiService = invoiceApiService;
     }
 
     [HttpGet("ServiceRecords")]
@@ -38,7 +33,7 @@ public class ServiceRecordsController : Controller
 
         if (pageResult.HasErrors)
         {
-            TempData["ErrorMessage"] = string.Join("<br>", pageResult.ErrorMessages);
+            ShowErrors(pageResult.ErrorMessages);
         }
 
         return View(pageResult.ViewModel);
@@ -50,7 +45,6 @@ public class ServiceRecordsController : Controller
         var model = new CreateServiceRecordViewModel
         {
             Brands = await GetBrandsAsync(),
-
             ServiceAdvisorName = HttpContext.Session.GetString("FullName") ?? "Oturum Bilgisi Yok"
         };
 
@@ -61,19 +55,17 @@ public class ServiceRecordsController : Controller
     public async Task<IActionResult> Create(CreateServiceRecordViewModel model)
     {
         model.Brands = await GetBrandsAsync();
-
         model.ServiceAdvisorName = HttpContext.Session.GetString("FullName") ?? "Oturum Bilgisi Yok";
 
         if (!ModelState.IsValid)
         {
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            if (IsAjaxRequest())
             {
                 var errors = ModelState
-                    .Where(x => x.Value.Errors.Any())
+                    .Where(x => x.Value?.Errors.Any() == true)
                     .ToDictionary(
                         x => x.Key,
-                        x => x.Value.Errors.Select(e => e.ErrorMessage).ToArray()
-                    );
+                        x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray());
 
                 return BadRequest(new
                 {
@@ -85,33 +77,27 @@ public class ServiceRecordsController : Controller
             return View(model);
         }
 
+        var result = await _serviceRecordApiService.CreateAsync(model);
 
-        var client = CreateApiClient();
-
-        var json = JsonSerializer.Serialize(model);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await client.PostAsync("/api/ServiceRecords", content);
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
+        if (result.IsFailure || result.Data is null)
         {
-            ModelState.AddModelError("", "Servis kaydı oluşturulurken hata oluştu.");
+            var message = result.ErrorMessage ?? "Servis kaydı oluşturulamadı.";
+
+            if (IsAjaxRequest())
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    errorMessage = message,
+                    errorMessages = result.ErrorMessages
+                });
+            }
+
+            ShowError(message);
             return View(model);
         }
 
-        var result = JsonSerializer.Deserialize<ApiResponse<CreateServiceRecordResponseViewModel>>(
-            responseJson,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        if (result is null || !result.IsSuccess || result.Data is null)
-        {
-            ModelState.AddModelError("", result?.ErrorMessage ?? "Servis kaydı oluşturulamadı.");
-            return View(model);
-        }
-
-        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+        if (IsAjaxRequest())
         {
             return Json(new
             {
@@ -121,7 +107,8 @@ public class ServiceRecordsController : Controller
                 recordNumber = result.Data.RecordNumber
             });
         }
-        TempData["SuccessMessage"] = $"Servis kaydı oluşturuldu. Kayıt No: {result.Data.RecordNumber}";
+
+        ShowSuccess($"Servis kaydı oluşturuldu. Kayıt No: {result.Data.RecordNumber}");
 
         return RedirectToAction(nameof(Create));
     }
@@ -129,124 +116,69 @@ public class ServiceRecordsController : Controller
     [HttpGet]
     public async Task<IActionResult> GetModels(int brandId)
     {
-        var client = CreateApiClient();
+        var result = await _serviceRecordApiService.GetModelsAsync(brandId);
 
-        var response = await client.GetAsync($"/api/VehicleCatalog/brands/{brandId}/models");
-
-        if (!response.IsSuccessStatusCode)
+        if (result.IsFailure || result.Data is null)
             return Json(new List<VehicleModelViewModel>());
 
-        var json = await response.Content.ReadAsStringAsync();
-
-        var models = JsonSerializer.Deserialize<List<VehicleModelViewModel>>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        return Json(models ?? new List<VehicleModelViewModel>());
+        return Json(result.Data);
     }
+
     [HttpGet("ServiceRecords/Detail/{id:int}")]
     [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     public async Task<IActionResult> Detail(int id)
     {
-        var client = CreateApiClient();
+        var result = await _serviceRecordApiService.GetDetailAsync(id);
 
-        var response = await client.GetAsync($"/api/ServiceRecords/{id}");
-
-        if (!response.IsSuccessStatusCode)
+        if (result.IsFailure || result.Data is null)
         {
-            TempData["ErrorMessage"] = "Servis kaydı bulunamadı.";
+            ShowError(result.ErrorMessage ?? "Servis kaydı bulunamadı.");
             return RedirectToAction(nameof(Index));
         }
 
-        var json = await response.Content.ReadAsStringAsync();
+        var model = result.Data;
 
-        var result = JsonSerializer.Deserialize<ApiResponse<ServiceRecordDetailViewModel>>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        if (result?.Data is null)
+        var invoicesResult = await _invoiceApiService.GetListByServiceRecordAsync(id);
+        if (invoicesResult.IsSuccess && invoicesResult.Data is not null)
         {
-            TempData["ErrorMessage"] = "Servis kaydı okunamadı.";
-            return RedirectToAction(nameof(Index));
+            model.Invoices = invoicesResult.Data;
         }
 
-        var invoiceResponse = await client.GetAsync($"/api/invoices/by-service-record/{id}");
-
-        if (invoiceResponse.IsSuccessStatusCode)
+        var draftInvoiceResult = await _invoiceApiService.GetDraftByServiceRecordAsync(id);
+        if (draftInvoiceResult.IsSuccess && draftInvoiceResult.Data is not null)
         {
-            var invoiceJson = await invoiceResponse.Content.ReadAsStringAsync();
-
-            var invoiceResult = JsonSerializer.Deserialize<ApiResponse<List<InvoiceListItemViewModel>>>(
-                invoiceJson,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            result.Data.Invoices = invoiceResult?.Data ?? new List<InvoiceListItemViewModel>();
-        }
-        var draftInvoiceResponse = await client.GetAsync($"/api/invoices/draft/by-service-record/{id}");
-
-        if (draftInvoiceResponse.IsSuccessStatusCode)
-        {
-            var draftInvoiceJson = await draftInvoiceResponse.Content.ReadAsStringAsync();
-
-            var draftInvoiceResult = JsonSerializer.Deserialize<ApiResponse<InvoiceDetailViewModel>>(
-                draftInvoiceJson,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            result.Data.DraftInvoiceId = draftInvoiceResult?.Data?.Id;
+            model.DraftInvoiceId = draftInvoiceResult.Data.Id;
         }
 
-        var activeInvoiceResponse = await client.GetAsync($"/api/invoices/active/by-service-record/{id}");
-
-        if (activeInvoiceResponse.IsSuccessStatusCode)
+        var activeInvoiceResult = await _invoiceApiService.GetActiveInvoiceByServiceRecordAsync(id);
+        if (activeInvoiceResult.IsSuccess && activeInvoiceResult.Data is not null)
         {
-            var activeInvoiceJson = await activeInvoiceResponse.Content.ReadAsStringAsync();
-
-            var activeInvoiceResult = JsonSerializer.Deserialize<ApiResponse<InvoiceNavigationViewModel>>(
-                activeInvoiceJson,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            if (activeInvoiceResult?.Data is not null)
-            {
-                result.Data.ActiveInvoiceId = activeInvoiceResult.Data.InvoiceId;
-                result.Data.ActiveInvoiceStatus = activeInvoiceResult.Data.Status;
-                result.Data.ActiveInvoiceNumber = activeInvoiceResult.Data.InvoiceNumber;
-            }
-
-            var stockResponse = await client.GetAsync("/api/StockItems/select-list");
-
-            if (stockResponse.IsSuccessStatusCode)
-            {
-                var stockJson = await stockResponse.Content.ReadAsStringAsync();
-
-                var stockResult = JsonSerializer.Deserialize<
-                    List<StockItemSelectViewModel>>(
-                    stockJson,
-                    new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
-
-                result.Data.StockItems =
-                    stockResult ?? new List<StockItemSelectViewModel>();
-            }
+            model.ActiveInvoiceId = activeInvoiceResult.Data.InvoiceId;
+            model.ActiveInvoiceStatus = activeInvoiceResult.Data.Status;
+            model.ActiveInvoiceNumber = activeInvoiceResult.Data.InvoiceNumber;
         }
 
-        return View(result.Data);
+        var stockResult = await _serviceRecordApiService.GetStockSelectListAsync();
+        if (stockResult.IsSuccess && stockResult.Data is not null)
+        {
+            model.StockItems = stockResult.Data;
+        }
+
+        return View(model);
     }
 
     [HttpGet("ServiceRecords/SearchCustomers")]
     public async Task<IActionResult> SearchCustomers(string query)
     {
-        var client = CreateApiClient();
-
-        var response = await client.GetAsync($"/api/Customers/search?query={Uri.EscapeDataString(query)}");
-
-        if (!response.IsSuccessStatusCode)
+        if (string.IsNullOrWhiteSpace(query))
             return Json(new List<object>());
 
-        var json = await response.Content.ReadAsStringAsync();
+        var result = await _serviceRecordApiService.SearchCustomersAsync(query);
 
-        return Content(json, "application/json");
+        if (result.IsFailure || result.Data is null)
+            return Json(new List<object>());
+
+        return Json(result.Data);
     }
 
     [HttpPost("ServiceRecords/AssignQrCode")]
@@ -255,128 +187,46 @@ public class ServiceRecordsController : Controller
         if (string.IsNullOrWhiteSpace(code))
             return BadRequest("QR kod zorunludur.");
 
-        var client = CreateApiClient();
+        code = NormalizeQrCode(code);
 
-        code = code.Trim();
+        var result = await _serviceRecordApiService.AssignQrCodeAsync(vehicleId, code);
 
-        if (Uri.TryCreate(code, UriKind.Absolute, out var uri))
-        {
-            code = uri.Segments.Last().Trim('/');
-        }
+        if (result.IsFailure)
+            return BadRequest(result);
 
-        var requestBody = new
-        {
-            vehicleId,
-            code
-        };
-
-        var json = JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await client.PostAsync("/api/VehicleQrCodes/assign", content);
-
-        var responseText = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-            return BadRequest(responseText);
-
-        return Content(responseText, "application/json");
+        return Ok(result);
     }
 
-    private async Task<List<VehicleBrandViewModel>> GetBrandsAsync()
-    {
-        var client = CreateApiClient();
-
-        var response = await client.GetAsync("/api/VehicleCatalog/brands");
-
-        if (!response.IsSuccessStatusCode)
-            return new List<VehicleBrandViewModel>();
-
-        var json = await response.Content.ReadAsStringAsync();
-
-        return JsonSerializer.Deserialize<List<VehicleBrandViewModel>>(
-            json,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<VehicleBrandViewModel>();
-    }
-
-    private HttpClient CreateApiClient()
-    {
-        var client = _httpClientFactory.CreateClient();
-
-        client.BaseAddress = new Uri(_configuration["ApiSettings:BaseUrl"]!);
-
-        var token = HttpContext.Session.GetString("AuthToken");
-
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-        }
-
-        return client;
-    }
     [HttpPost("ServiceRecords/UpdateRequestItem")]
     public async Task<IActionResult> UpdateRequestItem(UpdateServiceRequestItemViewModel model)
     {
-        var client = CreateApiClient();
+        var result = await _serviceRecordApiService.UpdateRequestItemAsync(model);
 
-        var requestBody = new
+        if (result.IsFailure)
         {
-            repairDetail = model.RepairDetail,
-            finalAmount = model.FinalAmount,
-            isResolved = model.IsResolved
-        };
-
-        var json = JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await client.PutAsync(
-            $"/api/ServiceRecords/request-items/{model.RequestItemId}",
-            content);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            TempData["ErrorMessage"] = "Talep güncellenirken hata oluştu.";
+            ShowError(result.ErrorMessage ?? "Talep güncellenirken hata oluştu.");
         }
         else
         {
-            TempData["SuccessMessage"] = "Talep başarıyla güncellendi.";
+            ShowSuccess("Talep başarıyla güncellendi.");
         }
 
         return RedirectToAction(nameof(Detail), new { id = model.ServiceRecordId });
     }
 
     [HttpPost("ServiceRecords/AddRequestItem")]
-    public async Task<IActionResult> AddRequestItem(CreateServiceRequestItemViewModel model, int serviceRecordId)
+    public async Task<IActionResult> AddRequestItem(
+        CreateServiceRequestItemViewModel model,
+        int serviceRecordId)
     {
-        var client = CreateApiClient();
+        var result = await _serviceRecordApiService.AddRequestItemAsync(model, serviceRecordId);
 
-        var requestBody = new
-        {
-            title = model.Title,
-            note = model.Note,
-            estimatedAmount = model.EstimatedAmount
-        };
-
-        var json = JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await client.PostAsync(
-            $"/api/ServiceRecords/{serviceRecordId}/request-items",
-            content);
-
-        if (!response.IsSuccessStatusCode)
-            return BadRequest();
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-
-        var apiResult = JsonSerializer.Deserialize<ApiResponse<int>>(
-            responseJson,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (result.IsFailure)
+            return BadRequest(result);
 
         return Json(new
         {
-            id = apiResult?.Data,
+            id = result.Data,
             title = model.Title,
             note = model.Note,
             estimatedAmount = model.EstimatedAmount
@@ -386,40 +236,10 @@ public class ServiceRecordsController : Controller
     [HttpPost("ServiceRecords/AddOperation")]
     public async Task<IActionResult> AddOperation(AddServiceOperationViewModel model)
     {
-        var client = CreateApiClient();
+        var result = await _serviceRecordApiService.AddOperationAsync(model);
 
-        var requestBody = new
-        {
-            serviceRequestItemId = model.ServiceRequestItemId,
-            type = model.Type,
-            description = model.Description,
-            quantity = model.Quantity,
-            unitPrice = model.UnitPrice,
-            note = model.Note,
-            stockItemId = model.StockItemId,
-        };
-
-        var json = JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await client.PostAsync(
-            $"/api/ServiceRecords/{model.ServiceRecordId}/operations",
-            content);
-
-        var responseJson = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-            return BadRequest(responseJson);
-
-        var result = JsonSerializer.Deserialize<ServiceResult<ServiceOperationDto>>(
-            responseJson,
-            new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-        if (result == null || !result.IsSuccess || result.Data == null)
-            return BadRequest(responseJson);
+        if (result.IsFailure || result.Data is null)
+            return BadRequest(result);
 
         return Json(result.Data);
     }
@@ -427,116 +247,71 @@ public class ServiceRecordsController : Controller
     [HttpPost("ServiceRecords/UpdateStatus")]
     public async Task<IActionResult> UpdateStatus(UpdateServiceRecordStatusViewModel model)
     {
-        var client = CreateApiClient();
+        var result = await _serviceRecordApiService.UpdateStatusAsync(model);
 
-        var requestBody = new
-        {
-            status = model.Status
-        };
+        if (result.IsFailure)
+            return BadRequest(result);
 
-        var json = JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await client.PutAsync(
-            $"/api/ServiceRecords/{model.ServiceRecordId}/status",
-            content);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return BadRequest();
-        }
-
-        return Ok();
+        return Ok(result);
     }
 
     [HttpPost("ServiceRecords/DeleteOperation")]
     public async Task<IActionResult> DeleteOperation(int operationId)
     {
-        var client = CreateApiClient();
+        var result = await _serviceRecordApiService.DeleteOperationAsync(operationId);
 
-        var response = await client.DeleteAsync(
-            $"/api/ServiceRecords/operations/{operationId}");
+        if (result.IsFailure)
+            return BadRequest(result);
 
-        if (!response.IsSuccessStatusCode)
-            return BadRequest();
-
-        var json = await response.Content.ReadAsStringAsync();
-
-        return Content(json, "application/json");
+        return Ok(result);
     }
 
     [HttpPost("ServiceRecords/DeleteRequestItem")]
     public async Task<IActionResult> DeleteRequestItem(int requestItemId)
     {
-        var client = CreateApiClient();
+        var result = await _serviceRecordApiService.DeleteRequestItemAsync(requestItemId);
 
-        var response = await client.DeleteAsync(
-            $"/api/ServiceRecords/request-items/{requestItemId}");
+        if (result.IsFailure)
+            return BadRequest(result);
 
-        var json = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-            return BadRequest(json);
-
-        return Content(json, "application/json");
+        return Ok(result);
     }
 
     [HttpGet("ServiceRecords/SearchStockItems")]
     public async Task<IActionResult> SearchStockItems([FromQuery] string q)
     {
         if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
-        {
             return Ok(new List<StockItemSelectViewModel>());
-        }
 
-        var client = CreateApiClient();
+        var result = await _serviceRecordApiService.SearchStockItemsAsync(q.Trim());
 
-        var response = await client.GetAsync(
-            $"/api/StockItems/search?q={Uri.EscapeDataString(q.Trim())}"
-        );
-
-        if (!response.IsSuccessStatusCode)
-        {
+        if (result.IsFailure || result.Data is null)
             return Ok(new List<StockItemSelectViewModel>());
-        }
 
-        var json = await response.Content.ReadAsStringAsync();
-
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
-
-        try
-        {
-            using var document = JsonDocument.Parse(json);
-
-            if (document.RootElement.ValueKind == JsonValueKind.Array)
-            {
-                var directResult = JsonSerializer.Deserialize<List<StockItemSelectViewModel>>(
-                    json,
-                    options
-                );
-
-                return Ok(directResult ?? new List<StockItemSelectViewModel>());
-            }
-
-            if (document.RootElement.ValueKind == JsonValueKind.Object)
-            {
-                var apiResult = JsonSerializer.Deserialize<ApiResponse<List<StockItemSelectViewModel>>>(
-                    json,
-                    options
-                );
-
-                return Ok(apiResult?.Data ?? new List<StockItemSelectViewModel>());
-            }
-
-            return Ok(new List<StockItemSelectViewModel>());
-        }
-        catch
-        {
-            return Ok(new List<StockItemSelectViewModel>());
-        }
+        return Ok(result.Data);
     }
 
+    private async Task<List<VehicleBrandViewModel>> GetBrandsAsync()
+    {
+        var result = await _serviceRecordApiService.GetBrandsAsync();
+
+        return result.Data ?? new List<VehicleBrandViewModel>();
+    }
+
+    private bool IsAjaxRequest()
+    {
+        return Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+    }
+
+    private static string NormalizeQrCode(string code)
+    {
+        code = code.Trim();
+
+        if (Uri.TryCreate(code, UriKind.Absolute, out var uri))
+        {
+            code = uri.Segments.Last().Trim('/');
+        }
+
+        return code;
+    }
 }
