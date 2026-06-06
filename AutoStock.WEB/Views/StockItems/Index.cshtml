@@ -1,21 +1,15 @@
-﻿@model List<AutoStock.WEB.Models.StockItems.StockItemListViewModel>
+﻿@model AutoStock.WEB.Models.StockItems.StockItemIndexViewModel
 
 @{
     ViewData["Title"] = "Stok Yönetimi";
 
-    var brands = Model
-        .Where(x => !string.IsNullOrWhiteSpace(x.Brand))
-        .Select(x => x.Brand)
-        .Distinct()
-        .OrderBy(x => x)
-        .ToList();
+    var stocks = Model.Stocks.Items;
+    var query = Model.Query;
+    var brands = Model.FilterOptions.Brands;
+    var units = Model.FilterOptions.Units;
 
-    var units = Model
-        .Where(x => !string.IsNullOrWhiteSpace(x.Unit))
-        .Select(x => x.Unit)
-        .Distinct()
-        .OrderBy(x => x)
-        .ToList();
+    var startPage = Math.Max(1, Model.Stocks.PageNumber - 2);
+    var endPage = Math.Min(Model.Stocks.TotalPages, Model.Stocks.PageNumber + 2);
 }
 
 <div class="stock-page">
@@ -47,39 +41,72 @@
         </div>
     </div>
 
-    <div class="stock-filter-card">
+    <form class="stock-filter-card"
+          method="get"
+          asp-controller="StockItems"
+          asp-action="Index">
+
         <div class="stock-search-box">
             <span class="search-icon">⌕</span>
             <input id="stockSearchInput"
+                   name="Search"
+                   value="@query.Search"
                    type="text"
                    placeholder="Stok kodu, adı veya marka ara..." />
         </div>
 
-        <select id="brandFilter" class="stock-filter-select">
+        <select id="brandFilter"
+                name="Brand"
+                class="stock-filter-select">
             <option value="">Tüm Markalar</option>
 
             @foreach (var brand in brands)
             {
-                <option value="@brand">@brand</option>
+                if (query.Brand == brand)
+                {
+                    <option value="@brand" selected="selected">@brand</option>
+                }
+                else
+                {
+                    <option value="@brand">@brand</option>
+                }
             }
         </select>
 
-        <select id="unitFilter" class="stock-filter-select">
+        <select id="unitFilter"
+                name="Unit"
+                class="stock-filter-select">
             <option value="">Tüm Birimler</option>
 
             @foreach (var unit in units)
             {
-                <option value="@unit">@unit</option>
+                if (query.Unit == unit)
+                {
+                    <option value="@unit" selected="selected">@unit</option>
+                }
+                else
+                {
+                    <option value="@unit">@unit</option>
+                }
             }
         </select>
 
-        <button type="button"
-                id="clearFiltersBtn"
+        <input type="hidden" name="PageNumber" value="1" />
+        <input type="hidden" name="PageSize" value="@query.PageSize" />
+
+        <button type="submit"
                 class="stock-filter-button"
-                title="Filtreleri temizle">
-            ⌄
+                title="Ara">
+            ⌕
         </button>
-    </div>
+
+        <a asp-controller="StockItems"
+           asp-action="Index"
+           class="stock-clear-button"
+           title="Filtreleri temizle">
+            ×
+        </a>
+    </form>
 
     <div class="stock-table-card">
         <div class="table-responsive">
@@ -98,26 +125,19 @@
                 </thead>
 
                 <tbody id="stockTableBody">
-                    @if (!Model.Any())
+                    @if (!stocks.Any())
                     {
                         <tr>
                             <td colspan="8" class="empty-cell">
-                                Henüz stok kartı oluşturulmamış.
+                                Henüz stok kartı bulunamadı.
                             </td>
                         </tr>
                     }
                     else
                     {
-                        foreach (var item in Model)
+                        foreach (var item in stocks)
                         {
-                            var brandValue = item.Brand ?? "";
-                            var unitValue = item.Unit ?? "";
-
-                            <tr class="stock-row"
-                                data-search="@($"{item.Code} {item.Name} {item.Brand}".ToLowerInvariant())"
-                                data-brand="@brandValue"
-                                data-unit="@unitValue">
-
+                            <tr class="stock-row">
                                 <td>
                                     <span class="stock-code">@item.Code</span>
                                 </td>
@@ -193,14 +213,67 @@
 
         <div class="stock-table-footer">
             <div>
-                <span id="visibleCount">@Model.Count</span> stok kartı gösteriliyor
-                <span class="footer-muted">(Toplam @Model.Count kayıt)</span>
+                @if (Model.Stocks.TotalCount > 0)
+                {
+                    <span>
+                        @Model.Stocks.FirstItemNumber - @Model.Stocks.LastItemNumber arası gösteriliyor
+                    </span>
+                    <span class="footer-muted">(Toplam @Model.Stocks.TotalCount kayıt)</span>
+                }
+                else
+                {
+                    <span>0 stok kartı gösteriliyor</span>
+                }
             </div>
 
             <div class="pagination-preview">
-                <button type="button" disabled>‹</button>
-                <button type="button" class="active">1</button>
-                <button type="button" disabled>›</button>
+                @if (Model.Stocks.HasPreviousPage)
+                {
+                    <a asp-controller="StockItems"
+                       asp-action="Index"
+                       asp-route-Search="@query.Search"
+                       asp-route-Brand="@query.Brand"
+                       asp-route-Unit="@query.Unit"
+                       asp-route-PageSize="@query.PageSize"
+                       asp-route-PageNumber="@(Model.Stocks.PageNumber - 1)">‹</a>
+                }
+                else
+                {
+                    <span class="disabled">‹</span>
+                }
+
+                @for (var pageNumber = startPage; pageNumber <= endPage; pageNumber++)
+                {
+                    if (pageNumber == Model.Stocks.PageNumber)
+                    {
+                        <span class="active">@pageNumber</span>
+                    }
+                    else
+                    {
+                        <a asp-controller="StockItems"
+                           asp-action="Index"
+                           asp-route-Search="@query.Search"
+                           asp-route-Brand="@query.Brand"
+                           asp-route-Unit="@query.Unit"
+                           asp-route-PageSize="@query.PageSize"
+                           asp-route-PageNumber="@pageNumber">@pageNumber</a>
+                    }
+                }
+
+                @if (Model.Stocks.HasNextPage)
+                {
+                    <a asp-controller="StockItems"
+                       asp-action="Index"
+                       asp-route-Search="@query.Search"
+                       asp-route-Brand="@query.Brand"
+                       asp-route-Unit="@query.Unit"
+                       asp-route-PageSize="@query.PageSize"
+                       asp-route-PageNumber="@(Model.Stocks.PageNumber + 1)">›</a>
+                }
+                else
+                {
+                    <span class="disabled">›</span>
+                }
             </div>
         </div>
     </div>
@@ -252,6 +325,12 @@
         font-size: 14px;
     }
 
+    .stock-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
     .stock-primary-btn {
         display: inline-flex;
         align-items: center;
@@ -268,15 +347,36 @@
         white-space: nowrap;
     }
 
-        .stock-primary-btn:hover {
-            background: #4338ca;
-            color: #fff;
-            transform: translateY(-1px);
-        }
+    .stock-primary-btn:hover {
+        background: #4338ca;
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
+    .stock-secondary-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #cfd8e6;
+        border-radius: 13px;
+        padding: 13px 18px;
+        font-weight: 800;
+        text-decoration: none;
+        transition: .18s ease;
+        white-space: nowrap;
+    }
+
+    .stock-secondary-btn:hover {
+        background: #eef2ff;
+        border-color: #c7d2fe;
+        color: #4f46e5;
+    }
 
     .stock-filter-card {
         display: grid;
-        grid-template-columns: minmax(320px, 1fr) 170px 170px 48px;
+        grid-template-columns: minmax(320px, 1fr) 170px 170px 48px 48px;
         gap: 12px;
         background: #fff;
         border: 1px solid #dbe3ef;
@@ -319,29 +419,50 @@
         padding: 0 14px;
     }
 
-        .stock-search-box input:focus,
-        .stock-filter-select:focus {
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
-        }
+    .stock-search-box input:focus,
+    .stock-filter-select:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
+    }
 
-    .stock-filter-button {
+    .stock-filter-button,
+    .stock-clear-button {
         width: 48px;
         height: 48px;
         border: 1px solid #cfd8e6;
         border-radius: 13px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+        transition: .18s ease;
+    }
+
+    .stock-filter-button {
         background: #f8fafc;
         color: #475569;
         font-size: 20px;
-        cursor: pointer;
-        transform: rotate(90deg);
     }
 
-        .stock-filter-button:hover {
-            background: #eef2ff;
-            border-color: #c7d2fe;
-            color: #4f46e5;
-        }
+    .stock-filter-button:hover {
+        background: #eef2ff;
+        border-color: #c7d2fe;
+        color: #4f46e5;
+    }
+
+    .stock-clear-button {
+        background: #fff;
+        color: #64748b;
+        font-size: 22px;
+    }
+
+    .stock-clear-button:hover {
+        background: #fff1f2;
+        border-color: #fecdd3;
+        color: #e11d48;
+    }
 
     .stock-table-card {
         background: #fff;
@@ -362,32 +483,32 @@
         min-width: 960px;
     }
 
-        .stock-table thead {
-            background: #f8fafc;
-        }
+    .stock-table thead {
+        background: #f8fafc;
+    }
 
-        .stock-table th {
-            padding: 17px 24px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-            color: #64748b;
-            font-weight: 800;
-            text-align: left;
-            border-bottom: 1px solid #dbe3ef;
-        }
+    .stock-table th {
+        padding: 17px 24px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        color: #64748b;
+        font-weight: 800;
+        text-align: left;
+        border-bottom: 1px solid #dbe3ef;
+    }
 
-        .stock-table td {
-            padding: 20px 24px;
-            border-bottom: 1px solid #edf2f7;
-            vertical-align: middle;
-            color: #0f172a;
-            font-size: 14px;
-        }
+    .stock-table td {
+        padding: 20px 24px;
+        border-bottom: 1px solid #edf2f7;
+        vertical-align: middle;
+        color: #0f172a;
+        font-size: 14px;
+    }
 
-        .stock-table tr:last-child td {
-            border-bottom: none;
-        }
+    .stock-table tr:last-child td {
+        border-bottom: none;
+    }
 
     .stock-row:hover {
         background: #fafbff;
@@ -416,11 +537,9 @@
         margin-bottom: 6px;
     }
 
-        .brand-pill.muted {
-            color: #94a3b8;
-        }
-
-    
+    .brand-pill.muted {
+        color: #94a3b8;
+    }
 
     .quantity {
         display: inline-flex;
@@ -429,22 +548,22 @@
         color: #0f172a;
     }
 
-        .quantity strong {
-            font-weight: 800;
-        }
+    .quantity strong {
+        font-weight: 800;
+    }
 
-        .quantity span {
-            color: #64748b;
-            font-size: 13px;
-        }
+    .quantity span {
+        color: #64748b;
+        font-size: 13px;
+    }
 
-        .quantity.danger {
-            color: #e11d48;
-        }
+    .quantity.danger {
+        color: #e11d48;
+    }
 
-            .quantity.danger span {
-                color: #e11d48;
-            }
+    .quantity.danger span {
+        color: #e11d48;
+    }
 
     .warning-icon {
         font-size: 15px;
@@ -470,15 +589,15 @@
         font-weight: 800;
     }
 
-        .status-badge.success {
-            background: #dcfce7;
-            color: #166534;
-        }
+    .status-badge.success {
+        background: #dcfce7;
+        color: #166534;
+    }
 
-        .status-badge.danger {
-            background: #ffe4e6;
-            color: #be123c;
-        }
+    .status-badge.danger {
+        background: #ffe4e6;
+        color: #be123c;
+    }
 
     .detail-btn {
         display: inline-flex;
@@ -496,10 +615,10 @@
         transition: .18s ease;
     }
 
-        .detail-btn:hover {
-            background: #f8fafc;
-            color: #0f172a;
-        }
+    .detail-btn:hover {
+        background: #f8fafc;
+        color: #0f172a;
+    }
 
     .text-right {
         text-align: right !important;
@@ -534,31 +653,33 @@
         overflow: hidden;
     }
 
-        .pagination-preview button {
-            width: 42px;
-            height: 36px;
-            border: none;
-            border-right: 1px solid #cfd8e6;
-            background: #fff;
-            color: #334155;
-            font-weight: 800;
-        }
+    .pagination-preview a,
+    .pagination-preview span {
+        width: 42px;
+        height: 36px;
+        border-right: 1px solid #cfd8e6;
+        background: #fff;
+        color: #334155;
+        font-weight: 800;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-            .pagination-preview button:last-child {
-                border-right: none;
-            }
+    .pagination-preview a:last-child,
+    .pagination-preview span:last-child {
+        border-right: none;
+    }
 
-            .pagination-preview button.active {
-                background: #4f46e5;
-                color: #fff;
-            }
+    .pagination-preview .active {
+        background: #4f46e5;
+        color: #fff;
+    }
 
-            .pagination-preview button:disabled {
-                color: #94a3b8;
-            }
-
-    .stock-row.is-hidden {
-        display: none;
+    .pagination-preview .disabled {
+        color: #94a3b8;
+        background: #f8fafc;
     }
 
     @@media (max-width: 900px) {
@@ -571,9 +692,9 @@
             grid-template-columns: 1fr;
         }
 
-        .stock-filter-button {
+        .stock-filter-button,
+        .stock-clear-button {
             width: 100%;
-            transform: none;
         }
 
         .stock-table-footer {
@@ -581,84 +702,4 @@
             flex-direction: column;
         }
     }
-
-    .stock-header-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .stock-secondary-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: #f8fafc;
-        color: #334155;
-        border: 1px solid #cfd8e6;
-        border-radius: 13px;
-        padding: 13px 18px;
-        font-weight: 800;
-        text-decoration: none;
-        transition: .18s ease;
-        white-space: nowrap;
-    }
-
-        .stock-secondary-btn:hover {
-            background: #eef2ff;
-            border-color: #c7d2fe;
-            color: #4f46e5;
-        }
 </style>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const searchInput = document.getElementById("stockSearchInput");
-        const brandFilter = document.getElementById("brandFilter");
-        const unitFilter = document.getElementById("unitFilter");
-        const clearButton = document.getElementById("clearFiltersBtn");
-        const visibleCount = document.getElementById("visibleCount");
-
-        function applyFilters() {
-            const searchValue = (searchInput?.value || "").trim().toLowerCase();
-            const brandValue = brandFilter?.value || "";
-            const unitValue = unitFilter?.value || "";
-
-            const rows = document.querySelectorAll(".stock-row");
-            let count = 0;
-
-            rows.forEach(row => {
-                const rowSearch = row.dataset.search || "";
-                const rowBrand = row.dataset.brand || "";
-                const rowUnit = row.dataset.unit || "";
-
-                const matchesSearch = !searchValue || rowSearch.includes(searchValue);
-                const matchesBrand = !brandValue || rowBrand === brandValue;
-                const matchesUnit = !unitValue || rowUnit === unitValue;
-
-                const visible = matchesSearch && matchesBrand && matchesUnit;
-
-                row.classList.toggle("is-hidden", !visible);
-
-                if (visible) {
-                    count++;
-                }
-            });
-
-            if (visibleCount) {
-                visibleCount.textContent = count;
-            }
-        }
-
-        searchInput?.addEventListener("input", applyFilters);
-        brandFilter?.addEventListener("change", applyFilters);
-        unitFilter?.addEventListener("change", applyFilters);
-
-        clearButton?.addEventListener("click", function () {
-            if (searchInput) searchInput.value = "";
-            if (brandFilter) brandFilter.value = "";
-            if (unitFilter) unitFilter.value = "";
-
-            applyFilters();
-        });
-    });
-</script>

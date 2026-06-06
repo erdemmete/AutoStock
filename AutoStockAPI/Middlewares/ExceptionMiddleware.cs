@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using AutoStock.API.Models;
+using System.Net;
 using System.Text.Json;
 
 namespace AutoStock.API.Middlewares
@@ -7,11 +8,16 @@ namespace AutoStock.API.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<ExceptionMiddleware> _logger;
 
-        public ExceptionMiddleware(RequestDelegate next, IWebHostEnvironment environment)
+        public ExceptionMiddleware(
+            RequestDelegate next,
+            IWebHostEnvironment environment,
+            ILogger<ExceptionMiddleware> logger)
         {
             _next = next;
             _environment = environment;
+            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -22,37 +28,67 @@ namespace AutoStock.API.Middlewares
             }
             catch (UnauthorizedAccessException ex)
             {
-                await WriteErrorResponse(context, HttpStatusCode.Unauthorized, ex.Message, ex);
+                await WriteErrorResponseAsync(
+                    context,
+                    HttpStatusCode.Unauthorized,
+                    "Bu işlem için yetkiniz bulunmuyor.",
+                    ex);
             }
             catch (ArgumentException ex)
             {
-                await WriteErrorResponse(context, HttpStatusCode.BadRequest, ex.Message, ex);
+                await WriteErrorResponseAsync(
+                    context,
+                    HttpStatusCode.BadRequest,
+                    ex.Message,
+                    ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                await WriteErrorResponseAsync(
+                    context,
+                    HttpStatusCode.BadRequest,
+                    ex.Message,
+                    ex);
             }
             catch (Exception ex)
             {
-                await WriteErrorResponse(context, HttpStatusCode.InternalServerError, "Sunucu hatası oluştu.", ex);
+                await WriteErrorResponseAsync(
+                    context,
+                    HttpStatusCode.InternalServerError,
+                    "İşlem sırasında beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
+                    ex);
             }
         }
 
-        private async Task WriteErrorResponse(
+        private async Task WriteErrorResponseAsync(
             HttpContext context,
             HttpStatusCode statusCode,
-            string message,
+            string userMessage,
             Exception exception)
         {
+            var traceId = context.TraceIdentifier;
+
+            _logger.LogError(
+                exception,
+                "Unhandled API exception. TraceId: {TraceId}, Path: {Path}, Method: {Method}",
+                traceId,
+                context.Request.Path,
+                context.Request.Method);
+
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)statusCode;
 
-            var shouldShowDetail =
-                 _environment.IsDevelopment() &&
-                  statusCode == HttpStatusCode.InternalServerError;
-
-            var response = new
+            var response = new ErrorResponse
             {
-                statusCode = context.Response.StatusCode,
-                message,
-                detail = shouldShowDetail ? exception.ToString() : null
+                ErrorMessage = userMessage,
+                ErrorMessages = [userMessage],
+                TraceId = traceId
             };
+
+            if (_environment.IsDevelopment())
+            {
+                response.ErrorMessages.Add(exception.ToString());
+            }
 
             var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
             {

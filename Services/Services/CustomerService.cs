@@ -24,7 +24,7 @@ namespace AutoStock.Services.Services
             var customer = await customerRepository.GetByIdAsync(id);
             if (customer is null)
             {
-                return ServiceResult<Customer>.Fail("Müşteri bulunamadı", HttpStatusCode.NotFound);
+                return ServiceResult<Customer>.Fail("Müşteri bulunamadı");
             }
 
             return ServiceResult<Customer>.Success(customer);

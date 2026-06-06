@@ -1,127 +1,103 @@
-﻿using AutoStock.WEB.Models.StockItems;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
+﻿using AutoStock.WEB.Models.Common;
+using AutoStock.WEB.Models.StockItems;
 
 namespace AutoStock.WEB.Services
 {
-    public class StockItemApiService
+    public class StockItemApiService : BaseApiService
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+
 
         public StockItemApiService(
-            IHttpClientFactory httpClientFactory,
-            IConfiguration configuration,
-            IHttpContextAccessor httpContextAccessor)
+    IHttpClientFactory httpClientFactory,
+    IConfiguration configuration,
+    IHttpContextAccessor httpContextAccessor,
+    ILogger<StockItemApiService> logger)
+    : base(httpClientFactory, configuration, httpContextAccessor, logger)
         {
-            _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
-            _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<List<StockItemListViewModel>> GetListAsync()
+        public async Task<ApiResponse<PagedResultViewModel<StockItemListViewModel>>> GetListAsync(StockItemListQueryViewModel query)
         {
-            var client = CreateApiClient();
+            query.Normalize();
 
-            var response = await client.GetAsync("/api/StockItems");
+            var url = BuildUrlWithQuery("/api/StockItems", new Dictionary<string, string?>
+            {
+                ["search"] = query.Search,
+                ["brand"] = query.Brand,
+                ["unit"] = query.Unit,
+                ["pageNumber"] = query.PageNumber.ToString(),
+                ["pageSize"] = query.PageSize.ToString()
+            });
 
-            if (!response.IsSuccessStatusCode)
-                return new List<StockItemListViewModel>();
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<List<StockItemListViewModel>>(
-                json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            return result ?? new List<StockItemListViewModel>();
+            return await GetAsync<PagedResultViewModel<StockItemListViewModel>>(
+                url,
+                "Stok listesi alınırken hata oluştu.");
         }
 
-        public async Task<bool> CreateAsync(CreateStockItemViewModel model)
+        public async Task<ApiResponse<object>> CreateAsync(CreateStockItemViewModel model)
         {
-            var client = CreateApiClient();
-
-            var json = JsonSerializer.Serialize(model);
-
-            var content = new StringContent(
-                json,
-                Encoding.UTF8,
-                "application/json");
-
-            var response = await client.PostAsync("/api/StockItems", content);
-
-            return response.IsSuccessStatusCode;
+            return await PostJsonAsync<CreateStockItemViewModel, object>(
+                "/api/StockItems",
+                model,
+                "Stok kartı oluşturulurken hata oluştu.");
         }
 
-        public async Task<StockItemDetailViewModel?> GetByIdAsync(int id)
+        public async Task<ApiResponse<StockItemDetailViewModel>> GetByIdAsync(int id)
         {
-            var client = CreateApiClient();
+            var detailResult = await GetAsync<StockItemDetailViewModel>(
+                $"/api/StockItems/{id}",
+                "Stok kartı alınırken hata oluştu.");
 
-            var response = await client.GetAsync($"/api/StockItems/{id}");
+            if (detailResult.IsFailure || detailResult.Data == null)
+            {
+                return detailResult;
+            }
 
-            if (!response.IsSuccessStatusCode)
-                return null;
+            var movementResult = await GetMovementsAsync(id);
 
-            var json = await response.Content.ReadAsStringAsync();
+            if (movementResult.IsFailure)
+            {
+                return ApiResponse<StockItemDetailViewModel>.Fail(
+                    movementResult.ErrorMessage ?? "Stok hareketleri alınırken hata oluştu.",
+                    movementResult.StatusCode,
+                    movementResult.TraceId);
+            }
 
-            var result = JsonSerializer.Deserialize<StockItemDetailViewModel>(
-                json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            detailResult.Data.Movements = movementResult.Data ?? new List<StockMovementListViewModel>();
 
-            if (result == null)
-                return null;
-
-            var movements = await GetMovementsAsync(id);
-
-            result.Movements = movements;
-
-            return result;
+            return detailResult;
         }
 
-        public async Task<List<StockMovementListViewModel>> GetMovementsAsync(int stockItemId)
+       public async Task<ApiResponse<List<StockMovementListViewModel>>> GetMovementsAsync(int stockItemId)
+{
+    return await GetAsync<List<StockMovementListViewModel>>(
+        $"/api/StockItems/{stockItemId}/movements",
+        "Stok hareketleri alınırken hata oluştu.");
+}
+
+        public async Task<ApiResponse<object>> AdjustStockAsync(int stockItemId, AdjustStockViewModel model)
         {
-            var client = CreateApiClient();
-
-            var response = await client.GetAsync($"/api/StockItems/{stockItemId}/movements");
-
-            if (!response.IsSuccessStatusCode)
-                return new List<StockMovementListViewModel>();
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<List<StockMovementListViewModel>>(
-                json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            return result ?? new List<StockMovementListViewModel>();
+            return await PostJsonAsync<AdjustStockViewModel, object>(
+                $"/api/StockItems/{stockItemId}/adjust-stock",
+                model,
+                "Stok düzeltme işlemi başarısız oldu.");
         }
 
-        public async Task<bool> AdjustStockAsync(int stockItemId, AdjustStockViewModel model)
+        public async Task<ApiResponse<EditStockItemViewModel>> GetEditModelAsync(int id)
         {
-            var client = CreateApiClient();
+            var detailResult = await GetByIdAsync(id);
 
-            var json = JsonSerializer.Serialize(model);
+            if (detailResult.IsFailure || detailResult.Data == null)
+            {
+                return ApiResponse<EditStockItemViewModel>.Fail(
+                    detailResult.ErrorMessage ?? "Stok düzenleme bilgileri alınırken hata oluştu.",
+                    detailResult.StatusCode,
+                    detailResult.TraceId);
+            }
 
-            var content = new StringContent(
-                json,
-                Encoding.UTF8,
-                "application/json");
+            var detail = detailResult.Data;
 
-            var response = await client.PostAsync($"/api/StockItems/{stockItemId}/adjust-stock", content);
-
-            return response.IsSuccessStatusCode;
-        }
-
-        public async Task<EditStockItemViewModel?> GetEditModelAsync(int id)
-        {
-            var detail = await GetByIdAsync(id);
-
-            if (detail == null)
-                return null;
-
-            return new EditStockItemViewModel
+            var model = new EditStockItemViewModel
             {
                 Id = detail.Id,
                 Name = detail.Name,
@@ -133,68 +109,39 @@ namespace AutoStock.WEB.Services
                 SalePrice = detail.SalePrice,
                 MinimumQuantity = detail.MinimumQuantity
             };
+
+            return ApiResponse<EditStockItemViewModel>.Success(
+                model,
+                detailResult.StatusCode);
         }
 
-        public async Task<bool> UpdateAsync(EditStockItemViewModel model)
+        public async Task<ApiResponse<object>> UpdateAsync(EditStockItemViewModel model)
         {
-            var client = CreateApiClient();
-
-            var json = JsonSerializer.Serialize(model);
-
-            var content = new StringContent(
-                json,
-                Encoding.UTF8,
-                "application/json");
-
-            var response = await client.PutAsync($"/api/StockItems/{model.Id}", content);
-
-            return response.IsSuccessStatusCode;
+            return await PutJsonAsync<EditStockItemViewModel, object>(
+                $"/api/StockItems/{model.Id}",
+                model,
+                "Stok kartı güncellenirken hata oluştu.");
         }
 
-        public async Task<bool> SetPassiveAsync(int id)
+        public async Task<ApiResponse<object>> SetPassiveAsync(int id)
         {
-            var client = CreateApiClient();
-
-            var response = await client.PostAsync($"/api/StockItems/{id}/passive", null);
-
-            return response.IsSuccessStatusCode;
+            return await PostEmptyAsync<object>(
+                $"/api/StockItems/{id}/passive",
+                "Stok kartı silinirken hata oluştu.");
         }
-        public async Task<List<StockItemSelectViewModel>> GetSelectListAsync()
+        public async Task<ApiResponse<List<StockItemSelectViewModel>>> GetSelectListAsync()
         {
-            var client = CreateApiClient();
-
-            var response = await client.GetAsync("/api/StockItems/select-list");
-
-            if (!response.IsSuccessStatusCode)
-                return new List<StockItemSelectViewModel>();
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<List<StockItemSelectViewModel>>(
-                json,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-            return result ?? new List<StockItemSelectViewModel>();
+            return await GetAsync<List<StockItemSelectViewModel>>(
+                "/api/StockItems/select-list",
+                "Stok seçim listesi alınırken hata oluştu.");
         }
 
-        private HttpClient CreateApiClient()
+        public async Task<ApiResponse<StockItemFilterOptionsViewModel>> GetFilterOptionsAsync()
         {
-            var client = _httpClientFactory.CreateClient();
-
-            client.BaseAddress = new Uri(_configuration["ApiSettings:BaseUrl"]!);
-
-            var token = _httpContextAccessor.HttpContext?.Session.GetString("AuthToken");
-
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
-            }
-
-            return client;
+            return await GetAsync<StockItemFilterOptionsViewModel>(
+                "/api/StockItems/filter-options",
+                "Stok filtre seçenekleri alınırken hata oluştu.");
         }
+
     }
 }

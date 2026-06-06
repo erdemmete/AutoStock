@@ -1,24 +1,34 @@
-﻿using AutoStock.WEB.Models.StockItems;
+﻿using AutoStock.WEB.Models.Common;
+using AutoStock.WEB.Models.StockItems;
 using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AutoStock.WEB.Controllers
 {
-    public class StockItemsController : Controller
+    public class StockItemsController : BaseController
     {
         private readonly StockItemApiService _stockItemApiService;
+        private readonly StockItemPageService _stockItemPageService;
 
-        public StockItemsController(StockItemApiService stockItemApiService)
+        public StockItemsController(
+    StockItemApiService stockItemApiService,
+    StockItemPageService stockItemPageService)
         {
             _stockItemApiService = stockItemApiService;
+            _stockItemPageService = stockItemPageService;
         }
 
         [HttpGet("StockItems")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index([FromQuery] StockItemListQueryViewModel query)
         {
-            var result = await _stockItemApiService.GetListAsync();
+            var pageResult = await _stockItemPageService.BuildIndexAsync(query);
 
-            return View(result);
+            if (pageResult.HasErrors)
+            {
+                ShowErrors(pageResult.ErrorMessages);
+            }
+
+            return View(pageResult.ViewModel);
         }
 
         [HttpGet("StockItems/Create")]
@@ -42,17 +52,14 @@ namespace AutoStock.WEB.Controllers
                 return View(model);
             }
 
-            var isSuccess = await _stockItemApiService.CreateAsync(model);
+            var result = await _stockItemApiService.CreateAsync(model);
 
-            if (!isSuccess)
-            {
-                TempData["ToastError"] = "Stok kartı oluşturulurken hata oluştu.";
-                return View(model);
-            }
-
-            TempData["ToastSuccess"] = "Stok kartı başarıyla oluşturuldu.";
-
-            return RedirectToAction(nameof(Index));
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(Index)),
+                onFailure: () => View(model),
+                defaultErrorMessage: "Stok kartı oluşturulurken hata oluştu.",
+                successMessage: "Stok kartı başarıyla oluşturuldu.");
         }
 
         [HttpGet("StockItems/Details/{id:int}")]
@@ -60,13 +67,10 @@ namespace AutoStock.WEB.Controllers
         {
             var result = await _stockItemApiService.GetByIdAsync(id);
 
-            if (result == null)
-            {
-                TempData["ToastError"] = "Stok kartı bulunamadı.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(result);
+            return ViewObjectResult(
+                result,
+                "Stok kartı görüntülenirken hata oluştu.",
+                onFailure: () => RedirectToAction(nameof(Index)));
         }
 
         [HttpPost("StockItems/AdjustStock/{id:int}")]
@@ -78,31 +82,26 @@ namespace AutoStock.WEB.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            var isSuccess = await _stockItemApiService.AdjustStockAsync(id, model);
+            var result = await _stockItemApiService.AdjustStockAsync(id, model);
 
-            if (!isSuccess)
-            {
-                TempData["ToastError"] = "Stok düzeltme işlemi başarısız oldu.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            TempData["ToastSuccess"] = "Stok miktarı başarıyla güncellendi.";
-
-            return RedirectToAction(nameof(Details), new { id });
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(Details), new { id }),
+                onFailure: () => RedirectToAction(nameof(Details), new { id }),
+                defaultErrorMessage: "Stok düzeltme işlemi başarısız oldu.",
+                successMessage: "Stok miktarı başarıyla güncellendi.");
         }
 
+       
         [HttpGet("StockItems/Edit/{id:int}")]
         public async Task<IActionResult> Edit(int id)
         {
             var result = await _stockItemApiService.GetEditModelAsync(id);
 
-            if (result == null)
-            {
-                TempData["ToastError"] = "Stok kartı bulunamadı.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(result);
+            return ViewObjectResult(
+                result,
+                "Stok kartı düzenleme bilgileri alınırken hata oluştu.",
+                onFailure: () => RedirectToAction(nameof(Index)));
         }
 
         [HttpPost("StockItems/Edit/{id:int}")]
@@ -126,33 +125,27 @@ namespace AutoStock.WEB.Controllers
                 return View(model);
             }
 
-            var isSuccess = await _stockItemApiService.UpdateAsync(model);
+            var result = await _stockItemApiService.UpdateAsync(model);
 
-            if (!isSuccess)
-            {
-                TempData["ToastError"] = "Stok kartı güncellenirken hata oluştu.";
-                return View(model);
-            }
-
-            TempData["ToastSuccess"] = "Stok kartı başarıyla güncellendi.";
-
-            return RedirectToAction(nameof(Details), new { id = model.Id });
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(Details), new { id = model.Id }),
+                onFailure: () => View(model),
+                defaultErrorMessage: "Stok kartı güncellenirken hata oluştu.",
+                successMessage: "Stok kartı başarıyla güncellendi.");
         }
 
         [HttpPost("StockItems/Passive/{id:int}")]
         public async Task<IActionResult> SetPassive(int id)
         {
-            var isSuccess = await _stockItemApiService.SetPassiveAsync(id);
+            var result = await _stockItemApiService.SetPassiveAsync(id);
 
-            if (!isSuccess)
-            {
-                TempData["ToastError"] = "Stok kartı silinirken hata oluştu.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            TempData["ToastSuccess"] = "Stok kartı başarıyla silindi.";
-
-            return RedirectToAction(nameof(Index));
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(Index)),
+                onFailure: () => RedirectToAction(nameof(Details), new { id }),
+                defaultErrorMessage: "Stok kartı silinirken hata oluştu.",
+                successMessage: "Stok kartı başarıyla pasifleştirildi.");
         }
     }
 }

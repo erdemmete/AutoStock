@@ -346,12 +346,7 @@ namespace Services.Services.StockItems
                 .ToListAsync();
         }
 
-        public async Task<ServiceResult<bool>> UseForServiceOperationAsync(
-    int stockItemId,
-    decimal quantity,
-    decimal unitPrice,
-    int serviceOperationId,
-    int workshopId)
+        public async Task<ServiceResult<bool>> UseForServiceOperationAsync(int stockItemId, decimal quantity, decimal unitPrice, int serviceOperationId, int workshopId)
         {
             if (quantity <= 0)
                 return ServiceResult<bool>.Fail("Stok çıkış miktarı 0'dan büyük olmalıdır.");
@@ -386,12 +381,7 @@ namespace Services.Services.StockItems
             return ServiceResult<bool>.Success(true);
         }
 
-        public async Task<ServiceResult<bool>> ReturnForServiceOperationAsync(
-            int stockItemId,
-            decimal quantity,
-            decimal unitPrice,
-            int serviceOperationId,
-            int workshopId)
+        public async Task<ServiceResult<bool>> ReturnForServiceOperationAsync(int stockItemId, decimal quantity, decimal unitPrice, int serviceOperationId, int workshopId)
         {
             if (quantity <= 0)
                 return ServiceResult<bool>.Fail("Stok iade miktarı 0'dan büyük olmalıdır.");
@@ -451,6 +441,98 @@ namespace Services.Services.StockItems
             });
 
             return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<PagedResult<StockItemListDto>> GetPagedAsync(
+    int workshopId,
+    StockItemListQueryDto query)
+        {
+            query.Normalize();
+
+            var stockItemsQuery = _context.StockItems
+                .AsNoTracking()
+                .Where(x => x.WorkshopId == workshopId && x.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var search = query.Search.Trim();
+                var searchPattern = $"%{search}%";
+
+                stockItemsQuery = stockItemsQuery.Where(x =>
+                    EF.Functions.Like(x.Name, searchPattern) ||
+                    (x.Code != null && EF.Functions.Like(x.Code, searchPattern)) ||
+                    (x.Brand != null && EF.Functions.Like(x.Brand, searchPattern)) ||
+                    (x.Barcode != null && EF.Functions.Like(x.Barcode, searchPattern)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Brand))
+            {
+                stockItemsQuery = stockItemsQuery.Where(x => x.Brand == query.Brand);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Unit))
+            {
+                stockItemsQuery = stockItemsQuery.Where(x => x.Unit == query.Unit);
+            }
+
+            var totalCount = await stockItemsQuery.CountAsync();
+
+            var items = await stockItemsQuery
+                .OrderBy(x => x.Name)
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(x => new StockItemListDto
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Code = x.Code,
+                    Barcode = x.Barcode,
+                    Brand = x.Brand,
+                    Unit = x.Unit,
+                    Quantity = x.Quantity,
+                    SalePrice = x.SalePrice,
+                    MinimumQuantity = x.MinimumQuantity
+                })
+                .ToListAsync();
+
+            return new PagedResult<StockItemListDto>
+            {
+                Items = items,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize,
+                TotalCount = totalCount
+            };
+        }
+
+        public async Task<StockItemFilterOptionsDto> GetFilterOptionsAsync(int workshopId)
+        {
+            var brands = await _context.StockItems
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.IsActive &&
+                    x.Brand != null && x.Brand != "")
+                .Select(x => x.Brand!)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync();
+
+            var units = await _context.StockItems
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.IsActive &&
+                    x.Unit != null && x.Unit != "")
+                .Select(x => x.Unit!)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync();
+
+            return new StockItemFilterOptionsDto
+            {
+                Brands = brands,
+                Units = units
+            };
         }
     }
 }

@@ -127,8 +127,7 @@ namespace AutoStock.Services.Services
 
             if (workshop == null)
                 return ServiceResult<AdminWorkshopDetailDto>.Fail(
-                    "Servis bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Servis bulunamadı.");
 
             return ServiceResult<AdminWorkshopDetailDto>.Success(workshop);
         }
@@ -227,7 +226,7 @@ namespace AutoStock.Services.Services
 
             await transaction.CommitAsync();
 
-            return ServiceResult<int>.Success(workshop.Id, HttpStatusCode.Created);
+            return ServiceResult<int>.Success(workshop.Id);
         }
 
         public async Task<ServiceResult<bool>> UpdateSubscriptionAsync(int id, UpdateAdminWorkshopSubscriptionRequestDto request)
@@ -237,8 +236,7 @@ namespace AutoStock.Services.Services
 
             if (workshop == null)
                 return ServiceResult<bool>.Fail(
-                    "Servis bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Servis bulunamadı.");
 
             if (request.SubscriptionEndDate.HasValue &&
                 request.SubscriptionEndDate.Value <= DateTime.UtcNow)
@@ -263,8 +261,7 @@ namespace AutoStock.Services.Services
 
             if (!workshopExists)
                 return ServiceResult<List<AdminWorkshopUserDto>>.Fail(
-                    "Servis bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Servis bulunamadı.");
 
             var users = await _context.WorkshopUsers
                 .AsNoTracking()
@@ -292,8 +289,7 @@ namespace AutoStock.Services.Services
 
             if (!workshopExists)
                 return ServiceResult<int>.Fail(
-                    "Servis bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Servis bulunamadı.");
 
             var validationResult = await ValidateCreateUserRequestAsync(request);
 
@@ -356,7 +352,7 @@ namespace AutoStock.Services.Services
 
             await transaction.CommitAsync();
 
-            return ServiceResult<int>.Success(user.Id, HttpStatusCode.Created);
+            return ServiceResult<int>.Success(user.Id);
         }
 
         public async Task<ServiceResult<bool>> UpdateUserStatusAsync(int workshopId, int userId, UpdateAdminWorkshopUserStatusRequestDto request)
@@ -369,8 +365,7 @@ namespace AutoStock.Services.Services
 
             if (workshopUser == null)
                 return ServiceResult<bool>.Fail(
-                    "Kullanıcı bu serviste bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Kullanıcı bu serviste bulunamadı.");
 
             workshopUser.User.IsActive = request.IsActive;
 
@@ -387,8 +382,7 @@ namespace AutoStock.Services.Services
 
             if (workshop == null)
                 return ServiceResult<bool>.Fail(
-                    "Servis bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Servis bulunamadı.");
 
             if (workshop.Profile == null)
             {
@@ -433,8 +427,7 @@ namespace AutoStock.Services.Services
 
             if (!workshopExists)
                 return ServiceResult<List<AdminWorkshopPartnerDto>>.Fail(
-                    "Servis bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Servis bulunamadı.");
 
             var partners = await _context.WorkshopPartners
                 .AsNoTracking()
@@ -465,8 +458,7 @@ namespace AutoStock.Services.Services
 
             if (!workshopExists)
                 return ServiceResult<int>.Fail(
-                    "Servis bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Servis bulunamadı.");
 
             if (string.IsNullOrWhiteSpace(request.FullName))
                 return ServiceResult<int>.Fail("Yetkili/ortak adı zorunludur.");
@@ -499,7 +491,7 @@ namespace AutoStock.Services.Services
 
             await _context.SaveChangesAsync();
 
-            return ServiceResult<int>.Success(partner.Id, HttpStatusCode.Created);
+            return ServiceResult<int>.Success(partner.Id);
         }
 
         public async Task<ServiceResult<bool>> UpdatePartnerAsync(int workshopId, int partnerId, UpdateAdminWorkshopPartnerRequestDto request)
@@ -511,8 +503,7 @@ namespace AutoStock.Services.Services
 
             if (partner == null)
                 return ServiceResult<bool>.Fail(
-                    "Yetkili/ortak kaydı bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Yetkili/ortak kaydı bulunamadı.");
 
             if (string.IsNullOrWhiteSpace(request.FullName))
                 return ServiceResult<bool>.Fail("Yetkili/ortak adı zorunludur.");
@@ -555,8 +546,7 @@ namespace AutoStock.Services.Services
 
             if (partner == null)
                 return ServiceResult<bool>.Fail(
-                    "Yetkili/ortak kaydı bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Yetkili/ortak kaydı bulunamadı.");
 
             _context.WorkshopPartners.Remove(partner);
 
@@ -576,8 +566,7 @@ namespace AutoStock.Services.Services
 
             if (!workshopExists)
                 return ServiceResult<SuggestedAdminWorkshopCredentialsDto>.Fail(
-                    "Servis bulunamadı.",
-                    HttpStatusCode.NotFound);
+                    "Servis bulunamadı.");
 
             var baseUserName = CreateShortUserName(fullName);
 
