@@ -35,16 +35,18 @@ public class CustomersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetList()
+    public async Task<IActionResult> GetList([FromQuery] CustomerListQueryDto query)
     {
-        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+        var workshopIdClaim = User.FindFirst("WorkshopId")?.Value
+            ?? User.FindFirst("workshopId")?.Value;
 
-        if (string.IsNullOrWhiteSpace(workshopIdClaim))
-            return Unauthorized();
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized("Workshop bilgisi bulunamadı.");
 
-        var workshopId = int.Parse(workshopIdClaim);
+        var result = await _customerService.GetPagedAsync(query, workshopId);
 
-        var result = await _customerService.GetListAsync(workshopId);
+        if (result.IsFailure)
+            return StatusCode((int)result.StatusCode, result);
 
         return Ok(result);
     }

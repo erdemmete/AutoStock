@@ -470,10 +470,7 @@ namespace Services.Services.StockItems
                 stockItemsQuery = stockItemsQuery.Where(x => x.Brand == query.Brand);
             }
 
-            if (!string.IsNullOrWhiteSpace(query.Unit))
-            {
-                stockItemsQuery = stockItemsQuery.Where(x => x.Unit == query.Unit);
-            }
+           
 
             var totalCount = await stockItemsQuery.CountAsync();
 
@@ -530,8 +527,7 @@ namespace Services.Services.StockItems
 
             return new StockItemFilterOptionsDto
             {
-                Brands = brands,
-                Units = units
+                Brands = brands
             };
         }
     }

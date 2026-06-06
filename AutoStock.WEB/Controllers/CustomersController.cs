@@ -1,48 +1,34 @@
-﻿using AutoStock.WEB.Models.Common;
+﻿using AutoStock.Repositories.Enums;
 using AutoStock.WEB.Models.Customers;
+using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 
 namespace AutoStock.WEB.Controllers
 {
-    public class CustomersController : Controller
+    public class CustomersController : BaseController
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
+        private readonly CustomerApiService _customerApiService;
+        private readonly CustomerPageService _customerPageService;
 
         public CustomersController(
-            IHttpClientFactory httpClientFactory,
-            IConfiguration configuration)
+            CustomerApiService customerApiService,
+            CustomerPageService customerPageService)
         {
-            _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
+            _customerApiService = customerApiService;
+            _customerPageService = customerPageService;
         }
 
         [HttpGet("Customers")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index([FromQuery] CustomerListQueryViewModel query)
         {
-            var client = CreateApiClient();
+            var pageResult = await _customerPageService.BuildIndexAsync(query);
 
-            var response = await client.GetAsync("/api/Customers");
-
-            if (!response.IsSuccessStatusCode)
+            if (pageResult.HasErrors)
             {
-                ViewBag.ErrorMessage = "Müşteriler getirilemedi.";
-                return View(new CustomerListViewModel());
+                ShowErrors(pageResult.ErrorMessages);
             }
 
-            var json = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<ApiResponse<List<CustomerListItemViewModel>>>(
-                json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            return View(new CustomerListViewModel
-            {
-                Customers = result?.Data ?? new List<CustomerListItemViewModel>()
-            });
+            return View(pageResult.ViewModel);
         }
 
         [HttpGet("Customers/Create")]
@@ -54,104 +40,44 @@ namespace AutoStock.WEB.Controllers
         [HttpPost("Customers/Create")]
         public async Task<IActionResult> Create(CreateCustomerViewModel model)
         {
-            if (string.IsNullOrWhiteSpace(model.PhoneNumber))
-                ModelState.AddModelError(nameof(model.PhoneNumber), "Telefon numarası zorunludur.");
-
-            if (model.Type == AutoStock.Repositories.Enums.CustomerType.Individual &&
-                string.IsNullOrWhiteSpace(model.FullName))
-                ModelState.AddModelError(nameof(model.FullName), "Ad soyad zorunludur.");
-
-            if (model.Type == AutoStock.Repositories.Enums.CustomerType.Corporate &&
-                string.IsNullOrWhiteSpace(model.CompanyName))
-                ModelState.AddModelError(nameof(model.CompanyName), "Firma adı zorunludur.");
+            ValidateCreateModel(model);
 
             if (!ModelState.IsValid)
             {
-                TempData["ToastError"] = "Lütfen zorunlu alanları kontrol edin.";
+                ShowError("Lütfen zorunlu alanları kontrol edin.");
                 return View(model);
             }
 
-            var client = CreateApiClient();
+            var result = await _customerApiService.CreateAsync(model);
 
-            var json = JsonSerializer.Serialize(model);
-
-            var content = new StringContent(
-                json,
-                Encoding.UTF8,
-                "application/json");
-
-            var response = await client.PostAsync("/api/Customers", content);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                TempData["ToastError"] = "Müşteri oluşturulurken hata oluştu.";
-
-                ModelState.AddModelError(
-                    "",
-                    "Müşteri oluşturulurken hata oluştu.");
-
-                return View(model);
-            }
-
-            TempData["ToastSuccess"] = "Müşteri başarıyla oluşturuldu.";
-
-            return RedirectToAction(nameof(Index));
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(Index)),
+                onFailure: () => View(model),
+                defaultErrorMessage: "Müşteri oluşturulurken hata oluştu.",
+                successMessage: "Müşteri başarıyla oluşturuldu.");
         }
 
         [HttpGet("Customers/Details/{id:int}")]
         public async Task<IActionResult> Details(int id)
         {
-            var client = CreateApiClient();
+            var result = await _customerApiService.GetByIdAsync(id);
 
-            var response = await client.GetAsync($"/api/Customers/{id}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                TempData["ToastError"] = "Müşteri bulunamadı.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<ApiResponse<CustomerDetailViewModel>>(
-                json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            if (result?.Data == null)
-            {
-                TempData["ToastError"] = "Müşteri bilgileri okunamadı.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(result.Data);
+            return ViewObjectResult(
+                result,
+                "Müşteri bilgileri görüntülenirken hata oluştu.",
+                onFailure: () => RedirectToAction(nameof(Index)));
         }
 
         [HttpGet("Customers/Edit/{id:int}")]
         public async Task<IActionResult> Edit(int id)
         {
-            var client = CreateApiClient();
+            var result = await _customerApiService.GetEditModelAsync(id);
 
-            var response = await client.GetAsync($"/api/Customers/{id}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                TempData["ToastError"] = "Müşteri bulunamadı.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            var result = JsonSerializer.Deserialize<ApiResponse<EditCustomerViewModel>>(
-                json,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            if (result?.Data == null)
-            {
-                TempData["ToastError"] = "Müşteri bilgileri okunamadı.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(result.Data);
+            return ViewObjectResult(
+                result,
+                "Müşteri düzenleme bilgileri alınırken hata oluştu.",
+                onFailure: () => RedirectToAction(nameof(Index)));
         }
 
         [HttpPost("Customers/Edit/{id:int}")]
@@ -159,65 +85,79 @@ namespace AutoStock.WEB.Controllers
         {
             if (id != model.Id)
             {
-                TempData["ToastError"] = "Müşteri bilgisi hatalı.";
+                ShowError("Müşteri bilgisi hatalı.");
                 return RedirectToAction(nameof(Index));
             }
 
-            var client = CreateApiClient();
+            ValidateEditModel(model);
 
-            var json = JsonSerializer.Serialize(model);
-
-            var content = new StringContent(
-                json,
-                Encoding.UTF8,
-                "application/json");
-
-            var response = await client.PutAsync($"/api/Customers/{id}", content);
-
-            if (!response.IsSuccessStatusCode)
+            if (!ModelState.IsValid)
             {
-                TempData["ToastError"] = "Müşteri güncellenirken hata oluştu.";
+                ShowError("Lütfen zorunlu alanları kontrol edin.");
                 return View(model);
             }
 
-            TempData["ToastSuccess"] = "Müşteri başarıyla güncellendi.";
+            var result = await _customerApiService.UpdateAsync(model);
 
-            return RedirectToAction(nameof(Details), new { id = model.Id });
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(Details), new { id = model.Id }),
+                onFailure: () => View(model),
+                defaultErrorMessage: "Müşteri güncellenirken hata oluştu.",
+                successMessage: "Müşteri başarıyla güncellendi.");
         }
 
         [HttpPost("Customers/Passive/{id:int}")]
         public async Task<IActionResult> SetPassive(int id)
         {
-            var client = CreateApiClient();
+            var result = await _customerApiService.SetPassiveAsync(id);
 
-            var response = await client.PostAsync($"/api/Customers/{id}/passive", null);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                TempData["ToastError"] = "Müşteri silinirken hata oluştu.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            TempData["ToastSuccess"] = "Müşteri başarıyla silindi.";
-
-            return RedirectToAction(nameof(Index));
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(Index)),
+                onFailure: () => RedirectToAction(nameof(Details), new { id }),
+                defaultErrorMessage: "Müşteri pasifleştirilirken hata oluştu.",
+                successMessage: "Müşteri başarıyla pasifleştirildi.");
         }
 
-        private HttpClient CreateApiClient()
+        private void ValidateCreateModel(CreateCustomerViewModel model)
         {
-            var client = _httpClientFactory.CreateClient();
+            ValidateCustomerFields(
+                model.Type,
+                model.PhoneNumber,
+                model.FullName,
+                model.CompanyName);
+        }
 
-            client.BaseAddress = new Uri(_configuration["ApiSettings:BaseUrl"]!);
+        private void ValidateEditModel(EditCustomerViewModel model)
+        {
+            ValidateCustomerFields(
+                model.Type,
+                model.PhoneNumber,
+                model.FullName,
+                model.CompanyName);
+        }
 
-            var token = HttpContext.Session.GetString("AuthToken");
-
-            if (!string.IsNullOrWhiteSpace(token))
+        private void ValidateCustomerFields(
+            CustomerType type,
+            string? phoneNumber,
+            string? fullName,
+            string? companyName)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNumber))
             {
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
+                ModelState.AddModelError(nameof(CreateCustomerViewModel.PhoneNumber), "Telefon numarası zorunludur.");
             }
 
-            return client;
+            if (type == CustomerType.Individual && string.IsNullOrWhiteSpace(fullName))
+            {
+                ModelState.AddModelError(nameof(CreateCustomerViewModel.FullName), "Ad soyad zorunludur.");
+            }
+
+            if (type == CustomerType.Corporate && string.IsNullOrWhiteSpace(companyName))
+            {
+                ModelState.AddModelError(nameof(CreateCustomerViewModel.CompanyName), "Firma adı zorunludur.");
+            }
         }
     }
 }

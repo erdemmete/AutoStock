@@ -6,8 +6,6 @@
 
         public string? Brand { get; set; }
 
-        public string? Unit { get; set; }
-
         public int PageNumber { get; set; } = 1;
 
         public int PageSize { get; set; } = 10;
@@ -20,8 +18,8 @@
             if (PageSize < 5)
                 PageSize = 5;
 
-            if (PageSize > 100)
-                PageSize = 100;
+            if (PageSize > 50)
+                PageSize = 50;
 
             Search = string.IsNullOrWhiteSpace(Search)
                 ? null
@@ -31,9 +29,7 @@
                 ? null
                 : Brand.Trim();
 
-            Unit = string.IsNullOrWhiteSpace(Unit)
-                ? null
-                : Unit.Trim();
+           
         }
     }
 }

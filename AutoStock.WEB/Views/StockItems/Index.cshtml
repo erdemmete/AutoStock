@@ -1,15 +1,32 @@
 ﻿@model AutoStock.WEB.Models.StockItems.StockItemIndexViewModel
+@using AutoStock.WEB.Models.Common
+@using AutoStock.WEB.Models.StockItems
 
 @{
     ViewData["Title"] = "Stok Yönetimi";
 
-    var stocks = Model.Stocks.Items;
+    var stocks = Model.Stocks.Items ?? new List<StockItemListViewModel>();
     var query = Model.Query;
     var brands = Model.FilterOptions.Brands;
-    var units = Model.FilterOptions.Units;
+   
 
-    var startPage = Math.Max(1, Model.Stocks.PageNumber - 2);
-    var endPage = Math.Min(Model.Stocks.TotalPages, Model.Stocks.PageNumber + 2);
+    var pageNumber = Model.Stocks.PageNumber > 0 ? Model.Stocks.PageNumber : query.PageNumber;
+    var pageSize = Model.Stocks.PageSize > 0 ? Model.Stocks.PageSize : query.PageSize;
+    var totalCount = Model.Stocks.TotalCount;
+
+    var paginationModel = new PaginationViewModel
+    {
+        Controller = "StockItems",
+        Action = "Index",
+        PageNumber = pageNumber,
+        PageSize = pageSize,
+        TotalCount = totalCount,
+        RouteValues = new Dictionary<string, string?>
+        {
+            ["search"] = query.Search,
+            ["brand"] = query.Brand
+        }
+    };
 }
 
 <div class="stock-page">
@@ -25,20 +42,16 @@
             </div>
         </div>
 
-        <div class="stock-header-actions">
-            <a asp-controller="Dashboard"
-               asp-action="Index"
-               class="stock-secondary-btn">
-                Ana Sayfa
-            </a>
-
-            <a asp-controller="StockItems"
-               asp-action="Create"
-               class="stock-primary-btn">
-                <span>+</span>
-                Yeni Stok Kartı
-            </a>
-        </div>
+        @await Html.PartialAsync("_PageActions", new PageActionViewModel
+        {
+            BackController = "Dashboard",
+            BackAction = "Index",
+            HomeController = "Dashboard",
+            HomeAction = "Index",
+            PrimaryText = "+ Yeni Stok Kartı",
+            PrimaryController = "StockItems",
+            PrimaryAction = "Create"
+        })
     </div>
 
     <form class="stock-filter-card"
@@ -73,26 +86,14 @@
             }
         </select>
 
-        <select id="unitFilter"
-                name="Unit"
-                class="stock-filter-select">
-            <option value="">Tüm Birimler</option>
-
-            @foreach (var unit in units)
-            {
-                if (query.Unit == unit)
-                {
-                    <option value="@unit" selected="selected">@unit</option>
-                }
-                else
-                {
-                    <option value="@unit">@unit</option>
-                }
-            }
-        </select>
+        
 
         <input type="hidden" name="PageNumber" value="1" />
-        <input type="hidden" name="PageSize" value="@query.PageSize" />
+        <select name="PageSize" class="stock-filter-select">
+            <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
+            <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
+            <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
+        </select>
 
         <button type="submit"
                 class="stock-filter-button"
@@ -107,6 +108,8 @@
             ×
         </a>
     </form>
+
+    @await Html.PartialAsync("_Pagination", paginationModel)
 
     <div class="stock-table-card">
         <div class="table-responsive">
@@ -210,496 +213,332 @@
                 </tbody>
             </table>
         </div>
-
         <div class="stock-table-footer">
-            <div>
-                @if (Model.Stocks.TotalCount > 0)
-                {
-                    <span>
-                        @Model.Stocks.FirstItemNumber - @Model.Stocks.LastItemNumber arası gösteriliyor
-                    </span>
-                    <span class="footer-muted">(Toplam @Model.Stocks.TotalCount kayıt)</span>
-                }
-                else
-                {
-                    <span>0 stok kartı gösteriliyor</span>
-                }
-            </div>
-
-            <div class="pagination-preview">
-                @if (Model.Stocks.HasPreviousPage)
-                {
-                    <a asp-controller="StockItems"
-                       asp-action="Index"
-                       asp-route-Search="@query.Search"
-                       asp-route-Brand="@query.Brand"
-                       asp-route-Unit="@query.Unit"
-                       asp-route-PageSize="@query.PageSize"
-                       asp-route-PageNumber="@(Model.Stocks.PageNumber - 1)">‹</a>
-                }
-                else
-                {
-                    <span class="disabled">‹</span>
-                }
-
-                @for (var pageNumber = startPage; pageNumber <= endPage; pageNumber++)
-                {
-                    if (pageNumber == Model.Stocks.PageNumber)
-                    {
-                        <span class="active">@pageNumber</span>
-                    }
-                    else
-                    {
-                        <a asp-controller="StockItems"
-                           asp-action="Index"
-                           asp-route-Search="@query.Search"
-                           asp-route-Brand="@query.Brand"
-                           asp-route-Unit="@query.Unit"
-                           asp-route-PageSize="@query.PageSize"
-                           asp-route-PageNumber="@pageNumber">@pageNumber</a>
-                    }
-                }
-
-                @if (Model.Stocks.HasNextPage)
-                {
-                    <a asp-controller="StockItems"
-                       asp-action="Index"
-                       asp-route-Search="@query.Search"
-                       asp-route-Brand="@query.Brand"
-                       asp-route-Unit="@query.Unit"
-                       asp-route-PageSize="@query.PageSize"
-                       asp-route-PageNumber="@(Model.Stocks.PageNumber + 1)">›</a>
-                }
-                else
-                {
-                    <span class="disabled">›</span>
-                }
-            </div>
-        </div>
+       
     </div>
 </div>
+    <style>
+            .stock-page {
+                padding-top: 28px;
+                padding-bottom: 32px;
+            }
 
-<style>
-    .stock-page {
-        padding-top: 28px;
-        padding-bottom: 32px;
-    }
+            .stock-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 20px;
+                margin-bottom: 32px;
+            }
 
-    .stock-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        margin-bottom: 32px;
-    }
+            .stock-title-area {
+                display: flex;
+                align-items: flex-start;
+                gap: 14px;
+            }
 
-    .stock-title-area {
-        display: flex;
-        align-items: flex-start;
-        gap: 14px;
-    }
+            .stock-icon {
+                width: 34px;
+                height: 34px;
+                border-radius: 10px;
+                background: #eef2ff;
+                color: #4f46e5;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                font-weight: 800;
+            }
 
-    .stock-icon {
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        background: #eef2ff;
-        color: #4f46e5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        font-weight: 800;
-    }
+            .stock-header h1 {
+                margin: 0;
+                font-size: 28px;
+                font-weight: 800;
+                color: #0f172a;
+            }
 
-    .stock-header h1 {
-        margin: 0;
-        font-size: 28px;
-        font-weight: 800;
-        color: #0f172a;
-    }
+            .stock-header p {
+                margin: 8px 0 0;
+                color: #64748b;
+                font-size: 14px;
+            }
 
-    .stock-header p {
-        margin: 8px 0 0;
-        color: #64748b;
-        font-size: 14px;
-    }
+            .stock-filter-card {
+                display: grid;
+                grid-template-columns: minmax(320px, 1fr) 180px 130px 48px 48px;
+                gap: 12px;
+                background: #fff;
+                border: 1px solid #dbe3ef;
+                border-radius: 16px;
+                padding: 16px;
+                margin-bottom: 18px;
+                box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
+            }
 
-    .stock-header-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
+            .stock-search-box {
+                position: relative;
+            }
 
-    .stock-primary-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: #4f46e5;
-        color: #fff;
-        border: none;
-        border-radius: 13px;
-        padding: 13px 20px;
-        font-weight: 800;
-        text-decoration: none;
-        box-shadow: 0 10px 24px rgba(79, 70, 229, .24);
-        transition: .18s ease;
-        white-space: nowrap;
-    }
+            .search-icon {
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #94a3b8;
+                font-size: 22px;
+            }
 
-    .stock-primary-btn:hover {
-        background: #4338ca;
-        color: #fff;
-        transform: translateY(-1px);
-    }
+            .stock-search-box input,
+            .stock-filter-select {
+                width: 100%;
+                height: 48px;
+                border: 1px solid #cfd8e6;
+                border-radius: 13px;
+                background: #fff;
+                color: #0f172a;
+                font-size: 14px;
+                outline: none;
+            }
 
-    .stock-secondary-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: #f8fafc;
-        color: #334155;
-        border: 1px solid #cfd8e6;
-        border-radius: 13px;
-        padding: 13px 18px;
-        font-weight: 800;
-        text-decoration: none;
-        transition: .18s ease;
-        white-space: nowrap;
-    }
+            .stock-search-box input {
+                padding: 0 16px 0 48px;
+            }
 
-    .stock-secondary-btn:hover {
-        background: #eef2ff;
-        border-color: #c7d2fe;
-        color: #4f46e5;
-    }
+            .stock-filter-select {
+                padding: 0 14px;
+            }
 
-    .stock-filter-card {
-        display: grid;
-        grid-template-columns: minmax(320px, 1fr) 170px 170px 48px 48px;
-        gap: 12px;
-        background: #fff;
-        border: 1px solid #dbe3ef;
-        border-radius: 16px;
-        padding: 16px;
-        margin-bottom: 24px;
-        box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
-    }
+                .stock-search-box input:focus,
+                .stock-filter-select:focus {
+                    border-color: #4f46e5;
+                    box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
+                }
 
-    .stock-search-box {
-        position: relative;
-    }
+            .stock-filter-button,
+            .stock-clear-button {
+                width: 48px;
+                height: 48px;
+                border: 1px solid #cfd8e6;
+                border-radius: 13px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 800;
+                text-decoration: none;
+                cursor: pointer;
+                transition: .18s ease;
+            }
 
-    .search-icon {
-        position: absolute;
-        left: 16px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #94a3b8;
-        font-size: 22px;
-    }
+            .stock-filter-button {
+                background: #f8fafc;
+                color: #475569;
+                font-size: 20px;
+            }
 
-    .stock-search-box input,
-    .stock-filter-select {
-        width: 100%;
-        height: 48px;
-        border: 1px solid #cfd8e6;
-        border-radius: 13px;
-        background: #fff;
-        color: #0f172a;
-        font-size: 14px;
-        outline: none;
-    }
+                .stock-filter-button:hover {
+                    background: #eef2ff;
+                    border-color: #c7d2fe;
+                    color: #4f46e5;
+                }
 
-    .stock-search-box input {
-        padding: 0 16px 0 48px;
-    }
+            .stock-clear-button {
+                background: #fff;
+                color: #64748b;
+                font-size: 22px;
+            }
 
-    .stock-filter-select {
-        padding: 0 14px;
-    }
+                .stock-clear-button:hover {
+                    background: #fff1f2;
+                    border-color: #fecdd3;
+                    color: #e11d48;
+                }
 
-    .stock-search-box input:focus,
-    .stock-filter-select:focus {
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
-    }
+            .stock-page > .pagination-bar {
+                margin-bottom: 18px;
+                border: 1px solid #dbe3ef;
+                border-radius: 16px;
+                box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
+            }
 
-    .stock-filter-button,
-    .stock-clear-button {
-        width: 48px;
-        height: 48px;
-        border: 1px solid #cfd8e6;
-        border-radius: 13px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        text-decoration: none;
-        cursor: pointer;
-        transition: .18s ease;
-    }
+            .stock-table-card {
+                background: #fff;
+                border: 1px solid #dbe3ef;
+                border-radius: 18px;
+                overflow: hidden;
+                box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
+            }
 
-    .stock-filter-button {
-        background: #f8fafc;
-        color: #475569;
-        font-size: 20px;
-    }
+            .table-responsive {
+                width: 100%;
+                overflow-x: auto;
+            }
 
-    .stock-filter-button:hover {
-        background: #eef2ff;
-        border-color: #c7d2fe;
-        color: #4f46e5;
-    }
+            .stock-table {
+                width: 100%;
+                border-collapse: collapse;
+                min-width: 960px;
+            }
 
-    .stock-clear-button {
-        background: #fff;
-        color: #64748b;
-        font-size: 22px;
-    }
+                .stock-table thead {
+                    background: #f8fafc;
+                }
 
-    .stock-clear-button:hover {
-        background: #fff1f2;
-        border-color: #fecdd3;
-        color: #e11d48;
-    }
+                .stock-table th {
+                    padding: 17px 24px;
+                    font-size: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: .04em;
+                    color: #64748b;
+                    font-weight: 800;
+                    text-align: left;
+                    border-bottom: 1px solid #dbe3ef;
+                }
 
-    .stock-table-card {
-        background: #fff;
-        border: 1px solid #dbe3ef;
-        border-radius: 18px;
-        overflow: hidden;
-        box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
-    }
+                .stock-table td {
+                    padding: 20px 24px;
+                    border-bottom: 1px solid #edf2f7;
+                    vertical-align: middle;
+                    color: #0f172a;
+                    font-size: 14px;
+                }
 
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto;
-    }
+                .stock-table tr:last-child td {
+                    border-bottom: none;
+                }
 
-    .stock-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 960px;
-    }
+            .stock-row:hover {
+                background: #fafbff;
+            }
 
-    .stock-table thead {
-        background: #f8fafc;
-    }
+            .stock-code {
+                font-weight: 800;
+                color: #0f172a;
+            }
 
-    .stock-table th {
-        padding: 17px 24px;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: .04em;
-        color: #64748b;
-        font-weight: 800;
-        text-align: left;
-        border-bottom: 1px solid #dbe3ef;
-    }
+            .stock-name {
+                font-weight: 800;
+                color: #0f172a;
+            }
 
-    .stock-table td {
-        padding: 20px 24px;
-        border-bottom: 1px solid #edf2f7;
-        vertical-align: middle;
-        color: #0f172a;
-        font-size: 14px;
-    }
+            .brand-pill {
+                display: inline-flex;
+                align-items: center;
+                padding: 5px 10px;
+                border-radius: 8px;
+                background: #f1f5f9;
+                border: 1px solid #e2e8f0;
+                color: #475569;
+                font-size: 12px;
+                font-weight: 700;
+                margin-bottom: 6px;
+            }
 
-    .stock-table tr:last-child td {
-        border-bottom: none;
-    }
+                .brand-pill.muted {
+                    color: #94a3b8;
+                }
 
-    .stock-row:hover {
-        background: #fafbff;
-    }
+            .quantity {
+                display: inline-flex;
+                align-items: center;
+                gap: 7px;
+                color: #0f172a;
+            }
 
-    .stock-code {
-        font-weight: 800;
-        color: #0f172a;
-    }
+                .quantity strong {
+                    font-weight: 800;
+                }
 
-    .stock-name {
-        font-weight: 800;
-        color: #0f172a;
-    }
+                .quantity span {
+                    color: #64748b;
+                    font-size: 13px;
+                }
 
-    .brand-pill {
-        display: inline-flex;
-        align-items: center;
-        padding: 5px 10px;
-        border-radius: 8px;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        color: #475569;
-        font-size: 12px;
-        font-weight: 700;
-        margin-bottom: 6px;
-    }
+                .quantity.danger {
+                    color: #e11d48;
+                }
 
-    .brand-pill.muted {
-        color: #94a3b8;
-    }
+                    .quantity.danger span {
+                        color: #e11d48;
+                    }
 
-    .quantity {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        color: #0f172a;
-    }
+            .warning-icon {
+                font-size: 15px;
+            }
 
-    .quantity strong {
-        font-weight: 800;
-    }
+            .price {
+                font-weight: 800;
+                color: #0f172a;
+            }
 
-    .quantity span {
-        color: #64748b;
-        font-size: 13px;
-    }
+            .minimum-text {
+                color: #64748b;
+                font-weight: 700;
+            }
 
-    .quantity.danger {
-        color: #e11d48;
-    }
+            .status-badge {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 6px 10px;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 800;
+            }
 
-    .quantity.danger span {
-        color: #e11d48;
-    }
+                .status-badge.success {
+                    background: #dcfce7;
+                    color: #166534;
+                }
 
-    .warning-icon {
-        font-size: 15px;
-    }
+                .status-badge.danger {
+                    background: #ffe4e6;
+                    color: #be123c;
+                }
 
-    .price {
-        font-weight: 800;
-        color: #0f172a;
-    }
+            .detail-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 74px;
+                height: 40px;
+                border: 1px solid #cfd8e6;
+                border-radius: 10px;
+                color: #334155;
+                background: #fff;
+                text-decoration: none;
+                font-weight: 800;
+                font-size: 13px;
+                transition: .18s ease;
+            }
 
-    .minimum-text {
-        color: #64748b;
-        font-weight: 700;
-    }
+                .detail-btn:hover {
+                    background: #f8fafc;
+                    color: #0f172a;
+                }
 
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 6px 10px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 800;
-    }
+            .text-right {
+                text-align: right !important;
+            }
 
-    .status-badge.success {
-        background: #dcfce7;
-        color: #166534;
-    }
+            .empty-cell {
+                padding: 38px !important;
+                text-align: center;
+                color: #64748b !important;
+            }
 
-    .status-badge.danger {
-        background: #ffe4e6;
-        color: #be123c;
-    }
+            @@media (max-width: 900px) {
+                .stock-header {
+                    align-items: flex-start;
+                    flex-direction: column;
+                }
 
-    .detail-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 74px;
-        height: 40px;
-        border: 1px solid #cfd8e6;
-        border-radius: 10px;
-        color: #334155;
-        background: #fff;
-        text-decoration: none;
-        font-weight: 800;
-        font-size: 13px;
-        transition: .18s ease;
-    }
+                .stock-filter-card {
+                    grid-template-columns: 1fr;
+                }
 
-    .detail-btn:hover {
-        background: #f8fafc;
-        color: #0f172a;
-    }
-
-    .text-right {
-        text-align: right !important;
-    }
-
-    .empty-cell {
-        padding: 38px !important;
-        text-align: center;
-        color: #64748b !important;
-    }
-
-    .stock-table-footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 16px 24px;
-        border-top: 1px solid #edf2f7;
-        color: #0f172a;
-        font-size: 14px;
-    }
-
-    .footer-muted {
-        color: #64748b;
-    }
-
-    .pagination-preview {
-        display: inline-flex;
-        align-items: center;
-        border: 1px solid #cfd8e6;
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .pagination-preview a,
-    .pagination-preview span {
-        width: 42px;
-        height: 36px;
-        border-right: 1px solid #cfd8e6;
-        background: #fff;
-        color: #334155;
-        font-weight: 800;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .pagination-preview a:last-child,
-    .pagination-preview span:last-child {
-        border-right: none;
-    }
-
-    .pagination-preview .active {
-        background: #4f46e5;
-        color: #fff;
-    }
-
-    .pagination-preview .disabled {
-        color: #94a3b8;
-        background: #f8fafc;
-    }
-
-    @@media (max-width: 900px) {
-        .stock-header {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .stock-filter-card {
-            grid-template-columns: 1fr;
-        }
-
-        .stock-filter-button,
-        .stock-clear-button {
-            width: 100%;
-        }
-
-        .stock-table-footer {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-    }
-</style>
+                .stock-filter-button,
+                .stock-clear-button {
+                    width: 100%;
+                }
+            }
+    </style>

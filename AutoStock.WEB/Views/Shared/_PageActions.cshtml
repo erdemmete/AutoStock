@@ -1,0 +1,61 @@
+﻿@model AutoStock.WEB.Models.Common.PageActionViewModel
+@using Microsoft.AspNetCore.Routing
+
+@{
+    RouteValueDictionary BuildRouteValues(Dictionary<string, string?>? values)
+    {
+        var routeValues = new RouteValueDictionary();
+
+        if (values is null)
+            return routeValues;
+
+        foreach (var item in values)
+        {
+            if (!string.IsNullOrWhiteSpace(item.Value))
+                routeValues[item.Key] = item.Value;
+        }
+
+        return routeValues;
+    }
+
+    var backUrl = Url.Action(
+        Model.BackAction,
+        Model.BackController,
+        BuildRouteValues(Model.BackRouteValues)) ?? "#";
+
+    var homeUrl = Url.Action(
+        Model.HomeAction,
+        Model.HomeController,
+        BuildRouteValues(Model.HomeRouteValues)) ?? "#";
+
+    var primaryUrl = !string.IsNullOrWhiteSpace(Model.PrimaryController)
+                     && !string.IsNullOrWhiteSpace(Model.PrimaryAction)
+        ? Url.Action(
+            Model.PrimaryAction,
+            Model.PrimaryController,
+            BuildRouteValues(Model.PrimaryRouteValues)) ?? "#"
+        : "#";
+}
+
+<div class="page-actions">
+    @if (Model.ShowBack)
+    {
+        <a class="secondary-btn" href="@backUrl">
+            @Model.BackText
+        </a>
+    }
+
+    @if (Model.ShowHome)
+    {
+        <a class="secondary-btn" href="@homeUrl">
+            @Model.HomeText
+        </a>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.PrimaryText))
+    {
+        <a class="primary-btn" href="@primaryUrl">
+            @Model.PrimaryText
+        </a>
+    }
+</div>

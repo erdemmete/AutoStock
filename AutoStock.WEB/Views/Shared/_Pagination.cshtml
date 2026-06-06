@@ -1,0 +1,123 @@
+﻿@model AutoStock.WEB.Models.Common.PaginationViewModel
+@using Microsoft.AspNetCore.Routing
+
+@{
+    var totalPages = Model.TotalPages;
+    var currentPage = Model.PageNumber < 1 ? 1 : Model.PageNumber;
+
+    if (currentPage > totalPages)
+        currentPage = totalPages;
+
+    const int windowSize = 5;
+
+    var startPage = currentPage - 2;
+    var endPage = currentPage + 2;
+
+    if (startPage < 1)
+    {
+        endPage += 1 - startPage;
+        startPage = 1;
+    }
+
+    if (endPage > totalPages)
+    {
+        startPage -= endPage - totalPages;
+        endPage = totalPages;
+    }
+
+    if (startPage < 1)
+        startPage = 1;
+
+    RouteValueDictionary BuildRouteValues(int targetPage)
+    {
+        var routeValues = new RouteValueDictionary();
+
+        foreach (var item in Model.RouteValues)
+        {
+            if (!string.IsNullOrWhiteSpace(item.Value))
+                routeValues[item.Key] = item.Value;
+        }
+
+        routeValues["pageNumber"] = targetPage;
+        routeValues["pageSize"] = Model.PageSize;
+
+        return routeValues;
+    }
+
+    string BuildPageUrl(int targetPage)
+    {
+        return Url.Action(
+            Model.Action,
+            Model.Controller,
+            BuildRouteValues(targetPage)) ?? "#";
+    }
+}
+
+<div class="pagination-bar">
+    <div class="pagination-summary">
+        Toplam <strong>@Model.TotalCount</strong> kayıt —
+        Sayfa <strong>@currentPage</strong> / <strong>@totalPages</strong>
+    </div>
+
+    <div class="pagination-actions">
+        @if (Model.HasPreviousPage)
+        {
+            <a class="pagination-link" href="@BuildPageUrl(currentPage - 1)">
+                Önceki
+            </a>
+        }
+        else
+        {
+            <span class="pagination-link disabled">
+                Önceki
+            </span>
+        }
+
+        @if (startPage > 1)
+        {
+            <a class="pagination-link" href="@BuildPageUrl(1)">1</a>
+
+            if (startPage > 2)
+            {
+                <span class="pagination-ellipsis">...</span>
+            }
+        }
+
+        @for (var i = startPage; i <= endPage; i++)
+        {
+            if (i == currentPage)
+            {
+                <span class="pagination-link active">@i</span>
+            }
+            else
+            {
+                <a class="pagination-link" href="@BuildPageUrl(i)">@i</a>
+            }
+        }
+
+        @if (endPage < totalPages)
+        {
+            if (endPage < totalPages - 1)
+            {
+                <span class="pagination-ellipsis">...</span>
+            }
+
+            <a class="pagination-link" href="@BuildPageUrl(totalPages)">
+                @totalPages
+            </a>
+        }
+
+        @if (Model.HasNextPage)
+        {
+            <a class="pagination-link" href="@BuildPageUrl(currentPage + 1)">
+                Sonraki
+            </a>
+        }
+        else
+        {
+            <span class="pagination-link disabled">
+                Sonraki
+            </span>
+        }
+    </div>
+</div>

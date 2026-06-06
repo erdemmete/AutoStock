@@ -1,11 +1,43 @@
-﻿@model AutoStock.WEB.Models.Customers.CustomerListViewModel
+﻿@model AutoStock.WEB.Models.Customers.CustomerIndexViewModel
+@using AutoStock.Repositories.Enums
+@using AutoStock.WEB.Models.Common
+@using AutoStock.WEB.Models.Customers
 
 @{
     ViewData["Title"] = "Müşteriler";
 
-    var totalCustomerCount = Model.Customers.Count;
-    var corporateCount = Model.Customers.Count(x => x.TypeText == "Corporate");
-    var totalBalance = Model.Customers.Sum(x => x.Balance);
+    var items = Model.Customers.Items ?? new List<CustomerListItemViewModel>();
+
+    var totalCustomerCount = Model.Customers.TotalCount;
+    var currentPageCount = items.Count;
+
+    var pageNumber = Model.Customers.PageNumber > 0 ? Model.Customers.PageNumber : Model.Query.PageNumber;
+    var pageSize = Model.Customers.PageSize > 0 ? Model.Customers.PageSize : Model.Query.PageSize;
+
+    var paginationModel = new PaginationViewModel
+    {
+        Controller = "Customers",
+        Action = "Index",
+        PageNumber = pageNumber,
+        PageSize = pageSize,
+        TotalCount = totalCustomerCount,
+        RouteValues = new Dictionary<string, string?>
+        {
+            ["search"] = Model.Query.Search,
+            ["type"] = Model.Query.Type.HasValue ? ((int)Model.Query.Type.Value).ToString() : null
+        }
+    };
+
+    string GetTypeText(string? typeText)
+    {
+        return typeText switch
+        {
+            "Corporate" => "Kurumsal",
+            "SoleProprietorship" => "Şahıs Firması",
+            "Individual" => "Bireysel",
+            _ => "Bireysel"
+        };
+    }
 }
 
 <div class="customer-page">
@@ -16,61 +48,75 @@
         <div>
             <h1>Müşteriler</h1>
             <p>
-                Tüm bireysel ve kurumsal müşterilerinizi yönetin,
+                Tüm bireysel, şahıs ve kurumsal müşterilerinizi yönetin,
                 servis geçmişlerini inceleyin ve yeni kayıtlar oluşturun.
             </p>
         </div>
 
-        <a class="primary-btn"
-           asp-controller="Customers"
-           asp-action="Create">
-            + Yeni Müşteri Ekle
-        </a>
-    </div>
-
-    <div class="stat-grid">
-
-        <div class="stat-card">
-            <div class="stat-icon blue">👥</div>
-            <div>
-                <span>Toplam Müşteri</span>
-                <strong>@totalCustomerCount</strong>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon purple">🏢</div>
-            <div>
-                <span>Aktif Kurumsal</span>
-                <strong>@corporateCount</strong>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon green">↗</div>
-            <div>
-                <span>Toplam Cari Bakiye</span>
-                <strong>@totalBalance.ToString("N2") TL</strong>
-            </div>
-        </div>
-
+        @await Html.PartialAsync("_PageActions", new PageActionViewModel
+        {
+            BackController = "Dashboard",
+            BackAction = "Index",
+            HomeController = "Dashboard",
+            HomeAction = "Index",
+            PrimaryText = "+ Yeni Müşteri Ekle",
+            PrimaryController = "Customers",
+            PrimaryAction = "Create"
+        })
     </div>
 
     <div class="customer-table-card">
 
-        <div class="table-toolbar">
+        <form method="get" asp-controller="Customers" asp-action="Index" class="table-toolbar">
+
             <div class="search-box">
                 <span>⌕</span>
-                <input id="customerSearchInput"
+                <input name="Search"
+                       value="@Model.Query.Search"
                        type="text"
-                       placeholder="İsim, telefon veya e-posta ile ara..."
-                       onkeyup="filterCustomers()" />
+                       placeholder="İsim, firma, telefon, e-posta, TCKN veya VKN ile ara..." />
             </div>
 
-            <button type="button" class="filter-btn">
-                ⏷ Filtrele
+            <select name="Type" class="filter-select">
+                <option value="">Tüm müşteri türleri</option>
+
+                <option value="@((int)CustomerType.Individual)"
+                        selected="@(Model.Query.Type == CustomerType.Individual ? "selected" : null)">
+                    Bireysel
+                </option>
+
+                <option value="@((int)CustomerType.SoleProprietorship)"
+                        selected="@(Model.Query.Type == CustomerType.SoleProprietorship ? "selected" : null)">
+                    Şahıs
+                </option>
+
+                <option value="@((int)CustomerType.Corporate)"
+                        selected="@(Model.Query.Type == CustomerType.Corporate ? "selected" : null)">
+                    Kurumsal
+                </option>
+            </select>
+
+            <select name="PageSize" class="filter-select">
+                <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
+                <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
+                <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
+            </select>
+
+            <input type="hidden" name="PageNumber" value="1" />
+
+            <button type="submit" class="filter-btn">
+                Filtrele
             </button>
-        </div>
+
+            <a asp-controller="Customers"
+               asp-action="Index"
+               class="clear-btn">
+                Temizle
+            </a>
+
+        </form>
+
+        @await Html.PartialAsync("_Pagination", paginationModel)
 
         <table class="customer-table">
             <thead>
@@ -84,101 +130,86 @@
             </thead>
 
             <tbody>
-                @foreach (var item in Model.Customers)
+                @if (!items.Any())
                 {
-                    var initials = string.IsNullOrWhiteSpace(item.DisplayName)
-                        ? "?"
-                        : item.DisplayName.Substring(0, 1).ToUpper();
-
-                    var balanceClass = item.Balance >= 0 ? "positive" : "negative";
-
-                    <tr class="customer-row"
-                        data-search="@($"{item.DisplayName} {item.PhoneNumber} {item.Email}".ToLower())">
-
-                        <td>
-                            <div class="profile-cell">
-                                <div class="avatar">@initials</div>
-
-                                <div>
-                                    <strong>
-                                        @item.DisplayName
-                                        <span class="active-dot"></span>
-                                    </strong>
-                                    <small>Müşteri No: @item.Id</small>
-                                </div>
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                Kayıt bulunamadı. Arama veya filtre kriterlerini değiştirerek tekrar deneyin.
                             </div>
-                        </td>
-
-                        <td>
-                            <div class="contact-cell">
-                                <div>☎ @(item.PhoneNumber ?? "-")</div>
-                                <small>✉ @(item.Email ?? "-")</small>
-                            </div>
-                        </td>
-
-                        <td>
-                            <span class="type-badge">
-                                @(item.TypeText == "Corporate" ? "Kurumsal" : "Bireysel")
-                            </span>
-                        </td>
-
-                        <td class="text-end">
-                            <strong class="@balanceClass">
-                                @item.Balance.ToString("N2") TL
-                            </strong>
-                        </td>
-
-                        <td class="text-end">
-                            <a class="action-btn"
-                               href="/CurrentAccounts/Customer/@item.Id">
-                                Cari
-                            </a>
-
-                            <td class="text-end">
-                                <a asp-action="Details"
-                                   asp-route-id="@item.Id"
-                                   class="action-btn">
-                                    Detay
-                                </a>
-                            </td>
                         </td>
                     </tr>
+                }
+                else
+                {
+                    foreach (var item in items)
+                    {
+                        var initials = string.IsNullOrWhiteSpace(item.DisplayName)
+                            ? "?"
+                            : item.DisplayName.Substring(0, 1).ToUpper();
+
+                        var balanceClass = item.Balance >= 0 ? "positive" : "negative";
+
+                        <tr class="customer-row">
+                            <td>
+                                <div class="profile-cell">
+                                    <div class="avatar">@initials</div>
+
+                                    <div>
+                                        <strong>
+                                            @item.DisplayName
+                                            <span class="active-dot"></span>
+                                        </strong>
+                                        <small>Müşteri No: @item.Id</small>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="contact-cell">
+                                    <div>☎ @(item.PhoneNumber ?? "-")</div>
+                                    <small>✉ @(item.Email ?? "-")</small>
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="type-badge">
+                                    @GetTypeText(item.TypeText)
+                                </span>
+                            </td>
+
+                            <td class="text-end">
+                                <strong class="@balanceClass">
+                                    @item.Balance.ToString("N2") TL
+                                </strong>
+                            </td>
+
+                            <td class="text-end">
+                                <div class="action-group">
+                                    <a class="action-btn"
+                                       href="/CurrentAccounts/Customer/@item.Id">
+                                        Cari
+                                    </a>
+
+                                    <a asp-controller="Customers"
+                                       asp-action="Details"
+                                       asp-route-id="@item.Id"
+                                       class="action-btn">
+                                        Detay
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
                 }
             </tbody>
         </table>
 
-        <div class="table-footer">
-            <span>
-                Gösterilen: <strong>@Model.Customers.Count</strong> /
-                Toplam: <strong>@totalCustomerCount</strong>
-            </span>
-
-            <div>
-                <button class="page-btn disabled">Önceki</button>
-                <button class="page-btn">Sonraki</button>
-            </div>
-        </div>
+        @await Html.PartialAsync("_Pagination", paginationModel)
 
     </div>
 
 </div>
-
-<script>
-    function filterCustomers() {
-        const searchValue = document
-            .getElementById("customerSearchInput")
-            .value
-            .toLowerCase()
-            .trim();
-
-        const rows = document.querySelectorAll(".customer-row");
-
-        rows.forEach(row => {
-            const text = row.getAttribute("data-search") || "";
-            row.style.display = text.includes(searchValue) ? "" : "none";
-        });
-    }
-</script>
 
 <style>
     .customer-page {
@@ -222,69 +253,6 @@
             margin: 0;
         }
 
-    .primary-btn {
-        background: #4f35e8;
-        color: white;
-        text-decoration: none;
-        border-radius: 12px;
-        padding: 15px 24px;
-        font-weight: 800;
-        box-shadow: 0 8px 18px rgba(79, 53, 232, .28);
-    }
-
-    .stat-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 22px;
-        margin-bottom: 34px;
-    }
-
-    .stat-card {
-        background: #fff;
-        border-radius: 18px;
-        padding: 26px;
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, .06);
-        border: 1px solid #eef2f7;
-    }
-
-    .stat-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-    }
-
-        .stat-icon.blue {
-            background: #eef3ff;
-        }
-
-        .stat-icon.purple {
-            background: #f1ecff;
-        }
-
-        .stat-icon.green {
-            background: #e8fbf1;
-            color: #009966;
-        }
-
-    .stat-card span {
-        display: block;
-        color: #667896;
-        font-weight: 800;
-        margin-bottom: 8px;
-    }
-
-    .stat-card strong {
-        font-size: 28px;
-        font-weight: 900;
-    }
-
     .customer-table-card {
         background: #fff;
         border-radius: 18px;
@@ -298,7 +266,9 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 12px;
         border-bottom: 1px solid #edf2f7;
+        flex-wrap: wrap;
     }
 
     .search-box {
@@ -319,8 +289,19 @@
             font-size: 15px;
         }
 
+    .filter-select {
+        height: 48px;
+        border: 1px solid #d4deec;
+        border-radius: 13px;
+        padding: 0 14px;
+        font-weight: 700;
+        color: #18365d;
+        background: #fff;
+        outline: none;
+    }
+
     .filter-btn,
-    .page-btn,
+    .clear-btn,
     .action-btn {
         border: 1px solid #cbd8ea;
         background: #fff;
@@ -329,6 +310,18 @@
         padding: 10px 16px;
         font-weight: 800;
         text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .filter-btn {
+        height: 48px;
+        cursor: pointer;
+    }
+
+    .clear-btn {
+        height: 48px;
     }
 
     .customer-table {
@@ -420,31 +413,24 @@
         text-align: right !important;
     }
 
-    .table-footer {
-        padding: 18px 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #fbfdff;
-        border-top: 1px solid #edf2f7;
-        color: #667896;
+    .action-group {
+        display: inline-flex;
+        justify-content: flex-end;
+        gap: 8px;
     }
 
-    .page-btn.disabled {
-        opacity: .45;
-        cursor: not-allowed;
+    .empty-state {
+        padding: 28px;
+        text-align: center;
+        color: #667896;
+        font-weight: 800;
     }
 
     @@media (max-width: 900px) {
         .customer-header,
-        .table-toolbar,
-        .table-footer {
+        .table-toolbar {
             flex-direction: column;
             align-items: flex-start;
-        }
-
-        .stat-grid {
-            grid-template-columns: 1fr;
         }
 
         .search-box {
@@ -459,16 +445,4 @@
             min-width: 980px;
         }
     }
-
-    .action-link {
-        color: #4f35e8;
-        font-weight: 800;
-        text-decoration: none;
-        transition: .2s ease;
-    }
-
-        .action-link:hover {
-            color: #3725b7;
-            text-decoration: underline;
-        }
 </style>

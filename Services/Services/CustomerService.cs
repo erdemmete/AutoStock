@@ -76,6 +76,68 @@ namespace AutoStock.Services.Services
 
             return ServiceResult<List<CustomerListItemDto>>.Success(customers);
         }
+
+        public async Task<ServiceResult<PagedResult<CustomerListItemDto>>> GetPagedAsync(CustomerListQueryDto query, int workshopId)
+        {
+            query ??= new CustomerListQueryDto();
+            query.Normalize();
+
+            var customersQuery = context.Customers
+                    .AsNoTracking()
+                    .Where(x => x.WorkshopId == workshopId && x.IsActive);
+
+            if (query.Type.HasValue)
+            {
+                customersQuery = customersQuery.Where(x => x.Type == query.Type.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var search = $"%{query.Search}%";
+
+                customersQuery = customersQuery.Where(x =>
+                    EF.Functions.Like(x.FullName ?? string.Empty, search) ||
+                    EF.Functions.Like(x.CompanyName ?? string.Empty, search) ||
+                    EF.Functions.Like(x.AuthorizedPersonName ?? string.Empty, search) ||
+                    EF.Functions.Like(x.PhoneNumber ?? string.Empty, search) ||
+                    EF.Functions.Like(x.Email ?? string.Empty, search) ||
+                    EF.Functions.Like(x.NationalIdentityNumber ?? string.Empty, search) ||
+                    EF.Functions.Like(x.TaxNumber ?? string.Empty, search));
+            }
+
+            var totalCount = await customersQuery.CountAsync();
+
+            var items = await customersQuery
+                .OrderBy(x => x.FullName ?? x.CompanyName ?? x.PhoneNumber)
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .Select(x => new CustomerListItemDto
+                {
+                    Id = x.Id,
+                    DisplayName = !string.IsNullOrWhiteSpace(x.FullName)
+                        ? x.FullName
+                        : x.CompanyName ?? "İsimsiz Müşteri",
+
+                    PhoneNumber = x.PhoneNumber,
+                    Email = x.Email,
+                    TypeText = x.Type.ToString(),
+
+                    Balance = context.CurrentAccountTransactions
+                        .Where(t => t.WorkshopId == workshopId && t.CustomerId == x.Id)
+                        .Sum(t => t.Debit - t.Credit)
+                })
+                .ToListAsync();
+
+            var result = new PagedResult<CustomerListItemDto>
+            {
+                Items = items,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize,
+                TotalCount = totalCount
+            };
+
+            return ServiceResult<PagedResult<CustomerListItemDto>>.Success(result);
+        }
         public async Task<ServiceResult<int>> CreateAsync(CreateCustomerDto request, int workshopId)
         {
             
@@ -197,5 +259,7 @@ namespace AutoStock.Services.Services
 
             return ServiceResult<int>.Success(customer.Id);
         }
+
+        
     }
 }

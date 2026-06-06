@@ -11,5 +11,6 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<CustomerDetailDto>> GetByIdAsync(int id, int workshopId);
         Task<ServiceResult<int>> UpdateAsync(UpdateCustomerDto request, int workshopId);
         Task<ServiceResult<int>> SetPassiveAsync(int id, int workshopId);
+        Task<ServiceResult<PagedResult<CustomerListItemDto>>> GetPagedAsync(CustomerListQueryDto query, int workshopId);
     }
 }

@@ -24,7 +24,6 @@ namespace AutoStock.WEB.Services
             {
                 ["search"] = query.Search,
                 ["brand"] = query.Brand,
-                ["unit"] = query.Unit,
                 ["pageNumber"] = query.PageNumber.ToString(),
                 ["pageSize"] = query.PageSize.ToString()
             });

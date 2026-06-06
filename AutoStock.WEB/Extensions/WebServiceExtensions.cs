@@ -16,6 +16,8 @@ namespace AutoStock.WEB.Extensions
             services.AddScoped<AdminWorkshopPageService>();
             services.AddScoped<ServiceRecordApiService>();
             services.AddScoped<ServiceRecordPageService>();
+            services.AddScoped<CustomerApiService>();
+            services.AddScoped<CustomerPageService>();
 
             return services;
         }
