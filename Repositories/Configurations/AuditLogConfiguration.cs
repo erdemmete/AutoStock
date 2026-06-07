@@ -1,4 +1,5 @@
-﻿using AutoStock.Repositories.Entities;
+﻿using AutoStock.Repositories.Constants;
+using AutoStock.Repositories.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -33,7 +34,7 @@ namespace AutoStock.Repositories.Configurations
                 .HasMaxLength(500);
 
             builder.Property(x => x.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
+    .HasDefaultValueSql(SqlDateTimeDefaults.TurkeyNow);
 
             builder.HasIndex(x => new { x.WorkshopId, x.CreatedAt });
 

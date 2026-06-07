@@ -14,6 +14,9 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IPdfService, PdfService>();
             services.AddScoped<IAuthService, AuthService>();
+
+            services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+
             services.AddScoped<JwtService>();
             services.AddScoped<IServiceRecordService, ServiceRecordService>();
             services.AddScoped<IVehicleCatalogService, VehicleCatalogService>();

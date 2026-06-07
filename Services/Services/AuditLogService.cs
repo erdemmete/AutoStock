@@ -10,6 +10,7 @@ namespace AutoStock.Services.Services
     public class AuditLogService(
         IAuditLogRepository auditLogRepository,
         IUnitOfWork unitOfWork,
+        IDateTimeProvider dateTimeProvider,
         IAuditContextAccessor auditContextAccessor) : IAuditLogService
     {
         private const int MaxDescriptionLength = 1000;
@@ -44,7 +45,7 @@ namespace AutoStock.Services.Services
                 IpAddress = Limit(request.IpAddress ?? context.IpAddress, MaxIpAddressLength),
                 UserAgent = Limit(request.UserAgent ?? context.UserAgent, MaxUserAgentLength),
 
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = dateTimeProvider.Now
             };
 
             await auditLogRepository.AddAsync(auditLog, cancellationToken);
