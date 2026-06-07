@@ -2,13 +2,21 @@ using AutoStock.API.Extensions;
 using AutoStock.API.Middlewares;
 using AutoStock.Repositories.Extensions;
 using AutoStock.Services.Extensions;
+using AutoStock.Services.Validators.Customers;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using AutoStock.Services.Validators.Customers;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+builder.Host.UseSerilog((context, services, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "AutoStock.API");
+});
 builder.Services.AddValidatorsFromAssemblyContaining<CreateCustomerDtoValidator>();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddControllers();

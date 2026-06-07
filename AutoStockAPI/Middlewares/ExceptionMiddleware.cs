@@ -1,5 +1,6 @@
 ﻿using AutoStock.API.Models;
 using System.Net;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace AutoStock.API.Middlewares
@@ -68,15 +69,64 @@ namespace AutoStock.API.Middlewares
         {
             var traceId = context.TraceIdentifier;
 
-            _logger.LogError(
-                exception,
-                "Unhandled API exception. TraceId: {TraceId}, Path: {Path}, Method: {Method}",
-                traceId,
-                context.Request.Path,
-                context.Request.Method);
+            var userId =
+                context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+                context.User.FindFirst("userId")?.Value ??
+                context.User.FindFirst("UserId")?.Value;
 
+            var workshopId =
+                context.User.FindFirst("workshopId")?.Value ??
+                context.User.FindFirst("WorkshopId")?.Value;
+
+            var role =
+                context.User.FindFirst(ClaimTypes.Role)?.Value ??
+                context.User.FindFirst("role")?.Value ??
+                context.User.FindFirst("Role")?.Value;
+
+            var ipAddress = context.Connection.RemoteIpAddress?.ToString();
+            var userAgent = context.Request.Headers.UserAgent.ToString();
+
+            var path = context.Request.Path.ToString();
+            var method = context.Request.Method;
+            var statusCodeNumber = (int)statusCode;
+
+            if (statusCodeNumber >= 500)
+            {
+                _logger.LogError(
+                    exception,
+                    "API exception. TraceId: {TraceId}, StatusCode: {StatusCode}, Method: {Method}, Path: {Path}, UserId: {UserId}, Role: {Role}, WorkshopId: {WorkshopId}, IpAddress: {IpAddress}, UserAgent: {UserAgent}",
+                    traceId,
+                    statusCodeNumber,
+                    method,
+                    path,
+                    userId,
+                    role,
+                    workshopId,
+                    ipAddress,
+                    userAgent);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    exception,
+                    "API handled exception. TraceId: {TraceId}, StatusCode: {StatusCode}, Method: {Method}, Path: {Path}, UserId: {UserId}, Role: {Role}, WorkshopId: {WorkshopId}, IpAddress: {IpAddress}, UserAgent: {UserAgent}",
+                    traceId,
+                    statusCodeNumber,
+                    method,
+                    path,
+                    userId,
+                    role,
+                    workshopId,
+                    ipAddress,
+                    userAgent);
+            }
+
+            if (context.Response.HasStarted)
+                return;
+
+            context.Response.Clear();
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = (int)statusCode;
+            context.Response.StatusCode = statusCodeNumber;
 
             var response = new ErrorResponse
             {
