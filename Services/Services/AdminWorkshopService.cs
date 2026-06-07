@@ -3,6 +3,7 @@ using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Enums;
 using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Admin.Workshops;
+using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Common;
 
 using AutoStock.Services.Interfaces;
@@ -20,17 +21,20 @@ namespace AutoStock.Services.Services
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole<int>> _roleManager;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IAuditLogService _auditLogService;
 
         public AdminWorkshopService(
-            AppDbContext context,
-            UserManager<AppUser> userManager,
-            RoleManager<IdentityRole<int>> roleManager,
-            IDateTimeProvider dateTimeProvider)
+    AppDbContext context,
+    UserManager<AppUser> userManager,
+    RoleManager<IdentityRole<int>> roleManager,
+    IDateTimeProvider dateTimeProvider,
+    IAuditLogService auditLogService)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
             _dateTimeProvider = dateTimeProvider;
+            _auditLogService = auditLogService;
         }
 
         public async Task<ServiceResult<List<AdminWorkshopListItemDto>>> GetListAsync()
@@ -232,6 +236,44 @@ namespace AutoStock.Services.Services
 
             await _context.SaveChangesAsync();
 
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshop.Id,
+                ActionType = AuditActionType.Create,
+                EntityType = AuditEntityType.Workshop,
+                EntityId = workshop.Id,
+                Description = $"Servis oluşturuldu: {workshop.Name}",
+                NewValues = new
+                {
+                    workshop.Id,
+                    workshop.Name,
+                    workshop.IsActive,
+                    workshop.SubscriptionStatus,
+                    workshop.SubscriptionStartDate,
+                    workshop.SubscriptionEndDate
+                }
+            });
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshop.Id,
+                ActionType = AuditActionType.Create,
+                EntityType = AuditEntityType.WorkshopUser,
+                EntityId = user.Id,
+                Description = $"İlk servis kullanıcısı oluşturuldu: {user.FullName} / {role}",
+                NewValues = new
+                {
+                    WorkshopId = workshop.Id,
+                    UserId = user.Id,
+                    user.FullName,
+                    user.UserName,
+                    Role = role,
+                    user.IsActive
+                }
+            });
+
+            await _context.SaveChangesAsync();
+
             await transaction.CommitAsync();
 
             return ServiceResult<int>.Success(workshop.Id);
@@ -252,10 +294,35 @@ namespace AutoStock.Services.Services
                 return ServiceResult<bool>.Fail("Üyelik bitiş tarihi geçmişte olamaz.");
             }
 
+            var oldValues = new
+            {
+                workshop.IsActive,
+                workshop.SubscriptionStatus,
+                workshop.SubscriptionEndDate,
+                workshop.SubscriptionNote
+            };
+
             workshop.IsActive = request.IsActive;
             workshop.SubscriptionStatus = request.SubscriptionStatus;
             workshop.SubscriptionEndDate = request.SubscriptionEndDate;
             workshop.SubscriptionNote = request.SubscriptionNote?.Trim();
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshop.Id,
+                ActionType = AuditActionType.Update,
+                EntityType = AuditEntityType.WorkshopSubscription,
+                EntityId = workshop.Id,
+                Description = $"Servis üyelik bilgisi güncellendi: {workshop.Name}",
+                OldValues = oldValues,
+                NewValues = new
+                {
+                    workshop.IsActive,
+                    workshop.SubscriptionStatus,
+                    workshop.SubscriptionEndDate,
+                    workshop.SubscriptionNote
+                }
+            });
 
             await _context.SaveChangesAsync();
 
@@ -358,6 +425,26 @@ namespace AutoStock.Services.Services
 
             await _context.SaveChangesAsync();
 
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Create,
+                EntityType = AuditEntityType.WorkshopUser,
+                EntityId = user.Id,
+                Description = $"Servis kullanıcısı oluşturuldu: {user.FullName} / {role}",
+                NewValues = new
+                {
+                    WorkshopId = workshopId,
+                    UserId = user.Id,
+                    user.FullName,
+                    user.UserName,
+                    Role = role,
+                    user.IsActive
+                }
+            });
+
+            await _context.SaveChangesAsync();
+
             await transaction.CommitAsync();
 
             return ServiceResult<int>.Success(user.Id);
@@ -375,7 +462,39 @@ namespace AutoStock.Services.Services
                 return ServiceResult<bool>.Fail(
                     "Kullanıcı bu serviste bulunamadı.");
 
+            var oldIsActive = workshopUser.User.IsActive;
+
+            if (oldIsActive == request.IsActive)
+                return ServiceResult<bool>.Success(true);
+
             workshopUser.User.IsActive = request.IsActive;
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = request.IsActive
+                    ? AuditActionType.SetActive
+                    : AuditActionType.SetPassive,
+                EntityType = AuditEntityType.WorkshopUser,
+                EntityId = userId,
+                Description = request.IsActive
+                    ? $"Servis kullanıcısı aktife alındı: {workshopUser.User.FullName}"
+                    : $"Servis kullanıcısı pasife alındı: {workshopUser.User.FullName}",
+                OldValues = new
+                {
+                    WorkshopId = workshopId,
+                    UserId = userId,
+                    IsActive = oldIsActive
+                },
+                NewValues = new
+                {
+                    WorkshopId = workshopId,
+                    UserId = userId,
+                    workshopUser.User.FullName,
+                    workshopUser.User.UserName,
+                    IsActive = workshopUser.User.IsActive
+                }
+            });
 
             await _context.SaveChangesAsync();
 
@@ -387,6 +506,10 @@ namespace AutoStock.Services.Services
             var workshop = await _context.Workshops
                 .Include(x => x.Profile)
                 .FirstOrDefaultAsync(x => x.Id == id);
+
+            var oldValues = workshop.Profile == null
+                    ? null
+                    : GetWorkshopProfileAuditValues(workshop.Profile);
 
             if (workshop == null)
                 return ServiceResult<bool>.Fail(
@@ -423,6 +546,17 @@ namespace AutoStock.Services.Services
                 : request.Country.Trim();
 
             workshop.Profile.UpdatedAt = _dateTimeProvider.Now;
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshop.Id,
+                ActionType = AuditActionType.Update,
+                EntityType = AuditEntityType.Workshop,
+                EntityId = workshop.Id,
+                Description = $"Servis profil bilgileri güncellendi: {workshop.Name}",
+                OldValues = oldValues,
+                NewValues = GetWorkshopProfileAuditValues(workshop.Profile)
+            });
 
             await _context.SaveChangesAsync();
 
@@ -833,6 +967,29 @@ namespace AutoStock.Services.Services
                 return ServiceResult<int>.Fail("Üyelik bitiş tarihi geçmişte olamaz.");
 
             return ServiceResult<int>.Success(0);
+        }
+
+        private static object GetWorkshopProfileAuditValues(WorkshopProfile profile)
+        {
+            return new
+            {
+                profile.WorkshopId,
+                profile.DisplayName,
+                profile.LegalTitle,
+                profile.TaxOffice,
+                profile.TaxNumber,
+                profile.TradeRegistryNumber,
+                profile.MersisNumber,
+                profile.Email,
+                profile.PhoneNumber,
+                profile.FaxNumber,
+                profile.Website,
+                profile.AddressLine,
+                profile.City,
+                profile.District,
+                profile.PostalCode,
+                profile.Country
+            };
         }
     }
 }
