@@ -1,5 +1,6 @@
 ﻿using AutoStock.Repositories;
 using AutoStock.Repositories.Enums;
+using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Pdfs;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -8,10 +9,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoStock.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
     [Route("api/[controller]")]
     [ApiController]
-    public class ServicePdfsController : ControllerBase
+    public class ServicePdfsController : BaseApiController
     {
         private readonly IPdfService _pdfService;
         private readonly AppDbContext _context;
@@ -27,22 +28,24 @@ namespace AutoStock.API.Controllers
         [HttpGet("{serviceRecordId:int}")]
         public async Task<IActionResult> Create(int serviceRecordId)
         {
-            var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
+
+            var workshopId = workshopIdResult.Data;
 
             var serviceRecord = await _context.ServiceRecords
-     .Include(x => x.Customer)
-     .Include(x => x.Vehicle)
-         .ThenInclude(x => x.VehicleBrand)
-     .Include(x => x.Vehicle)
-         .ThenInclude(x => x.VehicleModel)
-     .Include(x => x.RequestItems)
-     .Include(x => x.Operations)
-     .FirstOrDefaultAsync(x =>
-         x.Id == serviceRecordId &&
-         x.WorkshopId == workshopId);
+                .Include(x => x.Customer)
+                .Include(x => x.Vehicle)
+                    .ThenInclude(x => x.VehicleBrand)
+                .Include(x => x.Vehicle)
+                    .ThenInclude(x => x.VehicleModel)
+                .Include(x => x.RequestItems)
+                .Include(x => x.Operations)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == serviceRecordId &&
+                    x.WorkshopId == workshopId);
 
             if (serviceRecord == null)
                 return NotFound("Servis kaydı bulunamadı.");
@@ -78,26 +81,27 @@ namespace AutoStock.API.Controllers
                 Note = serviceRecord.ServiceReceptionNote,
 
                 RequestGroups = serviceRecord.RequestItems
-        .OrderBy(x => x.Id)
-        .Select(item => new ServicePdfRequestGroupDto
-        {
-            Id = item.Id,
-            Title = item.Title,
-            Note = item.Note,
-            Operations = serviceRecord.Operations
-    .Where(op => op.ServiceRequestItemId == item.Id)
-    .OrderBy(op => op.Id)
-    .Select(op => new ServicePdfItemDto
-    {
-        TypeText = op.Type == OperationType.Part ? "Parça" : "İşçilik",
-        Name = op.Description,
-        Quantity = op.Quantity,
-        UnitPrice = op.UnitPrice,
-        Note = op.Note
-    })
-    .ToList()
-        })
-        .ToList()
+                    .OrderBy(x => x.Id)
+                    .Select(item => new ServicePdfRequestGroupDto
+                    {
+                        Id = item.Id,
+                        Title = item.Title,
+                        Note = item.Note,
+                        Operations = serviceRecord.Operations
+                            .Where(op => op.ServiceRequestItemId == item.Id)
+                            .OrderBy(op => op.Id)
+                            .Select(op => new ServicePdfItemDto
+                            {
+                                TypeText = op.Type == OperationType.Part ? "Parça" : "İşçilik",
+                                Name = op.Description,
+                                Quantity = op.Quantity,
+                                UnitPrice = op.UnitPrice,
+                                TotalPrice = op.TotalPrice,
+                                Note = op.Note
+                            })
+                            .ToList()
+                    })
+                    .ToList()
             };
 
             var fileBytes = _pdfService.CreateServicePdf(request);

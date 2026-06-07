@@ -1,4 +1,6 @@
-﻿using AutoStock.Services.Dtos.Common;
+﻿using AutoStock.API.Controllers;
+using AutoStock.Services.Constants;
+using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Customers;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -7,8 +9,8 @@ using System.Net;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
-public class CustomersController : ControllerBase
+[Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
+public class CustomersController : BaseApiController
 {
     private readonly ICustomerService _customerService;
 
@@ -20,62 +22,55 @@ public class CustomersController : ControllerBase
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string query)
     {
-        var workshopIdResult = GetWorkshopId();
+        var workshopIdResult = GetCurrentWorkshopId();
 
         if (workshopIdResult.IsFailure)
-            return Unauthorized(workshopIdResult);
+            return UnauthorizedResult(workshopIdResult);
 
-        var result = await _customerService.SearchAsync(query, workshopIdResult.Data);
+        var customers = await _customerService.SearchAsync(query, workshopIdResult.Data);
 
-        return Ok(ServiceResult<List<CustomerSearchDto>>.Success(result));
+        var result = ServiceResult<List<CustomerSearchDto>>.Success(customers);
+
+        return ToActionResult(result);
     }
 
     [HttpGet]
     public async Task<IActionResult> GetList([FromQuery] CustomerListQueryDto query)
     {
-        var workshopIdResult = GetWorkshopId();
+        var workshopIdResult = GetCurrentWorkshopId();
 
         if (workshopIdResult.IsFailure)
-            return Unauthorized(workshopIdResult);
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _customerService.GetPagedAsync(query, workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return StatusCode((int)result.StatusCode, result);
-
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPost]
     public async Task<IActionResult> Create(CreateCustomerDto request)
     {
-        var workshopIdResult = GetWorkshopId();
+        var workshopIdResult = GetCurrentWorkshopId();
 
         if (workshopIdResult.IsFailure)
-            return Unauthorized(workshopIdResult);
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _customerService.CreateAsync(request, workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return StatusCode((int)result.StatusCode, result);
-
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var workshopIdResult = GetWorkshopId();
+        var workshopIdResult = GetCurrentWorkshopId();
 
         if (workshopIdResult.IsFailure)
-            return Unauthorized(workshopIdResult);
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _customerService.GetByIdAsync(id, workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return StatusCode((int)result.StatusCode, result);
-
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPut("{id:int}")]
@@ -83,53 +78,33 @@ public class CustomersController : ControllerBase
     {
         if (id != request.Id)
         {
-            return BadRequest(
-                ServiceResult<int>.Fail(
-                    "Müşteri bilgisi hatalı.",
-                    HttpStatusCode.BadRequest));
+            var badRequestResult = ServiceResult<int>.Fail(
+                "Müşteri bilgisi hatalı.",
+                HttpStatusCode.BadRequest);
+
+            return ToActionResult(badRequestResult);
         }
 
-        var workshopIdResult = GetWorkshopId();
+        var workshopIdResult = GetCurrentWorkshopId();
 
         if (workshopIdResult.IsFailure)
-            return Unauthorized(workshopIdResult);
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _customerService.UpdateAsync(request, workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return StatusCode((int)result.StatusCode, result);
-
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPost("{id:int}/passive")]
     public async Task<IActionResult> SetPassive(int id)
     {
-        var workshopIdResult = GetWorkshopId();
+        var workshopIdResult = GetCurrentWorkshopId();
 
         if (workshopIdResult.IsFailure)
-            return Unauthorized(workshopIdResult);
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _customerService.SetPassiveAsync(id, workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return StatusCode((int)result.StatusCode, result);
-
-        return Ok(result);
-    }
-
-    private ServiceResult<int> GetWorkshopId()
-    {
-        var workshopIdClaim = User.FindFirst("workshopId")?.Value
-            ?? User.FindFirst("WorkshopId")?.Value;
-
-        if (!int.TryParse(workshopIdClaim, out var workshopId))
-        {
-            return ServiceResult<int>.Fail(
-                "Workshop bilgisi bulunamadı.",
-                HttpStatusCode.Unauthorized);
-        }
-
-        return ServiceResult<int>.Success(workshopId);
+        return ToActionResult(result);
     }
 }

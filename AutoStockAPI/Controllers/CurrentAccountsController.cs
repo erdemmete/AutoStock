@@ -1,4 +1,4 @@
-﻿
+﻿using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.CurrentAccounts;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -8,8 +8,8 @@ namespace AutoStock.API.Controllers
 {
     [ApiController]
     [Route("api/current-accounts")]
-    [Authorize]
-    public class CurrentAccountsController : ControllerBase
+    [Authorize(Roles = AppRoles.Owner)]
+    public class CurrentAccountsController : BaseApiController
     {
         private readonly ICurrentAccountService _currentAccountService;
 
@@ -21,54 +21,46 @@ namespace AutoStock.API.Controllers
         [HttpPost("payments")]
         public async Task<IActionResult> CreatePayment(CreatePaymentRequestDto request)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _currentAccountService.CreatePaymentAsync(request, workshopId);
+            var result = await _currentAccountService.CreatePaymentAsync(
+                request,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
+
         [HttpGet("customers/{customerId:int}")]
         public async Task<IActionResult> GetCustomerAccount(int customerId)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _currentAccountService.GetCustomerAccountAsync(customerId, workshopId);
+            var result = await _currentAccountService.GetCustomerAccountAsync(
+                customerId,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpGet("summary")]
         public async Task<IActionResult> GetSummary([FromQuery] CurrentAccountListQueryDto query)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _currentAccountService.GetPagedSummaryAsync(query, workshopId);
+            var result = await _currentAccountService.GetPagedSummaryAsync(
+                query,
+                workshopIdResult.Data);
 
-            if (result.IsFailure)
-                return StatusCode((int)result.StatusCode, result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
     }
 }

@@ -1,16 +1,18 @@
-﻿using AutoStock.Services.Dtos.Common;
+﻿using AutoStock.Services.Constants;
+using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.StockItems;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.DTOs.StockItems;
 using Services.Interfaces.StockItems;
+using System.Net;
 
-namespace AutoStockAPI.Controllers
+namespace AutoStock.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
     [ApiController]
     [Route("api/[controller]")]
-    public class StockItemsController : ControllerBase
+    public class StockItemsController : BaseApiController
     {
         private readonly IStockItemService _stockItemService;
 
@@ -22,29 +24,36 @@ namespace AutoStockAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] StockItemListQueryDto query)
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
             var result = await _stockItemService.GetPagedAsync(
-                workshopId.Value,
+                workshopIdResult.Data,
                 query);
 
             return Ok(ServiceResult<object>.Success(result));
         }
+
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _stockItemService.GetByIdAsync(id, workshopId.Value);
+            var result = await _stockItemService.GetByIdAsync(
+                id,
+                workshopIdResult.Data);
 
             if (result == null)
-                return NotFound(ServiceResult<object>.Fail("Stok kartı bulunamadı."));
+            {
+                return ToActionResult(ServiceResult<object>.Fail(
+                    "Stok kartı bulunamadı.",
+                    HttpStatusCode.NotFound));
+            }
 
             return Ok(ServiceResult<object>.Success(result));
         }
@@ -52,12 +61,14 @@ namespace AutoStockAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(CreateStockItemDto dto)
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var stockItemId = await _stockItemService.CreateAsync(dto, workshopId.Value);
+            var stockItemId = await _stockItemService.CreateAsync(
+                dto,
+                workshopIdResult.Data);
 
             return Ok(ServiceResult<object>.Success(new
             {
@@ -70,62 +81,66 @@ namespace AutoStockAPI.Controllers
         public async Task<IActionResult> Update(int id, UpdateStockItemDto dto)
         {
             if (id != dto.Id)
-                return BadRequest(ServiceResult<int>.Fail("Stok bilgisi hatalı."));
+            {
+                return ToActionResult(ServiceResult<int>.Fail(
+                    "Stok bilgisi hatalı.",
+                    HttpStatusCode.BadRequest));
+            }
 
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _stockItemService.UpdateAsync(dto, workshopId.Value);
+            var result = await _stockItemService.UpdateAsync(
+                dto,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return StatusCode(result.StatusCode, result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpPost("{id:int}/passive")]
         public async Task<IActionResult> SetPassive(int id)
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _stockItemService.SetPassiveAsync(id, workshopId.Value);
+            var result = await _stockItemService.SetPassiveAsync(
+                id,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return StatusCode(result.StatusCode, result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpPost("{id:int}/adjust-stock")]
         public async Task<IActionResult> AdjustStock(int id, AdjustStockDto dto)
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _stockItemService.AdjustStockAsync(id, dto, workshopId.Value);
+            var result = await _stockItemService.AdjustStockAsync(
+                id,
+                dto,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return StatusCode(result.StatusCode, result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpGet("{id:int}/movements")]
         public async Task<IActionResult> GetMovements(int id)
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _stockItemService.GetMovementsAsync(id, workshopId.Value);
+            var result = await _stockItemService.GetMovementsAsync(
+                id,
+                workshopIdResult.Data);
 
             return Ok(ServiceResult<object>.Success(result));
         }
@@ -133,44 +148,45 @@ namespace AutoStockAPI.Controllers
         [HttpPost("{id:int}/stock-in")]
         public async Task<IActionResult> StockIn(int id, StockTransactionDto dto)
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _stockItemService.StockInAsync(id, dto, workshopId.Value);
+            var result = await _stockItemService.StockInAsync(
+                id,
+                dto,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return StatusCode(result.StatusCode, result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpPost("{id:int}/stock-out")]
         public async Task<IActionResult> StockOut(int id, StockTransactionDto dto)
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _stockItemService.StockOutAsync(id, dto, workshopId.Value);
+            var result = await _stockItemService.StockOutAsync(
+                id,
+                dto,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return StatusCode(result.StatusCode, result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpGet("select-list")]
         public async Task<IActionResult> GetSelectList()
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _stockItemService.GetSelectListAsync(workshopId.Value);
+            var result = await _stockItemService.GetSelectListAsync(
+                workshopIdResult.Data);
 
             return Ok(ServiceResult<object>.Success(result));
         }
@@ -178,12 +194,14 @@ namespace AutoStockAPI.Controllers
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string q)
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _stockItemService.SearchAsync(workshopId.Value, q);
+            var result = await _stockItemService.SearchAsync(
+                workshopIdResult.Data,
+                q);
 
             return Ok(ServiceResult<object>.Success(result));
         }
@@ -191,25 +209,15 @@ namespace AutoStockAPI.Controllers
         [HttpGet("filter-options")]
         public async Task<IActionResult> GetFilterOptions()
         {
-            var workshopId = GetWorkshopId();
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (workshopId == null)
-                return Unauthorized(ServiceResult<object>.Fail("Oturum bilgisi bulunamadı."));
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _stockItemService.GetFilterOptionsAsync(workshopId.Value);
+            var result = await _stockItemService.GetFilterOptionsAsync(
+                workshopIdResult.Data);
 
             return Ok(ServiceResult<object>.Success(result));
         }
-        private int? GetWorkshopId()
-        {
-            var workshopIdClaim = User.FindFirst("workshopId")?.Value;
-
-            if (string.IsNullOrWhiteSpace(workshopIdClaim))
-                return null;
-
-            return int.Parse(workshopIdClaim);
-        }
-
-
     }
 }

@@ -74,5 +74,36 @@ namespace AutoStock.WEB.Controllers
 
             TempData["ToastError"] = string.Join(" ", errorMessages);
         }
+
+        protected string? CurrentUserRole =>
+    HttpContext.Session.GetString("UserRole");
+
+        protected int? CurrentUserId =>
+            HttpContext.Session.GetInt32("UserId");
+
+        protected int? CurrentWorkshopId =>
+            HttpContext.Session.GetInt32("WorkshopId");
+
+        protected bool IsAdmin =>
+            CurrentUserRole == "Admin";
+
+        protected bool IsOwner =>
+            CurrentUserRole == "Owner";
+
+        protected bool IsStaff =>
+            CurrentUserRole == "Staff";
+
+        protected IActionResult RedirectToLogin()
+        {
+            return RedirectToAction("Login", "Auth");
+        }
+
+        protected IActionResult RedirectByRole()
+        {
+            if (IsAdmin)
+                return RedirectToAction("Dashboard", "Admin");
+
+            return RedirectToAction("Index", "Dashboard");
+        }
     }
 }

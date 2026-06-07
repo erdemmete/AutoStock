@@ -1,21 +1,24 @@
 ﻿using AutoStock.Repositories;
-
+using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.VehicleQrCodes;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AutoStockAPI.Controllers
+namespace AutoStock.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
     [Route("api/[controller]")]
     [ApiController]
-    public class VehicleQrCodesController : ControllerBase
+    public class VehicleQrCodesController : BaseApiController
     {
         private readonly AppDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
-        public VehicleQrCodesController(AppDbContext context, IDateTimeProvider dateTimeProvider)
+
+        public VehicleQrCodesController(
+            AppDbContext context,
+            IDateTimeProvider dateTimeProvider)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
@@ -24,10 +27,12 @@ namespace AutoStockAPI.Controllers
         [HttpPost("assign")]
         public async Task<IActionResult> Assign(AssignVehicleQrCodeRequest request)
         {
-            var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
+
+            var workshopId = workshopIdResult.Data;
 
             if (string.IsNullOrWhiteSpace(request.Code))
                 return BadRequest("QR kod zorunludur.");

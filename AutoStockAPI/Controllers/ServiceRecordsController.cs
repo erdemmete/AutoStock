@@ -1,4 +1,4 @@
-﻿using AutoStock.Services.Dtos.Common;
+﻿using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -8,8 +8,8 @@ namespace AutoStock.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
-public class ServiceRecordsController : ControllerBase
+[Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
+public class ServiceRecordsController : BaseApiController
 {
     private readonly IServiceRecordService _serviceRecordService;
 
@@ -21,43 +21,46 @@ public class ServiceRecordsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateServiceRecordRequest request)
     {
-        if (!TryGetWorkshopId(out var workshopId))
-            return Unauthorized(ServiceResult<object>.Fail("Workshop bilgisi bulunamadı."));
+        var workshopIdResult = GetCurrentWorkshopId();
 
-        var result = await _serviceRecordService.CreateAsync(request, workshopId);
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
 
-        if (result.IsFailure)
-            return BadRequest(result);
+        var result = await _serviceRecordService.CreateAsync(
+            request,
+            workshopIdResult.Data);
 
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpGet]
     public async Task<IActionResult> GetList([FromQuery] ServiceRecordListQueryDto query)
     {
-        if (!TryGetWorkshopId(out var workshopId))
-            return Unauthorized(ServiceResult<object>.Fail("Workshop bilgisi bulunamadı."));
+        var workshopIdResult = GetCurrentWorkshopId();
 
-        var result = await _serviceRecordService.GetPagedAsync(workshopId, query);
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
 
-        if (result.IsFailure)
-            return BadRequest(result);
+        var result = await _serviceRecordService.GetPagedAsync(
+            workshopIdResult.Data,
+            query);
 
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetDetail(int id)
     {
-        if (!TryGetWorkshopId(out var workshopId))
-            return Unauthorized(ServiceResult<object>.Fail("Workshop bilgisi bulunamadı."));
+        var workshopIdResult = GetCurrentWorkshopId();
 
-        var result = await _serviceRecordService.GetDetailAsync(id, workshopId);
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
 
-        if (result.IsFailure)
-            return NotFound(result);
+        var result = await _serviceRecordService.GetDetailAsync(
+            id,
+            workshopIdResult.Data);
 
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPut("request-items/{requestItemId:int}")]
@@ -65,18 +68,17 @@ public class ServiceRecordsController : ControllerBase
         int requestItemId,
         UpdateServiceRequestItemRequest request)
     {
-        if (!TryGetWorkshopId(out var workshopId))
-            return Unauthorized(ServiceResult<object>.Fail("Workshop bilgisi bulunamadı."));
+        var workshopIdResult = GetCurrentWorkshopId();
+
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _serviceRecordService.UpdateRequestItemAsync(
             requestItemId,
             request,
-            workshopId);
+            workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return BadRequest(result);
-
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPost("{serviceRecordId:int}/request-items")]
@@ -84,18 +86,17 @@ public class ServiceRecordsController : ControllerBase
         int serviceRecordId,
         CreateServiceRequestItemDto request)
     {
-        if (!TryGetWorkshopId(out var workshopId))
-            return Unauthorized(ServiceResult<object>.Fail("Workshop bilgisi bulunamadı."));
+        var workshopIdResult = GetCurrentWorkshopId();
+
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _serviceRecordService.AddRequestItemAsync(
             serviceRecordId,
             request,
-            workshopId);
+            workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return BadRequest(result);
-
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPost("{serviceRecordId:int}/operations")]
@@ -103,32 +104,32 @@ public class ServiceRecordsController : ControllerBase
         int serviceRecordId,
         AddServiceOperationRequest request)
     {
-        if (!TryGetWorkshopId(out var workshopId))
-            return Unauthorized(ServiceResult<object>.Fail("Workshop bilgisi bulunamadı."));
+        var workshopIdResult = GetCurrentWorkshopId();
+
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _serviceRecordService.AddOperationAsync(
             serviceRecordId,
             request,
-            workshopId);
+            workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return BadRequest(result);
-
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPut("{id:int}/complete")]
     public async Task<IActionResult> Complete(int id)
     {
-        if (!TryGetWorkshopId(out var workshopId))
-            return Unauthorized(ServiceResult<object>.Fail("Workshop bilgisi bulunamadı."));
+        var workshopIdResult = GetCurrentWorkshopId();
 
-        var result = await _serviceRecordService.CompleteAsync(id, workshopId);
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
 
-        if (result.IsFailure)
-            return BadRequest(result);
+        var result = await _serviceRecordService.CompleteAsync(
+            id,
+            workshopIdResult.Data);
 
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPut("{id:int}/status")]
@@ -136,57 +137,46 @@ public class ServiceRecordsController : ControllerBase
         int id,
         UpdateServiceRecordStatusRequest request)
     {
-        if (!TryGetWorkshopId(out var workshopId))
-            return Unauthorized(ServiceResult<object>.Fail("Workshop bilgisi bulunamadı."));
+        var workshopIdResult = GetCurrentWorkshopId();
+
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _serviceRecordService.UpdateStatusAsync(
             id,
             request,
-            workshopId);
+            workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return BadRequest(result);
-
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpDelete("operations/{operationId:int}")]
     public async Task<IActionResult> DeleteOperation(int operationId)
     {
-        if (!TryGetWorkshopId(out var workshopId))
-            return Unauthorized(ServiceResult<object>.Fail("Workshop bilgisi bulunamadı."));
+        var workshopIdResult = GetCurrentWorkshopId();
+
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _serviceRecordService.DeleteOperationAsync(
             operationId,
-            workshopId);
+            workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return BadRequest(result);
-
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpDelete("request-items/{requestItemId:int}")]
     public async Task<IActionResult> DeleteRequestItem(int requestItemId)
     {
-        if (!TryGetWorkshopId(out var workshopId))
-            return Unauthorized(ServiceResult<object>.Fail("Workshop bilgisi bulunamadı."));
+        var workshopIdResult = GetCurrentWorkshopId();
+
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
 
         var result = await _serviceRecordService.DeleteRequestItemAsync(
             requestItemId,
-            workshopId);
+            workshopIdResult.Data);
 
-        if (result.IsFailure)
-            return BadRequest(result);
-
-        return Ok(result);
-    }
-
-    private bool TryGetWorkshopId(out int workshopId)
-    {
-        var workshopIdClaim = User.FindFirst("workshopId")?.Value
-            ?? User.FindFirst("WorkshopId")?.Value;
-
-        return int.TryParse(workshopIdClaim, out workshopId);
+        return ToActionResult(result);
     }
 }

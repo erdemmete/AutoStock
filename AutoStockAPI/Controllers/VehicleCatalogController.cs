@@ -1,4 +1,5 @@
-﻿using AutoStock.Services.Dtos.Common;
+﻿using AutoStock.Services.Constants;
+using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,8 +8,8 @@ namespace AutoStock.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
-    public class VehicleCatalogController : ControllerBase
+    [Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
+    public class VehicleCatalogController : BaseApiController
     {
         private readonly IVehicleCatalogService _vehicleCatalogService;
 
@@ -22,7 +23,7 @@ namespace AutoStock.API.Controllers
         {
             var brands = await _vehicleCatalogService.GetBrandsAsync();
 
-            return OkServiceResult(brands);
+            return ToActionResult(ServiceResult<object>.Success(brands));
         }
 
         [HttpGet("brands/{brandId:int}/models")]
@@ -30,12 +31,7 @@ namespace AutoStock.API.Controllers
         {
             var models = await _vehicleCatalogService.GetModelsByBrandIdAsync(brandId);
 
-            return OkServiceResult(models);
-        }
-
-        private IActionResult OkServiceResult<T>(T data)
-        {
-            return Ok(ServiceResult<T>.Success(data));
+            return ToActionResult(ServiceResult<object>.Success(models));
         }
     }
 }

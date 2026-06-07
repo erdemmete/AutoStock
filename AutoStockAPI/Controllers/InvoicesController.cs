@@ -1,4 +1,4 @@
-﻿
+﻿using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Invoices;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -6,10 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AutoStock.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
     [ApiController]
     [Route("api/[controller]")]
-    public class InvoicesController : ControllerBase
+    public class InvoicesController : BaseApiController
     {
         private readonly IInvoiceService _invoiceService;
 
@@ -21,181 +21,153 @@ namespace AutoStock.API.Controllers
         [HttpGet("draft/from-service-record/{serviceRecordId:int}")]
         public async Task<IActionResult> GetDraftFromServiceRecord(int serviceRecordId)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("WorkshopId bilgisi token içinde bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _invoiceService.GetCreateDraftAsync(serviceRecordId, workshopId);
+            var result = await _invoiceService.GetCreateDraftAsync(
+                serviceRecordId,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpPost]
         public async Task<IActionResult> Create(CreateInvoiceDto request)
         {
-            var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _invoiceService.CreateAsync(request, workshopId);
+            var result = await _invoiceService.CreateAsync(
+                request,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpGet("{invoiceId:int}")]
         public async Task<IActionResult> GetDetail(int invoiceId)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _invoiceService.GetDetailAsync(invoiceId, workshopId);
+            var result = await _invoiceService.GetDetailAsync(
+                invoiceId,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpPost("{invoiceId:int}/issue")]
         public async Task<IActionResult> Issue(int invoiceId)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _invoiceService.IssueAsync(invoiceId, workshopId);
+            var result = await _invoiceService.IssueAsync(
+                invoiceId,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpGet]
         public async Task<IActionResult> GetList([FromQuery] InvoiceListQueryDto query)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _invoiceService.GetPagedAsync(query, workshopId);
+            var result = await _invoiceService.GetPagedAsync(
+                query,
+                workshopIdResult.Data);
 
-            if (result.IsFailure)
-                return StatusCode((int)result.StatusCode, result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpGet("by-service-record/{serviceRecordId:int}")]
         public async Task<IActionResult> GetListByServiceRecord(int serviceRecordId)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _invoiceService.GetListByServiceRecordAsync(serviceRecordId, workshopId);
+            var result = await _invoiceService.GetListByServiceRecordAsync(
+                serviceRecordId,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpGet("draft/by-service-record/{serviceRecordId:int}")]
         public async Task<IActionResult> GetDraftByServiceRecord(int serviceRecordId)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _invoiceService.GetDraftByServiceRecordAsync(serviceRecordId, workshopId);
+            var result = await _invoiceService.GetDraftByServiceRecordAsync(
+                serviceRecordId,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return NotFound(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpGet("active/by-service-record/{serviceRecordId:int}")]
         public async Task<IActionResult> GetActiveInvoiceByServiceRecord(int serviceRecordId)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _invoiceService.GetActiveInvoiceByServiceRecordAsync(serviceRecordId, workshopId);
+            var result = await _invoiceService.GetActiveInvoiceByServiceRecordAsync(
+                serviceRecordId,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return NotFound(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpPost("{invoiceId:int}/cancel")]
         public async Task<IActionResult> Cancel(int invoiceId)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
-            var result = await _invoiceService.CancelAsync(invoiceId, workshopId);
+            var result = await _invoiceService.CancelAsync(
+                invoiceId,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
 
         [HttpPut("{invoiceId:int}")]
         public async Task<IActionResult> Update(int invoiceId, UpdateInvoiceDto request)
         {
-            var workshopIdClaim =
-                User.FindFirst("WorkshopId")?.Value
-                ?? User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (!int.TryParse(workshopIdClaim, out var workshopId))
-                return Unauthorized("Workshop bilgisi bulunamadı.");
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
             request.InvoiceId = invoiceId;
 
-            var result = await _invoiceService.UpdateAsync(request, workshopId);
+            var result = await _invoiceService.UpdateAsync(
+                request,
+                workshopIdResult.Data);
 
-            if (!result.IsSuccess)
-                return BadRequest(result);
-
-            return Ok(result);
+            return ToActionResult(result);
         }
     }
 }

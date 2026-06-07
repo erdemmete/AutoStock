@@ -49,7 +49,7 @@ namespace AutoStockAPI.Controllers
             var pdfRequest = new CreateServicePdfRequest
             {
                 CustomerName = record.CustomerNameSnapshot,
-                CustomerPhone = record.CustomerPhoneSnapshot,
+                CustomerPhone = null,
                 CustomerEmail = null,
 
                 Plate = record.VehiclePlateSnapshot,
