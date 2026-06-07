@@ -1,6 +1,7 @@
 ﻿using AutoStock.Repositories;
 using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Enums;
+using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.StockItems;
 using AutoStock.Services.Interfaces;
@@ -14,11 +15,16 @@ namespace Services.Services.StockItems
     {
         private readonly AppDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IAuditLogService _auditLogService;
 
-        public StockItemService(AppDbContext context, IDateTimeProvider dateTimeProvider)
+        public StockItemService(
+            AppDbContext context,
+            IDateTimeProvider dateTimeProvider,
+            IAuditLogService auditLogService)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
+            _auditLogService = auditLogService;
         }
 
         public async Task<List<StockItemListDto>> GetAllAsync(int workshopId)
@@ -100,6 +106,47 @@ namespace Services.Services.StockItems
 
             await _context.SaveChangesAsync();
 
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Create,
+                EntityType = AuditEntityType.StockItem,
+                EntityId = stockItem.Id,
+                Description = $"Stok kartı oluşturuldu: {GetStockDisplayName(stockItem)}",
+                NewValues = new
+                {
+                    stockItem.Name,
+                    stockItem.Code,
+                    stockItem.Brand,
+                    stockItem.Unit,
+                    stockItem.Quantity,
+                    stockItem.PurchasePrice,
+                    stockItem.SalePrice,
+                    stockItem.MinimumQuantity
+                }
+            });
+
+            if (dto.Quantity > 0)
+            {
+                await _auditLogService.AddAsync(new AuditLogCreateDto
+                {
+                    WorkshopId = workshopId,
+                    ActionType = AuditActionType.StockIn,
+                    EntityType = AuditEntityType.StockItem,
+                    EntityId = stockItem.Id,
+                    Description = $"İlk stok girişi yapıldı: {GetStockDisplayName(stockItem)} - Miktar: {dto.Quantity}",
+                    NewValues = new
+                    {
+                        Quantity = dto.Quantity,
+                        UnitPrice = dto.PurchasePrice,
+                        NewQuantity = stockItem.Quantity,
+                        Description = "İlk stok girişi"
+                    }
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
             return stockItem.Id;
         }
 
@@ -111,6 +158,18 @@ namespace Services.Services.StockItems
             if (stockItem == null)
                 return ServiceResult<int>.Fail("Stok kartı bulunamadı.");
 
+            var oldValues = new
+            {
+                stockItem.Name,
+                stockItem.Code,
+                stockItem.Barcode,
+                stockItem.Brand,
+                stockItem.Unit,
+                stockItem.PurchasePrice,
+                stockItem.SalePrice,
+                stockItem.MinimumQuantity
+            };
+
             stockItem.Name = dto.Name.Trim();
             stockItem.Code = string.IsNullOrWhiteSpace(dto.Code) ? null : dto.Code.Trim();
             stockItem.Barcode = string.IsNullOrWhiteSpace(dto.Barcode) ? null : dto.Barcode.Trim();
@@ -120,7 +179,30 @@ namespace Services.Services.StockItems
             stockItem.SalePrice = dto.SalePrice;
             stockItem.MinimumQuantity = dto.MinimumQuantity;
 
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Update,
+                EntityType = AuditEntityType.StockItem,
+                EntityId = stockItem.Id,
+                Description = $"Stok kartı güncellendi: {GetStockDisplayName(stockItem)}",
+                OldValues = oldValues,
+                NewValues = new
+                {
+                    stockItem.Name,
+                    stockItem.Code,
+                    stockItem.Barcode,
+                    stockItem.Brand,
+                    stockItem.Unit,
+                    stockItem.PurchasePrice,
+                    stockItem.SalePrice,
+                    stockItem.MinimumQuantity
+                }
+            });
+
             await _context.SaveChangesAsync();
+
+            
 
             return ServiceResult<int>.Success(stockItem.Id);
         }
@@ -134,6 +216,23 @@ namespace Services.Services.StockItems
                 return ServiceResult<int>.Fail("Stok kartı bulunamadı.");
 
             stockItem.IsActive = false;
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.SetPassive,
+                EntityType = AuditEntityType.StockItem,
+                EntityId = stockItem.Id,
+                Description = $"Stok kartı pasife alındı: {GetStockDisplayName(stockItem)}",
+                OldValues = new
+                {
+                    IsActive = true
+                },
+                NewValues = new
+                {
+                    IsActive = false
+                }
+            });
 
             await _context.SaveChangesAsync();
 
@@ -170,6 +269,25 @@ namespace Services.Services.StockItems
             };
 
             _context.StockMovements.Add(movement);
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.StockAdjustment,
+                EntityType = AuditEntityType.StockItem,
+                EntityId = stockItem.Id,
+                Description = $"Stok düzeltmesi yapıldı: {GetStockDisplayName(stockItem)} - Eski: {oldQuantity}, Yeni: {dto.NewQuantity}",
+                OldValues = new
+                {
+                    Quantity = oldQuantity
+                },
+                NewValues = new
+                {
+                    Quantity = dto.NewQuantity,
+                    Difference = difference,
+                    movement.Description
+                }
+            });
 
             await _context.SaveChangesAsync();
 
@@ -212,6 +330,8 @@ namespace Services.Services.StockItems
             if (stockItem == null)
                 return ServiceResult<int>.Fail("Stok kartı bulunamadı.");
 
+            var oldQuantity = stockItem.Quantity;
+
             stockItem.Quantity += dto.Quantity;
 
             var movement = new StockMovement
@@ -226,6 +346,26 @@ namespace Services.Services.StockItems
             };
 
             _context.StockMovements.Add(movement);
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.StockIn,
+                EntityType = AuditEntityType.StockItem,
+                EntityId = stockItem.Id,
+                Description = $"Stok girişi yapıldı: {GetStockDisplayName(stockItem)} - Miktar: {dto.Quantity}",
+                OldValues = new
+                {
+                    Quantity = oldQuantity
+                },
+                NewValues = new
+                {
+                    Quantity = stockItem.Quantity,
+                    AddedQuantity = dto.Quantity,
+                    movement.UnitPrice,
+                    movement.Description
+                }
+            });
 
             await _context.SaveChangesAsync();
 
@@ -246,6 +386,8 @@ namespace Services.Services.StockItems
             if (stockItem.Quantity < dto.Quantity)
                 return ServiceResult<int>.Fail("Yetersiz stok.");
 
+            var oldQuantity = stockItem.Quantity;
+
             stockItem.Quantity -= dto.Quantity;
 
             var movement = new StockMovement
@@ -260,6 +402,26 @@ namespace Services.Services.StockItems
             };
 
             _context.StockMovements.Add(movement);
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.StockOut,
+                EntityType = AuditEntityType.StockItem,
+                EntityId = stockItem.Id,
+                Description = $"Stok çıkışı yapıldı: {GetStockDisplayName(stockItem)} - Miktar: {dto.Quantity}",
+                OldValues = new
+                {
+                    Quantity = oldQuantity
+                },
+                NewValues = new
+                {
+                    Quantity = stockItem.Quantity,
+                    RemovedQuantity = dto.Quantity,
+                    movement.UnitPrice,
+                    movement.Description
+                }
+            });
 
             await _context.SaveChangesAsync();
 
@@ -446,9 +608,7 @@ namespace Services.Services.StockItems
             return ServiceResult<bool>.Success(true);
         }
 
-        public async Task<PagedResult<StockItemListDto>> GetPagedAsync(
-    int workshopId,
-    StockItemListQueryDto query)
+        public async Task<PagedResult<StockItemListDto>> GetPagedAsync(int workshopId, StockItemListQueryDto query)
         {
             query.Normalize();
 
@@ -532,6 +692,14 @@ namespace Services.Services.StockItems
             {
                 Brands = brands
             };
+        }
+
+        private static string GetStockDisplayName(StockItem stockItem)
+        {
+            if (!string.IsNullOrWhiteSpace(stockItem.Code))
+                return $"{stockItem.Name} ({stockItem.Code})";
+
+            return stockItem.Name;
         }
     }
 }
