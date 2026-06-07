@@ -3,6 +3,7 @@ using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Enums;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.StockItems;
+using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Services.DTOs.StockItems;
 using Services.Interfaces.StockItems;
@@ -12,10 +13,12 @@ namespace Services.Services.StockItems
     public class StockItemService : IStockItemService
     {
         private readonly AppDbContext _context;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public StockItemService(AppDbContext context)
+        public StockItemService(AppDbContext context, IDateTimeProvider dateTimeProvider)
         {
             _context = context;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<List<StockItemListDto>> GetAllAsync(int workshopId)
@@ -74,7 +77,7 @@ namespace Services.Services.StockItems
                 SalePrice = dto.SalePrice,
                 MinimumQuantity = dto.MinimumQuantity,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _dateTimeProvider.Now
             };
 
             _context.StockItems.Add(stockItem);
@@ -89,7 +92,7 @@ namespace Services.Services.StockItems
                     Quantity = dto.Quantity,
                     UnitPrice = dto.PurchasePrice,
                     Description = "İlk stok girişi",
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = _dateTimeProvider.Now
                 };
 
                 _context.StockMovements.Add(movement);
@@ -163,7 +166,7 @@ namespace Services.Services.StockItems
                 Description = string.IsNullOrWhiteSpace(dto.Description)
                     ? $"Stok sayım düzeltmesi. Eski miktar: {oldQuantity}, yeni miktar: {dto.NewQuantity}"
                     : dto.Description.Trim(),
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _dateTimeProvider.Now
             };
 
             _context.StockMovements.Add(movement);
@@ -219,7 +222,7 @@ namespace Services.Services.StockItems
                 Quantity = dto.Quantity,
                 UnitPrice = dto.UnitPrice ?? stockItem.PurchasePrice,
                 Description = dto.Description,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _dateTimeProvider.Now
             };
 
             _context.StockMovements.Add(movement);
@@ -253,7 +256,7 @@ namespace Services.Services.StockItems
                 Quantity = dto.Quantity,
                 UnitPrice = dto.UnitPrice ?? stockItem.PurchasePrice,
                 Description = dto.Description,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _dateTimeProvider.Now
             };
 
             _context.StockMovements.Add(movement);
@@ -292,7 +295,7 @@ namespace Services.Services.StockItems
                 Description = "Fatura kaynaklı stok çıkışı",
                 ReferenceType = "Invoice",
                 ReferenceId = invoiceId,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _dateTimeProvider.Now
             };
 
             _context.StockMovements.Add(movement);
@@ -375,7 +378,7 @@ namespace Services.Services.StockItems
                 ReferenceType = "ServiceOperation",
                 ReferenceId = serviceOperationId,
                 Description = "Servis operasyonu kaynaklı stok çıkışı",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _dateTimeProvider.Now
             });
 
             return ServiceResult<bool>.Success(true);
@@ -406,7 +409,7 @@ namespace Services.Services.StockItems
                 ReferenceType = "ServiceOperation",
                 ReferenceId = serviceOperationId,
                 Description = "Servis operasyonu silme kaynaklı stok iadesi",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _dateTimeProvider.Now
             });
 
             return ServiceResult<bool>.Success(true);
@@ -437,7 +440,7 @@ namespace Services.Services.StockItems
                 ReferenceType = "Invoice",
                 ReferenceId = invoiceId,
                 Description = "Hızlı fatura iptali kaynaklı stok iadesi",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _dateTimeProvider.Now
             });
 
             return ServiceResult<bool>.Success(true);

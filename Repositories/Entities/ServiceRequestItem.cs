@@ -19,7 +19,7 @@
 
         public decimal? FinalAmount { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
         public ICollection<ServiceOperation> Operations { get; set; } = new List<ServiceOperation>();
     }
 }

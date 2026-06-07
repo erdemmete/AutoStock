@@ -22,7 +22,7 @@ namespace AutoStock.Repositories.Entities
 
         public int? ReferenceId { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
 
         public int? CreatedByUserId { get; set; }
 

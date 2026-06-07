@@ -22,8 +22,6 @@ namespace AutoStock.Services.Dtos.Admin.Workshops
 
         public DateTime CreatedAt { get; set; }
 
-        public bool IsExpired =>
-            SubscriptionEndDate.HasValue &&
-            SubscriptionEndDate.Value < DateTime.UtcNow;
+        public bool IsExpired { get; set; }
     }
 }

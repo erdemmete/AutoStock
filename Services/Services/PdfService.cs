@@ -11,16 +11,23 @@ namespace AutoStock.Services.Services;
 
 public class PdfService : IPdfService
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    public PdfService(IDateTimeProvider dateTimeProvider)
+    {
+        _dateTimeProvider = dateTimeProvider;
+    }
+
     public byte[] CreateServicePdf(CreateServicePdfRequest request)
     {
         QuestPDF.Settings.License = LicenseType.Community;
-
+        var now = _dateTimeProvider.Now;
         var total = request.RequestGroups
     .SelectMany(x => x.Operations)
     .Sum(x => x.Quantity * x.UnitPrice);
 
         var documentNo = string.IsNullOrWhiteSpace(request.RecordNumber)
-            ? $"SVX-{DateTime.Now:yyyyMMdd-HHmm}"
+            ? $"SVX-{_dateTimeProvider.Now:yyyyMMdd-HHmm}"
             : request.RecordNumber;
 
         var pdf = Document.Create(container =>
@@ -31,9 +38,9 @@ public class PdfService : IPdfService
                 page.Margin(36);
                 page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
 
-                page.Header().Element(c => BuildHeader(c, documentNo, request));
+                page.Header().Element(c => BuildHeader(c, documentNo, request, now));
                 page.Content().Element(c => BuildContent(c, request, total));
-                page.Footer().Element(BuildFooter);
+                page.Footer().Element(c => BuildFooter(c, now));
             });
         });
 
@@ -43,10 +50,10 @@ public class PdfService : IPdfService
     public byte[] CreateQuickOfferPdf(CreateQuickOfferPdfRequest request)
     {
         QuestPDF.Settings.License = LicenseType.Community;
-
+        var now = _dateTimeProvider.Now;
         var total = request.RequestItems.Sum(x => x.EstimatedAmount ?? 0);
 
-        var documentNo = $"QO-{DateTime.Now:yyyyMMdd-HHmm}";
+        var documentNo = $"QO-{_dateTimeProvider.Now:yyyyMMdd-HHmm}";
 
         var pdf = Document.Create(container =>
         {
@@ -84,7 +91,7 @@ public class PdfService : IPdfService
                                 .Bold()
                                 .FontColor(Colors.Grey.Darken4);
 
-                            right.Item().PaddingTop(6).Text(DateTime.Now.ToString("dd.MM.yyyy HH:mm"))
+                            right.Item().PaddingTop(6).Text(_dateTimeProvider.Now.ToString("dd.MM.yyyy HH:mm"))
                                 .FontSize(10)
                                 .FontColor(Colors.Grey.Darken1);
                         });
@@ -219,20 +226,20 @@ public class PdfService : IPdfService
                     });
                 });
 
-                page.Footer().Element(BuildFooter);
+                page.Footer().Element(c => BuildFooter(c, now));
             });
         });
 
         return pdf.GeneratePdf();
     }
 
-    private static void BuildHeader(IContainer container, string documentNo, CreateServicePdfRequest request)
+    private static void BuildHeader(IContainer container, string documentNo, CreateServicePdfRequest request, DateTime now)
     {
         var brandName = string.IsNullOrWhiteSpace(request.WorkshopName)
             ? "Servix"
             : request.WorkshopName;
 
-        var qrText = $"{brandName} | Belge No: {documentNo} | Tarih: {DateTime.Now:dd.MM.yyyy HH:mm}";
+        var qrText = $"{brandName} | Belge No: {documentNo} | Tarih: {now:dd.MM.yyyy HH:mm}";
         var qrBytes = GenerateQrCode(qrText);
 
         container.Column(column =>
@@ -268,7 +275,7 @@ public class PdfService : IPdfService
                         .Bold()
                         .FontColor(Colors.Grey.Darken4);
 
-                    right.Item().PaddingTop(6).Text(DateTime.Now.ToString("dd.MM.yyyy HH:mm"))
+                    right.Item().PaddingTop(6).Text(now.ToString("dd.MM.yyyy HH:mm"))
                         .FontSize(10)
                         .FontColor(Colors.Grey.Darken1);
                 });
@@ -502,7 +509,7 @@ public class PdfService : IPdfService
         });
     }
 
-    private static void BuildFooter(IContainer container)
+    private static void BuildFooter(IContainer container, DateTime now)
     {
         container.Column(column =>
         {
@@ -514,7 +521,7 @@ public class PdfService : IPdfService
                     .FontSize(8)
                     .FontColor(Colors.Grey.Darken1);
 
-                row.ConstantItem(120).AlignRight().Text(DateTime.Now.ToString("dd.MM.yyyy HH:mm"))
+                row.ConstantItem(120).AlignRight().Text(now.ToString("dd.MM.yyyy HH:mm"))
                     .FontSize(8)
                     .FontColor(Colors.Grey.Darken1);
             });

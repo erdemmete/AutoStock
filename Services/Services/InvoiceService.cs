@@ -13,13 +13,16 @@ namespace AutoStock.Services.Services
     {
         private readonly AppDbContext _context;
         private readonly IStockItemService _stockItemService;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public InvoiceService(
             AppDbContext context,
-            IStockItemService stockItemService)
+            IStockItemService stockItemService,
+            IDateTimeProvider dateTimeProvider)
         {
             _context = context;
             _stockItemService = stockItemService;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public InvoiceService(AppDbContext context)
@@ -128,8 +131,8 @@ namespace AutoStock.Services.Services
                 Type = InvoiceType.Manual,
                 Status = InvoiceStatus.Draft,
 
-                InvoiceNumber = $"MAT-{DateTime.UtcNow:yyyyMMddHHmmss}",
-                InvoiceDate = DateTime.UtcNow,
+                InvoiceNumber = $"MAT-{_dateTimeProvider.Now:yyyyMMddHHmmss}",
+                InvoiceDate = _dateTimeProvider.Now,
 
                 CustomerTitle = string.IsNullOrWhiteSpace(request.CustomerTitle)
                  ? "Bilinmeyen Müşteri"
@@ -144,7 +147,7 @@ namespace AutoStock.Services.Services
                 ChassisNumber = request.ChassisNumber,
                 Mileage = request.Mileage,
 
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = _dateTimeProvider.Now
             };
 
             foreach (var item in validItems)
@@ -332,7 +335,7 @@ namespace AutoStock.Services.Services
                 Debit = invoice.GrandTotal,
                 Credit = 0,
 
-                TransactionDate = DateTime.UtcNow,
+                TransactionDate = _dateTimeProvider.Now,
 
                 Description = $"{invoice.InvoiceNumber} numaralı fatura borç kaydı",
 
@@ -533,7 +536,7 @@ namespace AutoStock.Services.Services
                 Debit = 0,
                 Credit = invoice.GrandTotal,
 
-                TransactionDate = DateTime.UtcNow,
+                TransactionDate = _dateTimeProvider.Now,
 
                 Description = $"{invoice.InvoiceNumber} numaralı fatura iptal kaydı",
 

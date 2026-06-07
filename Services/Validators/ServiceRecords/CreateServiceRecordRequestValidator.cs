@@ -1,10 +1,18 @@
 ﻿using AutoStock.Services.Dtos.ServiceRecords;
+using AutoStock.Services.Interfaces;
 using FluentValidation;
 
 namespace AutoStock.Services.Validators.ServiceRecords;
 
 public class CreateServiceRecordRequestValidator : AbstractValidator<CreateServiceRecordRequest>
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    public CreateServiceRecordRequestValidator(IDateTimeProvider dateTimeProvider)
+    {
+        _dateTimeProvider = dateTimeProvider;
+      
+    }
     public CreateServiceRecordRequestValidator()
     {
         RuleFor(x => x.CustomerPhoneNumber)
@@ -38,7 +46,7 @@ public class CreateServiceRecordRequestValidator : AbstractValidator<CreateServi
             .When(x => x.VehicleModelId.HasValue);
 
         RuleFor(x => x.ModelYear)
-            .InclusiveBetween(1950, DateTime.Now.Year + 1)
+            .InclusiveBetween(1950, _dateTimeProvider.Now.Year + 1)
             .WithMessage("Model yılı geçerli aralıkta olmalıdır.")
             .When(x => x.ModelYear.HasValue);
 

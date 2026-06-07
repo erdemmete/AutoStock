@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using AutoStock.Services.Interfaces;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -9,10 +10,12 @@ namespace AutoStock.Services.Services;
 public class JwtService
 {
     private readonly IConfiguration _configuration;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public JwtService(IConfiguration configuration)
+    public JwtService(IConfiguration configuration, IDateTimeProvider dateTimeProvider)
     {
         _configuration = configuration;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public string GenerateToken(
@@ -40,7 +43,7 @@ public class JwtService
             issuer: jwtSettings["Issuer"],
             audience: jwtSettings["Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["ExpireMinutes"]!)),
+            expires: _dateTimeProvider.Now.AddMinutes(int.Parse(jwtSettings["ExpireMinutes"]!)),
             signingCredentials: creds
         );
 

@@ -8,7 +8,7 @@ namespace AutoStock.Repositories.Entities
 
         public string Name { get; set; } = null!;
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
 
         // ilişkiler
         public ICollection<WorkshopUser> WorkshopUsers { get; set; } = new List<WorkshopUser>();
@@ -17,7 +17,7 @@ namespace AutoStock.Repositories.Entities
         public WorkshopSubscriptionStatus SubscriptionStatus { get; set; }
             = WorkshopSubscriptionStatus.Trial;
 
-        public DateTime SubscriptionStartDate { get; set; } = DateTime.UtcNow;
+        public DateTime SubscriptionStartDate { get; set; }
 
         public DateTime? SubscriptionEndDate { get; set; }
 

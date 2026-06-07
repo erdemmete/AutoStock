@@ -1,10 +1,18 @@
 ﻿using AutoStock.Services.Dtos.CurrentAccounts;
+using AutoStock.Services.Interfaces;
 using FluentValidation;
 
 namespace AutoStock.Services.Validators.CurrentAccounts;
 
 public class CreatePaymentRequestDtoValidator : AbstractValidator<CreatePaymentRequestDto>
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    public CreatePaymentRequestDtoValidator(IDateTimeProvider dateTimeProvider)
+    {
+        _dateTimeProvider = dateTimeProvider;
+        
+    }
     public CreatePaymentRequestDtoValidator()
     {
         RuleFor(x => x.CustomerId)
@@ -18,7 +26,7 @@ public class CreatePaymentRequestDtoValidator : AbstractValidator<CreatePaymentR
             .WithMessage("Tahsilat tutarı geçerli aralıkta olmalıdır.");
 
         RuleFor(x => x.PaymentDate)
-            .LessThanOrEqualTo(DateTime.Now.AddDays(1))
+            .LessThanOrEqualTo(_dateTimeProvider.Now.AddDays(1))
             .WithMessage("Tahsilat tarihi ileri bir tarih olamaz.")
             .When(x => x.PaymentDate.HasValue);
 

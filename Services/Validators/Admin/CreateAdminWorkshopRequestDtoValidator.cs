@@ -1,4 +1,5 @@
 ﻿using AutoStock.Services.Dtos.Admin.Workshops;
+using AutoStock.Services.Interfaces;
 using FluentValidation;
 
 namespace AutoStock.Services.Validators.Admin.Workshops;
@@ -7,7 +8,7 @@ public class CreateAdminWorkshopRequestDtoValidator : AbstractValidator<CreateAd
 {
     private static readonly string[] AllowedRoles = { "Owner", "Staff" };
 
-    public CreateAdminWorkshopRequestDtoValidator()
+    public CreateAdminWorkshopRequestDtoValidator(IDateTimeProvider dateTimeProvider)
     {
         RuleFor(x => x.WorkshopName)
             .Cascade(CascadeMode.Stop)
@@ -24,9 +25,10 @@ public class CreateAdminWorkshopRequestDtoValidator : AbstractValidator<CreateAd
             .When(x => x.TrialDays.HasValue);
 
         RuleFor(x => x.SubscriptionEndDate)
-            .GreaterThan(DateTime.Today.AddDays(-1))
-            .WithMessage("Abonelik bitiş tarihi geçmiş bir tarih olamaz.")
-            .When(x => x.SubscriptionEndDate.HasValue);
+    .Must(x => !x.HasValue || x.Value.Date >= dateTimeProvider.Today)
+    .WithMessage("Üyelik bitiş tarihi bugünden önce olamaz.")
+    .Must(x => !x.HasValue || x.Value.Date <= dateTimeProvider.Today.AddYears(10))
+    .WithMessage("Üyelik bitiş tarihi en fazla 10 yıl sonrası olabilir.");
 
         RuleFor(x => x.SubscriptionNote)
             .MaximumLength(500)

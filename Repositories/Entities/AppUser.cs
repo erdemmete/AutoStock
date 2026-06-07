@@ -6,7 +6,7 @@ namespace AutoStock.Repositories.Entities
     {
         public string FullName { get; set; } = null!;
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
         public bool IsActive { get; set; } = true;
     }
 }

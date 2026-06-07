@@ -15,14 +15,14 @@ namespace AutoStock.Repositories.Entities
         public decimal Debit { get; set; }
         public decimal Credit { get; set; }
 
-        public DateTime TransactionDate { get; set; } = DateTime.UtcNow;
+        public DateTime TransactionDate { get; set; } 
 
         public string Description { get; set; } = null!;
         public string? DocumentNumber { get; set; }
 
         public bool IsSystemGenerated { get; set; } = false;
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
 
         public Customer Customer { get; set; } = null!;
         public Invoice? Invoice { get; set; }

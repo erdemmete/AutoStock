@@ -33,7 +33,7 @@ public class Customer
 
     public bool IsActive { get; set; } = true;
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
     public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
 
     public ICollection<ServiceRecord> ServiceRecords { get; set; } = new List<ServiceRecord>();

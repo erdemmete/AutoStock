@@ -14,12 +14,15 @@ public class ServiceRecordService : IServiceRecordService
 {
     private readonly AppDbContext _context;
     private readonly IStockItemService _stockItemService;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public ServiceRecordService(AppDbContext context,
-    IStockItemService stockItemService)
+    IStockItemService stockItemService,
+    IDateTimeProvider dateTimeProvider)
     {
         _context = context;
         _stockItemService = stockItemService;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<ServiceResult<CreateServiceRecordResponse>> CreateAsync(CreateServiceRecordRequest request,int workshopId)
@@ -349,7 +352,7 @@ public class ServiceRecordService : IServiceRecordService
 
         serviceRecord.RequestItems.Add(requestItem);
 
-        serviceRecord.UpdatedAt = DateTime.UtcNow;
+        serviceRecord.UpdatedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -411,7 +414,7 @@ public class ServiceRecordService : IServiceRecordService
         serviceRecord.Operations.Add(operation);
 
         serviceRecord.TotalAmount = serviceRecord.Operations.Sum(x => x.TotalPrice);
-        serviceRecord.UpdatedAt = DateTime.UtcNow;
+        serviceRecord.UpdatedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -462,8 +465,8 @@ await transaction.CommitAsync();
             return ServiceResult<bool>.Fail("Bu servis kaydı zaten tamamlanmış.");
 
         serviceRecord.Status = ServiceRecordStatus.Completed;
-        serviceRecord.CompletedAt = DateTime.UtcNow;
-        serviceRecord.UpdatedAt = DateTime.UtcNow;
+        serviceRecord.CompletedAt = _dateTimeProvider.Now;
+        serviceRecord.UpdatedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -488,11 +491,11 @@ await transaction.CommitAsync();
         serviceRecord.Status = newStatus;
 
         if (newStatus == ServiceRecordStatus.Completed)
-            serviceRecord.CompletedAt = DateTime.UtcNow;
+            serviceRecord.CompletedAt = _dateTimeProvider.Now;
         else
             serviceRecord.CompletedAt = null;
 
-        serviceRecord.UpdatedAt = DateTime.UtcNow;
+        serviceRecord.UpdatedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -559,7 +562,7 @@ await transaction.CommitAsync();
         }
 
         serviceRecord.TotalAmount = recordTotal;
-        serviceRecord.UpdatedAt = DateTime.UtcNow;
+        serviceRecord.UpdatedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -613,7 +616,7 @@ await transaction.CommitAsync();
 
         serviceRecord.TotalAmount = recordTotal;
 
-        serviceRecord.UpdatedAt = DateTime.UtcNow;
+        serviceRecord.UpdatedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -753,9 +756,9 @@ await transaction.CommitAsync();
             .ToUpperInvariant();
     }
 
-    private static string GenerateRecordNumber()
+    private string GenerateRecordNumber()
     {
-        return $"SR-{DateTime.UtcNow:yyyyMMddHHmmssfff}";
+        return $"SR-{_dateTimeProvider.Now:yyyyMMddHHmmssfff}";
     }
 
 

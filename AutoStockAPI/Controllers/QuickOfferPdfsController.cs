@@ -11,10 +11,12 @@ namespace AutoStock.API.Controllers
     public class QuickOfferPdfsController : ControllerBase
     {
         private readonly IPdfService _pdfService;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public QuickOfferPdfsController(IPdfService pdfService)
+        public QuickOfferPdfsController(IPdfService pdfService, IDateTimeProvider dateTimeProvider)
         {
             _pdfService = pdfService;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         [HttpPost]
@@ -26,7 +28,7 @@ namespace AutoStock.API.Controllers
                 ? "hizli-teklif"
                 : request.Plate.Trim().ToUpperInvariant();
 
-            var dateText = DateTime.Now.ToString("yyyyMMdd-HHmm");
+            var dateText = _dateTimeProvider.Now.ToString("yyyyMMdd-HHmm");
             var fileName = $"{plate}-hizli-teklif.pdf";
 
             return File(fileBytes, "application/pdf", fileName);

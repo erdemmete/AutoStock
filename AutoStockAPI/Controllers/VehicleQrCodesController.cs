@@ -1,6 +1,7 @@
 ﻿using AutoStock.Repositories;
 
 using AutoStock.Services.Dtos.VehicleQrCodes;
+using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,11 @@ namespace AutoStockAPI.Controllers
     public class VehicleQrCodesController : ControllerBase
     {
         private readonly AppDbContext _context;
-
-        public VehicleQrCodesController(AppDbContext context)
+        private readonly IDateTimeProvider _dateTimeProvider;
+        public VehicleQrCodesController(AppDbContext context, IDateTimeProvider dateTimeProvider)
         {
             _context = context;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         [HttpPost("assign")]
@@ -50,7 +52,7 @@ namespace AutoStockAPI.Controllers
             qrCode.WorkshopId = workshopId;
             qrCode.VehicleId = vehicle.Id;
             qrCode.IsAssigned = true;
-            qrCode.AssignedAt = DateTime.UtcNow;
+            qrCode.AssignedAt = _dateTimeProvider.Now;
 
             await _context.SaveChangesAsync();
 

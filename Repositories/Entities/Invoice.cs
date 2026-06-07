@@ -18,8 +18,7 @@ namespace AutoStock.Repositories.Entities
 
         public string InvoiceNumber { get; set; } = null!;
 
-        public DateTime InvoiceDate { get; set; } = DateTime.UtcNow;
-
+        public DateTime InvoiceDate { get; set; } 
         public string CustomerTitle { get; set; } = null!;
 
         public string? CustomerTaxOffice { get; set; }
@@ -53,7 +52,7 @@ namespace AutoStock.Repositories.Entities
 
         public string? ExternalUuid { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } 
 
         public Customer Customer { get; set; } = null!;
 

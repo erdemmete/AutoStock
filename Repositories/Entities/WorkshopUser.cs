@@ -12,6 +12,6 @@
 
         public string Role { get; set; } = "Owner";
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
     }
 }

@@ -12,10 +12,12 @@ namespace AutoStock.Services.Services
     public class CurrentAccountService : ICurrentAccountService
     {
         private readonly AppDbContext _context;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
-        public CurrentAccountService(AppDbContext context)
+        public CurrentAccountService(AppDbContext context, IDateTimeProvider dateTimeProvider)
         {
             _context = context;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<ServiceResult<bool>> CreatePaymentAsync(CreatePaymentRequestDto request,int workshopId)
@@ -42,7 +44,7 @@ namespace AutoStock.Services.Services
                 Debit = 0,
                 Credit = request.Amount,
 
-                TransactionDate = request.PaymentDate ?? DateTime.UtcNow,
+                TransactionDate = request.PaymentDate ?? _dateTimeProvider.Now,
 
                 Description = string.IsNullOrWhiteSpace(request.Description)
                     ? "Tahsilat"
@@ -113,7 +115,7 @@ namespace AutoStock.Services.Services
         }
         public async Task<ServiceResult<CurrentAccountSummaryDto>> GetSummaryAsync(int workshopId)
         {
-            var now = DateTime.UtcNow;
+            var now = _dateTimeProvider.Now;
 
             var monthStart = new DateTime(now.Year, now.Month, 1);
             var nextMonthStart = monthStart.AddMonths(1);
@@ -176,7 +178,7 @@ namespace AutoStock.Services.Services
             query ??= new CurrentAccountListQueryDto();
             query.Normalize();
 
-            var now = DateTime.UtcNow;
+            var now = _dateTimeProvider.Now;
 
             var monthStart = new DateTime(now.Year, now.Month, 1);
             var nextMonthStart = monthStart.AddMonths(1);
