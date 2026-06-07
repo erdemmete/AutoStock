@@ -2,6 +2,7 @@
 
 using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Enums;
+using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Services.Interfaces;
@@ -15,14 +16,18 @@ public class ServiceRecordService : IServiceRecordService
     private readonly AppDbContext _context;
     private readonly IStockItemService _stockItemService;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IAuditLogService _auditLogService;
 
-    public ServiceRecordService(AppDbContext context,
-    IStockItemService stockItemService,
-    IDateTimeProvider dateTimeProvider)
+    public ServiceRecordService(
+        AppDbContext context,
+        IStockItemService stockItemService,
+        IDateTimeProvider dateTimeProvider,
+        IAuditLogService auditLogService)
     {
         _context = context;
         _stockItemService = stockItemService;
         _dateTimeProvider = dateTimeProvider;
+        _auditLogService = auditLogService;
     }
 
     public async Task<ServiceResult<CreateServiceRecordResponse>> CreateAsync(CreateServiceRecordRequest request,int workshopId)
@@ -175,6 +180,25 @@ public class ServiceRecordService : IServiceRecordService
         _context.ServiceRecords.Add(serviceRecord);
 
 
+
+        await _context.SaveChangesAsync();
+
+        await _auditLogService.AddAsync(new AuditLogCreateDto
+        {
+            WorkshopId = workshopId,
+            ActionType = AuditActionType.Create,
+            EntityType = AuditEntityType.ServiceRecord,
+            EntityId = serviceRecord.Id,
+            Description = $"Servis kaydı oluşturuldu: {GetServiceRecordDisplayName(serviceRecord)}",
+            NewValues = new
+            {
+                serviceRecord.RecordNumber,
+                serviceRecord.VehiclePlateSnapshot,
+                serviceRecord.CustomerNameSnapshot,
+                serviceRecord.Status,
+                serviceRecord.EstimatedAmount
+            }
+        });
 
         await _context.SaveChangesAsync();
 
@@ -436,7 +460,30 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
     await _context.SaveChangesAsync();
 }
 
-await transaction.CommitAsync();
+        await _auditLogService.AddAsync(new AuditLogCreateDto
+        {
+            WorkshopId = workshopId,
+            ActionType = AuditActionType.Add,
+            EntityType = AuditEntityType.ServiceOperation,
+            EntityId = operation.Id,
+            Description = $"Servis operasyonu eklendi: {GetServiceRecordDisplayName(serviceRecord)} - {operation.Description}",
+            NewValues = new
+            {
+                ServiceRecordId = serviceRecord.Id,
+                serviceRecord.RecordNumber,
+                operation.Type,
+                operation.Description,
+                operation.Quantity,
+                operation.UnitPrice,
+                operation.TotalPrice,
+                operation.StockItemId,
+                operation.ServiceRequestItemId
+            }
+        });
+
+        await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
 
         return ServiceResult<ServiceOperationDto>.Success(new ServiceOperationDto
         {
@@ -464,9 +511,28 @@ await transaction.CommitAsync();
         if (serviceRecord.Status == ServiceRecordStatus.Completed)
             return ServiceResult<bool>.Fail("Bu servis kaydı zaten tamamlanmış.");
 
+        var oldStatus = serviceRecord.Status;
         serviceRecord.Status = ServiceRecordStatus.Completed;
         serviceRecord.CompletedAt = _dateTimeProvider.Now;
         serviceRecord.UpdatedAt = _dateTimeProvider.Now;
+
+        await _auditLogService.AddAsync(new AuditLogCreateDto
+        {
+            WorkshopId = workshopId,
+            ActionType = AuditActionType.Complete,
+            EntityType = AuditEntityType.ServiceRecord,
+            EntityId = serviceRecord.Id,
+            Description = $"Servis kaydı tamamlandı: {GetServiceRecordDisplayName(serviceRecord)}",
+            OldValues = new
+            {
+                Status = oldStatus
+            },
+            NewValues = new
+            {
+                serviceRecord.Status,
+                serviceRecord.CompletedAt
+            }
+        });
 
         await _context.SaveChangesAsync();
 
@@ -488,6 +554,8 @@ await transaction.CommitAsync();
 
         var newStatus = (ServiceRecordStatus)request.Status;
 
+        var oldStatus = serviceRecord.Status;
+
         serviceRecord.Status = newStatus;
 
         if (newStatus == ServiceRecordStatus.Completed)
@@ -496,6 +564,27 @@ await transaction.CommitAsync();
             serviceRecord.CompletedAt = null;
 
         serviceRecord.UpdatedAt = _dateTimeProvider.Now;
+
+        if (oldStatus != newStatus)
+        {
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = GetStatusAuditActionType(oldStatus, newStatus),
+                EntityType = AuditEntityType.ServiceRecord,
+                EntityId = serviceRecord.Id,
+                Description = GetStatusAuditDescription(serviceRecord, oldStatus, newStatus),
+                OldValues = new
+                {
+                    Status = oldStatus
+                },
+                NewValues = new
+                {
+                    Status = newStatus,
+                    serviceRecord.CompletedAt
+                }
+            });
+        }
 
         await _context.SaveChangesAsync();
 
@@ -515,6 +604,19 @@ await transaction.CommitAsync();
 
         var serviceRecordId = operation.ServiceRecordId;
         var serviceRequestItemId = operation.ServiceRequestItemId;
+
+        var deletedOperationSnapshot = new
+        {
+            operation.Id,
+            operation.ServiceRecordId,
+            operation.Type,
+            operation.Description,
+            operation.Quantity,
+            operation.UnitPrice,
+            operation.TotalPrice,
+            operation.StockItemId,
+            operation.ServiceRequestItemId
+        };
 
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -563,6 +665,22 @@ await transaction.CommitAsync();
 
         serviceRecord.TotalAmount = recordTotal;
         serviceRecord.UpdatedAt = _dateTimeProvider.Now;
+
+        await _auditLogService.AddAsync(new AuditLogCreateDto
+        {
+            WorkshopId = workshopId,
+            ActionType = AuditActionType.Remove,
+            EntityType = AuditEntityType.ServiceOperation,
+            EntityId = operationId,
+            Description = $"Servis operasyonu silindi: {GetServiceRecordDisplayName(serviceRecord)} - {deletedOperationSnapshot.Description}",
+            OldValues = deletedOperationSnapshot,
+            NewValues = new
+            {
+                ServiceRecordId = serviceRecord.Id,
+                RecordTotal = recordTotal,
+                RequestItemTotal = requestItemTotal
+            }
+        });
 
         await _context.SaveChangesAsync();
 
@@ -759,6 +877,48 @@ await transaction.CommitAsync();
     private string GenerateRecordNumber()
     {
         return $"SR-{_dateTimeProvider.Now:yyyyMMddHHmmssfff}";
+    }
+
+    private static string GetServiceRecordDisplayName(ServiceRecord serviceRecord)
+    {
+        return $"{serviceRecord.RecordNumber} / {serviceRecord.VehiclePlateSnapshot}";
+    }
+
+    private static AuditActionType GetStatusAuditActionType(
+        ServiceRecordStatus oldStatus,
+        ServiceRecordStatus newStatus)
+    {
+        if (newStatus == ServiceRecordStatus.Completed)
+            return AuditActionType.Complete;
+
+        if (newStatus == ServiceRecordStatus.Cancelled)
+            return AuditActionType.Cancel;
+
+        if (oldStatus == ServiceRecordStatus.Cancelled &&
+            newStatus != ServiceRecordStatus.Cancelled)
+            return AuditActionType.Reopen;
+
+        return AuditActionType.Update;
+    }
+
+    private static string GetStatusAuditDescription(
+        ServiceRecord serviceRecord,
+        ServiceRecordStatus oldStatus,
+        ServiceRecordStatus newStatus)
+    {
+        var displayName = GetServiceRecordDisplayName(serviceRecord);
+
+        if (newStatus == ServiceRecordStatus.Completed)
+            return $"Servis kaydı tamamlandı: {displayName}";
+
+        if (newStatus == ServiceRecordStatus.Cancelled)
+            return $"Servis kaydı iptal edildi: {displayName}";
+
+        if (oldStatus == ServiceRecordStatus.Cancelled &&
+            newStatus != ServiceRecordStatus.Cancelled)
+            return $"Servis kaydı tekrar aktif yapıldı: {displayName}";
+
+        return $"Servis kaydı durumu güncellendi: {displayName} ({oldStatus} → {newStatus})";
     }
 
 

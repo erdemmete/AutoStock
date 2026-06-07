@@ -1,9 +1,9 @@
 ﻿using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Customers;
 using AutoStock.Services.Interfaces;
-using AutoStock.Services.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -20,30 +20,25 @@ public class CustomersController : ControllerBase
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string query)
     {
-        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+        var workshopIdResult = GetWorkshopId();
 
-        if (string.IsNullOrWhiteSpace(workshopIdClaim))
-        {
-            return Unauthorized();
-        }
+        if (workshopIdResult.IsFailure)
+            return Unauthorized(workshopIdResult);
 
-        var workshopId = int.Parse(workshopIdClaim);
+        var result = await _customerService.SearchAsync(query, workshopIdResult.Data);
 
-        var result = await _customerService.SearchAsync(query, workshopId);
-
-        return Ok(result);
+        return Ok(ServiceResult<List<CustomerSearchDto>>.Success(result));
     }
 
     [HttpGet]
     public async Task<IActionResult> GetList([FromQuery] CustomerListQueryDto query)
     {
-        var workshopIdClaim = User.FindFirst("WorkshopId")?.Value
-            ?? User.FindFirst("workshopId")?.Value;
+        var workshopIdResult = GetWorkshopId();
 
-        if (!int.TryParse(workshopIdClaim, out var workshopId))
-            return Unauthorized("Workshop bilgisi bulunamadı.");
+        if (workshopIdResult.IsFailure)
+            return Unauthorized(workshopIdResult);
 
-        var result = await _customerService.GetPagedAsync(query, workshopId);
+        var result = await _customerService.GetPagedAsync(query, workshopIdResult.Data);
 
         if (result.IsFailure)
             return StatusCode((int)result.StatusCode, result);
@@ -54,14 +49,15 @@ public class CustomersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateCustomerDto request)
     {
-        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+        var workshopIdResult = GetWorkshopId();
 
-        if (string.IsNullOrWhiteSpace(workshopIdClaim))
-            return Unauthorized();
+        if (workshopIdResult.IsFailure)
+            return Unauthorized(workshopIdResult);
 
-        var workshopId = int.Parse(workshopIdClaim);
+        var result = await _customerService.CreateAsync(request, workshopIdResult.Data);
 
-        var result = await _customerService.CreateAsync(request, workshopId);
+        if (result.IsFailure)
+            return StatusCode((int)result.StatusCode, result);
 
         return Ok(result);
     }
@@ -69,17 +65,15 @@ public class CustomersController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+        var workshopIdResult = GetWorkshopId();
 
-        if (string.IsNullOrWhiteSpace(workshopIdClaim))
-            return Unauthorized();
+        if (workshopIdResult.IsFailure)
+            return Unauthorized(workshopIdResult);
 
-        var workshopId = int.Parse(workshopIdClaim);
+        var result = await _customerService.GetByIdAsync(id, workshopIdResult.Data);
 
-        var result = await _customerService.GetByIdAsync(id, workshopId);
-
-        if (!result.IsSuccess)
-            return NotFound(result);
+        if (result.IsFailure)
+            return StatusCode((int)result.StatusCode, result);
 
         return Ok(result);
     }
@@ -88,19 +82,22 @@ public class CustomersController : ControllerBase
     public async Task<IActionResult> Update(int id, UpdateCustomerDto request)
     {
         if (id != request.Id)
-            return BadRequest(ServiceResult<int>.Fail("Müşteri bilgisi hatalı."));
+        {
+            return BadRequest(
+                ServiceResult<int>.Fail(
+                    "Müşteri bilgisi hatalı.",
+                    HttpStatusCode.BadRequest));
+        }
 
-        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+        var workshopIdResult = GetWorkshopId();
 
-        if (string.IsNullOrWhiteSpace(workshopIdClaim))
-            return Unauthorized();
+        if (workshopIdResult.IsFailure)
+            return Unauthorized(workshopIdResult);
 
-        var workshopId = int.Parse(workshopIdClaim);
+        var result = await _customerService.UpdateAsync(request, workshopIdResult.Data);
 
-        var result = await _customerService.UpdateAsync(request, workshopId);
-
-        if (!result.IsSuccess)
-            return BadRequest(result);
+        if (result.IsFailure)
+            return StatusCode((int)result.StatusCode, result);
 
         return Ok(result);
     }
@@ -108,18 +105,31 @@ public class CustomersController : ControllerBase
     [HttpPost("{id:int}/passive")]
     public async Task<IActionResult> SetPassive(int id)
     {
-        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+        var workshopIdResult = GetWorkshopId();
 
-        if (string.IsNullOrWhiteSpace(workshopIdClaim))
-            return Unauthorized();
+        if (workshopIdResult.IsFailure)
+            return Unauthorized(workshopIdResult);
 
-        var workshopId = int.Parse(workshopIdClaim);
+        var result = await _customerService.SetPassiveAsync(id, workshopIdResult.Data);
 
-        var result = await _customerService.SetPassiveAsync(id, workshopId);
-
-        if (!result.IsSuccess)
-            return BadRequest(result);
+        if (result.IsFailure)
+            return StatusCode((int)result.StatusCode, result);
 
         return Ok(result);
+    }
+
+    private ServiceResult<int> GetWorkshopId()
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value
+            ?? User.FindFirst("WorkshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+        {
+            return ServiceResult<int>.Fail(
+                "Workshop bilgisi bulunamadı.",
+                HttpStatusCode.Unauthorized);
+        }
+
+        return ServiceResult<int>.Success(workshopId);
     }
 }

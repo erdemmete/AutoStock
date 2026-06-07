@@ -170,7 +170,7 @@ public class ServiceRecordsController : BaseController
     [HttpGet("ServiceRecords/SearchCustomers")]
     public async Task<IActionResult> SearchCustomers(string query)
     {
-        if (string.IsNullOrWhiteSpace(query))
+         if (string.IsNullOrWhiteSpace(query))
             return Json(new List<object>());
 
         var result = await _serviceRecordApiService.SearchCustomersAsync(query);
