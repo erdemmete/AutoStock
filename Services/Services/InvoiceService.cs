@@ -1,6 +1,7 @@
 ﻿using AutoStock.Repositories;
 using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Enums;
+using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Invoices;
 using AutoStock.Services.Interfaces;
@@ -14,15 +15,18 @@ namespace AutoStock.Services.Services
         private readonly AppDbContext _context;
         private readonly IStockItemService _stockItemService;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IAuditLogService _auditLogService;
 
         public InvoiceService(
             AppDbContext context,
             IStockItemService stockItemService,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IAuditLogService auditLogService)
         {
             _context = context;
             _stockItemService = stockItemService;
             _dateTimeProvider = dateTimeProvider;
+            _auditLogService = auditLogService;
         }
 
         public InvoiceService(AppDbContext context)
@@ -117,6 +121,8 @@ namespace AutoStock.Services.Services
             if (!validItems.Any())
                 return ServiceResult<CreateInvoiceResponseDto>.Fail("Geçerli fatura kalemi bulunamadı.");
 
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
             decimal subTotal = 0;
             decimal discountTotal = 0;
             decimal vatTotal = 0;
@@ -198,6 +204,19 @@ namespace AutoStock.Services.Services
 
             _context.Invoices.Add(invoice);
             await _context.SaveChangesAsync();
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Create,
+                EntityType = AuditEntityType.Invoice,
+                EntityId = invoice.Id,
+                Description = $"Fatura taslağı oluşturuldu: {GetInvoiceDisplayName(invoice)}",
+                NewValues = GetInvoiceAuditValues(invoice)
+            });
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return ServiceResult<CreateInvoiceResponseDto>.Success(new CreateInvoiceResponseDto
             {
@@ -300,6 +319,8 @@ namespace AutoStock.Services.Services
             if (invoice.Status == InvoiceStatus.Issued)
                 return ServiceResult<IssueInvoiceResponseDto>.Fail("Fatura zaten kesilmiş.");
 
+            var oldStatus = invoice.Status;
+
             invoice.Status = InvoiceStatus.Issued;
 
             var shouldDecreaseStockOnIssue = !invoice.ServiceRecordId.HasValue;
@@ -345,6 +366,25 @@ namespace AutoStock.Services.Services
             };
 
             _context.CurrentAccountTransactions.Add(transaction);
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Issue,
+                EntityType = AuditEntityType.Invoice,
+                EntityId = invoice.Id,
+                Description = $"Fatura kesildi: {GetInvoiceDisplayName(invoice)}",
+                OldValues = new
+                {
+                    Status = oldStatus
+                },
+                NewValues = new
+                {
+                    invoice.Status,
+                    invoice.GrandTotal,
+                    CurrentAccountDebit = invoice.GrandTotal
+                }
+            });
 
             await _context.SaveChangesAsync();
 
@@ -523,6 +563,8 @@ namespace AutoStock.Services.Services
             if (hasCancelTransaction)
                 return ServiceResult<CancelInvoiceResponseDto>.Fail("Bu fatura için iptal cari hareketi zaten oluşturulmuş.");
 
+            var oldStatus = invoice.Status;
+
             invoice.Status = InvoiceStatus.Cancelled;
 
             var transaction = new CurrentAccountTransaction
@@ -547,6 +589,25 @@ namespace AutoStock.Services.Services
 
             _context.CurrentAccountTransactions.Add(transaction);
 
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Cancel,
+                EntityType = AuditEntityType.Invoice,
+                EntityId = invoice.Id,
+                Description = $"Fatura iptal edildi: {GetInvoiceDisplayName(invoice)}",
+                OldValues = new
+                {
+                    Status = oldStatus
+                },
+                NewValues = new
+                {
+                    invoice.Status,
+                    invoice.GrandTotal,
+                    CurrentAccountCredit = invoice.GrandTotal
+                }
+            });
+
             await _context.SaveChangesAsync();
 
             return ServiceResult<CancelInvoiceResponseDto>.Success(
@@ -570,6 +631,8 @@ namespace AutoStock.Services.Services
 
             if (invoice.Status != InvoiceStatus.Draft)
                 return ServiceResult<InvoiceDetailDto>.Fail("Sadece taslak faturalar düzenlenebilir.");
+
+            var oldValues = GetInvoiceAuditValues(invoice);
 
             var validItems = request.Items
                 .Where(x =>
@@ -650,9 +713,46 @@ namespace AutoStock.Services.Services
             invoice.VatTotal = vatTotal;
             invoice.GrandTotal = grandTotal;
 
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Update,
+                EntityType = AuditEntityType.Invoice,
+                EntityId = invoice.Id,
+                Description = $"Fatura güncellendi: {GetInvoiceDisplayName(invoice)}",
+                OldValues = oldValues,
+                NewValues = GetInvoiceAuditValues(invoice)
+            });
+
             await _context.SaveChangesAsync();
 
             return await GetDetailAsync(invoice.Id, workshopId);
+        }
+
+        private static string GetInvoiceDisplayName(Invoice invoice)
+        {
+            if (!string.IsNullOrWhiteSpace(invoice.InvoiceNumber))
+                return $"{invoice.InvoiceNumber} / {invoice.CustomerTitle}";
+
+            return $"Fatura #{invoice.Id} / {invoice.CustomerTitle}";
+        }
+
+        private static object GetInvoiceAuditValues(Invoice invoice)
+        {
+            return new
+            {
+                invoice.InvoiceNumber,
+                invoice.Status,
+                invoice.ServiceRecordId,
+                invoice.CustomerId,
+                invoice.CustomerTitle,
+                invoice.Plate,
+                invoice.Subtotal,
+                invoice.DiscountTotal,
+                invoice.VatTotal,
+                invoice.GrandTotal,
+                ItemCount = invoice.Items?.Count ?? 0
+            };
         }
     }
 }
