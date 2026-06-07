@@ -1,5 +1,6 @@
 ﻿using AutoStock.Repositories;
 using AutoStock.Repositories.Entities;
+using AutoStock.Repositories.Enums;
 using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Auth;
@@ -68,18 +69,33 @@ public class AuthService : IAuthService
         if (!workshopExists)
             throw new ArgumentException("Seçilen servis bulunamadı.");
 
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
         var user = new AppUser
         {
             FullName = request.FullName.Trim(),
             UserName = userName,
-            Email = email
+            Email = email,
+            IsActive = true
         };
 
         var createUserResult = await _userManager.CreateAsync(user, request.Password);
 
         if (!createUserResult.Succeeded)
         {
+            await transaction.RollbackAsync();
+
             var errors = string.Join(" | ", createUserResult.Errors.Select(x => x.Description));
+            throw new ArgumentException(errors);
+        }
+
+        var addRoleResult = await _userManager.AddToRoleAsync(user, AppRoles.Owner);
+
+        if (!addRoleResult.Succeeded)
+        {
+            await transaction.RollbackAsync();
+
+            var errors = string.Join(" | ", addRoleResult.Errors.Select(x => x.Description));
             throw new ArgumentException(errors);
         }
 
@@ -90,19 +106,17 @@ public class AuthService : IAuthService
             Role = AppRoles.Owner
         };
 
-        await _userManager.AddToRoleAsync(user, AppRoles.Owner);
-
-        await _userManager.AddToRoleAsync(user, AppRoles.User);
-
         await _context.WorkshopUsers.AddAsync(workshopUser);
         await _context.SaveChangesAsync();
 
+        await transaction.CommitAsync();
+
         var token = _jwtService.GenerateToken(
-    user.Id,
-    user.Email ?? string.Empty,
-    user.FullName,
-    request.WorkshopId,
-    AppRoles.Owner);
+            user.Id,
+            user.Email ?? string.Empty,
+            user.FullName,
+            request.WorkshopId,
+            AppRoles.Owner);
 
         return new AuthResponseDto
         {
@@ -168,13 +182,14 @@ public class AuthService : IAuthService
         }
 
         var roles = await _userManager.GetRolesAsync(user);
-        var role = roles.FirstOrDefault() ?? AppRoles.Staff;
+        var role = GetPrimaryRole(roles);
 
         int workshopId = 0;
 
         if (role != AppRoles.Admin)
         {
             var workshopUser = await _context.WorkshopUsers
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.UserId == user.Id);
 
             if (workshopUser is null)
@@ -200,8 +215,8 @@ public class AuthService : IAuthService
             role);
 
         int? auditWorkshopId = workshopId > 0
-     ? workshopId
-     : (int?)null;
+            ? workshopId
+            : (int?)null;
 
         await _auditLogService.WriteAsync(new AuditLogCreateDto
         {
@@ -223,6 +238,7 @@ public class AuthService : IAuthService
                 Success = true
             }
         });
+
         return new AuthResponseDto
         {
             AccessToken = token,
@@ -234,7 +250,12 @@ public class AuthService : IAuthService
         };
     }
 
-    private async Task WriteLoginFailedAuditAsync(string loginName, AppUser? user, string? role, int? workshopId, string reason)
+    private async Task WriteLoginFailedAuditAsync(
+        string loginName,
+        AppUser? user,
+        string? role,
+        int? workshopId,
+        string reason)
     {
         await _auditLogService.WriteAsync(new AuditLogCreateDto
         {
@@ -257,5 +278,19 @@ public class AuthService : IAuthService
                 Success = false
             }
         });
+    }
+
+    private static string GetPrimaryRole(IList<string> roles)
+    {
+        if (roles.Contains(AppRoles.Admin))
+            return AppRoles.Admin;
+
+        if (roles.Contains(AppRoles.Owner))
+            return AppRoles.Owner;
+
+        if (roles.Contains(AppRoles.Staff))
+            return AppRoles.Staff;
+
+        return AppRoles.Staff;
     }
 }

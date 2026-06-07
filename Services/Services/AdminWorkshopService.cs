@@ -507,13 +507,12 @@ namespace AutoStock.Services.Services
                 .Include(x => x.Profile)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
-            var oldValues = workshop.Profile == null
-                    ? null
-                    : GetWorkshopProfileAuditValues(workshop.Profile);
-
             if (workshop == null)
-                return ServiceResult<bool>.Fail(
-                    "Servis bulunamadı.");
+                return ServiceResult<bool>.Fail("Servis bulunamadı.");
+
+            var oldValues = workshop.Profile == null
+                ? null
+                : GetWorkshopProfileAuditValues(workshop.Profile);
 
             if (workshop.Profile == null)
             {

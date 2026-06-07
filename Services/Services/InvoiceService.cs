@@ -29,11 +29,6 @@ namespace AutoStock.Services.Services
             _auditLogService = auditLogService;
         }
 
-        public InvoiceService(AppDbContext context)
-        {
-            _context = context;
-        }
-
         public async Task<ServiceResult<CreateInvoiceDraftDto>> GetCreateDraftAsync(int serviceRecordId, int workshopId)
         {
             var serviceRecord = await _context.ServiceRecords
@@ -118,6 +113,25 @@ namespace AutoStock.Services.Services
                     x.Quantity > 0)
                 .ToList();
 
+            var stockItemIds = validItems
+                .Where(x => x.StockItemId.HasValue)
+                .Select(x => x.StockItemId!.Value)
+                .Distinct()
+                .ToList();
+
+            if (stockItemIds.Any())
+            {
+                var validStockItemCount = await _context.StockItems
+                    .CountAsync(x =>
+                        stockItemIds.Contains(x.Id) &&
+                        x.WorkshopId == workshopId &&
+                        x.IsActive);
+
+                if (validStockItemCount != stockItemIds.Count)
+                    return ServiceResult<CreateInvoiceResponseDto>.Fail(
+                        "Fatura kalemlerinde geçersiz stok kartı seçimi var.");
+            }
+
             if (!validItems.Any())
                 return ServiceResult<CreateInvoiceResponseDto>.Fail("Geçerli fatura kalemi bulunamadı.");
 
@@ -132,7 +146,7 @@ namespace AutoStock.Services.Services
             {
                 WorkshopId = workshopId,
                 ServiceRecordId = request.ServiceRecordId,
-                CustomerId = request.CustomerId,
+                CustomerId = serviceRecord.CustomerId,
 
                 Type = InvoiceType.Manual,
                 Status = InvoiceStatus.Draft,
@@ -545,6 +559,7 @@ namespace AutoStock.Services.Services
         public async Task<ServiceResult<CancelInvoiceResponseDto>> CancelAsync(int invoiceId, int workshopId)
         {
             var invoice = await _context.Invoices
+                .Include(x => x.Items)
                 .FirstOrDefaultAsync(x =>
                     x.Id == invoiceId &&
                     x.WorkshopId == workshopId);
@@ -555,39 +570,74 @@ namespace AutoStock.Services.Services
             if (invoice.Status == InvoiceStatus.Cancelled)
                 return ServiceResult<CancelInvoiceResponseDto>.Fail("Fatura zaten iptal edilmiş.");
 
-            var hasCancelTransaction = await _context.CurrentAccountTransactions
-    .AnyAsync(x =>
-        x.InvoiceId == invoice.Id &&
-        x.Type == CurrentAccountTransactionType.Cancel);
-
-            if (hasCancelTransaction)
-                return ServiceResult<CancelInvoiceResponseDto>.Fail("Bu fatura için iptal cari hareketi zaten oluşturulmuş.");
-
             var oldStatus = invoice.Status;
+            var wasIssued = oldStatus == InvoiceStatus.Issued;
+            var shouldReturnStockOnCancel = wasIssued && !invoice.ServiceRecordId.HasValue;
+
+            if (wasIssued)
+            {
+                var hasCancelTransaction = await _context.CurrentAccountTransactions
+                    .AnyAsync(x =>
+                        x.WorkshopId == workshopId &&
+                        x.InvoiceId == invoice.Id &&
+                        x.Type == CurrentAccountTransactionType.Cancel);
+
+                if (hasCancelTransaction)
+                    return ServiceResult<CancelInvoiceResponseDto>.Fail("Bu fatura için iptal cari hareketi zaten oluşturulmuş.");
+            }
+
+            await using var dbTransaction = await _context.Database.BeginTransactionAsync();
 
             invoice.Status = InvoiceStatus.Cancelled;
 
-            var transaction = new CurrentAccountTransaction
+            if (shouldReturnStockOnCancel)
             {
-                WorkshopId = invoice.WorkshopId,
-                CustomerId = invoice.CustomerId,
-                InvoiceId = invoice.Id,
+                foreach (var item in invoice.Items)
+                {
+                    if (item.StockItemId is null)
+                        continue;
 
-                Type = CurrentAccountTransactionType.Cancel,
+                    var stockResult = await _stockItemService.ReturnForInvoiceCancellationAsync(
+                        item.StockItemId.Value,
+                        item.Quantity,
+                        item.UnitPrice,
+                        invoice.Id,
+                        workshopId);
 
-                Debit = 0,
-                Credit = invoice.GrandTotal,
+                    if (!stockResult.IsSuccess)
+                    {
+                        await dbTransaction.RollbackAsync();
 
-                TransactionDate = _dateTimeProvider.Now,
+                        return ServiceResult<CancelInvoiceResponseDto>.Fail(
+                            stockResult.ErrorMessage ?? "Fatura iptalinde stok iadesi yapılamadı.");
+                    }
+                }
+            }
 
-                Description = $"{invoice.InvoiceNumber} numaralı fatura iptal kaydı",
+            if (wasIssued)
+            {
+                var currentAccountTransaction = new CurrentAccountTransaction
+                {
+                    WorkshopId = invoice.WorkshopId,
+                    CustomerId = invoice.CustomerId,
+                    InvoiceId = invoice.Id,
 
-                DocumentNumber = invoice.InvoiceNumber,
+                    Type = CurrentAccountTransactionType.Cancel,
 
-                IsSystemGenerated = true
-            };
+                    Debit = 0,
+                    Credit = invoice.GrandTotal,
 
-            _context.CurrentAccountTransactions.Add(transaction);
+                    TransactionDate = _dateTimeProvider.Now,
+
+                    Description = $"{invoice.InvoiceNumber} numaralı fatura iptal kaydı",
+
+                    DocumentNumber = invoice.InvoiceNumber,
+
+                    IsSystemGenerated = true
+                };
+
+                _context.CurrentAccountTransactions.Add(currentAccountTransaction);
+            }
 
             await _auditLogService.AddAsync(new AuditLogCreateDto
             {
@@ -604,11 +654,14 @@ namespace AutoStock.Services.Services
                 {
                     invoice.Status,
                     invoice.GrandTotal,
-                    CurrentAccountCredit = invoice.GrandTotal
+                    CurrentAccountCredit = wasIssued ? invoice.GrandTotal : 0,
+                    StockReturned = shouldReturnStockOnCancel
                 }
             });
 
             await _context.SaveChangesAsync();
+
+            await dbTransaction.CommitAsync();
 
             return ServiceResult<CancelInvoiceResponseDto>.Success(
                 new CancelInvoiceResponseDto
@@ -639,6 +692,26 @@ namespace AutoStock.Services.Services
                     !string.IsNullOrWhiteSpace(x.Description) &&
                     x.Quantity > 0)
                 .ToList();
+
+            var stockItemIds = validItems
+                    .Where(x => x.StockItemId.HasValue)
+                    .Select(x => x.StockItemId!.Value)
+                    .Distinct()
+                    .ToList();
+
+            if (stockItemIds.Any())
+            {
+                var validStockItemCount = await _context.StockItems
+                    .CountAsync(x =>
+                        stockItemIds.Contains(x.Id) &&
+                        x.WorkshopId == workshopId &&
+                        x.IsActive);
+
+                if (validStockItemCount != stockItemIds.Count)
+                    return ServiceResult<InvoiceDetailDto>.Fail(
+                    "Fatura kalemlerinde geçersiz stok kartı seçimi var.");
+            }
+
 
             if (!validItems.Any())
                 return ServiceResult<InvoiceDetailDto>.Fail("Geçerli fatura kalemi bulunamadı.");

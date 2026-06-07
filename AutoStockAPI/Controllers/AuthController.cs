@@ -1,5 +1,7 @@
-﻿using AutoStock.Services.Dtos.Auth;
+﻿using AutoStock.Services.Constants;
+using AutoStock.Services.Dtos.Auth;
 using AutoStock.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AutoStock.API.Controllers;
@@ -15,6 +17,7 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
+    [Authorize(Roles = AppRoles.Admin)]
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequestDto request)
     {
@@ -22,6 +25,7 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequestDto request)
     {

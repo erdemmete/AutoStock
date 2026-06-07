@@ -715,6 +715,29 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
                 x.ServiceRequestItemId == requestItemId)
             .ToListAsync();
 
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        foreach (var operation in relatedOperations)
+        {
+            if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
+            {
+                var stockResult = await _stockItemService.ReturnForServiceOperationAsync(
+                    operation.StockItemId.Value,
+                    operation.Quantity,
+                    operation.UnitPrice,
+                    operation.Id,
+                    workshopId);
+
+                if (!stockResult.IsSuccess)
+                {
+                    await transaction.RollbackAsync();
+
+                    return ServiceResult<DeleteServiceRequestItemResponse>.Fail(
+                        stockResult.ErrorMessage);
+                }
+            }
+        }
+
         _context.ServiceOperations.RemoveRange(relatedOperations);
         _context.ServiceRequestItems.Remove(requestItem);
 
@@ -730,13 +753,17 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
                 x.WorkshopId == workshopId);
 
         if (serviceRecord is null)
+        {
+            await transaction.RollbackAsync();
             return ServiceResult<DeleteServiceRequestItemResponse>.Fail("Servis kaydı bulunamadı.");
+        }
 
         serviceRecord.TotalAmount = recordTotal;
-
         serviceRecord.UpdatedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
 
         return ServiceResult<DeleteServiceRequestItemResponse>.Success(
             new DeleteServiceRequestItemResponse
@@ -749,13 +776,15 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
 
     public async Task<ServiceResult<PagedResult<ServiceRecordListItemDto>>> GetPagedAsync(int workshopId, ServiceRecordListQueryDto query)
     {
+        query ??= new ServiceRecordListQueryDto();
+
         query.Search = string.IsNullOrWhiteSpace(query.Search)
             ? null
             : query.Search.Trim();
 
         query.PageNumber = query.PageNumber <= 0 ? 1 : query.PageNumber;
         query.PageSize = query.PageSize <= 0 ? 10 : query.PageSize;
-        query.PageSize = query.PageSize > 100 ? 100 : query.PageSize;
+        query.PageSize = query.PageSize > 50 ? 50 : query.PageSize;
 
         var recordsQuery = _context.ServiceRecords
             .AsNoTracking()
@@ -884,9 +913,7 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
         return $"{serviceRecord.RecordNumber} / {serviceRecord.VehiclePlateSnapshot}";
     }
 
-    private static AuditActionType GetStatusAuditActionType(
-        ServiceRecordStatus oldStatus,
-        ServiceRecordStatus newStatus)
+    private static AuditActionType GetStatusAuditActionType(ServiceRecordStatus oldStatus, ServiceRecordStatus newStatus)
     {
         if (newStatus == ServiceRecordStatus.Completed)
             return AuditActionType.Complete;
@@ -901,10 +928,7 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
         return AuditActionType.Update;
     }
 
-    private static string GetStatusAuditDescription(
-        ServiceRecord serviceRecord,
-        ServiceRecordStatus oldStatus,
-        ServiceRecordStatus newStatus)
+    private static string GetStatusAuditDescription(ServiceRecord serviceRecord, ServiceRecordStatus oldStatus, ServiceRecordStatus newStatus)
     {
         var displayName = GetServiceRecordDisplayName(serviceRecord);
 

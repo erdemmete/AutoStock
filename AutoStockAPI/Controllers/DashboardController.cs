@@ -1,17 +1,17 @@
 ﻿using AutoStock.Repositories;
-
+using AutoStock.Services.Constants;
+using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Dashboard;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace AutoStock.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = AppRoles.Admin + "," + AppRoles.Owner + "," + AppRoles.Staff)]
     [ApiController]
     [Route("api/[controller]")]
-    public class DashboardController : ControllerBase
+    public class DashboardController : BaseApiController
     {
         private readonly AppDbContext _context;
 
@@ -23,17 +23,28 @@ namespace AutoStock.API.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "User";
+            var userIdResult = GetCurrentUserId();
 
-            if (string.IsNullOrWhiteSpace(userIdValue) || !int.TryParse(userIdValue, out var userId))
-                return Unauthorized();
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
+            var role = GetCurrentUserRole() ?? AppRoles.Staff;
 
             var user = await _context.Users
-                .FirstOrDefaultAsync(x => x.Id == userId);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == userIdResult.Data);
 
             if (user is null)
-                return Unauthorized();
+            {
+                return Unauthorized(ServiceResult<object>.Fail(
+                    "Kullanıcı bilgisi bulunamadı."));
+            }
+
+            if (!user.IsActive)
+            {
+                return Unauthorized(ServiceResult<object>.Fail(
+                    "Kullanıcı pasif durumda."));
+            }
 
             var response = new DashboardResponseDto
             {
@@ -45,7 +56,7 @@ namespace AutoStock.API.Controllers
                 PendingJobCount = 0
             };
 
-            if (role == "Admin")
+            if (role == AppRoles.Admin)
             {
                 response.WorkshopId = 0;
                 response.WorkshopName = string.Empty;
@@ -53,16 +64,20 @@ namespace AutoStock.API.Controllers
                 return Ok(response);
             }
 
-            var workshopIdValue = User.FindFirst("workshopId")?.Value;
+            var workshopIdResult = GetCurrentWorkshopId();
 
-            if (string.IsNullOrWhiteSpace(workshopIdValue) || !int.TryParse(workshopIdValue, out var workshopId))
-                return Unauthorized();
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
 
             var workshop = await _context.Workshops
-                .FirstOrDefaultAsync(x => x.Id == workshopId);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == workshopIdResult.Data);
 
             if (workshop is null)
-                return NotFound("Servis bulunamadı.");
+            {
+                return NotFound(ServiceResult<object>.Fail(
+                    "Servis bulunamadı."));
+            }
 
             response.WorkshopId = workshop.Id;
             response.WorkshopName = workshop.Name;

@@ -109,7 +109,8 @@ namespace AutoStock.Services.Services
                 .Select(x => new
                 {
                     x.Id,
-                    x.FullName
+                    x.FullName,
+                    x.CompanyName
                 })
                 .FirstOrDefaultAsync();
 
@@ -148,7 +149,9 @@ namespace AutoStock.Services.Services
             var response = new GetCustomerCurrentAccountResponseDto
             {
                 CustomerId = customer.Id,
-                CustomerName = customer.FullName,
+                CustomerName = !string.IsNullOrWhiteSpace(customer.FullName)
+                                ? customer.FullName
+                                : customer.CompanyName ?? "İsimsiz Müşteri",
                 Balance = runningBalance,
                 Transactions = transactionDtos
             };

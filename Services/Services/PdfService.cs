@@ -236,7 +236,7 @@ public class PdfService : IPdfService
     private static void BuildHeader(IContainer container, string documentNo, CreateServicePdfRequest request, DateTime now)
     {
         var brandName = string.IsNullOrWhiteSpace(request.WorkshopName)
-            ? "Servix"
+            ? "Sente360"
             : request.WorkshopName;
 
         var qrText = $"{brandName} | Belge No: {documentNo} | Tarih: {now:dd.MM.yyyy HH:mm}";
@@ -517,7 +517,7 @@ public class PdfService : IPdfService
 
             column.Item().PaddingTop(8).Row(row =>
             {
-                row.RelativeItem().Text("Bu belge AutoStock tarafından otomatik oluşturulmuştur.")
+                row.RelativeItem().Text("Bu belge Sente360 tarafından otomatik oluşturulmuştur.")
                     .FontSize(8)
                     .FontColor(Colors.Grey.Darken1);
 

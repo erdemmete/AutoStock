@@ -13,26 +13,7 @@ namespace AutoStock.Services.Services
     ICustomerRepository customerRepository,
     AppDbContext context,
     IAuditLogService auditLogService) : ICustomerService
-    {
-
-
-        public async Task<ServiceResult<List<Customer>>> GetCustomersWithVehicles(int count)
-        {
-            var costumers = await customerRepository.GetCustomersWithVehicles(count);
-            return ServiceResult<List<Customer>>.Success(costumers);
-        }
-
-        public async Task<ServiceResult<Customer>> GetCustomerById(int id)
-        {
-            var customer = await customerRepository.GetByIdAsync(id);
-            if (customer is null)
-            {
-                return ServiceResult<Customer>.Fail("Müşteri bulunamadı");
-            }
-
-            return ServiceResult<Customer>.Success(customer);
-        }
-
+    {  
         public async Task<List<CustomerSearchDto>> SearchAsync(string query, int workshopId)
         {
             if (string.IsNullOrWhiteSpace(query))

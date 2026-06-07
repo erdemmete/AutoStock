@@ -610,6 +610,7 @@ namespace Services.Services.StockItems
 
         public async Task<PagedResult<StockItemListDto>> GetPagedAsync(int workshopId, StockItemListQueryDto query)
         {
+            query ??= new StockItemListQueryDto();
             query.Normalize();
 
             var stockItemsQuery = _context.StockItems
@@ -632,8 +633,6 @@ namespace Services.Services.StockItems
             {
                 stockItemsQuery = stockItemsQuery.Where(x => x.Brand == query.Brand);
             }
-
-           
 
             var totalCount = await stockItemsQuery.CountAsync();
 
@@ -673,17 +672,6 @@ namespace Services.Services.StockItems
                     x.IsActive &&
                     x.Brand != null && x.Brand != "")
                 .Select(x => x.Brand!)
-                .Distinct()
-                .OrderBy(x => x)
-                .ToListAsync();
-
-            var units = await _context.StockItems
-                .AsNoTracking()
-                .Where(x =>
-                    x.WorkshopId == workshopId &&
-                    x.IsActive &&
-                    x.Unit != null && x.Unit != "")
-                .Select(x => x.Unit!)
                 .Distinct()
                 .OrderBy(x => x)
                 .ToListAsync();
