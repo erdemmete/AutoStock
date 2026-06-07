@@ -18,6 +18,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddOpenApi();
 
+
+
 builder.Services.AddRepositories(builder.Configuration)
     .AddServices(builder.Configuration)
     .AddIdentityServices()
@@ -51,6 +53,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
+app.UseMiddleware<AuditContextMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

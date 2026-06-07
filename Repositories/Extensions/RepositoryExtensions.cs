@@ -14,9 +14,7 @@ namespace AutoStock.Repositories.Extensions
 
                 options.UseSqlServer(connectionStrings!.SqlServer, sqlServerOptionsAction =>
                 {
-
                     sqlServerOptionsAction.MigrationsAssembly(typeof(RepositoryAssembly).Assembly.FullName);
-
                 });
             });
 
@@ -24,11 +22,9 @@ namespace AutoStock.Repositories.Extensions
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-
+            services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
             return services;
-
-
         }
     }
 }
