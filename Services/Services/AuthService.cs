@@ -1,6 +1,7 @@
 ﻿using AutoStock.Repositories;
 using AutoStock.Repositories.Entities;
 using AutoStock.Services.Constants;
+using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Auth;
 using AutoStock.Services.Interfaces;
 using AutoStock.Services.Services;
@@ -13,14 +14,19 @@ public class AuthService : IAuthService
 {
     private readonly UserManager<AppUser> _userManager;
     private readonly AppDbContext _context;
-
     private readonly JwtService _jwtService;
+    private readonly IAuditLogService _auditLogService;
 
-    public AuthService(UserManager<AppUser> userManager, AppDbContext context, JwtService jwtService)
+    public AuthService(
+        UserManager<AppUser> userManager,
+        AppDbContext context,
+        JwtService jwtService,
+        IAuditLogService auditLogService)
     {
         _userManager = userManager;
         _context = context;
         _jwtService = jwtService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
@@ -116,7 +122,6 @@ public class AuthService : IAuthService
         if (string.IsNullOrWhiteSpace(loginName) || string.IsNullOrWhiteSpace(request.Password))
             throw new ArgumentException("Kullanıcı adı/e-posta ve şifre zorunludur.");
 
-        // Kullanıcıyı bul (username veya email)
         AppUser? user;
 
         if (loginName.Contains("@"))
@@ -125,47 +130,99 @@ public class AuthService : IAuthService
             user = await _userManager.FindByNameAsync(loginName);
 
         if (user is null)
+        {
+            await WriteLoginFailedAuditAsync(
+                loginName,
+                null,
+                null,
+                null,
+                "InvalidCredentials");
+
             throw new UnauthorizedAccessException("Kullanıcı adı/e-posta veya şifre hatalı.");
+        }
 
-        // Aktif mi kontrol
         if (!user.IsActive)
-            throw new UnauthorizedAccessException("Kullanıcı pasif durumda.");
+        {
+            await WriteLoginFailedAuditAsync(
+                loginName,
+                user,
+                null,
+                null,
+                "UserPassive");
 
-        // Şifre kontrolü
+            throw new UnauthorizedAccessException("Kullanıcı pasif durumda.");
+        }
+
         var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
 
         if (!passwordValid)
+        {
+            await WriteLoginFailedAuditAsync(
+                loginName,
+                user,
+                null,
+                null,
+                "InvalidCredentials");
+
             throw new UnauthorizedAccessException("Kullanıcı adı/e-posta veya şifre hatalı.");
+        }
 
         var roles = await _userManager.GetRolesAsync(user);
         var role = roles.FirstOrDefault() ?? AppRoles.Staff;
 
         int workshopId = 0;
 
-        // Workshop bağlantısı
         if (role != AppRoles.Admin)
         {
             var workshopUser = await _context.WorkshopUsers
                 .FirstOrDefaultAsync(x => x.UserId == user.Id);
 
             if (workshopUser is null)
+            {
+                await WriteLoginFailedAuditAsync(
+                    loginName,
+                    user,
+                    role,
+                    null,
+                    "WorkshopNotLinked");
+
                 throw new Exception("Kullanıcı herhangi bir servise bağlı değil.");
+            }
 
             workshopId = workshopUser.WorkshopId;
         }
 
-
-
-
-        // Token üret
         var token = _jwtService.GenerateToken(
-                    user.Id,
-                    user.Email ?? string.Empty,
-                    user.FullName,
-                    workshopId,
-                    role
-            );
+            user.Id,
+            user.Email ?? string.Empty,
+            user.FullName,
+            workshopId,
+            role);
 
+        int? auditWorkshopId = workshopId > 0
+     ? workshopId
+     : (int?)null;
+
+        await _auditLogService.WriteAsync(new AuditLogCreateDto
+        {
+            WorkshopId = auditWorkshopId,
+            UserId = user.Id,
+            UserFullName = user.FullName,
+            UserRole = role,
+            ActionType = AuditActionType.LoginSuccess,
+            EntityType = AuditEntityType.Auth,
+            EntityId = user.Id,
+            Description = $"Başarılı giriş: {user.FullName} / {role}",
+            NewValues = new
+            {
+                LoginName = loginName,
+                UserId = user.Id,
+                user.FullName,
+                Role = role,
+                WorkshopId = auditWorkshopId,
+                Success = true
+            }
+        });
         return new AuthResponseDto
         {
             AccessToken = token,
@@ -175,5 +232,30 @@ public class AuthService : IAuthService
             WorkshopId = workshopId,
             Role = role
         };
+    }
+
+    private async Task WriteLoginFailedAuditAsync(string loginName, AppUser? user, string? role, int? workshopId, string reason)
+    {
+        await _auditLogService.WriteAsync(new AuditLogCreateDto
+        {
+            WorkshopId = workshopId,
+            UserId = user?.Id,
+            UserFullName = user?.FullName,
+            UserRole = role,
+            ActionType = AuditActionType.LoginFailed,
+            EntityType = AuditEntityType.Auth,
+            EntityId = user?.Id,
+            Description = $"Başarısız giriş denemesi: {loginName}",
+            NewValues = new
+            {
+                LoginName = loginName,
+                UserId = user?.Id,
+                UserFullName = user?.FullName,
+                Role = role,
+                WorkshopId = workshopId,
+                Reason = reason,
+                Success = false
+            }
+        });
     }
 }

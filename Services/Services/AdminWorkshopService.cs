@@ -729,15 +729,45 @@ namespace AutoStock.Services.Services
         {
             var now = _dateTimeProvider.Now;
 
+            query ??= new AdminWorkshopListQueryDto();
+
             query.PageNumber = query.PageNumber <= 0 ? 1 : query.PageNumber;
             query.PageSize = query.PageSize <= 0 ? 10 : query.PageSize;
-            query.PageSize = query.PageSize > 100 ? 100 : query.PageSize;
+            query.PageSize = query.PageSize > 50 ? 50 : query.PageSize;
 
             var workshopsQuery = _context.Workshops
                 .AsNoTracking()
                 .AsQueryable();
 
-            // filtreler aynı kalacak...
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                var searchText = query.Search.Trim();
+                var search = $"%{searchText}%";
+
+                workshopsQuery = workshopsQuery.Where(x =>
+                    EF.Functions.Like(x.Name ?? string.Empty, search) ||
+                    (
+                        x.Profile != null &&
+                        (
+                            EF.Functions.Like(x.Profile.DisplayName ?? string.Empty, search) ||
+                            EF.Functions.Like(x.Profile.LegalTitle ?? string.Empty, search) ||
+                            EF.Functions.Like(x.Profile.PhoneNumber ?? string.Empty, search) ||
+                            EF.Functions.Like(x.Profile.Email ?? string.Empty, search)
+                        )
+                    ));
+            }
+
+            if (query.IsActive.HasValue)
+            {
+                workshopsQuery = workshopsQuery.Where(x =>
+                    x.IsActive == query.IsActive.Value);
+            }
+
+            if (query.SubscriptionStatus.HasValue)
+            {
+                workshopsQuery = workshopsQuery.Where(x =>
+                    x.SubscriptionStatus == query.SubscriptionStatus.Value);
+            }
 
             var totalCount = await workshopsQuery.CountAsync();
 
@@ -755,7 +785,8 @@ namespace AutoStock.Services.Services
                     SubscriptionEndDate = x.SubscriptionEndDate,
                     IsExpired = x.SubscriptionEndDate.HasValue &&
                                 x.SubscriptionEndDate.Value <= now,
-                    CreatedAt = x.CreatedAt
+                    CreatedAt = x.CreatedAt,
+                    UserCount = _context.WorkshopUsers.Count(u => u.WorkshopId == x.Id)
                 })
                 .ToListAsync();
 

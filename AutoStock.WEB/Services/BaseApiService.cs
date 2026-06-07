@@ -101,11 +101,10 @@ namespace AutoStock.WEB.Services
         }
 
         protected async Task<ApiResponse<T>> ReadApiResponseAsync<T>(
-            HttpResponseMessage response,
-            string defaultErrorMessage = "API işlemi başarısız oldu.")
+    HttpResponseMessage response,
+    string defaultErrorMessage = "API işlemi başarısız oldu.")
         {
             var statusCode = (int)response.StatusCode;
-
             var responseText = await response.Content.ReadAsStringAsync();
 
             if (string.IsNullOrWhiteSpace(responseText))
@@ -114,7 +113,7 @@ namespace AutoStock.WEB.Services
                     return ApiResponse<T>.Success(default, statusCode);
 
                 return ApiResponse<T>.Fail(
-                    "API boş cevap döndü.",
+                    defaultErrorMessage,
                     statusCode);
             }
 
@@ -124,35 +123,29 @@ namespace AutoStock.WEB.Services
                     responseText,
                     JsonOptions);
 
-                if (result == null)
+                if (result is not null)
                 {
-                    return ApiResponse<T>.Fail(
-                        "API cevabı okunamadı.",
+                    result.StatusCode = statusCode;
+                    result.ErrorMessages ??= new List<string>();
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        result.IsSuccess = true;
+                        return result;
+                    }
+
+                    NormalizeFailedApiResponse(
+                        result,
+                        responseText,
+                        defaultErrorMessage,
                         statusCode);
+
+                    return result;
                 }
 
-                result.StatusCode = statusCode;
-                result.ErrorMessages ??= new List<string>();
-
-                if (result.IsFailure && string.IsNullOrWhiteSpace(result.ErrorMessage))
-                {
-                    result.ErrorMessage = result.ErrorMessages.FirstOrDefault()
-                        ?? defaultErrorMessage;
-                }
-
-                if (!response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(result.ErrorMessage))
-                {
-                    result.ErrorMessage = defaultErrorMessage;
-                }
-
-                if (result.IsFailure &&
-                    result.ErrorMessages.Count == 0 &&
-                    !string.IsNullOrWhiteSpace(result.ErrorMessage))
-                {
-                    result.ErrorMessages.Add(result.ErrorMessage);
-                }
-
-                return result;
+                return ApiResponse<T>.Fail(
+                    defaultErrorMessage,
+                    statusCode);
             }
             catch (JsonException ex)
             {
@@ -162,9 +155,17 @@ namespace AutoStock.WEB.Services
                     statusCode,
                     responseText);
 
-                return ApiResponse<T>.Fail(
-                    "API cevabı beklenen formatta değil.",
+                var errorMessages = ExtractErrorMessagesFromRawResponse(
+                    responseText,
+                    defaultErrorMessage);
+
+                var errorResponse = ApiResponse<T>.Fail(
+                    errorMessages.FirstOrDefault() ?? defaultErrorMessage,
                     statusCode);
+
+                errorResponse.ErrorMessages = errorMessages;
+
+                return errorResponse;
             }
         }
 
@@ -238,6 +239,134 @@ namespace AutoStock.WEB.Services
                 url,
                 client => client.DeleteAsync(url),
                 defaultErrorMessage);
+        }
+
+        private static void NormalizeFailedApiResponse<T>(
+    ApiResponse<T> result,
+    string responseText,
+    string defaultErrorMessage,
+    int statusCode)
+        {
+            result.IsSuccess = false;
+            result.StatusCode = statusCode;
+            result.ErrorMessages ??= new List<string>();
+
+            var extractedMessages = ExtractErrorMessagesFromRawResponse(
+                responseText,
+                defaultErrorMessage);
+
+            if (result.ErrorMessages.Count == 0)
+            {
+                result.ErrorMessages = extractedMessages;
+            }
+
+            if (string.IsNullOrWhiteSpace(result.ErrorMessage))
+            {
+                result.ErrorMessage = result.ErrorMessages.FirstOrDefault()
+                    ?? extractedMessages.FirstOrDefault()
+                    ?? defaultErrorMessage;
+            }
+
+            if (result.ErrorMessages.Count == 0 &&
+                !string.IsNullOrWhiteSpace(result.ErrorMessage))
+            {
+                result.ErrorMessages.Add(result.ErrorMessage);
+            }
+        }
+
+        private static List<string> ExtractErrorMessagesFromRawResponse(
+            string responseText,
+            string defaultErrorMessage)
+        {
+            var messages = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(responseText))
+            {
+                messages.Add(defaultErrorMessage);
+                return messages;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(responseText);
+                var root = document.RootElement;
+
+                if (root.TryGetProperty("errorMessages", out var errorMessagesElement) &&
+                    errorMessagesElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in errorMessagesElement.EnumerateArray())
+                    {
+                        var message = item.GetString();
+
+                        if (!string.IsNullOrWhiteSpace(message))
+                            messages.Add(message);
+                    }
+                }
+
+                if (root.TryGetProperty("errorMessage", out var errorMessageElement))
+                {
+                    var message = errorMessageElement.GetString();
+
+                    if (!string.IsNullOrWhiteSpace(message))
+                        messages.Add(message);
+                }
+
+                if (root.TryGetProperty("errors", out var errorsElement) &&
+                    errorsElement.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var property in errorsElement.EnumerateObject())
+                    {
+                        if (property.Value.ValueKind != JsonValueKind.Array)
+                            continue;
+
+                        foreach (var item in property.Value.EnumerateArray())
+                        {
+                            var message = item.GetString();
+
+                            if (!string.IsNullOrWhiteSpace(message))
+                                messages.Add(message);
+                        }
+                    }
+                }
+
+                if (root.TryGetProperty("detail", out var detailElement))
+                {
+                    var detail = detailElement.GetString();
+
+                    if (!string.IsNullOrWhiteSpace(detail))
+                        messages.Add(detail);
+                }
+
+                if (root.TryGetProperty("title", out var titleElement))
+                {
+                    var title = titleElement.GetString();
+
+                    if (!string.IsNullOrWhiteSpace(title) &&
+                        !title.Equals("One or more validation errors occurred.", StringComparison.OrdinalIgnoreCase))
+                    {
+                        messages.Add(title);
+                    }
+                }
+            }
+            catch
+            {
+                if (!responseText.TrimStart().StartsWith("{") &&
+                    !responseText.TrimStart().StartsWith("["))
+                {
+                    messages.Add(responseText.Trim());
+                }
+            }
+
+            messages = messages
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct()
+                .ToList();
+
+            if (messages.Count == 0)
+                messages.Add(defaultErrorMessage);
+
+            return messages;
         }
     }
 }

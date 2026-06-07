@@ -1,24 +1,25 @@
-﻿namespace AutoStock.Repositories.Enums
+﻿public enum AuditActionType
 {
-    public enum AuditActionType
-    {
-        Create = 1,
-        Update = 2,
-        SetPassive = 3,
-        SetActive = 4,
+    Create = 1,
+    Update = 2,
+    SetPassive = 3,
+    SetActive = 4,
 
-        Complete = 10,
-        Cancel = 11,
-        Reopen = 12,
+    Complete = 10,
+    Cancel = 11,
+    Reopen = 12,
 
-        Add = 20,
-        Remove = 21,
+    Add = 20,
+    Remove = 21,
 
-        Issue = 30,
-        ReceivePayment = 31,
+    Issue = 30,
+    ReceivePayment = 31,
 
-        StockIn = 40,
-        StockOut = 41,
-        StockAdjustment = 42
-    }
+    StockIn = 40,
+    StockOut = 41,
+    StockAdjustment = 42,
+
+    LoginSuccess = 50,
+    LoginFailed = 51,
+    Logout = 52
 }
