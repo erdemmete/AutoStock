@@ -1,4 +1,6 @@
 ﻿using AutoStock.Repositories;
+using AutoStock.Repositories.Enums;
+using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Customers;
 using AutoStock.Services.Interfaces;
@@ -9,7 +11,8 @@ namespace AutoStock.Services.Services
 {
     public class CustomerService(
     ICustomerRepository customerRepository,
-    AppDbContext context) : ICustomerService
+    AppDbContext context,
+    IAuditLogService auditLogService) : ICustomerService
     {
 
 
@@ -140,7 +143,7 @@ namespace AutoStock.Services.Services
         }
         public async Task<ServiceResult<int>> CreateAsync(CreateCustomerDto request, int workshopId)
         {
-            
+            await using var transaction = await context.Database.BeginTransactionAsync();
 
             var customer = new Customer
             {
@@ -163,7 +166,25 @@ namespace AutoStock.Services.Services
             };
 
             context.Customers.Add(customer);
+
             await context.SaveChangesAsync();
+
+            await auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Create,
+                EntityType = AuditEntityType.Customer,
+                EntityId = customer.Id,
+                Description = $"Müşteri oluşturuldu: {GetCustomerDisplayName(customer)}",
+                NewValues = new
+                {
+                    customer.Type,
+                    DisplayName = GetCustomerDisplayName(customer)
+                }
+            });
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return ServiceResult<int>.Success(customer.Id);
         }
@@ -212,12 +233,18 @@ namespace AutoStock.Services.Services
         {
             var customer = await context.Customers
                 .FirstOrDefaultAsync(x =>
-    x.Id == request.Id &&
-    x.WorkshopId == workshopId &&
-    x.IsActive);
+                x.Id == request.Id &&
+                x.WorkshopId == workshopId &&
+                x.IsActive);
 
             if (customer == null)
                 return ServiceResult<int>.Fail("Müşteri bulunamadı.");
+            
+            var oldValues = new
+            {
+                customer.Type,
+                DisplayName = GetCustomerDisplayName(customer)
+            };
 
             customer.Type = request.Type;
 
@@ -237,6 +264,21 @@ namespace AutoStock.Services.Services
             customer.AddressCity = request.AddressCity?.Trim();
             customer.AddressDistrict = request.AddressDistrict?.Trim();
 
+            await auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Update,
+                EntityType = AuditEntityType.Customer,
+                EntityId = customer.Id,
+                Description = $"Müşteri güncellendi: {GetCustomerDisplayName(customer)}",
+                OldValues = oldValues,
+                NewValues = new
+                {
+                    customer.Type,
+                    DisplayName = GetCustomerDisplayName(customer)
+                }
+            });
+
             await context.SaveChangesAsync();
 
             return ServiceResult<int>.Success(customer.Id);
@@ -255,11 +297,37 @@ namespace AutoStock.Services.Services
 
             customer.IsActive = false;
 
+            await auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.SetPassive,
+                EntityType = AuditEntityType.Customer,
+                EntityId = customer.Id,
+                Description = $"Müşteri pasife alındı: {GetCustomerDisplayName(customer)}",
+                OldValues = new
+                {
+                    IsActive = true
+                },
+                NewValues = new
+                {
+                    IsActive = false
+                }
+            });
+
             await context.SaveChangesAsync();
 
             return ServiceResult<int>.Success(customer.Id);
         }
 
-        
+        private static string GetCustomerDisplayName(Customer customer)
+        {
+            if (!string.IsNullOrWhiteSpace(customer.FullName))
+                return customer.FullName;
+
+            if (!string.IsNullOrWhiteSpace(customer.CompanyName))
+                return customer.CompanyName;
+
+            return $"Müşteri #{customer.Id}";
+        }
     }
 }
