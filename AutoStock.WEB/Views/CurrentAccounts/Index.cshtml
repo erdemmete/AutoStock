@@ -160,8 +160,9 @@
 
                             <td class="text-end">
                                 <button type="button"
-                                        class="ca-btn ca-btn-success"
-                                        onclick="openPaymentModal(@item.CustomerId, @Json.Serialize(item.CustomerName))">
+                                        class="ca-btn ca-btn-success js-payment-button"
+                                        data-customer-id="@item.CustomerId"
+                                        data-customer-name="@item.CustomerName">
                                     Tahsilat
                                 </button>
 
@@ -223,13 +224,31 @@
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".js-payment-button").forEach(function (button) {
+            button.addEventListener("click", function () {
+                const customerId = parseInt(this.dataset.customerId);
+                const customerName = this.dataset.customerName || "";
+
+                openPaymentModal(customerId, customerName);
+            });
+        });
+    });
+
     function openPaymentModal(customerId, customerName) {
         document.getElementById("paymentCustomerId").value = customerId;
         document.getElementById("paymentCustomerName").value = customerName;
         document.getElementById("paymentAmount").value = "";
         document.getElementById("paymentDescription").value = "";
 
-        const modal = new bootstrap.Modal(document.getElementById("paymentModal"));
+        const modalElement = document.getElementById("paymentModal");
+
+        if (typeof bootstrap === "undefined") {
+            alert("Bootstrap JS yüklenmemiş. _Layout.cshtml dosyasını kontrol et.");
+            return;
+        }
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
         modal.show();
     }
 
@@ -255,17 +274,21 @@
             })
         });
 
+        if (!response.ok) {
+            alert("Tahsilat isteği başarısız oldu. HTTP " + response.status);
+            return;
+        }
+
         const result = await response.json();
 
         if (!result.isSuccess) {
-            alert("Tahsilat kaydedilemedi.");
+            alert(result.errorMessage || "Tahsilat kaydedilemedi.");
             return;
         }
 
         location.reload();
     }
 </script>
-
 <style>
     .ca-page {
         max-width: 1320px;

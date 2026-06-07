@@ -2,6 +2,7 @@
 using AutoStock.Repositories;
 using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Enums;
+using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.CurrentAccounts;
 using AutoStock.Services.Interfaces;
@@ -13,26 +14,44 @@ namespace AutoStock.Services.Services
     {
         private readonly AppDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IAuditLogService _auditLogService;
 
-        public CurrentAccountService(AppDbContext context, IDateTimeProvider dateTimeProvider)
+        public CurrentAccountService(
+            AppDbContext context,
+            IDateTimeProvider dateTimeProvider,
+            IAuditLogService auditLogService)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
+            _auditLogService = auditLogService;
         }
 
-        public async Task<ServiceResult<bool>> CreatePaymentAsync(CreatePaymentRequestDto request,int workshopId)
+        public async Task<ServiceResult<bool>> CreatePaymentAsync(CreatePaymentRequestDto request, int workshopId)
         {
             if (request.Amount <= 0)
                 return ServiceResult<bool>.Fail(
                     "Tahsilat tutarı 0'dan büyük olmalıdır.");
 
-            var customerExists = await _context.Customers
-                .AnyAsync(x =>
+            var customer = await _context.Customers
+                .Where(x =>
                     x.Id == request.CustomerId &&
-                    x.WorkshopId == workshopId);
+                    x.WorkshopId == workshopId)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.FullName,
+                    x.CompanyName
+                })
+                .FirstOrDefaultAsync();
 
-            if (!customerExists)
+            if (customer is null)
                 return ServiceResult<bool>.Fail("Müşteri bulunamadı.");
+
+            var customerName = !string.IsNullOrWhiteSpace(customer.FullName)
+                ? customer.FullName
+                : customer.CompanyName ?? "İsimsiz Müşteri";
+
+            await using var dbTransaction = await _context.Database.BeginTransactionAsync();
 
             var transaction = new CurrentAccountTransaction
             {
@@ -56,6 +75,29 @@ namespace AutoStock.Services.Services
             _context.CurrentAccountTransactions.Add(transaction);
 
             await _context.SaveChangesAsync();
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.ReceivePayment,
+                EntityType = AuditEntityType.CurrentAccountTransaction,
+                EntityId = transaction.Id,
+                Description = $"Tahsilat girdi: {customerName} / {transaction.Credit:N2} TL",
+                NewValues = new
+                {
+                    transaction.Id,
+                    transaction.CustomerId,
+                    CustomerName = customerName,
+                    Type = transaction.Type.ToString(),
+                    Amount = transaction.Credit,
+                    transaction.TransactionDate,
+                    transaction.Description,
+                    transaction.IsSystemGenerated
+                }
+            });
+
+            await _context.SaveChangesAsync();
+            await dbTransaction.CommitAsync();
 
             return ServiceResult<bool>.Success(true);
         }
@@ -171,9 +213,7 @@ namespace AutoStock.Services.Services
             return ServiceResult<CurrentAccountSummaryDto>.Success(response);
         }
 
-        public async Task<ServiceResult<CurrentAccountPagedSummaryDto>> GetPagedSummaryAsync(
-     CurrentAccountListQueryDto query,
-     int workshopId)
+        public async Task<ServiceResult<CurrentAccountPagedSummaryDto>> GetPagedSummaryAsync(CurrentAccountListQueryDto query, int workshopId)
         {
             query ??= new CurrentAccountListQueryDto();
             query.Normalize();
