@@ -7,9 +7,7 @@ namespace AutoStock.WEB.Extensions
         public static IServiceCollection AddWebServices(
             this IServiceCollection services)
         {
-            services.AddHttpContextAccessor();
-
-            services.AddScoped<CurrentAccountApiService>();
+            services.AddHttpContextAccessor();        
             services.AddScoped<StockItemApiService>();
             services.AddScoped<AdminWorkshopApiService>();
             services.AddScoped<StockItemPageService>();
@@ -22,6 +20,7 @@ namespace AutoStock.WEB.Extensions
             services.AddScoped<InvoicePageService>();
             services.AddScoped<CurrentAccountApiService>();
             services.AddScoped<CurrentAccountPageService>();
+            services.AddScoped<SupportRequestApiService>();
 
             return services;
         }

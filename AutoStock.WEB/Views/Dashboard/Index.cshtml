@@ -174,7 +174,7 @@
 
             .module-grid {
                 display: grid;
-                grid-template-columns: repeat(4, minmax(0, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
                 gap: 18px;
             }
 
@@ -439,6 +439,12 @@
             <a class="module-card" href="/Invoices">
                 <div class="card-icon">🧾</div>
                 <h2>Faturalar</h2>
+                <div class="card-arrow">→</div>
+            </a>
+
+            <a class="module-card" asp-controller="SupportRequests" asp-action="Index">
+                <div class="card-icon">💬</div>
+                <h2>Destek Talepleri</h2>
                 <div class="card-arrow">→</div>
             </a>
         </section>

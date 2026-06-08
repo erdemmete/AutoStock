@@ -1,5 +1,5 @@
-﻿using AutoStock.Repositories;
-using AutoStock.Repositories.Entities;
+﻿using AutoStock.Repositories.Entities;
+using AutoStock.Repositories.Interfaces;
 using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Interfaces;
 using System.Text.Json;

@@ -1,4 +1,4 @@
-﻿namespace AutoStock.Repositories
+﻿namespace AutoStock.Repositories.Interfaces
 {
     public interface IUnitOfWork
     {

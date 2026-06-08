@@ -1,6 +1,6 @@
 ﻿using AutoStock.Repositories.Entities;
 
-namespace AutoStock.Repositories
+namespace AutoStock.Repositories.Interfaces
 {
     public interface IAuditLogRepository
     {

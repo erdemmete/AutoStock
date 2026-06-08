@@ -1,4 +1,5 @@
 ﻿using AutoStock.Repositories.Entities;
+using AutoStock.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutoStock.Repositories

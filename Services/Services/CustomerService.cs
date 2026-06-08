@@ -1,5 +1,6 @@
 ﻿using AutoStock.Repositories;
 using AutoStock.Repositories.Enums;
+using AutoStock.Repositories.Interfaces;
 using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Customers;

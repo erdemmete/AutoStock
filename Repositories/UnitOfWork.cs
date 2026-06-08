@@ -1,4 +1,6 @@
-﻿namespace AutoStock.Repositories
+﻿using AutoStock.Repositories.Interfaces;
+
+namespace AutoStock.Repositories
 {
     public class UnitOfWork(AppDbContext context) : IUnitOfWork
     {

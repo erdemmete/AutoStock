@@ -1,0 +1,246 @@
+﻿@model AutoStock.WEB.Models.SupportRequests.SupportRequestIndexViewModel
+@using AutoStock.Repositories.Enums
+@using AutoStock.WEB.Models.Common
+@using AutoStock.WEB.Models.SupportRequests
+
+@{
+    ViewData["Title"] = "Destek Talepleri";
+
+    var requests = Model.Requests.Items ?? new List<SupportRequestListItemViewModel>();
+    var query = Model.Query;
+
+    var pageNumber = Model.Requests.PageNumber > 0 ? Model.Requests.PageNumber : query.PageNumber;
+    var pageSize = Model.Requests.PageSize > 0 ? Model.Requests.PageSize : query.PageSize;
+    var totalCount = Model.Requests.TotalCount;
+
+    var paginationModel = new PaginationViewModel
+    {
+        Controller = "SupportRequests",
+        Action = "Index",
+        PageNumber = pageNumber,
+        PageSize = pageSize,
+        TotalCount = totalCount,
+        RouteValues = new Dictionary<string, string?>
+        {
+            ["search"] = query.Search,
+            ["status"] = query.Status.HasValue ? ((int)query.Status.Value).ToString() : null,
+            ["requestType"] = query.RequestType.HasValue ? ((int)query.RequestType.Value).ToString() : null
+        }
+    };
+}
+
+<div class="stock-page">
+    <div class="stock-header">
+        <div class="stock-title-area">
+            <div class="stock-icon">
+                <span>?</span>
+            </div>
+
+            <div>
+                <h1>Destek Talepleri</h1>
+                <p>Sorun bildirimlerinizi ve kullanıcı ekleme taleplerinizi buradan takip edebilirsiniz.</p>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            @if (Model.IsOwner)
+            {
+                <a asp-controller="SupportRequests"
+                   asp-action="CreateUserRequest"
+                   class="detail-btn">
+                    Kullanıcı Talebi
+                </a>
+            }
+
+            @await Html.PartialAsync("_PageActions", new PageActionViewModel
+            {
+                BackController = "Dashboard",
+                BackAction = "Index",
+                HomeController = "Dashboard",
+                HomeAction = "Index",
+                PrimaryText = "+ Yeni Sorun Bildir",
+                PrimaryController = "SupportRequests",
+                PrimaryAction = "CreateIssue"
+            })
+        </div>
+    </div>
+
+    <form class="stock-filter-card"
+          method="get"
+          asp-controller="SupportRequests"
+          asp-action="Index">
+
+        <div class="stock-search-box">
+            <span class="search-icon">⌕</span>
+            <input name="Search"
+                   value="@query.Search"
+                   type="text"
+                   placeholder="Konu veya açıklama ara..." />
+        </div>
+
+        <select name="Status" class="stock-filter-select">
+            <option value="">Tüm Durumlar</option>
+
+            @if (query.Status == SupportRequestStatus.Open)
+            {
+                <option value="@((int)SupportRequestStatus.Open)" selected>Açık</option>
+            }
+            else
+            {
+                <option value="@((int)SupportRequestStatus.Open)">Açık</option>
+            }
+
+            @if (query.Status == SupportRequestStatus.InProgress)
+            {
+                <option value="@((int)SupportRequestStatus.InProgress)" selected>İşlemde</option>
+            }
+            else
+            {
+                <option value="@((int)SupportRequestStatus.InProgress)">İşlemde</option>
+            }
+
+            @if (query.Status == SupportRequestStatus.Answered)
+            {
+                <option value="@((int)SupportRequestStatus.Answered)" selected>Yanıtlandı</option>
+            }
+            else
+            {
+                <option value="@((int)SupportRequestStatus.Answered)">Yanıtlandı</option>
+            }
+
+            @if (query.Status == SupportRequestStatus.Closed)
+            {
+                <option value="@((int)SupportRequestStatus.Closed)" selected>Kapandı</option>
+            }
+            else
+            {
+                <option value="@((int)SupportRequestStatus.Closed)">Kapandı</option>
+            }
+
+            @if (query.Status == SupportRequestStatus.Cancelled)
+            {
+                <option value="@((int)SupportRequestStatus.Cancelled)" selected>İptal Edildi</option>
+            }
+            else
+            {
+                <option value="@((int)SupportRequestStatus.Cancelled)">İptal Edildi</option>
+            }
+        </select>
+
+        <select name="RequestType" class="stock-filter-select">
+            <option value="">Tüm Talepler</option>
+
+            @if (query.RequestType == SupportRequestType.Issue)
+            {
+                <option value="@((int)SupportRequestType.Issue)" selected>Sorun Bildirimi</option>
+            }
+            else
+            {
+                <option value="@((int)SupportRequestType.Issue)">Sorun Bildirimi</option>
+            }
+
+            @if (query.RequestType == SupportRequestType.UserCreateRequest)
+            {
+                <option value="@((int)SupportRequestType.UserCreateRequest)" selected>Kullanıcı Ekleme</option>
+            }
+            else
+            {
+                <option value="@((int)SupportRequestType.UserCreateRequest)">Kullanıcı Ekleme</option>
+            }
+        </select>
+
+        <input type="hidden" name="PageNumber" value="1" />
+
+        <select name="PageSize" class="stock-filter-select">
+            <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
+            <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
+            <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
+        </select>
+
+        <button type="submit"
+                class="stock-filter-button"
+                title="Ara">
+            ⌕
+        </button>
+
+        <a asp-controller="SupportRequests"
+           asp-action="Index"
+           class="stock-clear-button"
+           title="Filtreleri temizle">
+            ×
+        </a>
+    </form>
+
+    @await Html.PartialAsync("_Pagination", paginationModel)
+
+    <div class="stock-table-card">
+        <div class="table-responsive">
+            <table class="stock-table">
+                <thead>
+                    <tr>
+                        <th>Konu</th>
+                        <th>Tip</th>
+                        <th>Durum</th>
+                        <th>Öncelik</th>
+                        <th>Oluşturan</th>
+                        <th>Tarih</th>
+                        <th class="text-right">İşlem</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (!requests.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="empty-cell">
+                                Henüz destek talebi bulunamadı.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in requests)
+                        {
+                            <tr class="stock-row">
+                                <td>
+                                    <div class="stock-name">@item.Subject</div>
+
+                                    @if (item.RespondedAt.HasValue)
+                                    {
+                                        <div class="small text-success mt-1">Admin cevabı mevcut</div>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="brand-pill">@item.RequestTypeText</span>
+                                </td>
+
+                                <td>
+                                    <span class="status-badge">@item.StatusText</span>
+                                </td>
+
+                                <td>
+                                    <strong>@item.PriorityText</strong>
+                                </td>
+
+                                <td>@item.CreatedByUserName</td>
+
+                                <td>@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+
+                                <td class="text-right">
+                                    <a asp-controller="SupportRequests"
+                                       asp-action="Detail"
+                                       asp-route-id="@item.Id"
+                                       class="detail-btn">
+                                        Detay
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+@await Html.PartialAsync("_SupportRequestIndexStyles")

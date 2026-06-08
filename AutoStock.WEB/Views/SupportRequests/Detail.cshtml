@@ -1,0 +1,207 @@
+﻿@model AutoStock.WEB.Models.SupportRequests.SupportRequestDetailViewModel
+@using AutoStock.Repositories.Enums
+@using AutoStock.WEB.Models.Common
+@using Microsoft.AspNetCore.Http
+
+@{
+    ViewData["Title"] = "Destek Talebi Detayı";
+
+    var currentUserId = Context.Session.GetInt32("UserId");
+
+    var canCancel =
+        currentUserId.HasValue &&
+        currentUserId.Value == Model.CreatedByUserId &&
+        Model.Status != SupportRequestStatus.Closed &&
+        Model.Status != SupportRequestStatus.Cancelled;
+}
+
+<div class="support-page">
+    <div class="support-header">
+        <div class="support-title-area">
+            <div class="support-icon">
+                <span>?</span>
+            </div>
+
+            <div>
+                <h1>Destek Talebi Detayı</h1>
+                <p>Talebinizin durumunu ve admin cevabını buradan takip edebilirsiniz.</p>
+            </div>
+        </div>
+
+        @await Html.PartialAsync("_PageActions", new PageActionViewModel
+        {
+            BackController = "SupportRequests",
+            BackAction = "Index",
+            HomeController = "Dashboard",
+            HomeAction = "Index"
+        })
+    </div>
+
+    <div class="support-detail-grid">
+        <div class="support-detail-card">
+            <div class="detail-card-header">
+                <div>
+                    <div class="detail-label">Konu</div>
+                    <h2>@Model.Subject</h2>
+                </div>
+
+                <span class="status-badge-custom">@Model.StatusText</span>
+            </div>
+
+            <div class="detail-meta-grid">
+                <div class="meta-box">
+                    <span>Talep Tipi</span>
+                    <strong>@Model.RequestTypeText</strong>
+                </div>
+
+                <div class="meta-box">
+                    <span>Öncelik</span>
+                    <strong>@Model.PriorityText</strong>
+                </div>
+
+                <div class="meta-box">
+                    <span>Oluşturan</span>
+                    <strong>@Model.CreatedByUserName</strong>
+                </div>
+
+                <div class="meta-box">
+                    <span>Oluşturma Tarihi</span>
+                    <strong>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</strong>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <div class="detail-label">Açıklama</div>
+                <div class="description-box">
+                    @Model.Description
+                </div>
+            </div>
+
+            @if (Model.RequestType == SupportRequestType.UserCreateRequest)
+            {
+                <div class="detail-section">
+                    <div class="detail-label">Talep Edilen Kullanıcı</div>
+
+                    <div class="requested-user-card">
+                        <div>
+                            <span>Ad Soyad</span>
+                            <strong>@Model.RequestedUserFullName</strong>
+                        </div>
+
+                        <div>
+                            <span>Telefon</span>
+                            <strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserPhone) ? "-" : Model.RequestedUserPhone)</strong>
+                        </div>
+
+                        <div>
+                            <span>E-posta</span>
+                            <strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserEmail) ? "-" : Model.RequestedUserEmail)</strong>
+                        </div>
+
+                        <div>
+                            <span>Rol</span>
+                            <strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserRoleText) ? "-" : Model.RequestedUserRoleText)</strong>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Model.AdminResponse))
+            {
+                <div class="detail-section">
+                    <div class="detail-label">Admin Cevabı</div>
+
+                    <div class="admin-response-box">
+                        <div class="response-text">
+                            @Model.AdminResponse
+                        </div>
+
+                        <div class="response-meta">
+                            @if (!string.IsNullOrWhiteSpace(Model.RespondedByUserName))
+                            {
+                                <span>@Model.RespondedByUserName</span>
+                            }
+
+                            @if (Model.RespondedAt.HasValue)
+                            {
+                                <span>@Model.RespondedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="waiting-box">
+                    Talebiniz henüz yanıtlanmadı. Admin tarafından cevap yazıldığında burada görünecektir.
+                </div>
+            }
+
+            <div class="detail-actions">
+                <a asp-controller="SupportRequests"
+                   asp-action="Index"
+                   class="secondary-btn">
+                    Listeye Dön
+                </a>
+
+                @if (canCancel)
+                {
+                    <form asp-controller="SupportRequests"
+                          asp-action="Cancel"
+                          asp-route-id="@Model.Id"
+                          method="post"
+                          onsubmit="return confirm('Bu destek talebini iptal etmek istediğinize emin misiniz?');">
+
+                        @Html.AntiForgeryToken()
+
+                        <button type="submit" class="danger-btn">
+                            Talebi İptal Et
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="support-side-card">
+            <h3>Durum Bilgisi</h3>
+
+            <div class="timeline-list">
+                <div class="timeline-item active">
+                    <span></span>
+                    <div>
+                        <strong>Talep oluşturuldu</strong>
+                        <small>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                    </div>
+                </div>
+
+                @if (Model.RespondedAt.HasValue)
+                {
+                    <div class="timeline-item active">
+                        <span></span>
+                        <div>
+                            <strong>Admin cevap yazdı</strong>
+                            <small>@Model.RespondedAt.Value.ToString("dd.MM.yyyy HH:mm")</small>
+                        </div>
+                    </div>
+                }
+
+                @if (Model.ClosedAt.HasValue)
+                {
+                    <div class="timeline-item active">
+                        <span></span>
+                        <div>
+                            <strong>Talep kapandı</strong>
+                            <small>@Model.ClosedAt.Value.ToString("dd.MM.yyyy HH:mm")</small>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="side-info-box">
+                <span>Güncel Durum</span>
+                <strong>@Model.StatusText</strong>
+            </div>
+        </div>
+    </div>
+</div>
+@await Html.PartialAsync("_SupportRequestStyles")

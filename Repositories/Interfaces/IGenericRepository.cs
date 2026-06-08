@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace AutoStock.Repositories
+namespace AutoStock.Repositories.Interfaces
 {
     public interface IGenericRepository<T> where T : class
     {

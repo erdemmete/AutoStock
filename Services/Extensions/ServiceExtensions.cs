@@ -26,6 +26,7 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<IAdminWorkshopService, AdminWorkshopService>();
             services.AddScoped<IAuditLogService, AuditLogService>();
             services.AddScoped<IAuditContextAccessor, AuditContextAccessor>();
+            services.AddScoped<ISupportRequestService, SupportRequestService>();
 
             return services;
 

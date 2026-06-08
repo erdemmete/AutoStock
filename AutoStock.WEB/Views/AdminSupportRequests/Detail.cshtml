@@ -1,0 +1,227 @@
+﻿@model AutoStock.WEB.Models.SupportRequests.SupportRequestDetailViewModel
+@using AutoStock.Repositories.Enums
+@using AutoStock.WEB.Models.Common
+
+@{
+    ViewData["Title"] = "Destek Talebi Detayı";
+
+    var isClosedOrCancelled =
+        Model.Status == SupportRequestStatus.Closed ||
+        Model.Status == SupportRequestStatus.Cancelled;
+}
+
+<div class="support-page">
+    <div class="support-header">
+        <div class="support-title-area">
+            <div class="support-icon">
+                <span>?</span>
+            </div>
+
+            <div>
+                <h1>Destek Talebi Detayı</h1>
+                <p>Servisten gelen destek talebini inceleyebilir, cevap yazabilir ve durumunu güncelleyebilirsiniz.</p>
+            </div>
+        </div>
+
+        @await Html.PartialAsync("_PageActions", new PageActionViewModel
+        {
+            BackController = "AdminSupportRequests",
+            BackAction = "Index",
+            HomeController = "Admin",
+            HomeAction = "Dashboard"
+        })
+    </div>
+
+    <div class="support-detail-grid">
+        <div class="support-detail-card">
+            <div class="detail-card-header">
+                <div>
+                    <div class="detail-label">Konu</div>
+                    <h2>@Model.Subject</h2>
+                </div>
+
+                <span class="status-badge-custom">@Model.StatusText</span>
+            </div>
+
+            <div class="detail-meta-grid">
+                <div class="meta-box">
+                    <span>Servis</span>
+                    <strong>@(string.IsNullOrWhiteSpace(Model.WorkshopName) ? $"Servis #{Model.WorkshopId}" : Model.WorkshopName)</strong>
+                </div>
+
+                <div class="meta-box">
+                    <span>Talep Tipi</span>
+                    <strong>@Model.RequestTypeText</strong>
+                </div>
+
+                <div class="meta-box">
+                    <span>Öncelik</span>
+                    <strong>@Model.PriorityText</strong>
+                </div>
+
+                <div class="meta-box">
+                    <span>Oluşturan</span>
+                    <strong>@Model.CreatedByUserName</strong>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <div class="detail-label">Açıklama</div>
+                <div class="description-box">
+                    @Model.Description
+                </div>
+            </div>
+
+            @if (Model.RequestType == SupportRequestType.UserCreateRequest)
+            {
+                <div class="detail-section">
+                    <div class="detail-label">Talep Edilen Kullanıcı</div>
+
+                    <div class="requested-user-card">
+                        <div>
+                            <span>Ad Soyad</span>
+                            <strong>@Model.RequestedUserFullName</strong>
+                        </div>
+
+                        <div>
+                            <span>Telefon</span>
+                            <strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserPhone) ? "-" : Model.RequestedUserPhone)</strong>
+                        </div>
+
+                        <div>
+                            <span>E-posta</span>
+                            <strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserEmail) ? "-" : Model.RequestedUserEmail)</strong>
+                        </div>
+
+                        <div>
+                            <span>Rol</span>
+                            <strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserRoleText) ? "-" : Model.RequestedUserRoleText)</strong>
+                        </div>
+                    </div>
+
+                    <div class="support-info-box mt-3">
+                        <strong>Not:</strong>
+                        Bu talep kullanıcıyı otomatik oluşturmaz. Kullanıcıyı admin servis detay ekranından manuel oluşturduktan sonra bu talebi yanıtlandı veya kapandı durumuna alabilirsiniz.
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Model.AdminResponse))
+            {
+                <div class="detail-section">
+                    <div class="detail-label">Mevcut Admin Cevabı</div>
+
+                    <div class="admin-response-box">
+                        <div class="response-text">
+                            @Model.AdminResponse
+                        </div>
+
+                        <div class="response-meta">
+                            @if (!string.IsNullOrWhiteSpace(Model.RespondedByUserName))
+                            {
+                                <span>@Model.RespondedByUserName</span>
+                            }
+
+                            @if (Model.RespondedAt.HasValue)
+                            {
+                                <span>@Model.RespondedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="support-side-card">
+            <h3>Admin İşlemleri</h3>
+
+            @if (isClosedOrCancelled)
+            {
+                <div class="closed-box">
+                    Bu talep kapalı veya iptal edilmiş durumda. Cevap yazılamaz.
+                </div>
+            }
+            else
+            {
+                <form asp-controller="AdminSupportRequests"
+                      asp-action="Answer"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="Id" value="@Model.Id" />
+
+                    <div class="form-group">
+                        <label>Admin Cevabı</label>
+                        <textarea name="AdminResponse"
+                                  class="form-control-custom textarea"
+                                  rows="7"
+                                  placeholder="Servise gösterilecek cevabı yazın...">@Model.AdminResponse</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Durum</label>
+                        <select name="Status" class="form-control-custom">
+                            <option value="@SupportRequestStatus.InProgress">İşlemde</option>
+                            <option value="@SupportRequestStatus.Answered" selected>Yanıtlandı</option>
+                            <option value="@SupportRequestStatus.Closed">Kapandı</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="primary-btn w-100">
+                        Cevabı Kaydet
+                    </button>
+                </form>
+
+                <hr />
+
+                <form asp-controller="AdminSupportRequests"
+                      asp-action="UpdateStatus"
+                      method="post">
+
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="Id" value="@Model.Id" />
+
+                    <div class="form-group">
+                        <label>Hızlı Durum Güncelle</label>
+                        <select name="Status" class="form-control-custom">
+                            <option value="@SupportRequestStatus.Open">Açık</option>
+                            <option value="@SupportRequestStatus.InProgress">İşlemde</option>
+                            <option value="@SupportRequestStatus.Answered">Yanıtlandı</option>
+                            <option value="@SupportRequestStatus.Closed">Kapandı</option>
+                            <option value="@SupportRequestStatus.Cancelled">İptal Edildi</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="secondary-btn w-100">
+                        Durumu Güncelle
+                    </button>
+                </form>
+            }
+
+            <div class="side-info-box">
+                <span>Oluşturma Tarihi</span>
+                <strong>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</strong>
+            </div>
+
+            @if (Model.UpdatedAt.HasValue)
+            {
+                <div class="side-info-box">
+                    <span>Son Güncelleme</span>
+                    <strong>@Model.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</strong>
+                </div>
+            }
+
+            @if (Model.ClosedAt.HasValue)
+            {
+                <div class="side-info-box">
+                    <span>Kapanış Tarihi</span>
+                    <strong>@Model.ClosedAt.Value.ToString("dd.MM.yyyy HH:mm")</strong>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@await Html.PartialAsync("_SupportRequestStyles")

@@ -15,5 +15,7 @@
     WorkshopUser = 41,
     WorkshopSubscription = 42,
 
-    Auth = 50
+    Auth = 50,
+
+    SupportRequest = 60
 }

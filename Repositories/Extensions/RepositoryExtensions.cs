@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoStock.Repositories.Interfaces;
+using AutoStock.Repositories.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,6 +25,7 @@ namespace AutoStock.Repositories.Extensions
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+            services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
 
             return services;
         }
