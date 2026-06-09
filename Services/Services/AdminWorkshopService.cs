@@ -5,7 +5,7 @@ using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Admin.Workshops;
 using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Common;
-
+using AutoStock.Services.Dtos.SecurityTokens;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -22,19 +22,22 @@ namespace AutoStock.Services.Services
         private readonly RoleManager<IdentityRole<int>> _roleManager;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IAuditLogService _auditLogService;
+        private readonly IUserSecurityTokenService _userSecurityTokenService;
 
         public AdminWorkshopService(
     AppDbContext context,
     UserManager<AppUser> userManager,
     RoleManager<IdentityRole<int>> roleManager,
     IDateTimeProvider dateTimeProvider,
-    IAuditLogService auditLogService)
+    IAuditLogService auditLogService,
+    IUserSecurityTokenService userSecurityTokenService)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
             _dateTimeProvider = dateTimeProvider;
             _auditLogService = auditLogService;
+            _userSecurityTokenService = userSecurityTokenService;
         }
 
         public async Task<ServiceResult<List<AdminWorkshopListItemDto>>> GetListAsync()
@@ -357,19 +360,24 @@ namespace AutoStock.Services.Services
             return ServiceResult<List<AdminWorkshopUserDto>>.Success(users);
         }
 
-        public async Task<ServiceResult<int>> CreateUserAsync(int workshopId, CreateAdminWorkshopUserRequestDto request)
+        public async Task<ServiceResult<AdminWorkshopUserCreatedDto>> CreateUserAsync(
+    int workshopId,
+    CreateAdminWorkshopUserRequestDto request)
         {
             var workshopExists = await _context.Workshops
                 .AnyAsync(x => x.Id == workshopId);
 
             if (!workshopExists)
-                return ServiceResult<int>.Fail(
+                return ServiceResult<AdminWorkshopUserCreatedDto>.Fail(
                     "Servis bulunamadı.");
 
             var validationResult = await ValidateCreateUserRequestAsync(request);
-
             if (validationResult.IsFailure)
-                return validationResult;
+            {
+                return ServiceResult<AdminWorkshopUserCreatedDto>.Fail(
+                    validationResult.ErrorMessages,
+                    (HttpStatusCode)validationResult.StatusCode);
+            }
 
             var role = request.Role.Trim();
 
@@ -379,16 +387,13 @@ namespace AutoStock.Services.Services
             {
                 FullName = request.FullName.Trim(),
                 UserName = request.UserName.Trim(),
-                Email = string.IsNullOrWhiteSpace(request.Email)
-        ? null
-        : request.Email.Trim(),
-                PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber)
-        ? null
-        : request.PhoneNumber.Trim(),
-                IsActive = true
+                Email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim(),
+                PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
+                IsActive = true,
+                CreatedAt = _dateTimeProvider.Now
             };
 
-            var createUserResult = await _userManager.CreateAsync(user, request.Password);
+            var createUserResult = await _userManager.CreateAsync(user);
 
             if (!createUserResult.Succeeded)
             {
@@ -398,7 +403,7 @@ namespace AutoStock.Services.Services
                     .Select(x => x.Description)
                     .ToList();
 
-                return ServiceResult<int>.Fail(errors);
+                return ServiceResult<AdminWorkshopUserCreatedDto>.Fail(errors);
             }
 
             var addRoleResult = await _userManager.AddToRoleAsync(user, role);
@@ -411,7 +416,7 @@ namespace AutoStock.Services.Services
                     .Select(x => x.Description)
                     .ToList();
 
-                return ServiceResult<int>.Fail(errors);
+                return ServiceResult<AdminWorkshopUserCreatedDto>.Fail(errors);
             }
 
             var workshopUser = new WorkshopUser
@@ -424,6 +429,24 @@ namespace AutoStock.Services.Services
             _context.WorkshopUsers.Add(workshopUser);
 
             await _context.SaveChangesAsync();
+
+            var tokenResult = await _userSecurityTokenService.CreateAsync(
+                new CreateUserSecurityTokenRequestDto
+                {
+                    UserId = user.Id,
+                    Purpose = UserSecurityTokenPurpose.PasswordSetup,
+                    DeliveryChannel = UserSecurityTokenDeliveryChannel.Manual,
+                    ValidFor = TimeSpan.FromDays(7)
+                });
+
+            if (tokenResult.IsFailure)
+            {
+                await transaction.RollbackAsync();
+
+                return ServiceResult<AdminWorkshopUserCreatedDto>.Fail(
+    tokenResult.ErrorMessages,
+    (HttpStatusCode)tokenResult.StatusCode);
+            }
 
             await _auditLogService.AddAsync(new AuditLogCreateDto
             {
@@ -439,7 +462,10 @@ namespace AutoStock.Services.Services
                     user.FullName,
                     user.UserName,
                     Role = role,
-                    user.IsActive
+                    user.Email,
+                    user.PhoneNumber,
+                    user.IsActive,
+                    PasswordSetupLinkGenerated = true
                 }
             });
 
@@ -447,7 +473,21 @@ namespace AutoStock.Services.Services
 
             await transaction.CommitAsync();
 
-            return ServiceResult<int>.Success(user.Id);
+            var response = new AdminWorkshopUserCreatedDto
+            {
+                UserId = user.Id,
+                WorkshopId = workshopId,
+                FullName = user.FullName,
+                UserName = user.UserName!,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Role = role,
+                PasswordSetupToken = tokenResult.Data!.Token,
+                PasswordSetupCode = tokenResult.Data.Code,
+                PasswordSetupExpiresAt = tokenResult.Data.ExpiresAt
+            };
+
+            return ServiceResult<AdminWorkshopUserCreatedDto>.Success(response);
         }
 
         public async Task<ServiceResult<bool>> UpdateUserStatusAsync(int workshopId, int userId, UpdateAdminWorkshopUserStatusRequestDto request)
@@ -499,6 +539,98 @@ namespace AutoStock.Services.Services
             await _context.SaveChangesAsync();
 
             return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<AdminWorkshopUserPasswordResetLinkDto>> CreateUserPasswordResetLinkAsync(
+    int workshopId,
+    int userId)
+        {
+            var workshopUser = await _context.WorkshopUsers
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.UserId == userId);
+
+            if (workshopUser == null)
+            {
+                return ServiceResult<AdminWorkshopUserPasswordResetLinkDto>.Fail(
+                    "Kullanıcı bu serviste bulunamadı.");
+            }
+
+            if (workshopUser.Role != AppRoles.Owner && workshopUser.Role != AppRoles.Staff)
+            {
+                return ServiceResult<AdminWorkshopUserPasswordResetLinkDto>.Fail(
+                    "Sadece Owner veya Staff kullanıcıları için şifre sıfırlama bağlantısı oluşturulabilir.");
+            }
+
+            if (!workshopUser.User.IsActive)
+            {
+                return ServiceResult<AdminWorkshopUserPasswordResetLinkDto>.Fail(
+                    "Pasif kullanıcı için şifre sıfırlama bağlantısı oluşturulamaz.");
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            await _userSecurityTokenService.RevokeActiveTokensAsync(
+                userId,
+                UserSecurityTokenPurpose.PasswordSetup);
+
+            var tokenResult = await _userSecurityTokenService.CreateAsync(
+                new CreateUserSecurityTokenRequestDto
+                {
+                    UserId = userId,
+                    Purpose = UserSecurityTokenPurpose.PasswordReset,
+                    DeliveryChannel = UserSecurityTokenDeliveryChannel.Manual,
+                    ValidFor = TimeSpan.FromHours(24)
+                });
+
+            if (tokenResult.IsFailure)
+            {
+                await transaction.RollbackAsync();
+
+                return ServiceResult<AdminWorkshopUserPasswordResetLinkDto>.Fail(
+    tokenResult.ErrorMessages,
+    (HttpStatusCode)tokenResult.StatusCode);
+            }
+
+            workshopUser.User.LastPasswordResetAt = _dateTimeProvider.Now;
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Update,
+                EntityType = AuditEntityType.WorkshopUser,
+                EntityId = userId,
+                Description = "Servis kullanıcısı şifre sıfırlama bağlantısı oluşturuldu",
+                NewValues = new
+                {
+                    WorkshopId = workshopId,
+                    UserId = userId,
+                    workshopUser.User.FullName,
+                    workshopUser.User.UserName,
+                    PasswordResetLinkGenerated = true,
+                    workshopUser.User.LastPasswordResetAt
+                }
+            });
+
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+
+            var response = new AdminWorkshopUserPasswordResetLinkDto
+            {
+                UserId = workshopUser.User.Id,
+                WorkshopId = workshopId,
+                FullName = workshopUser.User.FullName,
+                UserName = workshopUser.User.UserName!,
+                Email = workshopUser.User.Email,
+                PhoneNumber = workshopUser.User.PhoneNumber,
+                PasswordResetToken = tokenResult.Data!.Token,
+                PasswordResetCode = tokenResult.Data.Code,
+                PasswordResetExpiresAt = tokenResult.Data.ExpiresAt
+            };
+
+            return ServiceResult<AdminWorkshopUserPasswordResetLinkDto>.Success(response);
         }
 
         public async Task<ServiceResult<bool>> UpdateProfileAsync(int id, UpdateAdminWorkshopProfileRequestDto request)
@@ -923,8 +1055,7 @@ namespace AutoStock.Services.Services
             if (string.IsNullOrWhiteSpace(request.UserName))
                 return ServiceResult<int>.Fail("Kullanıcı adı zorunludur.");
 
-            if (string.IsNullOrWhiteSpace(request.Password))
-                return ServiceResult<int>.Fail("Şifre zorunludur.");
+            
 
             var role = request.Role?.Trim();
 

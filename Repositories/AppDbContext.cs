@@ -35,6 +35,7 @@ namespace AutoStock.Repositories
         public DbSet<WorkshopPartner> WorkshopPartners { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<SupportRequest> SupportRequests { get; set; }
+        public DbSet<UserSecurityToken> UserSecurityTokens { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder builder)

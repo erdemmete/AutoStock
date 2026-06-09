@@ -7,6 +7,11 @@ namespace AutoStock.Repositories.Entities
         public string FullName { get; set; } = null!;
 
         public DateTime CreatedAt { get; set; }
+
         public bool IsActive { get; set; } = true;
+
+        public DateTime? PasswordChangedAt { get; set; }
+
+        public DateTime? LastPasswordResetAt { get; set; }
     }
 }

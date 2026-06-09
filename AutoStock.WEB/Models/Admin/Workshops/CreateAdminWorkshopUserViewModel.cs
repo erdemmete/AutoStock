@@ -6,6 +6,8 @@ namespace AutoStock.WEB.Models.Admin.Workshops
     {
         public int WorkshopId { get; set; }
 
+        public string WorkshopName { get; set; } = "Servis";
+
         [Required(ErrorMessage = "Ad soyad zorunludur.")]
         public string FullName { get; set; } = string.Empty;
 
@@ -16,9 +18,6 @@ namespace AutoStock.WEB.Models.Admin.Workshops
         public string? Email { get; set; }
 
         public string? PhoneNumber { get; set; }
-
-        [Required(ErrorMessage = "Şifre zorunludur.")]
-        public string Password { get; set; } = string.Empty;
 
         public string Role { get; set; } = "Staff";
     }

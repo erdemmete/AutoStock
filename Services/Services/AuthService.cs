@@ -4,10 +4,12 @@ using AutoStock.Repositories.Enums;
 using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Auth;
+using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Interfaces;
 using AutoStock.Services.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 
 namespace AutoStock.Services;
 
@@ -17,17 +19,23 @@ public class AuthService : IAuthService
     private readonly AppDbContext _context;
     private readonly JwtService _jwtService;
     private readonly IAuditLogService _auditLogService;
+    private readonly IUserSecurityTokenService _userSecurityTokenService;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public AuthService(
-        UserManager<AppUser> userManager,
-        AppDbContext context,
-        JwtService jwtService,
-        IAuditLogService auditLogService)
+    UserManager<AppUser> userManager,
+    AppDbContext context,
+    JwtService jwtService,
+    IAuditLogService auditLogService,
+    IUserSecurityTokenService userSecurityTokenService,
+    IDateTimeProvider dateTimeProvider)
     {
         _userManager = userManager;
         _context = context;
         _jwtService = jwtService;
         _auditLogService = auditLogService;
+        _userSecurityTokenService = userSecurityTokenService;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
@@ -250,12 +258,43 @@ public class AuthService : IAuthService
         };
     }
 
-    private async Task WriteLoginFailedAuditAsync(
-        string loginName,
-        AppUser? user,
-        string? role,
-        int? workshopId,
-        string reason)
+    public async Task<ServiceResult<PasswordActionTokenInfoDto>> ValidatePasswordSetupTokenAsync(
+    ValidatePasswordActionTokenRequestDto request)
+    {
+        return await ValidatePasswordActionTokenAsync(
+            request,
+            UserSecurityTokenPurpose.PasswordSetup);
+    }
+
+    public async Task<ServiceResult<AuthResponseDto>> CompletePasswordSetupAsync(CompletePasswordActionRequestDto request, string? ipAddress, string? userAgent)
+    {
+        return await CompletePasswordActionAsync(
+            request,
+            UserSecurityTokenPurpose.PasswordSetup,
+            ipAddress,
+            userAgent,
+            "Kullanıcı davet bağlantısı ile şifre oluşturdu");
+    }
+
+    public async Task<ServiceResult<PasswordActionTokenInfoDto>> ValidatePasswordResetTokenAsync(
+        ValidatePasswordActionTokenRequestDto request)
+    {
+        return await ValidatePasswordActionTokenAsync(
+            request,
+            UserSecurityTokenPurpose.PasswordReset);
+    }
+
+    public async Task<ServiceResult<AuthResponseDto>> CompletePasswordResetAsync(CompletePasswordActionRequestDto request, string? ipAddress, string? userAgent)
+    {
+        return await CompletePasswordActionAsync(
+            request,
+            UserSecurityTokenPurpose.PasswordReset,
+            ipAddress,
+            userAgent,
+            "Kullanıcı şifre sıfırlama bağlantısı ile yeni şifre belirledi");
+    }
+
+    private async Task WriteLoginFailedAuditAsync(string loginName, AppUser? user, string? role, int? workshopId, string reason)
     {
         await _auditLogService.WriteAsync(new AuditLogCreateDto
         {
@@ -292,5 +331,397 @@ public class AuthService : IAuthService
             return AppRoles.Staff;
 
         return AppRoles.Staff;
+    }
+
+    private async Task<AuthResponseDto> BuildAuthResponseAsync(AppUser user)
+    {
+        var roles = await _userManager.GetRolesAsync(user);
+        var role = GetPrimaryRole(roles);
+
+        int workshopId = 0;
+
+        if (role != AppRoles.Admin)
+        {
+            var workshopUser = await _context.WorkshopUsers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.UserId == user.Id);
+
+            if (workshopUser is null)
+                throw new Exception("Kullanıcı herhangi bir servise bağlı değil.");
+
+            workshopId = workshopUser.WorkshopId;
+        }
+
+        var token = _jwtService.GenerateToken(
+            user.Id,
+            user.Email ?? string.Empty,
+            user.FullName,
+            workshopId,
+            role);
+
+        return new AuthResponseDto
+        {
+            AccessToken = token,
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email ?? string.Empty,
+            WorkshopId = workshopId,
+            Role = role
+        };
+    }
+
+    private async Task<ServiceResult<PasswordActionTokenInfoDto>> ValidatePasswordActionTokenAsync(ValidatePasswordActionTokenRequestDto request, UserSecurityTokenPurpose purpose)
+    {
+        if (string.IsNullOrWhiteSpace(request.Token))
+            return ServiceResult<PasswordActionTokenInfoDto>.Fail("Bağlantı geçersiz.");
+
+        var tokenResult = await _userSecurityTokenService.ValidateAsync(
+            request.Token,
+            purpose);
+
+        if (tokenResult.IsFailure)
+        {
+            return ServiceResult<PasswordActionTokenInfoDto>.Fail(
+                tokenResult.ErrorMessages,
+                (HttpStatusCode)tokenResult.StatusCode);
+        }
+
+        var tokenData = tokenResult.Data!;
+
+        var workshopInfo = await _context.WorkshopUsers
+            .AsNoTracking()
+            .Include(x => x.Workshop)
+            .Where(x => x.UserId == tokenData.UserId)
+            .Select(x => new
+            {
+                x.WorkshopId,
+                WorkshopName = x.Workshop.Name,
+                x.Role
+            })
+            .FirstOrDefaultAsync();
+
+        var response = new PasswordActionTokenInfoDto
+        {
+            UserId = tokenData.UserId,
+            FullName = tokenData.FullName,
+            UserName = tokenData.UserName,
+            Email = tokenData.Email,
+            PhoneNumber = tokenData.PhoneNumber,
+            WorkshopId = workshopInfo?.WorkshopId,
+            WorkshopName = workshopInfo?.WorkshopName,
+            Role = workshopInfo?.Role,
+            Purpose = tokenData.Purpose,
+            ExpiresAt = tokenData.ExpiresAt
+        };
+
+        return ServiceResult<PasswordActionTokenInfoDto>.Success(response);
+    }
+
+    private async Task<ServiceResult<AuthResponseDto>> CompletePasswordActionAsync(CompletePasswordActionRequestDto request, UserSecurityTokenPurpose purpose, string? ipAddress, string? userAgent, string auditDescription)
+    {
+        if (string.IsNullOrWhiteSpace(request.Token))
+            return ServiceResult<AuthResponseDto>.Fail("Bağlantı geçersiz.");
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword))
+            return ServiceResult<AuthResponseDto>.Fail("Yeni şifre zorunludur.");
+
+        if (request.NewPassword != request.ConfirmNewPassword)
+            return ServiceResult<AuthResponseDto>.Fail("Şifreler eşleşmiyor.");
+
+        var tokenResult = await _userSecurityTokenService.ValidateAsync(
+            request.Token,
+            purpose);
+
+        if (tokenResult.IsFailure)
+        {
+            return ServiceResult<AuthResponseDto>.Fail(
+                tokenResult.ErrorMessages,
+                (HttpStatusCode)tokenResult.StatusCode);
+        }
+
+        var tokenData = tokenResult.Data!;
+
+        var user = await _userManager.FindByIdAsync(tokenData.UserId.ToString());
+
+        if (user is null)
+            return ServiceResult<AuthResponseDto>.Fail("Kullanıcı bulunamadı.", HttpStatusCode.NotFound);
+
+        if (!user.IsActive)
+            return ServiceResult<AuthResponseDto>.Fail("Kullanıcı pasif durumda.");
+
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        var markAsUsedResult = await _userSecurityTokenService.MarkAsUsedAsync(
+            request.Token,
+            purpose,
+            ipAddress,
+            userAgent);
+
+        if (markAsUsedResult.IsFailure)
+        {
+            await transaction.RollbackAsync();
+
+            return ServiceResult<AuthResponseDto>.Fail(
+                markAsUsedResult.ErrorMessages,
+                (HttpStatusCode)markAsUsedResult.StatusCode);
+        }
+
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+
+        if (hasPassword)
+        {
+            var removePasswordResult = await _userManager.RemovePasswordAsync(user);
+
+            if (!removePasswordResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+
+                var errors = removePasswordResult.Errors
+                    .Select(x => x.Description)
+                    .ToList();
+
+                return ServiceResult<AuthResponseDto>.Fail(errors);
+            }
+        }
+
+        var addPasswordResult = await _userManager.AddPasswordAsync(
+            user,
+            request.NewPassword);
+
+        if (!addPasswordResult.Succeeded)
+        {
+            await transaction.RollbackAsync();
+
+            var errors = addPasswordResult.Errors
+                .Select(x => x.Description)
+                .ToList();
+
+            return ServiceResult<AuthResponseDto>.Fail(errors);
+        }
+
+        user.PasswordChangedAt = _dateTimeProvider.Now;
+
+        if (purpose == UserSecurityTokenPurpose.PasswordReset)
+            user.LastPasswordResetAt = _dateTimeProvider.Now;
+
+        await _userManager.UpdateAsync(user);
+
+        var authResponse = await BuildAuthResponseAsync(user);
+
+        await _auditLogService.WriteAsync(new AuditLogCreateDto
+        {
+            WorkshopId = authResponse.WorkshopId > 0 ? authResponse.WorkshopId : null,
+            UserId = user.Id,
+            UserFullName = user.FullName,
+            UserRole = authResponse.Role,
+            ActionType = AuditActionType.Update,
+            EntityType = AuditEntityType.Auth,
+            EntityId = user.Id,
+            Description = auditDescription,
+            NewValues = new
+            {
+                UserId = user.Id,
+                user.FullName,
+                user.UserName,
+                Purpose = purpose.ToString(),
+                PasswordChangedAt = user.PasswordChangedAt,
+                Success = true
+            }
+        });
+
+        await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
+
+        return ServiceResult<AuthResponseDto>.Success(authResponse);
+    }
+
+    public async Task<ServiceResult<PasswordActionTokenInfoDto>> ValidatePasswordSetupCodeAsync(
+    ValidatePasswordActionCodeRequestDto request)
+    {
+        return await ValidatePasswordActionCodeAsync(
+            request,
+            UserSecurityTokenPurpose.PasswordSetup);
+    }
+
+    public async Task<ServiceResult<AuthResponseDto>> CompletePasswordSetupByCodeAsync(CompletePasswordActionCodeRequestDto request, string? ipAddress, string? userAgent)
+    {
+        return await CompletePasswordActionByCodeAsync(
+            request,
+            UserSecurityTokenPurpose.PasswordSetup,
+            ipAddress,
+            userAgent,
+            "Kullanıcı davet kodu ile şifre oluşturdu");
+    }
+
+    private async Task<ServiceResult<PasswordActionTokenInfoDto>> ValidatePasswordActionCodeAsync(ValidatePasswordActionCodeRequestDto request, UserSecurityTokenPurpose purpose)
+    {
+        var tokenResult = await _userSecurityTokenService.ValidateByCodeAsync(
+            request.UserName,
+            request.Code,
+            purpose);
+
+        if (tokenResult.IsFailure)
+        {
+            return ServiceResult<PasswordActionTokenInfoDto>.Fail(
+                tokenResult.ErrorMessages,
+                (HttpStatusCode)tokenResult.StatusCode);
+        }
+
+        var tokenData = tokenResult.Data!;
+
+        var workshopInfo = await _context.WorkshopUsers
+            .AsNoTracking()
+            .Include(x => x.Workshop)
+            .Where(x => x.UserId == tokenData.UserId)
+            .Select(x => new
+            {
+                x.WorkshopId,
+                WorkshopName = x.Workshop.Name,
+                x.Role
+            })
+            .FirstOrDefaultAsync();
+
+        var response = new PasswordActionTokenInfoDto
+        {
+            UserId = tokenData.UserId,
+            FullName = tokenData.FullName,
+            UserName = tokenData.UserName,
+            Email = tokenData.Email,
+            PhoneNumber = tokenData.PhoneNumber,
+            WorkshopId = workshopInfo?.WorkshopId,
+            WorkshopName = workshopInfo?.WorkshopName,
+            Role = workshopInfo?.Role,
+            Purpose = tokenData.Purpose,
+            ExpiresAt = tokenData.ExpiresAt
+        };
+
+        return ServiceResult<PasswordActionTokenInfoDto>.Success(response);
+    }
+
+    private async Task<ServiceResult<AuthResponseDto>> CompletePasswordActionByCodeAsync(
+    CompletePasswordActionCodeRequestDto request,
+    UserSecurityTokenPurpose purpose,
+    string? ipAddress,
+    string? userAgent,
+    string auditDescription)
+    {
+        if (string.IsNullOrWhiteSpace(request.UserName))
+            return ServiceResult<AuthResponseDto>.Fail("Kullanıcı adı zorunludur.");
+
+        if (string.IsNullOrWhiteSpace(request.Code))
+            return ServiceResult<AuthResponseDto>.Fail("Davet kodu zorunludur.");
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword))
+            return ServiceResult<AuthResponseDto>.Fail("Yeni şifre zorunludur.");
+
+        if (request.NewPassword != request.ConfirmNewPassword)
+            return ServiceResult<AuthResponseDto>.Fail("Şifreler eşleşmiyor.");
+
+        var tokenResult = await _userSecurityTokenService.ValidateByCodeAsync(
+            request.UserName,
+            request.Code,
+            purpose);
+
+        if (tokenResult.IsFailure)
+        {
+            return ServiceResult<AuthResponseDto>.Fail(
+                tokenResult.ErrorMessages,
+                (HttpStatusCode)tokenResult.StatusCode);
+        }
+
+        var tokenData = tokenResult.Data!;
+
+        var user = await _userManager.FindByIdAsync(tokenData.UserId.ToString());
+
+        if (user is null)
+            return ServiceResult<AuthResponseDto>.Fail("Kullanıcı bulunamadı.", HttpStatusCode.NotFound);
+
+        if (!user.IsActive)
+            return ServiceResult<AuthResponseDto>.Fail("Kullanıcı pasif durumda.");
+
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        var markAsUsedResult = await _userSecurityTokenService.MarkAsUsedByCodeAsync(
+            request.UserName,
+            request.Code,
+            purpose,
+            ipAddress,
+            userAgent);
+
+        if (markAsUsedResult.IsFailure)
+        {
+            await transaction.RollbackAsync();
+
+            return ServiceResult<AuthResponseDto>.Fail(
+                markAsUsedResult.ErrorMessages,
+                (HttpStatusCode)markAsUsedResult.StatusCode);
+        }
+
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+
+        if (hasPassword)
+        {
+            var removePasswordResult = await _userManager.RemovePasswordAsync(user);
+
+            if (!removePasswordResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+
+                var errors = removePasswordResult.Errors
+                    .Select(x => x.Description)
+                    .ToList();
+
+                return ServiceResult<AuthResponseDto>.Fail(errors);
+            }
+        }
+
+        var addPasswordResult = await _userManager.AddPasswordAsync(
+            user,
+            request.NewPassword);
+
+        if (!addPasswordResult.Succeeded)
+        {
+            await transaction.RollbackAsync();
+
+            var errors = addPasswordResult.Errors
+                .Select(x => x.Description)
+                .ToList();
+
+            return ServiceResult<AuthResponseDto>.Fail(errors);
+        }
+
+        user.PasswordChangedAt = _dateTimeProvider.Now;
+
+        await _userManager.UpdateAsync(user);
+
+        var authResponse = await BuildAuthResponseAsync(user);
+
+        await _auditLogService.WriteAsync(new AuditLogCreateDto
+        {
+            WorkshopId = authResponse.WorkshopId > 0 ? authResponse.WorkshopId : null,
+            UserId = user.Id,
+            UserFullName = user.FullName,
+            UserRole = authResponse.Role,
+            ActionType = AuditActionType.Update,
+            EntityType = AuditEntityType.Auth,
+            EntityId = user.Id,
+            Description = auditDescription,
+            NewValues = new
+            {
+                UserId = user.Id,
+                user.FullName,
+                user.UserName,
+                Purpose = purpose.ToString(),
+                PasswordChangedAt = user.PasswordChangedAt,
+                Success = true
+            }
+        });
+
+        await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
+
+        return ServiceResult<AuthResponseDto>.Success(authResponse);
     }
 }

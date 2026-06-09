@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>@ViewData["Title"] - AutoStock.WEB</title>
+    <title>@ViewData["Title"] - Sente360</title>
 
     <script type="importmap"></script>
 
@@ -15,10 +15,11 @@
 </head>
 
 <body>
-
     <div id="toastMessage" class="toast-message"></div>
 
     <div class="container">
+        <partial name="_AdminQuickActions" />
+
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
@@ -53,6 +54,5 @@
     }
 
     @await RenderSectionAsync("Scripts", required: false)
-
 </body>
 </html>

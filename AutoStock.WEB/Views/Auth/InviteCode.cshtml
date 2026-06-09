@@ -1,0 +1,239 @@
+﻿@model AutoStock.WEB.Models.Auth.InviteCodeViewModel
+
+@{
+    ViewData["Title"] = "Davet Kodu";
+    Layout = "_Layout";
+}
+
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Davet Kodu ile Şifre Oluştur</h1>
+            <p>Linke tıklamak istemiyorsanız kullanıcı adınız ve davet kodunuz ile şifrenizi oluşturabilirsiniz.</p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="alert-error">
+                @Model.ErrorMessage
+            </div>
+        }
+
+        <form asp-action="InviteCode" asp-controller="Auth" method="post">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+            <div class="form-group">
+                <label asp-for="UserName">Kullanıcı Adı</label>
+                <input asp-for="UserName"
+                       class="form-control-custom"
+                       autocomplete="username"
+                       placeholder="Kullanıcı adınızı girin" />
+                <span asp-validation-for="UserName" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Code">Davet Kodu</label>
+                <input asp-for="Code"
+                       class="form-control-custom invite-code-input"
+                       autocomplete="one-time-code"
+                       placeholder="Örn: 5EUL-6TQ9" />
+                <span asp-validation-for="Code" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="NewPassword">Yeni Şifre</label>
+                <input asp-for="NewPassword"
+                       type="password"
+                       class="form-control-custom"
+                       autocomplete="new-password"
+                       placeholder="Yeni şifrenizi girin" />
+                <span asp-validation-for="NewPassword" class="validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ConfirmNewPassword">Yeni Şifre Tekrar</label>
+                <input asp-for="ConfirmNewPassword"
+                       type="password"
+                       class="form-control-custom"
+                       autocomplete="new-password"
+                       placeholder="Yeni şifrenizi tekrar girin" />
+                <span asp-validation-for="ConfirmNewPassword" class="validation-message"></span>
+            </div>
+
+            <div class="password-note">
+                Davet kodu tek kullanımlıktır. Şifreniz oluşturulduktan sonra kod tekrar kullanılamaz.
+            </div>
+
+            <button type="submit" class="btn-primary-custom">
+                Şifremi Oluştur
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <a href="/Auth/Login">Giriş ekranına dön</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .auth-page {
+        min-height: calc(100vh - 80px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+        background: #f8fafc;
+    }
+
+    .auth-card {
+        width: 100%;
+        max-width: 480px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        box-shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
+        padding: 28px;
+    }
+
+    .auth-header {
+        margin-bottom: 22px;
+    }
+
+        .auth-header h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .auth-header p {
+            margin: 8px 0 0;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            color: #111827;
+        }
+
+    .form-control-custom {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 14px;
+        outline: none;
+    }
+
+        .form-control-custom:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+    .invite-code-input {
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 700;
+    }
+
+    .btn-primary-custom {
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 18px;
+        border-radius: 10px;
+        background: #2563eb;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 800;
+        border: none;
+        cursor: pointer;
+        margin-top: 8px;
+    }
+
+        .btn-primary-custom:hover {
+            background: #1d4ed8;
+            color: #fff;
+        }
+
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 12px 14px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        border: 1px solid #fecaca;
+        font-weight: 600;
+    }
+
+    .validation-message,
+    .validation-summary {
+        color: #991b1b;
+        font-size: 13px;
+        margin-top: 6px;
+    }
+
+    .password-note {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        color: #475569;
+        border-radius: 12px;
+        padding: 12px;
+        font-size: 13px;
+        line-height: 1.5;
+        margin-bottom: 12px;
+    }
+
+    .auth-footer {
+        margin-top: 18px;
+        text-align: center;
+    }
+
+        .auth-footer a {
+            color: #2563eb;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+            .auth-footer a:hover {
+                text-decoration: underline;
+            }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const input = document.querySelector(".invite-code-input");
+
+        if (!input) {
+            return;
+        }
+
+        input.addEventListener("input", function () {
+            let value = input.value
+                .replace(/[^a-zA-Z0-9]/g, "")
+                .toUpperCase()
+                .substring(0, 8);
+
+            if (value.length > 4) {
+                value = value.substring(0, 4) + "-" + value.substring(4);
+            }
+
+            input.value = value;
+        });
+    });
+</script>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -347,6 +347,18 @@
                     font-size: 15px;
                 }
             }
+
+            .invite-code-link {
+                display: inline-block;
+                margin-top: 14px;
+                color: #2563eb;
+                font-weight: 700;
+                text-decoration: none;
+            }
+
+                .invite-code-link:hover {
+                    text-decoration: underline;
+                }
     </style>
 </head>
 
@@ -411,6 +423,10 @@
                             Giriş Yap
                         </button>
                     </form>
+
+                    <a href="/Auth/InviteCode" class="invite-code-link">
+                        Davet Kodum Var
+                    </a>
 
                     @if (ViewBag.Error != null)
                     {

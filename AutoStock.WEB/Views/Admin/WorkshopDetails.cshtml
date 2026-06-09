@@ -21,27 +21,52 @@
 
     var createdUserFullName = TempData["CreatedUserFullName"] as string;
     var createdUserName = TempData["CreatedUserName"] as string;
-    var createdUserPassword = TempData["CreatedUserPassword"] as string;
     var createdUserPhone = TempData["CreatedUserPhone"] as string;
+    var createdUserPasswordSetupToken = TempData["CreatedUserPasswordSetupToken"] as string;
+    var createdUserPasswordSetupCode = TempData["CreatedUserPasswordSetupCode"] as string;
 
-    var loginUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}/";
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}".TrimEnd('/');
+    var loginUrl = $"{baseUrl}/";
+    
+
+    var passwordSetupUrl = !string.IsNullOrWhiteSpace(createdUserPasswordSetupToken)
+        ? $"{baseUrl}/Auth/PasswordSetup?token={Uri.EscapeDataString(createdUserPasswordSetupToken)}"
+        : null;
 
     string? createdUserMessage = null;
+    string? createdUserCodeMessage = null;
     string? whatsappUrl = null;
+    string? codeWhatsappUrl = null;
 
     if (!string.IsNullOrWhiteSpace(createdUserName) &&
-        !string.IsNullOrWhiteSpace(createdUserPassword))
+        !string.IsNullOrWhiteSpace(passwordSetupUrl))
     {
         createdUserMessage =
     $@"Merhaba {createdUserFullName},
 
 Sente360 servis yönetim hesabınız oluşturuldu.
 
-Giriş adresi: {loginUrl}
-Kullanıcı adı: {createdUserName}
-Geçici şifre: {createdUserPassword}
+Güvenliğiniz için şifrenizi siz belirleyeceksiniz.
 
-Giriş yaptıktan sonra şifrenizi değiştirmeniz önerilir.";
+Kurulum bağlantısı:
+{passwordSetupUrl}
+
+Kullanıcı adınız:
+{createdUserName}";
+
+        if (!string.IsNullOrWhiteSpace(createdUserPasswordSetupCode))
+        {
+            createdUserCodeMessage =
+    $@"Merhaba {createdUserFullName},
+
+Linke tıklamak istemezseniz tarayıcınızdan {loginUrl} adresine girip ""Davet Kodum Var"" seçeneğini kullanabilirsiniz.
+
+Kullanıcı adınız:
+{createdUserName}
+
+Davet kodunuz:
+{createdUserPasswordSetupCode}";
+        }
 
         var phoneDigits = new string((createdUserPhone ?? "")
             .Where(char.IsDigit)
@@ -59,9 +84,14 @@ Giriş yaptıktan sonra şifrenizi değiştirmeniz önerilir.";
         if (!string.IsNullOrWhiteSpace(phoneDigits) && phoneDigits.Length >= 12)
         {
             whatsappUrl = $"https://wa.me/{phoneDigits}?text={Uri.EscapeDataString(createdUserMessage)}";
+
+            if (!string.IsNullOrWhiteSpace(createdUserCodeMessage))
+            {
+                codeWhatsappUrl = $"https://wa.me/{phoneDigits}?text={Uri.EscapeDataString(createdUserCodeMessage)}";
+            }
         }
     }
-}
+    }
 
 <div class="page-header">
     <div>
@@ -87,41 +117,76 @@ Giriş yaptıktan sonra şifrenizi değiştirmeniz önerilir.";
         @Html.Raw(TempData["ErrorMessage"])
     </div>
 }
-@if (!string.IsNullOrWhiteSpace(createdUserMessage))
-{
-    <div class="credential-card">
-        <div>
-            <h2>Yeni Kullanıcı Bilgileri</h2>
-            <p>Bu bilgiler sadece oluşturma sonrası gösterilir. Kopyalayıp kullanıcıya iletebilirsin.</p>
-        </div>
+    @if (!string.IsNullOrWhiteSpace(createdUserMessage))
+    {
+        <div class="credential-card">
+            <div>
+                <h2>Yeni Kullanıcı Davet Bağlantısı</h2>
+                <p>
+                    Bu bağlantı sadece oluşturma sonrası gösterilir.
+                    Ana akış olarak kullanıcıya kurulum bağlantısını gönder.
+                </p>
+            </div>
 
-        <pre id="createdCredentialsText">@createdUserMessage</pre>
+            <pre id="createdCredentialsText">@createdUserMessage</pre>
 
-        <div class="credential-actions">
-            <button type="button"
-                    id="copyCredentialsBtn"
-                    class="btn-secondary-custom"
-                    data-message="@createdUserMessage">
-                Bilgileri Kopyala
-            </button>
+            <div class="credential-actions">
+                <button type="button"
+                        class="btn-secondary-custom copy-message-btn"
+                        data-copy-target="createdCredentialsText">
+                    Bilgileri Kopyala
+                </button>
 
-            @if (!string.IsNullOrWhiteSpace(whatsappUrl))
+                @if (!string.IsNullOrWhiteSpace(whatsappUrl))
+                {
+                    <a href="@whatsappUrl"
+                       target="_blank"
+                       rel="noopener"
+                       class="btn-whatsapp-custom">
+                        WhatsApp ile Gönder
+                    </a>
+                }
+                else
+                {
+                    <span class="text-muted">
+                        WhatsApp için geçerli cep telefonu girilmemiş.
+                    </span>
+                }
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(createdUserCodeMessage))
             {
-                <a href="@whatsappUrl"
-                   target="_blank"
-                   class="btn-whatsapp-custom">
-                    WhatsApp ile Gönder
-                </a>
-            }
-            else
-            {
-                <span class="text-muted">
-                    WhatsApp için geçerli cep telefonu girilmemiş.
-                </span>
+                <details class="invite-code-fallback">
+                    <summary>Linke tıklamak istemeyen kullanıcı için davet kodu seçeneği</summary>
+
+                    <p>
+                        Bu alanı sadece kullanıcı linke tıklamak istemezse kullan.
+                        Normal akışta davet kodunu ayrıca göndermeye gerek yok.
+                    </p>
+
+                    <pre id="createdInviteCodeText">@createdUserCodeMessage</pre>
+
+                    <div class="credential-actions">
+                    <button type="button"
+                            class="btn-secondary-custom copy-message-btn"
+                            data-copy-text="@createdUserPasswordSetupCode">
+                        Davet Kodunu Kopyala
+                    </button>
+
+                        @if (!string.IsNullOrWhiteSpace(codeWhatsappUrl))
+                        {
+                            <a href="@codeWhatsappUrl"
+                               target="_blank"
+                               rel="noopener"
+                               class="btn-whatsapp-custom">
+                                Davet Kodunu WhatsApp ile Gönder
+                            </a>
+                        }
+                    </div>
+                </details>
             }
         </div>
-    </div>
-}
+    }
 
 <div class="detail-grid">
     <div class="admin-card">
@@ -1108,6 +1173,27 @@ Giriş yaptıktan sonra şifrenizi değiştirmeniz önerilir.";
             margin: 0 0 16px;
         }
 
+    .invite-code-fallback {
+        margin-top: 16px;
+        background: #f8fafc;
+        border: 1px dashed #93c5fd;
+        border-radius: 12px;
+        padding: 14px;
+    }
+
+        .invite-code-fallback summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: #1e40af;
+        }
+
+        .invite-code-fallback p {
+            margin: 10px 0 12px;
+            color: #475569;
+            font-size: 13px;
+        }
+
+
     .credential-actions {
         display: flex;
         align-items: center;
@@ -1267,33 +1353,46 @@ Giriş yaptıktan sonra şifrenizi değiştirmeniz önerilir.";
         }, 0);
     }
 
-     function initializeCredentialActions() {
-        const copyButton = document.getElementById("copyCredentialsBtn");
+             function initializeCredentialActions() {
+            const copyButtons = document.querySelectorAll(".copy-message-btn");
 
-        if (!copyButton) {
-            return;
+            copyButtons.forEach(copyButton => {
+                copyButton.addEventListener("click", async function () {
+                        const explicitText = copyButton.dataset.copyText;
+
+                    let message = explicitText || "";
+
+                    if (!message) {
+                        const targetId = copyButton.dataset.copyTarget;
+                        const target = targetId ? document.getElementById(targetId) : null;
+
+                        if (!target) {
+                            return;
+                        }
+
+                        message = target.textContent || "";
+                    }
+
+                    const message = target.textContent || "";
+
+                    if (!message.trim()) {
+                        return;
+                    }
+
+                    try {
+                        await navigator.clipboard.writeText(message);
+
+                        const originalText = copyButton.textContent;
+                        copyButton.textContent = "Kopyalandı";
+
+                        setTimeout(() => {
+                            copyButton.textContent = originalText;
+                        }, 1500);
+                    }
+                    catch {
+                        alert("Kopyalama başarısız oldu. Bilgileri manuel seçip kopyalayabilirsin.");
+                    }
+                });
+            });
         }
-
-        copyButton.addEventListener("click", async function () {
-            const message = copyButton.dataset.message;
-
-            if (!message) {
-                return;
-            }
-
-            try {
-                await navigator.clipboard.writeText(message);
-
-                const originalText = copyButton.textContent;
-                copyButton.textContent = "Kopyalandı";
-
-                setTimeout(() => {
-                    copyButton.textContent = originalText;
-                }, 1500);
-            }
-            catch {
-                alert("Kopyalama başarısız oldu. Bilgileri manuel seçip kopyalayabilirsin.");
-            }
-        });
-    }
 </script>

@@ -32,12 +32,6 @@ public class CreateAdminWorkshopUserRequestDtoValidator : AbstractValidator<Crea
             .Must(BeValidPhone).WithMessage("Geçerli bir telefon numarası giriniz.")
             .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));
 
-        RuleFor(x => x.Password)
-            .Cascade(CascadeMode.Stop)
-            .NotEmpty().WithMessage("Geçici şifre zorunludur.")
-            .MinimumLength(6).WithMessage("Geçici şifre en az 6 karakter olmalıdır.")
-            .MaximumLength(100).WithMessage("Geçici şifre en fazla 100 karakter olabilir.");
-
         RuleFor(x => x.Role)
             .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Rol zorunludur.")

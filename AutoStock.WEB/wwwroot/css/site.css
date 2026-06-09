@@ -271,3 +271,90 @@ body {
         align-items: flex-start;
     }
 }
+.admin-quick-actions {
+    margin: 16px 0 20px;
+    padding: 12px 16px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.admin-quick-user {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+    .admin-quick-user strong {
+        color: #111827;
+        font-size: 14px;
+    }
+
+    .admin-quick-user span {
+        color: #6b7280;
+        font-size: 12px;
+    }
+
+.admin-quick-links {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.admin-quick-link,
+.admin-quick-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 13px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    border: 1px solid #d1d5db;
+    background: #f9fafb;
+    color: #374151;
+    cursor: pointer;
+}
+
+    .admin-quick-link:hover {
+        background: #e5e7eb;
+        color: #111827;
+    }
+
+.admin-quick-logout {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+    .admin-quick-logout:hover {
+        background: #fecaca;
+    }
+
+.admin-quick-logout-form {
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .admin-quick-actions {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-quick-links {
+        width: 100%;
+    }
+
+    .admin-quick-link,
+    .admin-quick-logout,
+    .admin-quick-logout-form {
+        width: 100%;
+    }
+}

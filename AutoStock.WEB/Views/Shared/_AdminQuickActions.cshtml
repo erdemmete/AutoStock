@@ -1,0 +1,39 @@
+﻿@{
+    var userRole = Context.Session.GetString("UserRole");
+    var fullName = Context.Session.GetString("FullName");
+}
+
+@if (userRole == "Admin")
+{
+    <div class="admin-quick-actions">
+        <div class="admin-quick-user">
+            <strong>@(string.IsNullOrWhiteSpace(fullName) ? "Admin" : fullName)</strong>
+            <span>Admin Panel</span>
+        </div>
+
+        <div class="admin-quick-links">
+            <a href="/Admin/Dashboard" class="admin-quick-link">
+                Ana Sayfa
+            </a>
+
+            <a href="/Admin/Workshops" class="admin-quick-link">
+                Servisler
+            </a>
+
+            <a href="/AdminSupportRequests/Index" class="admin-quick-link">
+                Destek Talepleri
+            </a>
+
+            <form asp-controller="Auth"
+                  asp-action="Logout"
+                  method="post"
+                  class="admin-quick-logout-form">
+                @Html.AntiForgeryToken()
+
+                <button type="submit" class="admin-quick-logout">
+                    Çıkış Yap
+                </button>
+            </form>
+        </div>
+    </div>
+}

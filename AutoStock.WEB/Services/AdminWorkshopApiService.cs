@@ -104,7 +104,8 @@ namespace AutoStock.WEB.Services
                 "Servis yetkilisi silinirken hata oluştu.");
         }
 
-        public async Task<ApiResponse<object>> CreateUserAsync(CreateAdminWorkshopUserViewModel model)
+        public async Task<ApiResponse<AdminWorkshopUserCreatedViewModel>> CreateUserAsync(
+    CreateAdminWorkshopUserViewModel model)
         {
             var requestBody = new
             {
@@ -112,11 +113,10 @@ namespace AutoStock.WEB.Services
                 userName = model.UserName,
                 email = model.Email,
                 phoneNumber = model.PhoneNumber,
-                password = model.Password,
                 role = model.Role
             };
 
-            return await PostJsonAsync<object, object>(
+            return await PostJsonAsync<object, AdminWorkshopUserCreatedViewModel>(
                 $"/api/admin/workshops/{model.WorkshopId}/users",
                 requestBody,
                 "Servis kullanıcısı oluşturulurken hata oluştu.");

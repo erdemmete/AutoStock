@@ -42,6 +42,60 @@ namespace AutoStock.WEB.Services
             return PageViewResult<AdminWorkshopIndexViewModel>.Success(viewModel);
         }
 
+        public async Task<PageViewResult<CreateAdminWorkshopUserViewModel>> GetCreateUserPageAsync(
+    int workshopId)
+        {
+            var model = new CreateAdminWorkshopUserViewModel
+            {
+                WorkshopId = workshopId,
+                Role = "Staff"
+            };
+
+            return await PrepareCreateUserPageAsync(model);
+        }
+
+        public async Task<PageViewResult<CreateAdminWorkshopUserViewModel>> PrepareCreateUserPageAsync(
+            CreateAdminWorkshopUserViewModel model)
+        {
+            model.WorkshopId = model.WorkshopId <= 0
+                ? 0
+                : model.WorkshopId;
+
+            if (string.IsNullOrWhiteSpace(model.Role))
+                model.Role = "Staff";
+
+            var result = await _adminWorkshopApiService.GetByIdAsync(model.WorkshopId);
+
+            if (result.IsFailure || result.Data == null)
+            {
+                model.WorkshopName = "Servis";
+
+                var errors = result.ErrorMessages.Any()
+                    ? result.ErrorMessages
+                    : new List<string>
+                    {
+                result.ErrorMessage ?? "Servis bilgisi alınırken hata oluştu."
+                    };
+
+                return PageViewResult<CreateAdminWorkshopUserViewModel>.WithErrors(
+                    model,
+                    errors);
+            }
+
+            model.WorkshopName = result.Data.Name;
+
+            return PageViewResult<CreateAdminWorkshopUserViewModel>.Success(model);
+        }
+
+        public async Task<ApiResponse<AdminWorkshopUserCreatedViewModel>> CreateUserAsync(
+            int workshopId,
+            CreateAdminWorkshopUserViewModel model)
+        {
+            model.WorkshopId = workshopId;
+
+            return await _adminWorkshopApiService.CreateUserAsync(model);
+        }
+
         private static void NormalizeQuery(AdminWorkshopListQueryViewModel query)
         {
             query.Search = string.IsNullOrWhiteSpace(query.Search)

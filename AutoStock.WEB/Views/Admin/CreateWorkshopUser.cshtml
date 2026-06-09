@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "Kullanıcı Oluştur";
-    var workshopName = ViewBag.WorkshopName as string ?? "Servis";
+    var workshopName = Model.WorkshopName;
 }
 
 <div class="page-header">
@@ -76,13 +76,11 @@
             </div>
 
             <div class="form-group">
-                <label>Şifre</label>
-                <input asp-for="Password"
-                       id="Password"
-                       type="text"
-                       class="form-control-custom"
-                       placeholder="Oluştur butonuyla otomatik üretilebilir" />
-                <span asp-validation-for="Password" class="validation-message"></span>
+                <label>Şifre İşlemi</label>
+                <div class="alert-info-inline">
+                    Kullanıcı oluşturulduktan sonra tek kullanımlık davet bağlantısı üretilecek.
+                    Kullanıcı bu bağlantı üzerinden kendi şifresini belirleyecek.
+                </div>
             </div>
 
             <div class="form-group">
@@ -262,55 +260,20 @@
         .btn-secondary-small:hover {
             background: #e5e7eb;
         }
+
+    .alert-info-inline {
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 11px 12px;
+        font-size: 13px;
+        line-height: 1.45;
+    }
 </style>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const generateButton = document.getElementById("generateCredentialsBtn");
-        const fullNameInput = document.getElementById("FullName");
-        const userNameInput = document.getElementById("UserName");
-        const passwordInput = document.getElementById("Password");
-
-        if (!generateButton || !fullNameInput || !userNameInput || !passwordInput) {
-            return;
-        }
-
-        generateButton.addEventListener("click", async function () {
-            const fullName = fullNameInput.value.trim();
-
-            if (!fullName) {
-                alert("Önce ad soyad gir.");
-                fullNameInput.focus();
-                return;
-            }
-
-            generateButton.disabled = true;
-            generateButton.textContent = "Oluşturuluyor...";
-
-            try {
-                const response = await fetch(`/Admin/Workshops/@Model.WorkshopId/Users/SuggestCredentials?fullName=${encodeURIComponent(fullName)}`);
-
-                const result = await response.json();
-
-                if (!result.isSuccess) {
-                    alert(result.errorMessage || "Kullanıcı adı ve şifre oluşturulamadı.");
-                    return;
-                }
-
-                userNameInput.value = result.userName;
-                passwordInput.value = result.password;
-            }
-            catch {
-                alert("Kullanıcı adı ve şifre oluşturulurken hata oluştu.");
-            }
-            finally {
-                generateButton.disabled = false;
-                generateButton.textContent = "Oluştur";
-            }
-        });
-    });
-
-      document.addEventListener("DOMContentLoaded", function () {
         initializeCredentialGenerator();
         initializeMobilePhoneInputs();
     });
@@ -319,9 +282,8 @@
         const generateButton = document.getElementById("generateCredentialsBtn");
         const fullNameInput = document.getElementById("FullName");
         const userNameInput = document.getElementById("UserName");
-        const passwordInput = document.getElementById("Password");
 
-        if (!generateButton || !fullNameInput || !userNameInput || !passwordInput) {
+        if (!generateButton || !fullNameInput || !userNameInput) {
             return;
         }
 
@@ -342,15 +304,14 @@
                 const result = await response.json();
 
                 if (!result.isSuccess) {
-                    alert(result.errorMessage || "Kullanıcı adı ve şifre oluşturulamadı.");
+                    alert(result.errorMessage || "Kullanıcı adı önerisi oluşturulamadı.");
                     return;
                 }
 
                 userNameInput.value = result.userName;
-                passwordInput.value = result.password;
             }
             catch {
-                alert("Kullanıcı adı ve şifre oluşturulurken hata oluştu.");
+                alert("Kullanıcı adı önerisi oluşturulurken hata oluştu.");
             }
             finally {
                 generateButton.disabled = false;

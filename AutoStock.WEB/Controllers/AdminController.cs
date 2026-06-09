@@ -201,28 +201,21 @@ namespace AutoStock.WEB.Controllers
             if (!IsAdmin())
                 return RedirectToLogin();
 
-            var result = await _adminWorkshopApiService.GetByIdAsync(workshopId);
+            var pageResult = await _adminWorkshopPageService.GetCreateUserPageAsync(workshopId);
 
-            if (result.IsFailure || result.Data == null)
+            if (pageResult.HasErrors)
             {
-                ShowError(result.ErrorMessage ?? "Servis bulunamadı.");
+                ShowErrors(pageResult.ErrorMessages);
                 return RedirectToAction(nameof(Workshops));
             }
 
-            var model = new CreateAdminWorkshopUserViewModel
-            {
-                WorkshopId = workshopId,
-                Role = "Staff"
-            };
-
-            ViewBag.WorkshopName = result.Data.Name;
-
-            return View(model);
+            return View(pageResult.ViewModel);
         }
-
         [HttpPost("Admin/Workshops/{workshopId:int}/Users/Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateWorkshopUser(int workshopId, CreateAdminWorkshopUserViewModel model)
+        public async Task<IActionResult> CreateWorkshopUser(
+    int workshopId,
+    CreateAdminWorkshopUserViewModel model)
         {
             if (!IsAdmin())
                 return RedirectToLogin();
@@ -231,25 +224,28 @@ namespace AutoStock.WEB.Controllers
 
             if (!ModelState.IsValid)
             {
-                await PrepareWorkshopUserCreateViewAsync(workshopId);
-                return View(model);
+                var invalidPageResult = await _adminWorkshopPageService.PrepareCreateUserPageAsync(model);
+
+                if (invalidPageResult.HasErrors)
+                    ShowErrors(invalidPageResult.ErrorMessages);
+
+                return View(invalidPageResult.ViewModel);
             }
 
-            var result = await _adminWorkshopApiService.CreateUserAsync(model);
+            var result = await _adminWorkshopPageService.CreateUserAsync(workshopId, model);
 
-            if (result.IsFailure)
+            if (result.IsFailure || result.Data == null)
             {
-                await PrepareWorkshopUserCreateViewAsync(workshopId);
+                var failedPageResult = await _adminWorkshopPageService.PrepareCreateUserPageAsync(model);
+
                 ShowError(result.ErrorMessage ?? "Kullanıcı oluşturulurken hata oluştu.");
-                return View(model);
+
+                return View(failedPageResult.ViewModel);
             }
 
-            ShowSuccess("Kullanıcı başarıyla oluşturuldu.");
+            StoreCreatedUserInviteTempData(result.Data);
 
-            TempData["CreatedUserFullName"] = model.FullName;
-            TempData["CreatedUserName"] = model.UserName;
-            TempData["CreatedUserPassword"] = model.Password;
-            TempData["CreatedUserPhone"] = model.PhoneNumber;
+            ShowSuccess("Kullanıcı başarıyla oluşturuldu. Davet bağlantısı oluşturuldu.");
 
             return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
         }
@@ -302,7 +298,7 @@ namespace AutoStock.WEB.Controllers
                 return Json(new
                 {
                     isSuccess = false,
-                    errorMessage = result.ErrorMessage ?? "Kullanıcı adı ve geçici şifre oluşturulamadı."
+                    errorMessage = result.ErrorMessage ?? "Kullanıcı adı önerisi oluşturulamadı."
                 });
             }
 
@@ -326,13 +322,16 @@ namespace AutoStock.WEB.Controllers
             return RedirectToAction("Login", "Auth");
         }
 
-        private async Task PrepareWorkshopUserCreateViewAsync(int workshopId)
-        {
-            var result = await _adminWorkshopApiService.GetByIdAsync(workshopId);
 
-            ViewBag.WorkshopName = result.IsSuccess && result.Data != null
-                ? result.Data.Name
-                : "Servis";
+        private void StoreCreatedUserInviteTempData(AdminWorkshopUserCreatedViewModel createdUser)
+        {
+            TempData["CreatedUserFullName"] = createdUser.FullName;
+            TempData["CreatedUserName"] = createdUser.UserName;
+            TempData["CreatedUserPhone"] = createdUser.PhoneNumber;
+            TempData["CreatedUserPasswordSetupToken"] = createdUser.PasswordSetupToken;
+            TempData["CreatedUserPasswordSetupCode"] = createdUser.PasswordSetupCode;
+            TempData["CreatedUserPasswordSetupExpiresAt"] =
+                createdUser.PasswordSetupExpiresAt.ToString("O");
         }
     }
 }

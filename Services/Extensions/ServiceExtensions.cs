@@ -27,6 +27,7 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<IAuditLogService, AuditLogService>();
             services.AddScoped<IAuditContextAccessor, AuditContextAccessor>();
             services.AddScoped<ISupportRequestService, SupportRequestService>();
+            services.AddScoped<IUserSecurityTokenService, UserSecurityTokenService>();
 
             return services;
 

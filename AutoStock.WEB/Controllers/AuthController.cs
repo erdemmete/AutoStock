@@ -1,4 +1,6 @@
 ﻿using AutoStock.WEB.Models;
+using AutoStock.WEB.Models.Auth;
+using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
@@ -9,11 +11,13 @@ namespace AutoStock.WEB.Controllers
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
+        private readonly AuthApiService _authApiService;
 
-        public AuthController(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public AuthController(IHttpClientFactory httpClientFactory, IConfiguration configuration, AuthApiService authApiService)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
+            _authApiService = authApiService;
         }
 
         [HttpGet("/")]
@@ -104,18 +108,9 @@ namespace AutoStock.WEB.Controllers
                     return View(model);
                 }
 
-                HttpContext.Session.SetString("AuthToken", loginResult.AccessToken);
-                HttpContext.Session.SetString("UserRole", loginResult.Role);
-                HttpContext.Session.SetString("FullName", loginResult.FullName);
-                HttpContext.Session.SetInt32("UserId", loginResult.UserId);
-                HttpContext.Session.SetInt32("WorkshopId", loginResult.WorkshopId);
+                StoreAuthSession(loginResult);
 
-                if (loginResult.Role == "Admin")
-                {
-                    return RedirectToAction("Dashboard", "Admin");
-                }
-
-                return RedirectToAction("Index", "Dashboard");
+                return RedirectAfterLogin(loginResult);
             }
             catch (HttpRequestException)
             {
@@ -135,11 +130,110 @@ namespace AutoStock.WEB.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
 
             return RedirectToAction("Login", "Auth");
+        }
+
+        [HttpGet("/Auth/PasswordSetup")]
+        public async Task<IActionResult> PasswordSetup([FromQuery] string token)
+        {
+            var model = new PasswordSetupViewModel
+            {
+                Token = token
+            };
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                model.ErrorMessage = "Kurulum bağlantısı geçersiz.";
+                return View(model);
+            }
+
+            var result = await _authApiService.ValidatePasswordSetupTokenAsync(token);
+
+            if (result.IsFailure || result.Data == null)
+            {
+                model.ErrorMessage = result.ErrorMessage ?? "Kurulum bağlantısı geçersiz veya süresi dolmuş.";
+                return View(model);
+            }
+
+            model.FullName = result.Data.FullName;
+            model.UserName = result.Data.UserName;
+            model.WorkshopName = result.Data.WorkshopName;
+
+            return View(model);
+        }
+
+        [HttpPost("/Auth/PasswordSetup")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PasswordSetup(PasswordSetupViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var result = await _authApiService.CompletePasswordSetupAsync(model);
+
+            if (result.IsFailure || result.Data == null)
+            {
+                model.ErrorMessage = result.ErrorMessage ?? "Şifre oluşturulurken hata oluştu.";
+                return View(model);
+            }
+
+            StoreAuthSession(result.Data);
+
+            return RedirectAfterLogin(result.Data);
+        }
+
+        [HttpGet("/Auth/InviteCode")]
+        public IActionResult InviteCode()
+        {
+            return View(new InviteCodeViewModel());
+        }
+
+        [HttpPost("/Auth/InviteCode")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> InviteCode(InviteCodeViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var result = await _authApiService.CompletePasswordSetupByCodeAsync(model);
+
+            if (result.IsFailure || result.Data == null)
+            {
+                model.ErrorMessage = result.ErrorMessage ?? "Davet kodu geçersiz veya süresi dolmuş.";
+                return View(model);
+            }
+
+            StoreAuthSession(result.Data);
+
+            return RedirectAfterLogin(result.Data);
+        }
+
+        private void StoreAuthSession(AuthResponseViewModel authResponse)
+        {
+            HttpContext.Session.SetString("AuthToken", authResponse.AccessToken);
+            HttpContext.Session.SetString("UserRole", authResponse.Role);
+            HttpContext.Session.SetString("FullName", authResponse.FullName);
+            HttpContext.Session.SetInt32("UserId", authResponse.UserId);
+            HttpContext.Session.SetInt32("WorkshopId", authResponse.WorkshopId);
+        }
+
+        private IActionResult RedirectAfterLogin(AuthResponseViewModel authResponse)
+        {
+            if (authResponse.Role == "Admin")
+            {
+                return RedirectToAction("Dashboard", "Admin");
+            }
+
+            return RedirectToAction("Index", "Dashboard");
         }
     }
 }

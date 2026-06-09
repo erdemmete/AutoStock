@@ -77,6 +77,16 @@ namespace AutoStock.API.Controllers
             return StatusCode((int)result.StatusCode, result);
         }
 
+        [HttpPost("{workshopId:int}/users/{userId:int}/password-reset-link")]
+        public async Task<IActionResult> CreateUserPasswordResetLink(int workshopId, int userId)
+        {
+            var result = await _adminWorkshopService.CreateUserPasswordResetLinkAsync(
+                workshopId,
+                userId);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
         [HttpPut("{id:int}/profile")]
         public async Task<IActionResult> UpdateProfile(int id, UpdateAdminWorkshopProfileRequestDto request)
         {
