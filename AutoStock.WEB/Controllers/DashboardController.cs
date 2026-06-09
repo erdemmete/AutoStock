@@ -1,69 +1,44 @@
 ﻿using AutoStock.WEB.Models;
+using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http.Headers;
-using System.Text.Json;
 
 namespace AutoStock.WEB.Controllers
 {
-    public class DashboardController : Controller
+    public class DashboardController : BaseController
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
+        private readonly DashboardApiService _dashboardApiService;
 
-        public DashboardController(
-            IHttpClientFactory httpClientFactory,
-            IConfiguration configuration)
+        public DashboardController(DashboardApiService dashboardApiService)
         {
-            _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
+            _dashboardApiService = dashboardApiService;
         }
 
         public async Task<IActionResult> Index()
         {
             var token = HttpContext.Session.GetString("AuthToken");
-            var role = HttpContext.Session.GetString("UserRole");
 
             if (string.IsNullOrWhiteSpace(token))
+                return RedirectToLogin();
+
+            if (IsAdmin)
+                return RedirectToAction("Dashboard", "Admin");
+
+            var result = await _dashboardApiService.GetAsync();
+
+            if (result.IsFailure || result.Data == null)
             {
-                return RedirectToAction("Login", "Auth");
-            }
+                ShowError(result.ErrorMessage ?? "Dashboard bilgileri alınamadı.");
 
-            if (role == "Admin")
-            {
-                return RedirectToAction("Index", "Admin");
-            }
-
-            var apiBaseUrl = _configuration["ApiSettings:BaseUrl"];
-
-            if (string.IsNullOrWhiteSpace(apiBaseUrl))
-            {
-                ViewBag.Error = "API adresi bulunamadı.";
-                return View(new DashboardViewModel());
-            }
-
-            var client = _httpClientFactory.CreateClient();
-
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await client.GetAsync($"{apiBaseUrl}/api/Dashboard");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                ViewBag.Error = "Dashboard bilgileri alınamadı.";
-                return View(new DashboardViewModel());
-            }
-
-            var responseText = await response.Content.ReadAsStringAsync();
-
-            var model = JsonSerializer.Deserialize<DashboardViewModel>(
-                responseText,
-                new JsonSerializerOptions
+                return View(new DashboardViewModel
                 {
-                    PropertyNameCaseInsensitive = true
+                    FullName = HttpContext.Session.GetString("FullName") ?? "",
+                    Role = HttpContext.Session.GetString("UserRole") ?? "",
+                    WorkshopId = HttpContext.Session.GetInt32("WorkshopId") ?? 0,
+                    WorkshopName = "Servis Paneli"
                 });
+            }
 
-            return View(model ?? new DashboardViewModel());
+            return View(result.Data);
         }
     }
 }

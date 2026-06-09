@@ -1,6 +1,6 @@
-﻿namespace AutoStock.WEB.Models
+﻿namespace AutoStock.Services.Dtos.Dashboard
 {
-    public class DashboardViewModel
+    public class DashboardResponseDto
     {
         public int UserId { get; set; }
 
@@ -24,10 +24,10 @@
 
         public int CriticalStockItemCount { get; set; }
 
-        public List<DashboardActivityViewModel> RecentActivities { get; set; } = new();
+        public List<DashboardActivityDto> RecentActivities { get; set; } = new();
     }
 
-    public class DashboardActivityViewModel
+    public class DashboardActivityDto
     {
         public string Title { get; set; } = string.Empty;
 

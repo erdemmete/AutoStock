@@ -7,5 +7,9 @@
         DateTime Today { get; }
 
         DateTime UtcNow { get; }
+
+        DateTime TodayStartUtc { get; }
+
+        DateTime TomorrowStartUtc { get; }
     }
 }

@@ -13,6 +13,12 @@ namespace AutoStock.Services.Services
 
         public DateTime UtcNow => DateTime.UtcNow;
 
+        public DateTime TodayStartUtc =>
+            TimeZoneInfo.ConvertTimeToUtc(Today, TurkeyTimeZone);
+
+        public DateTime TomorrowStartUtc =>
+            TodayStartUtc.AddDays(1);
+
         private static TimeZoneInfo GetTurkeyTimeZone()
         {
             try

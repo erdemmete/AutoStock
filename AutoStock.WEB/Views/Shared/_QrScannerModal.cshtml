@@ -1,0 +1,712 @@
+﻿@using Microsoft.AspNetCore.Http
+@using System.Text.Json
+
+@{
+    var role = (Context.Session.GetString("UserRole") ?? "").Trim();
+    var fullName = (Context.Session.GetString("FullName") ?? "anonymous").Trim();
+    var isOwner = string.Equals(role, "Owner", StringComparison.OrdinalIgnoreCase);
+
+    var qrStorageScope = $"{role}:{fullName}";
+}
+
+<div id="qrScannerModal" class="qr-modal-backdrop" hidden>
+    <div class="qr-modal-card" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+        <header class="qr-modal-header">
+            <div>
+                <h2 id="qrModalTitle">QR Tara</h2>
+                <p>Aracı okutun, ardından yapmak istediğiniz işlemi seçin.</p>
+            </div>
+
+            <button type="button" class="qr-modal-close" data-qr-modal-close>
+                ×
+            </button>
+        </header>
+
+        <div class="qr-modal-body">
+            <section class="qr-camera-panel">
+                <div id="dashboardQrReader" class="qr-reader"></div>
+
+                <div class="qr-camera-actions">
+                    <button type="button" id="qrStartButton" class="qr-btn qr-btn-primary">
+                        Kamerayı Başlat
+                    </button>
+
+                    <button type="button" id="qrStopButton" class="qr-btn qr-btn-secondary" disabled>
+                        Durdur
+                    </button>
+
+                    <button type="button" id="qrResetButton" class="qr-btn qr-btn-secondary" hidden>
+                        Tekrar Tara
+                    </button>
+                </div>
+
+                <div id="qrStatusBox" class="qr-status-box">
+                    QR okutmak için kamerayı başlatın.
+                </div>
+            </section>
+
+            <section id="qrResultCard" class="qr-result-card" hidden>
+                <div class="qr-vehicle-title">
+                    <div>
+                        <span>Araç bulundu</span>
+                        <h3 id="qrVehiclePlate">-</h3>
+                    </div>
+
+                    <div id="qrOpenRecordBadge" class="qr-open-record-badge" hidden>
+                        Açık kayıt var
+                    </div>
+                </div>
+
+                <div class="qr-vehicle-info">
+                    <div>
+                        <span>Müşteri</span>
+                        <strong id="qrCustomerName">-</strong>
+                    </div>
+
+                    <div>
+                        <span>Araç</span>
+                        <strong id="qrVehicleName">-</strong>
+                    </div>
+
+                    <div id="qrOpenRecordRow">
+                        <span>Açık kayıt</span>
+                        <strong id="qrOpenRecordText">-</strong>
+                    </div>
+                </div>
+
+                <div id="qrActionGrid" class="qr-action-grid"></div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<style>
+    body.qr-modal-open {
+        overflow: hidden;
+    }
+
+    .qr-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgba(15, 23, 42, .52);
+        backdrop-filter: blur(10px);
+    }
+
+        .qr-modal-backdrop[hidden] {
+            display: none !important;
+        }
+
+    .qr-modal-card {
+        width: min(920px, 100%);
+        max-height: calc(100vh - 48px);
+        overflow: auto;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 26px;
+        box-shadow: 0 30px 90px rgba(15, 23, 42, .32);
+    }
+
+    .qr-modal-header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+        padding: 22px 24px;
+        background: rgba(255,255,255,.94);
+        border-bottom: 1px solid #eef2f7;
+        backdrop-filter: blur(12px);
+    }
+
+        .qr-modal-header h2 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 950;
+            letter-spacing: -.6px;
+        }
+
+        .qr-modal-header p {
+            margin: 6px 0 0;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+    .qr-modal-close {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #334155;
+        font-size: 26px;
+        line-height: 1;
+        font-weight: 850;
+        cursor: pointer;
+    }
+
+        .qr-modal-close:hover {
+            background: #fee2e2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+
+    .qr-modal-body {
+        padding: 24px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+    }
+
+    .qr-camera-panel,
+    .qr-result-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .06);
+    }
+
+    .qr-reader {
+        min-height: 320px;
+        overflow: hidden;
+        border-radius: 18px;
+        background: #0f172a;
+    }
+
+        .qr-reader video {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+    .qr-camera-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .qr-btn {
+        min-height: 42px;
+        padding: 0 16px;
+        border-radius: 13px;
+        border: none;
+        cursor: pointer;
+        font-weight: 950;
+    }
+
+    .qr-btn-primary {
+        background: #635bff;
+        color: white;
+        box-shadow: 0 12px 24px rgba(99, 91, 255, .22);
+    }
+
+    .qr-btn-secondary {
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+    }
+
+    .qr-btn:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+
+    .qr-status-box {
+        margin-top: 14px;
+        padding: 13px 15px;
+        border-radius: 15px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        font-weight: 850;
+        line-height: 1.45;
+    }
+
+        .qr-status-box.error {
+            background: #fff1f2;
+            border-color: #fecdd3;
+            color: #be123c;
+        }
+
+    .qr-result-card[hidden] {
+        display: none !important;
+    }
+
+    .qr-vehicle-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+        .qr-vehicle-title span {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 850;
+            margin-bottom: 4px;
+        }
+
+        .qr-vehicle-title h3 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 26px;
+            font-weight: 950;
+            letter-spacing: .2px;
+        }
+
+    .qr-open-record-badge {
+        min-height: 34px;
+        padding: 0 12px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #047857;
+        font-size: 12px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .qr-vehicle-info {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+        .qr-vehicle-info div {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+            .qr-vehicle-info div:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+
+        .qr-vehicle-info span {
+            color: #64748b;
+            font-weight: 750;
+        }
+
+        .qr-vehicle-info strong {
+            color: #0f172a;
+            font-weight: 950;
+            text-align: right;
+        }
+
+    .qr-action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .qr-action-card {
+        min-height: 84px;
+        border: 1px solid #e2e8f0;
+        border-radius: 17px;
+        padding: 16px;
+        text-decoration: none;
+        color: #0f172a;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        transition: .16s ease;
+    }
+
+        .qr-action-card:hover {
+            transform: translateY(-2px);
+            border-color: #c7d2fe;
+            box-shadow: 0 14px 28px rgba(15, 23, 42, .08);
+        }
+
+    .qr-action-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: #eef2ff;
+        flex: 0 0 auto;
+        font-size: 20px;
+    }
+
+    .qr-action-card strong {
+        display: block;
+        font-weight: 950;
+        margin-bottom: 3px;
+    }
+
+    .qr-action-card span {
+        display: block;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    @@media (max-width: 720px) {
+        .qr-modal-backdrop {
+            padding: 12px;
+            align-items: stretch;
+        }
+
+        .qr-modal-card {
+            max-height: calc(100vh - 24px);
+            border-radius: 22px;
+        }
+
+        .qr-modal-header,
+        .qr-modal-body {
+            padding: 18px;
+        }
+
+        .qr-action-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .qr-vehicle-title {
+            flex-direction: column;
+        }
+
+        .qr-camera-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+    (function () {
+    const isOwner = @isOwner.ToString().ToLowerInvariant();
+    const storageScope = @Html.Raw(JsonSerializer.Serialize(qrStorageScope));
+    const legacyStorageKey = "sente360:lastQrScanResult";
+    const storageKey = `sente360:lastQrScanResult:${storageScope}`;
+    const lastQrMaxAgeMs = 4 * 60 * 60 * 1000;
+
+    const modal = document.getElementById("qrScannerModal");
+    const startButton = document.getElementById("qrStartButton");
+    const stopButton = document.getElementById("qrStopButton");
+    const resetButton = document.getElementById("qrResetButton");
+    const statusBox = document.getElementById("qrStatusBox");
+    const resultCard = document.getElementById("qrResultCard");
+    const actionGrid = document.getElementById("qrActionGrid");
+
+    let scanner = null;
+    let locked = false;
+
+    document.querySelectorAll("[data-qr-modal-open]").forEach(button => {
+    button.addEventListener("click", function () {
+    openQrModal();
+    });
+    });
+
+    document.querySelectorAll("[data-qr-modal-close]").forEach(button => {
+    button.addEventListener("click", function () {
+    closeQrModal();
+    });
+    });
+
+    modal?.addEventListener("click", function (event) {
+    if (event.target === modal) {
+    closeQrModal();
+    }
+    });
+
+    document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && !modal.hidden) {
+    closeQrModal();
+    }
+    });
+
+    startButton?.addEventListener("click", startScanner);
+    stopButton?.addEventListener("click", () => stopScanner(true));
+    resetButton?.addEventListener("click", resetAndStart);
+
+    window.addEventListener("pageshow", renderLastQrScanCard);
+    document.addEventListener("DOMContentLoaded", renderLastQrScanCard);
+    document.getElementById("lastQrDismissButton")?.addEventListener("click", clearLastQrScan);
+
+    function openQrModal() {
+    if (!modal) return;
+
+    modal.hidden = false;
+    document.body.classList.add("qr-modal-open");
+
+    resetResultArea();
+    setStatus("Kamera açılıyor...");
+
+    setTimeout(() => {
+    startScanner();
+    }, 150);
+    }
+
+    async function closeQrModal() {
+    await stopScanner(false);
+
+    if (!modal) return;
+
+    modal.hidden = true;
+    document.body.classList.remove("qr-modal-open");
+    }
+
+    function resetResultArea() {
+    locked = false;
+    resultCard.hidden = true;
+    actionGrid.innerHTML = "";
+    resetButton.hidden = true;
+    }
+
+    async function resetAndStart() {
+    resetResultArea();
+    await startScanner();
+    }
+
+    function setStatus(message, isError = false) {
+    if (!statusBox) return;
+
+    statusBox.textContent = message;
+    statusBox.classList.toggle("error", isError);
+    }
+
+    async function startScanner() {
+    if (scanner) {
+    return;
+    }
+
+    if (!window.Html5Qrcode) {
+    setStatus("QR okuyucu yüklenemedi. İnternet bağlantısını kontrol edin.", true);
+    return;
+    }
+
+    locked = false;
+
+    try {
+    scanner = new Html5Qrcode("dashboardQrReader");
+
+    await scanner.start(
+    { facingMode: "environment" },
+    {
+    fps: 10,
+    qrbox: {
+    width: 240,
+    height: 240
+    }
+    },
+    async decodedText => {
+    if (locked) return;
+
+    locked = true;
+    setStatus("QR okundu. Araç bilgisi getiriliyor...");
+
+    await stopScanner(false);
+    await resolveQr(decodedText);
+    }
+    );
+
+    startButton.disabled = true;
+    stopButton.disabled = false;
+    resetButton.hidden = true;
+
+    setStatus("Kamera açık. QR kodu okutabilirsiniz.");
+    }
+    catch (error) {
+    console.error(error);
+    scanner = null;
+    startButton.disabled = false;
+    stopButton.disabled = true;
+
+    setStatus("Kamera açılamadı: " + (error?.message || error), true);
+    }
+    }
+
+    async function stopScanner(updateStatus) {
+    if (!scanner) {
+    startButton.disabled = false;
+    stopButton.disabled = true;
+    return;
+    }
+
+    try {
+    await scanner.stop();
+    }
+    catch {
+    }
+
+    scanner = null;
+    startButton.disabled = false;
+    stopButton.disabled = true;
+
+    if (updateStatus) {
+    setStatus("Kamera durduruldu.");
+    }
+    }
+
+    async function resolveQr(decodedText) {
+    try {
+    const response = await fetch(
+    `/VehicleQrCodes/Resolve?code=${encodeURIComponent(decodedText)}`
+    );
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+    const message =
+    payload?.errorMessage ||
+    payload?.errorMessages?.join("\n") ||
+    "QR kod çözümlenemedi.";
+
+    setStatus(message, true);
+    locked = false;
+    resetButton.hidden = false;
+    return;
+    }
+
+    saveLastQrScan(payload);
+    renderResult(payload);
+    renderLastQrScanCard();
+
+    setStatus("Araç bulundu. Yapmak istediğiniz işlemi seçin.");
+    resetButton.hidden = false;
+    }
+    catch (error) {
+    console.error(error);
+    setStatus("QR çözümleme sırasında hata oluştu.", true);
+    locked = false;
+    resetButton.hidden = false;
+    }
+    }
+    function saveLastQrScan(data) {
+    try {
+        sessionStorage.removeItem(legacyStorageKey);
+
+        const payload = {
+            ...data,
+            scannedAt: new Date().toISOString()
+        };
+
+        sessionStorage.setItem(storageKey, JSON.stringify(payload));
+    }
+    catch {
+    }
+}
+
+function getLastQrScan() {
+    try {
+        sessionStorage.removeItem(legacyStorageKey);
+
+        const raw = sessionStorage.getItem(storageKey);
+
+        if (!raw) {
+            return null;
+        }
+
+        const data = JSON.parse(raw);
+
+        if (!data?.scannedAt) {
+            clearLastQrScan();
+            return null;
+        }
+
+        const scannedAt = new Date(data.scannedAt).getTime();
+        const isExpired = Number.isNaN(scannedAt) || Date.now() - scannedAt > lastQrMaxAgeMs;
+
+        if (isExpired) {
+            clearLastQrScan();
+            return null;
+        }
+
+        return data;
+    }
+    catch {
+        clearLastQrScan();
+        return null;
+    }
+}
+
+function clearLastQrScan() {
+    try {
+        sessionStorage.removeItem(storageKey);
+        sessionStorage.removeItem(legacyStorageKey);
+    }
+    catch {
+    }
+
+    const card = document.getElementById("lastQrScanCard");
+
+    if (card) {
+        card.hidden = true;
+    }
+}
+
+function renderLastQrScanCard() {
+    const card = document.getElementById("lastQrScanCard");
+
+    if (!card) {
+        return;
+    }
+
+    const data = getLastQrScan();
+
+    if (!data) {
+        card.hidden = true;
+        return;
+    }
+
+    const plate = document.getElementById("lastQrPlate");
+    const customer = document.getElementById("lastQrCustomer");
+    const openRecordInfo = document.getElementById("lastQrOpenRecordInfo");
+    const openRecordLink = document.getElementById("lastQrOpenRecordLink");
+    const newRecordLink = document.getElementById("lastQrNewRecordLink");
+    const historyLink = document.getElementById("lastQrHistoryLink");
+
+    if (plate) {
+        plate.textContent = data.plate || "-";
+    }
+
+    if (customer) {
+        customer.textContent = data.customerName || "-";
+    }
+
+    if (openRecordInfo) {
+        openRecordInfo.hidden = !(data.hasOpenServiceRecord && data.openServiceRecordId);
+    }
+
+    if (openRecordLink) {
+        if (data.hasOpenServiceRecord && data.openServiceRecordId) {
+            openRecordLink.href = `/ServiceRecords/Detail/${data.openServiceRecordId}`;
+            openRecordLink.hidden = false;
+        }
+        else {
+            openRecordLink.hidden = true;
+        }
+    }
+
+    if (newRecordLink) {
+        newRecordLink.href = `/ServiceRecords/Create?vehicleId=${data.vehicleId}`;
+    }
+
+    if (historyLink) {
+        historyLink.href = `/qr/${encodeURIComponent(data.code)}`;
+    }
+
+    card.hidden = false;
+}
+    
+    })();
+</script>

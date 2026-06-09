@@ -22,6 +22,8 @@ namespace AutoStock.WEB.Extensions
             services.AddScoped<CurrentAccountPageService>();
             services.AddScoped<SupportRequestApiService>();
             services.AddScoped<AuthApiService>();
+            services.AddScoped<DashboardApiService>();
+            services.AddScoped<VehicleQrCodesApiService>();
 
             return services;
         }
