@@ -211,11 +211,10 @@ namespace AutoStock.WEB.Controllers
 
             return View(pageResult.ViewModel);
         }
+
         [HttpPost("Admin/Workshops/{workshopId:int}/Users/Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateWorkshopUser(
-    int workshopId,
-    CreateAdminWorkshopUserViewModel model)
+        public async Task<IActionResult> CreateWorkshopUser(int workshopId, CreateAdminWorkshopUserViewModel model)
         {
             if (!IsAdmin())
                 return RedirectToLogin();
@@ -277,6 +276,41 @@ namespace AutoStock.WEB.Controllers
                     ? "Kullanıcı aktifleştirildi."
                     : "Kullanıcı pasifleştirildi.");
         }
+
+        [HttpPost("Admin/Workshops/{workshopId:int}/Users/{userId:int}/PasswordResetLink")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateWorkshopUserPasswordResetLink(int workshopId, int userId)
+        {
+            if (!IsAdmin())
+                return RedirectToLogin();
+
+            if (workshopId <= 0 || userId <= 0)
+            {
+                ShowError("Geçersiz kullanıcı bilgisi.");
+                return RedirectToAction(nameof(Workshops));
+            }
+
+            var result = await _adminWorkshopApiService.CreateUserPasswordResetLinkAsync(
+                workshopId,
+                userId);
+
+            if (result.IsFailure || result.Data == null)
+            {
+                if (result.ErrorMessages.Any())
+                    ShowErrors(result.ErrorMessages);
+                else
+                    ShowError(result.ErrorMessage ?? "Şifre sıfırlama bağlantısı oluşturulurken hata oluştu.");
+
+                return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+            }
+
+            StorePasswordResetLinkTempData(result.Data);
+
+            ShowSuccess("Şifre sıfırlama bağlantısı oluşturuldu.");
+
+            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+        }
+
         [HttpGet("Admin/Workshops/{workshopId:int}/Users/SuggestCredentials")]
         public async Task<IActionResult> SuggestWorkshopUserCredentials(int workshopId, string fullName)
         {
@@ -332,6 +366,16 @@ namespace AutoStock.WEB.Controllers
             TempData["CreatedUserPasswordSetupCode"] = createdUser.PasswordSetupCode;
             TempData["CreatedUserPasswordSetupExpiresAt"] =
                 createdUser.PasswordSetupExpiresAt.ToString("O");
+        }
+
+        private void StorePasswordResetLinkTempData(AdminWorkshopUserPasswordResetLinkViewModel resetLink)
+        {
+            TempData["ResetUserFullName"] = resetLink.FullName;
+            TempData["ResetUserName"] = resetLink.UserName;
+            TempData["ResetUserPhone"] = resetLink.PhoneNumber;
+            TempData["ResetPasswordToken"] = resetLink.PasswordResetToken;
+            TempData["ResetPasswordCode"] = resetLink.PasswordResetCode;
+            TempData["ResetPasswordExpiresAt"] = resetLink.PasswordResetExpiresAt.ToString("O");
         }
     }
 }

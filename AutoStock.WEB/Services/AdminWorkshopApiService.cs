@@ -104,8 +104,7 @@ namespace AutoStock.WEB.Services
                 "Servis yetkilisi silinirken hata oluştu.");
         }
 
-        public async Task<ApiResponse<AdminWorkshopUserCreatedViewModel>> CreateUserAsync(
-    CreateAdminWorkshopUserViewModel model)
+        public async Task<ApiResponse<AdminWorkshopUserCreatedViewModel>> CreateUserAsync(CreateAdminWorkshopUserViewModel model)
         {
             var requestBody = new
             {
@@ -135,6 +134,13 @@ namespace AutoStock.WEB.Services
                 "Kullanıcı durumu güncellenirken hata oluştu.");
         }
 
+        public async Task<ApiResponse<AdminWorkshopUserPasswordResetLinkViewModel>> CreateUserPasswordResetLinkAsync(int workshopId, int userId)
+        {
+            return await PostEmptyAsync<AdminWorkshopUserPasswordResetLinkViewModel>(
+                $"/api/admin/workshops/{workshopId}/users/{userId}/password-reset-link",
+                "Şifre sıfırlama bağlantısı oluşturulurken hata oluştu.");
+        }
+
         public async Task<ApiResponse<SuggestedAdminWorkshopCredentialsViewModel>> SuggestCredentialsAsync(int workshopId, string fullName)
         {
             var url = BuildUrlWithQuery(
@@ -149,8 +155,7 @@ namespace AutoStock.WEB.Services
                 "Kullanıcı adı ve geçici şifre oluşturulurken hata oluştu.");
         }
 
-        public async Task<ApiResponse<PagedResultViewModel<AdminWorkshopListItemViewModel>>> GetPagedAsync(
-    AdminWorkshopListQueryViewModel query)
+        public async Task<ApiResponse<PagedResultViewModel<AdminWorkshopListItemViewModel>>> GetPagedAsync(AdminWorkshopListQueryViewModel query)
         {
             var url = BuildUrlWithQuery(
                 "/api/admin/workshops",

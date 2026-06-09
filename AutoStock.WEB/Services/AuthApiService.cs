@@ -77,5 +77,35 @@ namespace AutoStock.WEB.Services
                 requestBody,
                 "Davet kodu ile şifre oluşturulurken hata oluştu.");
         }
+
+        public async Task<ApiResponse<PasswordActionTokenInfoViewModel>> ValidatePasswordResetTokenAsync(
+    string token)
+        {
+            var requestBody = new
+            {
+                token
+            };
+
+            return await PostJsonAsync<object, PasswordActionTokenInfoViewModel>(
+                "/api/Auth/password-reset/validate",
+                requestBody,
+                "Şifre sıfırlama bağlantısı doğrulanırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<AuthResponseViewModel>> CompletePasswordResetAsync(
+            PasswordResetViewModel model)
+        {
+            var requestBody = new
+            {
+                token = model.Token,
+                newPassword = model.NewPassword,
+                confirmNewPassword = model.ConfirmNewPassword
+            };
+
+            return await PostJsonAsync<object, AuthResponseViewModel>(
+                "/api/Auth/password-reset/complete",
+                requestBody,
+                "Şifre sıfırlanırken hata oluştu.");
+        }
     }
 }

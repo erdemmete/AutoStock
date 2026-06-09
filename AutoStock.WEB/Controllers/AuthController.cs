@@ -217,6 +217,61 @@ namespace AutoStock.WEB.Controllers
             return RedirectAfterLogin(result.Data);
         }
 
+        [HttpGet("/Auth/PasswordReset")]
+        public async Task<IActionResult> PasswordReset([FromQuery] string token)
+        {
+            var model = new PasswordResetViewModel
+            {
+                Token = token
+            };
+
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                model.ErrorMessage = "Şifre sıfırlama bağlantısı geçersiz.";
+                return View(model);
+            }
+
+            var result = await _authApiService.ValidatePasswordResetTokenAsync(token);
+
+            if (result.IsFailure || result.Data == null)
+            {
+                model.ErrorMessage = result.ErrorMessage
+                    ?? "Şifre sıfırlama bağlantısı geçersiz, kullanılmış veya süresi dolmuş.";
+
+                return View(model);
+            }
+
+            model.FullName = result.Data.FullName;
+            model.UserName = result.Data.UserName;
+            model.WorkshopName = result.Data.WorkshopName;
+
+            return View(model);
+        }
+
+        [HttpPost("/Auth/PasswordReset")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PasswordReset(PasswordResetViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var result = await _authApiService.CompletePasswordResetAsync(model);
+
+            if (result.IsFailure || result.Data == null)
+            {
+                model.ErrorMessage = result.ErrorMessage
+                    ?? "Şifre sıfırlanırken hata oluştu.";
+
+                return View(model);
+            }
+
+            StoreAuthSession(result.Data);
+
+            return RedirectAfterLogin(result.Data);
+        }
+
         private void StoreAuthSession(AuthResponseViewModel authResponse)
         {
             HttpContext.Session.SetString("AuthToken", authResponse.AccessToken);

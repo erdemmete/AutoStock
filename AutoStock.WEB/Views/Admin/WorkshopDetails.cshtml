@@ -25,12 +25,21 @@
     var createdUserPasswordSetupToken = TempData["CreatedUserPasswordSetupToken"] as string;
     var createdUserPasswordSetupCode = TempData["CreatedUserPasswordSetupCode"] as string;
 
+    var resetUserFullName = TempData["ResetUserFullName"] as string;
+    var resetUserName = TempData["ResetUserName"] as string;
+    var resetUserPhone = TempData["ResetUserPhone"] as string;
+    var resetPasswordToken = TempData["ResetPasswordToken"] as string;
+    var resetPasswordExpiresAt = TempData["ResetPasswordExpiresAt"] as string;
+
     var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}".TrimEnd('/');
     var loginUrl = $"{baseUrl}/";
-    
 
     var passwordSetupUrl = !string.IsNullOrWhiteSpace(createdUserPasswordSetupToken)
         ? $"{baseUrl}/Auth/PasswordSetup?token={Uri.EscapeDataString(createdUserPasswordSetupToken)}"
+        : null;
+
+    var passwordResetUrl = !string.IsNullOrWhiteSpace(resetPasswordToken)
+        ? $"{baseUrl}/Auth/PasswordReset?token={Uri.EscapeDataString(resetPasswordToken)}"
         : null;
 
     string? createdUserMessage = null;
@@ -38,11 +47,14 @@
     string? whatsappUrl = null;
     string? codeWhatsappUrl = null;
 
+    string? resetPasswordMessage = null;
+    string? resetWhatsappUrl = null;
+
     if (!string.IsNullOrWhiteSpace(createdUserName) &&
         !string.IsNullOrWhiteSpace(passwordSetupUrl))
     {
         createdUserMessage =
-    $@"Merhaba {createdUserFullName},
+$@"Merhaba {createdUserFullName},
 
 Sente360 servis yönetim hesabınız oluşturuldu.
 
@@ -57,7 +69,7 @@ Kullanıcı adınız:
         if (!string.IsNullOrWhiteSpace(createdUserPasswordSetupCode))
         {
             createdUserCodeMessage =
-    $@"Merhaba {createdUserFullName},
+$@"Merhaba {createdUserFullName},
 
 Linke tıklamak istemezseniz tarayıcınızdan {loginUrl} adresine girip ""Davet Kodum Var"" seçeneğini kullanabilirsiniz.
 
@@ -91,7 +103,44 @@ Davet kodunuz:
             }
         }
     }
+
+    if (!string.IsNullOrWhiteSpace(resetUserName) &&
+        !string.IsNullOrWhiteSpace(passwordResetUrl))
+    {
+        resetPasswordMessage =
+$@"Merhaba {resetUserFullName},
+
+Sente360 hesabınız için şifre sıfırlama bağlantısı oluşturuldu.
+
+Güvenliğiniz için yeni şifrenizi siz belirleyeceksiniz.
+
+Şifre sıfırlama bağlantısı:
+{passwordResetUrl}
+
+Kullanıcı adınız:
+{resetUserName}
+
+Bu bağlantı tek kullanımlıktır.";
+
+        var resetPhoneDigits = new string((resetUserPhone ?? "")
+            .Where(char.IsDigit)
+            .ToArray());
+
+        if (resetPhoneDigits.StartsWith("0"))
+        {
+            resetPhoneDigits = "90" + resetPhoneDigits.Substring(1);
+        }
+        else if (resetPhoneDigits.StartsWith("5"))
+        {
+            resetPhoneDigits = "90" + resetPhoneDigits;
+        }
+
+        if (!string.IsNullOrWhiteSpace(resetPhoneDigits) && resetPhoneDigits.Length >= 12)
+        {
+            resetWhatsappUrl = $"https://wa.me/{resetPhoneDigits}?text={Uri.EscapeDataString(resetPasswordMessage)}";
+        }
     }
+}
 
 <div class="page-header">
     <div>
@@ -187,6 +236,45 @@ Davet kodunuz:
             }
         </div>
     }
+
+@if (!string.IsNullOrWhiteSpace(resetPasswordMessage))
+{
+    <div class="credential-card password-reset-card">
+        <div>
+            <h2>Şifre Sıfırlama Bağlantısı</h2>
+            <p>
+                Bu bağlantı sadece oluşturma sonrası gösterilir.
+                Kullanıcı yeni şifresini kendisi belirler.
+            </p>
+        </div>
+
+        <pre id="resetPasswordText">@resetPasswordMessage</pre>
+
+        <div class="credential-actions">
+            <button type="button"
+                    class="btn-secondary-custom copy-message-btn"
+                    data-copy-target="resetPasswordText">
+                Reset Linkini Kopyala
+            </button>
+
+            @if (!string.IsNullOrWhiteSpace(resetWhatsappUrl))
+            {
+                <a href="@resetWhatsappUrl"
+                   target="_blank"
+                   rel="noopener"
+                   class="btn-whatsapp-custom">
+                    WhatsApp ile Gönder
+                </a>
+            }
+            else
+            {
+                <span class="text-muted">
+                    WhatsApp için geçerli cep telefonu girilmemiş.
+                </span>
+            }
+        </div>
+    </div>
+}
 
 <div class="detail-grid">
     <div class="admin-card">
@@ -704,30 +792,53 @@ Davet kodunuz:
                             <td>@user.CreatedAt.ToString("dd.MM.yyyy")</td>
 
                             <td>
-                                <form asp-action="UpdateWorkshopUserStatus"
-                                      asp-controller="Admin"
-                                      method="post"
-                                      onsubmit="return confirm('Kullanıcı durumunu değiştirmek istiyor musun?');">
+                                <div class="user-action-group">
+                                    <form asp-action="UpdateWorkshopUserStatus"
+                                          asp-controller="Admin"
+                                          method="post"
+                                          onsubmit="return confirm('Kullanıcı durumunu değiştirmek istiyor musun?');">
 
-                                    @Html.AntiForgeryToken()
+                                        @Html.AntiForgeryToken()
 
-                                    <input type="hidden" name="workshopId" value="@Model.Id" />
-                                    <input type="hidden" name="userId" value="@user.UserId" />
-                                    <input type="hidden" name="isActive" value="@(!user.IsActive)" />
+                                        <input type="hidden" name="workshopId" value="@Model.Id" />
+                                        <input type="hidden" name="userId" value="@user.UserId" />
+                                        <input type="hidden" name="isActive" value="@(!user.IsActive)" />
+
+                                        @if (user.IsActive)
+                                        {
+                                            <button type="submit" class="btn-danger-custom">
+                                                Pasifleştir
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="btn-success-custom">
+                                                Aktifleştir
+                                            </button>
+                                        }
+                                    </form>
 
                                     @if (user.IsActive)
                                     {
-                                        <button type="submit" class="btn-danger-custom">
-                                            Pasifleştir
-                                        </button>
+                                        <form asp-action="CreateWorkshopUserPasswordResetLink"
+                                              asp-controller="Admin"
+                                              asp-route-workshopId="@Model.Id"
+                                              asp-route-userId="@user.UserId"
+                                              method="post"
+                                              onsubmit="return confirm('Bu kullanıcı için yeni şifre sıfırlama bağlantısı oluşturulsun mu? Önceki aktif reset bağlantıları geçersiz olur.');">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <button type="submit" class="btn-secondary-custom btn-small-custom">
+                                                Şifre Sıfırla
+                                            </button>
+                                        </form>
                                     }
                                     else
                                     {
-                                        <button type="submit" class="btn-success-custom">
-                                            Aktifleştir
-                                        </button>
+                                        <span class="text-muted">Pasif kullanıcı</span>
                                     }
-                                </form>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -1218,10 +1329,36 @@ Davet kodunuz:
             background: #16a34a;
             color: #fff;
         }
+
+    .user-action-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn-small-custom {
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+    }
+
+    .password-reset-card {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+    }
+
+        .password-reset-card h2 {
+            color: #334155;
+        }
+
+        .password-reset-card p {
+            color: #475569;
+        }
 </style>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+      document.addEventListener("DOMContentLoaded", function () {
         makeAdminCardsCollapsible();
         initializeMobilePhoneInputs();
         initializeCredentialActions();
@@ -1353,46 +1490,43 @@ Davet kodunuz:
         }, 0);
     }
 
-             function initializeCredentialActions() {
-            const copyButtons = document.querySelectorAll(".copy-message-btn");
+            function initializeCredentialActions() {
+        const copyButtons = document.querySelectorAll(".copy-message-btn");
 
-            copyButtons.forEach(copyButton => {
-                copyButton.addEventListener("click", async function () {
-                        const explicitText = copyButton.dataset.copyText;
+        copyButtons.forEach(copyButton => {
+            copyButton.addEventListener("click", async function () {
+                const explicitText = copyButton.dataset.copyText;
+                let message = explicitText || "";
 
-                    let message = explicitText || "";
+                if (!message) {
+                    const targetId = copyButton.dataset.copyTarget;
+                    const target = targetId ? document.getElementById(targetId) : null;
 
-                    if (!message) {
-                        const targetId = copyButton.dataset.copyTarget;
-                        const target = targetId ? document.getElementById(targetId) : null;
-
-                        if (!target) {
-                            return;
-                        }
-
-                        message = target.textContent || "";
-                    }
-
-                    const message = target.textContent || "";
-
-                    if (!message.trim()) {
+                    if (!target) {
                         return;
                     }
 
-                    try {
-                        await navigator.clipboard.writeText(message);
+                    message = target.textContent || "";
+                }
 
-                        const originalText = copyButton.textContent;
-                        copyButton.textContent = "Kopyalandı";
+                if (!message.trim()) {
+                    return;
+                }
 
-                        setTimeout(() => {
-                            copyButton.textContent = originalText;
-                        }, 1500);
-                    }
-                    catch {
-                        alert("Kopyalama başarısız oldu. Bilgileri manuel seçip kopyalayabilirsin.");
-                    }
-                });
+                try {
+                    await navigator.clipboard.writeText(message);
+
+                    const originalText = copyButton.textContent;
+                    copyButton.textContent = "Kopyalandı";
+
+                    setTimeout(() => {
+                        copyButton.textContent = originalText;
+                    }, 1500);
+                }
+                catch {
+                    alert("Kopyalama başarısız oldu. Bilgileri manuel seçip kopyalayabilirsin.");
+                }
             });
-        }
+        });
+    }
 </script>
