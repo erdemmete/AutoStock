@@ -137,7 +137,7 @@
 
                 <div class="info-item">
                     <span>Oluşturulma</span>
-                    <strong>@Model.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</strong>
+                    <strong>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</strong>
                 </div>
             </div>
         </div>
@@ -256,7 +256,7 @@
                                 <td>@item.Description</td>
 
                                 <td>
-                                    @item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                                    @item.CreatedAt.ToString("dd.MM.yyyy HH:mm")
                                 </td>
                             </tr>
                         }

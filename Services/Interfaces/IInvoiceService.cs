@@ -6,6 +6,9 @@ namespace AutoStock.Services.Interfaces
     public interface IInvoiceService
     {
         Task<ServiceResult<CreateInvoiceDraftDto>> GetCreateDraftAsync(int serviceRecordId, int workshopId);
+        Task<ServiceResult<InvoiceNavigationDto>> CreateOrGetDraftFromServiceRecordAsync(
+    int serviceRecordId,
+    int workshopId);
 
         Task<ServiceResult<CreateInvoiceResponseDto>> CreateAsync(CreateInvoiceDto request, int workshopId);
 

@@ -71,4 +71,6 @@ public class InvoiceDetailItemDto
     public decimal VatAmount { get; set; }
 
     public decimal LineTotal { get; set; }
+
+    public int? StockItemId { get; set; }
 }

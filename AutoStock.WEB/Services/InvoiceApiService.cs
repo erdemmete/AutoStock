@@ -1,4 +1,5 @@
-﻿using AutoStock.WEB.Models.Common;
+﻿using AutoStock.Services.Dtos.Invoices;
+using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.Invoices;
 
 namespace AutoStock.WEB.Services
@@ -69,9 +70,11 @@ namespace AutoStock.WEB.Services
                 "Fatura iptal edilirken hata oluştu.");
         }
 
-        public async Task<ApiResponse<InvoiceDetailViewModel>> UpdateAsync(int invoiceId, InvoiceDetailViewModel model)
+        public async Task<ApiResponse<InvoiceDetailViewModel>> UpdateAsync(int invoiceId, UpdateInvoiceDto model)
         {
-            return await PutJsonAsync<InvoiceDetailViewModel, InvoiceDetailViewModel>(
+            model.InvoiceId = invoiceId;
+
+            return await PutJsonAsync<UpdateInvoiceDto, InvoiceDetailViewModel>(
                 $"/api/Invoices/{invoiceId}",
                 model,
                 "Fatura güncellenirken hata oluştu.");
@@ -83,6 +86,14 @@ namespace AutoStock.WEB.Services
             return await GetAsync<List<InvoiceListItemViewModel>>(
                 $"/api/Invoices/by-service-record/{serviceRecordId}",
                 "Servis kaydına ait faturalar alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<InvoiceNavigationViewModel>> CreateOrGetDraftFromServiceRecordAsync(
+    int serviceRecordId)
+        {
+            return await PostEmptyAsync<InvoiceNavigationViewModel>(
+                $"/api/Invoices/from-service-record/{serviceRecordId}/draft",
+                "Fatura hazırlanırken hata oluştu.");
         }
 
         public async Task<ApiResponse<InvoiceDetailViewModel>> GetDraftByServiceRecordAsync(

@@ -43,6 +43,7 @@ public class InvoiceDetailViewModel
     public string? Notes { get; set; }
 
     public List<InvoiceDetailItemViewModel> Items { get; set; } = new();
+    public List<InvoiceServiceRequestItemOptionViewModel> ServiceRequestItems { get; set; } = new();
 }
 
 public class InvoiceDetailItemViewModel
@@ -68,4 +69,14 @@ public class InvoiceDetailItemViewModel
     public decimal VatAmount { get; set; }
 
     public decimal LineTotal { get; set; }
+    public int? StockItemId { get; set; }
+
+    public List<InvoiceServiceRequestItemOptionViewModel> ServiceRequestItems { get; set; } = new();
+}
+
+public class InvoiceServiceRequestItemOptionViewModel
+{
+    public int Id { get; set; }
+
+    public string Title { get; set; } = null!;
 }

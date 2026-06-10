@@ -309,7 +309,9 @@ namespace AutoStock.Services.Services
                     VatRate = item.VatRate,
                     VatAmount = item.VatAmount,
 
-                    LineTotal = item.LineTotal
+                    LineTotal = item.LineTotal,
+
+                    StockItemId = item.StockItemId
                 });
             }
 
@@ -883,6 +885,90 @@ namespace AutoStock.Services.Services
             await _context.SaveChangesAsync();
 
             return await GetDetailAsync(invoice.Id, workshopId);
+        }
+
+        public async Task<ServiceResult<InvoiceNavigationDto>> CreateOrGetDraftFromServiceRecordAsync(
+    int serviceRecordId,
+    int workshopId)
+        {
+            var activeInvoice = await _context.Invoices
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.ServiceRecordId == serviceRecordId &&
+                    x.Status != InvoiceStatus.Cancelled)
+                .OrderBy(x => x.Status == InvoiceStatus.Draft ? 0 : 1)
+                .ThenByDescending(x => x.InvoiceDate)
+                .FirstOrDefaultAsync();
+
+            if (activeInvoice is not null)
+            {
+                return ServiceResult<InvoiceNavigationDto>.Success(new InvoiceNavigationDto
+                {
+                    InvoiceId = activeInvoice.Id,
+                    Status = (int)activeInvoice.Status,
+                    InvoiceNumber = activeInvoice.InvoiceNumber
+                });
+            }
+
+            var draftResult = await GetCreateDraftAsync(serviceRecordId, workshopId);
+
+            if (!draftResult.IsSuccess || draftResult.Data is null)
+            {
+                return ServiceResult<InvoiceNavigationDto>.Fail(
+                    draftResult.ErrorMessage ?? "Fatura taslağı hazırlanamadı.");
+            }
+
+            var draft = draftResult.Data;
+
+            if (draft.Items is null || !draft.Items.Any())
+            {
+                return ServiceResult<InvoiceNavigationDto>.Fail(
+                    "Fatura oluşturmak için servis kaydında en az bir işlem olmalıdır.");
+            }
+
+            var createRequest = new CreateInvoiceDto
+            {
+                ServiceRecordId = draft.ServiceRecordId,
+                CustomerId = draft.CustomerId,
+                InvoiceType = 1,
+
+                CustomerTitle = draft.CustomerTitle,
+                CustomerTaxOffice = draft.CustomerTaxOffice,
+                CustomerTaxNumber = draft.CustomerTaxNumber,
+                CustomerTckn = draft.CustomerTckn,
+                CustomerAddress = draft.CustomerAddress,
+
+                Plate = draft.Plate,
+                ChassisNumber = draft.ChassisNumber,
+                Mileage = draft.Mileage,
+
+                Items = draft.Items.Select(x => new CreateInvoiceItemDto
+                {
+                    ItemType = x.ItemType,
+                    Description = x.Description,
+                    Quantity = x.Quantity,
+                    Unit = x.Unit,
+                    UnitPrice = x.UnitPrice,
+                    DiscountRate = x.DiscountRate,
+                    VatRate = x.VatRate,
+                    StockItemId = x.StockItemId
+                }).ToList()
+            };
+
+            var createResult = await CreateAsync(createRequest, workshopId);
+
+            if (!createResult.IsSuccess || createResult.Data is null)
+            {
+                return ServiceResult<InvoiceNavigationDto>.Fail(
+                    createResult.ErrorMessage ?? "Fatura oluşturulamadı.");
+            }
+
+            return ServiceResult<InvoiceNavigationDto>.Success(new InvoiceNavigationDto
+            {
+                InvoiceId = createResult.Data.InvoiceId,
+                Status = 1,
+                InvoiceNumber = createResult.Data.InvoiceNumber
+            });
         }
 
         private static string GetInvoiceDisplayName(Invoice invoice)

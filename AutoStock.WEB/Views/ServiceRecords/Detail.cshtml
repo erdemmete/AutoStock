@@ -71,7 +71,7 @@
             </div>
 
             <p>
-                @Model.CreatedAt.AddHours(3).ToString("dd MMMM yyyy") tarihinde açıldı.
+                @Model.CreatedAt.ToString("dd MMMM yyyy") tarihinde açıldı.
             </p>
         </div>
 
@@ -814,7 +814,7 @@
 
                                     <span>
                                         @(deletedRequest.DeletedAt.HasValue
-                                            ? deletedRequest.DeletedAt.Value.AddHours(3).ToString("dd.MM.yyyy HH:mm")
+                                            ? deletedRequest.DeletedAt.Value.ToString("dd.MM.yyyy HH:mm")
                                             : "Silinme tarihi yok")
 
                                         @if (deletedRequest.DeletedOperationCount > 0)

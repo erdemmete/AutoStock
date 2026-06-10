@@ -33,6 +33,21 @@ namespace AutoStock.API.Controllers
             return ToActionResult(result);
         }
 
+        [HttpPost("from-service-record/{serviceRecordId:int}/draft")]
+        public async Task<IActionResult> CreateOrGetDraftFromServiceRecord(int serviceRecordId)
+        {
+            var workshopIdResult = GetCurrentWorkshopId();
+
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
+
+            var result = await _invoiceService.CreateOrGetDraftFromServiceRecordAsync(
+                serviceRecordId,
+                workshopIdResult.Data);
+
+            return ToActionResult(result);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create(CreateInvoiceDto request)
         {

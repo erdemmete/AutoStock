@@ -1,4 +1,5 @@
-﻿using AutoStock.WEB.Models.Invoices;
+﻿using AutoStock.Services.Dtos.Invoices;
+using AutoStock.WEB.Models.Invoices;
 using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -33,12 +34,21 @@ public class InvoicesController : BaseController
     [HttpGet("Invoices/CreateFromServiceRecord/{serviceRecordId:int}")]
     public async Task<IActionResult> CreateFromServiceRecord(int serviceRecordId)
     {
-        var result = await _invoiceApiService.GetCreateDraftFromServiceRecordAsync(serviceRecordId);
+        var result = await _invoicePageService.CreateOrGetDraftFromServiceRecordAsync(serviceRecordId);
 
-        return ViewObjectResult(
-            result,
-            "Fatura taslağı oluşturulamadı.",
-            onFailure: () => RedirectToAction("Detail", "ServiceRecords", new { id = serviceRecordId }));
+        if (result.IsFailure || result.Data is null)
+        {
+            ShowError(result.ErrorMessage ?? "Fatura hazırlanırken hata oluştu.");
+
+            return RedirectToAction(
+                "Detail",
+                "ServiceRecords",
+                new { id = serviceRecordId });
+        }
+
+        return RedirectToAction(
+            nameof(Detail),
+            new { invoiceId = result.Data.InvoiceId });
     }
 
     [HttpPost("Invoices/CreateFromServiceRecord")]
@@ -75,12 +85,15 @@ public class InvoicesController : BaseController
     [HttpGet("Invoices/Detail/{invoiceId:int}")]
     public async Task<IActionResult> Detail(int invoiceId)
     {
-        var result = await _invoiceApiService.GetDetailAsync(invoiceId);
+        var pageResult = await _invoicePageService.BuildDetailAsync(invoiceId);
 
-        return ViewObjectResult(
-            result,
-            "Fatura detayı alınırken hata oluştu.",
-            onFailure: () => RedirectToAction(nameof(Index)));
+        if (pageResult.HasErrors)
+        {
+            ShowErrors(pageResult.ErrorMessages);
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(pageResult.ViewModel);
     }
 
     [HttpPost("Invoices/Issue/{invoiceId:int}")]
@@ -126,8 +139,19 @@ public class InvoicesController : BaseController
     }
 
     [HttpPut("Invoices/Edit/{invoiceId:int}")]
-    public async Task<IActionResult> Edit(int invoiceId, [FromBody] InvoiceDetailViewModel model)
+    public async Task<IActionResult> Edit(int invoiceId, [FromBody] UpdateInvoiceDto model)
     {
+        if (model is null)
+        {
+            return BadRequest(new
+            {
+                isSuccess = false,
+                errorMessage = "Fatura bilgisi alınamadı."
+            });
+        }
+
+        model.InvoiceId = invoiceId;
+
         var result = await _invoiceApiService.UpdateAsync(invoiceId, model);
 
         if (result.IsFailure)
