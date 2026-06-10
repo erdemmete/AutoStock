@@ -117,6 +117,24 @@ public class ServiceRecordsController : BaseApiController
         return ToActionResult(result);
     }
 
+    [HttpPut("operations/{operationId:int}")]
+    public async Task<IActionResult> UpdateOperation(
+    int operationId,
+    UpdateServiceOperationRequest request)
+    {
+        var workshopIdResult = GetCurrentWorkshopId();
+
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
+
+        var result = await _serviceRecordService.UpdateOperationAsync(
+            operationId,
+            request,
+            workshopIdResult.Data);
+
+        return ToActionResult(result);
+    }
+
     [HttpPut("{id:int}/complete")]
     public async Task<IActionResult> Complete(int id)
     {
@@ -174,6 +192,21 @@ public class ServiceRecordsController : BaseApiController
             return UnauthorizedResult(workshopIdResult);
 
         var result = await _serviceRecordService.DeleteRequestItemAsync(
+            requestItemId,
+            workshopIdResult.Data);
+
+        return ToActionResult(result);
+    }
+
+    [HttpPut("request-items/{requestItemId:int}/restore")]
+    public async Task<IActionResult> RestoreRequestItem(int requestItemId)
+    {
+        var workshopIdResult = GetCurrentWorkshopId();
+
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
+
+        var result = await _serviceRecordService.RestoreRequestItemAsync(
             requestItemId,
             workshopIdResult.Data);
 

@@ -1,5 +1,8 @@
-﻿using AutoStock.Web.Models.ServiceRecords;
+﻿using AutoStock.Repositories.Enums;
+using AutoStock.Services.Dtos.ServiceRecords;
+using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Models.Common;
+using AutoStock.WEB.Models.ServiceRecords;
 
 namespace AutoStock.WEB.Services
 {
@@ -40,6 +43,60 @@ namespace AutoStock.WEB.Services
             }
 
             return PageViewResult<ServiceRecordIndexViewModel>.Success(viewModel);
+        }
+
+        public async Task<ApiResponse<object>> UpdateRequestItemAsync(UpdateServiceRequestItemFormModel form)
+        {
+            if (form.ServiceRequestItemId <= 0)
+                return ApiResponse<object>.Fail("Şikayet bilgisi bulunamadı.");
+
+            if (string.IsNullOrWhiteSpace(form.Title))
+                return ApiResponse<object>.Fail("Şikayet başlığı zorunludur.");
+
+            var request = new UpdateServiceRequestItemRequest
+            {
+                Title = form.Title.Trim(),
+                Note = string.IsNullOrWhiteSpace(form.Note)
+                    ? null
+                    : form.Note.Trim(),
+                EstimatedAmount = form.EstimatedAmount
+            };
+
+            return await _serviceRecordApiService.UpdateRequestItemAsync(
+                form.ServiceRequestItemId,
+                request);
+        }
+
+        public async Task<ApiResponse<object>> UpdateOperationAsync(UpdateServiceOperationFormModel form)
+        {
+            if (form.OperationId <= 0)
+                return ApiResponse<object>.Fail("İşlem bilgisi bulunamadı.");
+
+            if (string.IsNullOrWhiteSpace(form.Description))
+                return ApiResponse<object>.Fail("İşlem açıklaması zorunludur.");
+
+            if (form.Quantity <= 0)
+                return ApiResponse<object>.Fail("Miktar 1 veya daha büyük olmalıdır.");
+
+            if (form.UnitPrice < 0)
+                return ApiResponse<object>.Fail("Birim fiyat negatif olamaz.");
+
+            var request = new UpdateServiceOperationRequest
+            {
+                Type = (OperationType)form.Type,
+                Description = form.Description.Trim(),
+                Quantity = form.Quantity,
+                UnitPrice = form.UnitPrice,
+                Note = string.IsNullOrWhiteSpace(form.Note)
+                    ? null
+                    : form.Note.Trim(),
+                ServiceRequestItemId = form.ServiceRequestItemId,
+                StockItemId = form.StockItemId
+            };
+
+            return await _serviceRecordApiService.UpdateOperationAsync(
+                form.OperationId,
+                request);
         }
 
         private static void NormalizeQuery(ServiceRecordListQueryViewModel query)

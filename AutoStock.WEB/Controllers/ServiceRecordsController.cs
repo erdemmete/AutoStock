@@ -1,4 +1,5 @@
-﻿using AutoStock.Services.Dtos.ServiceRecords;
+﻿using AutoStock.Repositories.Enums;
+using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Controllers;
 using AutoStock.WEB.Models.Invoices;
@@ -197,22 +198,7 @@ public class ServiceRecordsController : BaseController
         return Ok(result);
     }
 
-    [HttpPost("ServiceRecords/UpdateRequestItem")]
-    public async Task<IActionResult> UpdateRequestItem(UpdateServiceRequestItemViewModel model)
-    {
-        var result = await _serviceRecordApiService.UpdateRequestItemAsync(model);
-
-        if (result.IsFailure)
-        {
-            ShowError(result.ErrorMessage ?? "Talep güncellenirken hata oluştu.");
-        }
-        else
-        {
-            ShowSuccess("Talep başarıyla güncellendi.");
-        }
-
-        return RedirectToAction(nameof(Detail), new { id = model.ServiceRecordId });
-    }
+   
 
     [HttpPost("ServiceRecords/AddRequestItem")]
     public async Task<IActionResult> AddRequestItem(
@@ -277,6 +263,17 @@ public class ServiceRecordsController : BaseController
         return Ok(result);
     }
 
+    [HttpPost("ServiceRecords/RestoreRequestItem")]
+    public async Task<IActionResult> RestoreRequestItem(int requestItemId)
+    {
+        var result = await _serviceRecordApiService.RestoreRequestItemAsync(requestItemId);
+
+        if (result.IsFailure)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
     [HttpGet("ServiceRecords/SearchStockItems")]
     public async Task<IActionResult> SearchStockItems([FromQuery] string q)
     {
@@ -290,6 +287,30 @@ public class ServiceRecordsController : BaseController
 
         return Ok(result.Data);
     }
+
+    [HttpPost("ServiceRecords/UpdateRequestItem")]
+    public async Task<IActionResult> UpdateRequestItem(UpdateServiceRequestItemFormModel form)
+    {
+        var result = await _serviceRecordPageService.UpdateRequestItemAsync(form);
+
+        if (result.IsFailure)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
+    [HttpPost("ServiceRecords/UpdateOperation")]
+    public async Task<IActionResult> UpdateOperation(UpdateServiceOperationFormModel form)
+    {
+        var result = await _serviceRecordPageService.UpdateOperationAsync(form);
+
+        if (result.IsFailure)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
+
 
     private async Task<List<VehicleBrandViewModel>> GetBrandsAsync()
     {

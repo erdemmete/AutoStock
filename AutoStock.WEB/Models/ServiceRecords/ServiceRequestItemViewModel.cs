@@ -15,4 +15,10 @@ public class ServiceRequestItemViewModel
     public decimal? FinalAmount { get; set; }
 
     public bool IsResolved { get; set; }
+
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
+    public int DeletedOperationCount { get; set; }
 }

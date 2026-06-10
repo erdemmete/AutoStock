@@ -197,5 +197,33 @@ namespace AutoStock.WEB.Services
                 "/api/StockItems/select-list",
                 "Stok listesi alınırken hata oluştu.");
         }
+
+        public async Task<ApiResponse<RestoreServiceRequestItemResponse>> RestoreRequestItemAsync(int requestItemId)
+        {
+            return await PutJsonAsync<object, RestoreServiceRequestItemResponse>(
+                $"/api/ServiceRecords/request-items/{requestItemId}/restore",
+                new { },
+                "Talep geri alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<object>> UpdateRequestItemAsync(
+    int requestItemId,
+    UpdateServiceRequestItemRequest request)
+        {
+            return await PutJsonAsync<UpdateServiceRequestItemRequest, object>(
+                $"/api/ServiceRecords/request-items/{requestItemId}",
+                request,
+                "Şikayet güncellenirken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<object>> UpdateOperationAsync(
+            int operationId,
+            UpdateServiceOperationRequest request)
+        {
+            return await PutJsonAsync<UpdateServiceOperationRequest, object>(
+                $"/api/ServiceRecords/operations/{operationId}",
+                request,
+                "İşlem güncellenirken hata oluştu.");
+        }
     }
 }

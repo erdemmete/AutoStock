@@ -264,36 +264,59 @@ public class ServiceRecordService : IServiceRecordService
             CompletedAt = serviceRecord.CompletedAt,
             ChassisNumber = serviceRecord.Vehicle.ChassisNumber,
             UpdatedAt = serviceRecord.UpdatedAt,
-
             Operations = serviceRecord.Operations
-                .OrderBy(x => x.Id)
-                .Select(x => new ServiceOperationDto
-                {
-                    Id = x.Id,
-                    Type = x.Type,
-                    Description = x.Description,
-                    Quantity = x.Quantity,
-                    UnitPrice = x.UnitPrice,
-                    TotalPrice = x.TotalPrice,
-                    Note = x.Note,
-                    ServiceRequestItemId = x.ServiceRequestItemId,
-                    StockItemId = x.StockItemId
-                })
-                .ToList(),
+    .Where(x => !x.IsDeleted)
+    .OrderBy(x => x.Id)
+    .Select(x => new ServiceOperationDto
+    {
+        Id = x.Id,
+        Type = x.Type,
+        Description = x.Description,
+        Quantity = x.Quantity,
+        UnitPrice = x.UnitPrice,
+        TotalPrice = x.TotalPrice,
+        Note = x.Note,
+        ServiceRequestItemId = x.ServiceRequestItemId,
+        StockItemId = x.StockItemId
+    })
+    .ToList(),
 
             RequestItems = serviceRecord.RequestItems
-            .OrderBy(x => x.Id)
-            .Select(x => new ServiceRequestItemDto
-            {
-                Id = x.Id,
-                Title = x.Title,
-                Note = x.Note,
-                RepairDetail = x.RepairDetail,
-                EstimatedAmount = x.EstimatedAmount,
-                FinalAmount = x.FinalAmount,
-                IsResolved = x.IsResolved
-            })
-            .ToList()
+    .Where(x => !x.IsDeleted)
+    .OrderBy(x => x.Id)
+    .Select(x => new ServiceRequestItemDto
+    {
+        Id = x.Id,
+        Title = x.Title,
+        Note = x.Note,
+        RepairDetail = x.RepairDetail,
+        EstimatedAmount = x.EstimatedAmount,
+        FinalAmount = x.FinalAmount,
+        IsResolved = x.IsResolved,
+        IsDeleted = x.IsDeleted,
+        DeletedAt = x.DeletedAt
+    })
+    .ToList(),
+
+            DeletedRequestItems = serviceRecord.RequestItems
+    .Where(x => x.IsDeleted)
+    .OrderByDescending(x => x.DeletedAt ?? DateTime.MinValue)
+    .Select(x => new ServiceRequestItemDto
+    {
+        Id = x.Id,
+        Title = x.Title,
+        Note = x.Note,
+        RepairDetail = x.RepairDetail,
+        EstimatedAmount = x.EstimatedAmount,
+        FinalAmount = x.FinalAmount,
+        IsResolved = x.IsResolved,
+        IsDeleted = x.IsDeleted,
+        DeletedAt = x.DeletedAt,
+        DeletedOperationCount = serviceRecord.Operations.Count(o =>
+            o.ServiceRequestItemId == x.Id &&
+            o.IsDeleted)
+    })
+    .ToList()
 
         };
 
@@ -326,34 +349,77 @@ public class ServiceRecordService : IServiceRecordService
         return ServiceResult<List<ServiceRecordListItemDto>>.Success(records);
     }
 
-    public async Task<ServiceResult<bool>> UpdateRequestItemAsync(int requestItemId, UpdateServiceRequestItemRequest request, int workshopId)
+    public async Task<ServiceResult<bool>> UpdateRequestItemAsync(
+    int requestItemId,
+    UpdateServiceRequestItemRequest request,
+    int workshopId)
     {
         var requestItem = await _context.ServiceRequestItems
             .Include(x => x.ServiceRecord)
             .FirstOrDefaultAsync(x =>
                 x.Id == requestItemId &&
+                !x.IsDeleted &&
                 x.ServiceRecord.WorkshopId == workshopId);
 
         if (requestItem is null)
-            return ServiceResult<bool>.Fail("Talep kaydı bulunamadı.");
+            return ServiceResult<bool>.Fail("Talep bulunamadı.");
 
-        requestItem.RepairDetail = request.RepairDetail?.Trim();
-        requestItem.FinalAmount = request.FinalAmount;
-        requestItem.IsResolved = request.IsResolved;
+        if (request.Title is not null)
+        {
+            if (string.IsNullOrWhiteSpace(request.Title))
+                return ServiceResult<bool>.Fail("Şikayet başlığı zorunludur.");
 
-        requestItem.ServiceRecord.TotalAmount = await _context.ServiceRequestItems
+            requestItem.Title = request.Title.Trim();
+        }
+
+        if (request.Note is not null)
+        {
+            requestItem.Note = string.IsNullOrWhiteSpace(request.Note)
+                ? null
+                : request.Note.Trim();
+        }
+
+        if (request.EstimatedAmount.HasValue)
+        {
+            if (request.EstimatedAmount.Value < 0)
+                return ServiceResult<bool>.Fail("Tahmini fiyat negatif olamaz.");
+
+            requestItem.EstimatedAmount = request.EstimatedAmount.Value;
+        }
+
+        if (request.RepairDetail is not null)
+        {
+            requestItem.RepairDetail = string.IsNullOrWhiteSpace(request.RepairDetail)
+                ? null
+                : request.RepairDetail.Trim();
+        }
+
+        if (request.FinalAmount.HasValue)
+        {
+            if (request.FinalAmount.Value < 0)
+                return ServiceResult<bool>.Fail("Son fiyat negatif olamaz.");
+
+            requestItem.FinalAmount = request.FinalAmount.Value;
+        }
+
+        if (request.IsResolved.HasValue)
+        {
+            requestItem.IsResolved = request.IsResolved.Value;
+        }
+
+        var recordTotal = await _context.ServiceOperations
             .Where(x =>
                 x.ServiceRecordId == requestItem.ServiceRecordId &&
-                x.Id != requestItem.Id)
-            .SumAsync(x => x.FinalAmount ?? 0);
+                !x.IsDeleted)
+            .SumAsync(x => x.TotalPrice);
 
-        requestItem.ServiceRecord.TotalAmount += request.FinalAmount ?? 0;
+        requestItem.ServiceRecord.TotalAmount = recordTotal;
+        requestItem.ServiceRecord.UpdatedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
         return ServiceResult<bool>.Success(true);
     }
-
     public async Task<ServiceResult<int>> AddRequestItemAsync(int serviceRecordId, CreateServiceRequestItemDto request, int workshopId)
     {
         if (string.IsNullOrWhiteSpace(request.Title))
@@ -406,9 +472,10 @@ public class ServiceRecordService : IServiceRecordService
         if (request.ServiceRequestItemId.HasValue)
         {
             var requestItemExists = await _context.ServiceRequestItems
-                .AnyAsync(x =>
-                    x.Id == request.ServiceRequestItemId.Value &&
-                    x.ServiceRecordId == serviceRecordId);
+    .AnyAsync(x =>
+        x.Id == request.ServiceRequestItemId.Value &&
+        x.ServiceRecordId == serviceRecordId &&
+        !x.IsDeleted);
 
             if (!requestItemExists)
                 return ServiceResult<ServiceOperationDto>.Fail("Seçilen talep bu servis kaydına ait değil.");
@@ -437,8 +504,9 @@ public class ServiceRecordService : IServiceRecordService
 
         serviceRecord.Operations.Add(operation);
 
-        serviceRecord.TotalAmount = serviceRecord.Operations.Sum(x => x.TotalPrice);
-        serviceRecord.UpdatedAt = _dateTimeProvider.Now;
+        serviceRecord.TotalAmount = serviceRecord.Operations
+    .Where(x => !x.IsDeleted)
+    .Sum(x => x.TotalPrice);
 
         await _context.SaveChangesAsync();
 
@@ -480,6 +548,127 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
                 operation.ServiceRequestItemId
             }
         });
+
+        await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
+
+        return ServiceResult<ServiceOperationDto>.Success(new ServiceOperationDto
+        {
+            Id = operation.Id,
+            Type = operation.Type,
+            Description = operation.Description,
+            Quantity = operation.Quantity,
+            UnitPrice = operation.UnitPrice,
+            TotalPrice = operation.TotalPrice,
+            Note = operation.Note,
+            ServiceRequestItemId = operation.ServiceRequestItemId,
+            StockItemId = operation.StockItemId
+        });
+    }
+
+    public async Task<ServiceResult<ServiceOperationDto>> UpdateOperationAsync(
+    int operationId,
+    UpdateServiceOperationRequest request,
+    int workshopId)
+    {
+        if (string.IsNullOrWhiteSpace(request.Description))
+            return ServiceResult<ServiceOperationDto>.Fail("İşlem açıklaması zorunludur.");
+
+        if (request.Quantity <= 0)
+            return ServiceResult<ServiceOperationDto>.Fail("Miktar 1 veya daha büyük olmalıdır.");
+
+        if (request.UnitPrice < 0)
+            return ServiceResult<ServiceOperationDto>.Fail("Birim fiyat negatif olamaz.");
+
+        var operation = await _context.ServiceOperations
+            .Include(x => x.ServiceRecord)
+            .FirstOrDefaultAsync(x =>
+                x.Id == operationId &&
+                !x.IsDeleted &&
+                x.ServiceRecord.WorkshopId == workshopId);
+
+        if (operation is null)
+            return ServiceResult<ServiceOperationDto>.Fail("İşlem bulunamadı.");
+
+        var nextRequestItemId = request.ServiceRequestItemId ?? operation.ServiceRequestItemId;
+
+        if (nextRequestItemId.HasValue)
+        {
+            var requestItemExists = await _context.ServiceRequestItems
+                .AnyAsync(x =>
+                    x.Id == nextRequestItemId.Value &&
+                    x.ServiceRecordId == operation.ServiceRecordId &&
+                    !x.IsDeleted);
+
+            if (!requestItemExists)
+                return ServiceResult<ServiceOperationDto>.Fail("Bağlı şikayet bulunamadı.");
+        }
+
+        var oldType = operation.Type;
+        var oldStockItemId = operation.StockItemId;
+        var oldQuantity = operation.Quantity;
+        var oldUnitPrice = operation.UnitPrice;
+
+        var nextType = request.Type;
+        var nextStockItemId = nextType == OperationType.Part
+            ? request.StockItemId ?? operation.StockItemId
+            : null;
+
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        if (oldType == OperationType.Part && oldStockItemId.HasValue)
+        {
+            var stockReturnResult = await _stockItemService.ReturnForServiceOperationAsync(
+                oldStockItemId.Value,
+                oldQuantity,
+                oldUnitPrice,
+                operation.Id,
+                workshopId);
+
+            if (!stockReturnResult.IsSuccess)
+            {
+                await transaction.RollbackAsync();
+                return ServiceResult<ServiceOperationDto>.Fail(stockReturnResult.ErrorMessage);
+            }
+        }
+
+        if (nextType == OperationType.Part && nextStockItemId.HasValue)
+        {
+            var stockUseResult = await _stockItemService.UseForServiceOperationAsync(
+                nextStockItemId.Value,
+                request.Quantity,
+                request.UnitPrice,
+                operation.Id,
+                workshopId);
+
+            if (!stockUseResult.IsSuccess)
+            {
+                await transaction.RollbackAsync();
+                return ServiceResult<ServiceOperationDto>.Fail(stockUseResult.ErrorMessage);
+            }
+        }
+
+        operation.Type = nextType;
+        operation.Description = request.Description.Trim();
+        operation.Quantity = request.Quantity;
+        operation.UnitPrice = request.UnitPrice;
+        operation.TotalPrice = request.Quantity * request.UnitPrice;
+        operation.Note = string.IsNullOrWhiteSpace(request.Note)
+            ? null
+            : request.Note.Trim();
+        operation.ServiceRequestItemId = nextRequestItemId;
+        operation.StockItemId = nextStockItemId;
+
+        var recordTotal = await _context.ServiceOperations
+            .Where(x =>
+                x.ServiceRecordId == operation.ServiceRecordId &&
+                !x.IsDeleted &&
+                x.Id != operation.Id)
+            .SumAsync(x => x.TotalPrice);
+
+        operation.ServiceRecord.TotalAmount = recordTotal + operation.TotalPrice;
+        operation.ServiceRecord.UpdatedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -597,6 +786,7 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
             .Include(x => x.ServiceRecord)
             .FirstOrDefaultAsync(x =>
                 x.Id == operationId &&
+                !x.IsDeleted &&
                 x.ServiceRecord.WorkshopId == workshopId);
 
         if (operation is null)
@@ -636,26 +826,26 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
             }
         }
 
-        _context.ServiceOperations.Remove(operation);
+        operation.IsDeleted = true;
+        operation.DeletedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
         var recordTotal = await _context.ServiceOperations
-            .Where(x => x.ServiceRecordId == serviceRecordId)
+            .Where(x => x.ServiceRecordId == serviceRecordId && !x.IsDeleted)
             .SumAsync(x => x.TotalPrice);
 
         var requestItemTotal = serviceRequestItemId.HasValue
             ? await _context.ServiceOperations
                 .Where(x =>
                     x.ServiceRecordId == serviceRecordId &&
-                    x.ServiceRequestItemId == serviceRequestItemId.Value)
+                    x.ServiceRequestItemId == serviceRequestItemId.Value &&
+                    !x.IsDeleted)
                 .SumAsync(x => x.TotalPrice)
             : 0;
 
         var serviceRecord = await _context.ServiceRecords
-            .FirstOrDefaultAsync(x =>
-                x.Id == serviceRecordId &&
-                x.WorkshopId == workshopId);
+            .FirstOrDefaultAsync(x => x.Id == serviceRecordId && x.WorkshopId == workshopId);
 
         if (serviceRecord is null)
         {
@@ -672,10 +862,12 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
             ActionType = AuditActionType.Remove,
             EntityType = AuditEntityType.ServiceOperation,
             EntityId = operationId,
-            Description = $"Servis operasyonu silindi: {GetServiceRecordDisplayName(serviceRecord)} - {deletedOperationSnapshot.Description}",
+            Description = $"Servis operasyonu pasife alındı: {GetServiceRecordDisplayName(serviceRecord)} - {deletedOperationSnapshot.Description}",
             OldValues = deletedOperationSnapshot,
             NewValues = new
             {
+                IsDeleted = true,
+                operation.DeletedAt,
                 ServiceRecordId = serviceRecord.Id,
                 RecordTotal = recordTotal,
                 RequestItemTotal = requestItemTotal
@@ -696,12 +888,15 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
             });
     }
 
-    public async Task<ServiceResult<DeleteServiceRequestItemResponse>> DeleteRequestItemAsync(int requestItemId, int workshopId)
+    public async Task<ServiceResult<DeleteServiceRequestItemResponse>> DeleteRequestItemAsync(
+    int requestItemId,
+    int workshopId)
     {
         var requestItem = await _context.ServiceRequestItems
             .Include(x => x.ServiceRecord)
             .FirstOrDefaultAsync(x =>
                 x.Id == requestItemId &&
+                !x.IsDeleted &&
                 x.ServiceRecord.WorkshopId == workshopId);
 
         if (requestItem is null)
@@ -712,8 +907,22 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
         var relatedOperations = await _context.ServiceOperations
             .Where(x =>
                 x.ServiceRecordId == serviceRecordId &&
-                x.ServiceRequestItemId == requestItemId)
+                x.ServiceRequestItemId == requestItemId &&
+                !x.IsDeleted)
             .ToListAsync();
+
+        var deletedRequestSnapshot = new
+        {
+            requestItem.Id,
+            requestItem.ServiceRecordId,
+            requestItem.Title,
+            requestItem.Note,
+            requestItem.RepairDetail,
+            requestItem.EstimatedAmount,
+            requestItem.FinalAmount,
+            requestItem.IsResolved,
+            RelatedOperationCount = relatedOperations.Count
+        };
 
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -736,21 +945,22 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
                         stockResult.ErrorMessage);
                 }
             }
+
+            operation.IsDeleted = true;
+            operation.DeletedAt = _dateTimeProvider.Now;
         }
 
-        _context.ServiceOperations.RemoveRange(relatedOperations);
-        _context.ServiceRequestItems.Remove(requestItem);
+        requestItem.IsDeleted = true;
+        requestItem.DeletedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
         var recordTotal = await _context.ServiceOperations
-            .Where(x => x.ServiceRecordId == serviceRecordId)
+            .Where(x => x.ServiceRecordId == serviceRecordId && !x.IsDeleted)
             .SumAsync(x => x.TotalPrice);
 
         var serviceRecord = await _context.ServiceRecords
-            .FirstOrDefaultAsync(x =>
-                x.Id == serviceRecordId &&
-                x.WorkshopId == workshopId);
+            .FirstOrDefaultAsync(x => x.Id == serviceRecordId && x.WorkshopId == workshopId);
 
         if (serviceRecord is null)
         {
@@ -761,12 +971,131 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
         serviceRecord.TotalAmount = recordTotal;
         serviceRecord.UpdatedAt = _dateTimeProvider.Now;
 
+        await _auditLogService.AddAsync(new AuditLogCreateDto
+        {
+            WorkshopId = workshopId,
+            ActionType = AuditActionType.Remove,
+            EntityType = AuditEntityType.ServiceRecord,
+            EntityId = serviceRecord.Id,
+            Description = $"Servis talebi pasife alındı: {GetServiceRecordDisplayName(serviceRecord)} - {requestItem.Title}",
+            OldValues = deletedRequestSnapshot,
+            NewValues = new
+            {
+                IsDeleted = true,
+                requestItem.DeletedAt,
+                RelatedOperationCount = relatedOperations.Count,
+                RecordTotal = recordTotal
+            }
+        });
+
         await _context.SaveChangesAsync();
 
         await transaction.CommitAsync();
 
         return ServiceResult<DeleteServiceRequestItemResponse>.Success(
             new DeleteServiceRequestItemResponse
+            {
+                ServiceRecordId = serviceRecordId,
+                ServiceRequestItemId = requestItemId,
+                RecordTotal = recordTotal
+            });
+    }
+
+    public async Task<ServiceResult<RestoreServiceRequestItemResponse>> RestoreRequestItemAsync(
+    int requestItemId,
+    int workshopId)
+    {
+        var requestItem = await _context.ServiceRequestItems
+            .Include(x => x.ServiceRecord)
+            .FirstOrDefaultAsync(x =>
+                x.Id == requestItemId &&
+                x.IsDeleted &&
+                x.ServiceRecord.WorkshopId == workshopId);
+
+        if (requestItem is null)
+            return ServiceResult<RestoreServiceRequestItemResponse>.Fail("Geri alınacak talep bulunamadı.");
+
+        var serviceRecordId = requestItem.ServiceRecordId;
+
+        var relatedOperations = await _context.ServiceOperations
+            .Where(x =>
+                x.ServiceRecordId == serviceRecordId &&
+                x.ServiceRequestItemId == requestItemId &&
+                x.IsDeleted)
+            .ToListAsync();
+
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        foreach (var operation in relatedOperations)
+        {
+            if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
+            {
+                var stockResult = await _stockItemService.UseForServiceOperationAsync(
+                    operation.StockItemId.Value,
+                    operation.Quantity,
+                    operation.UnitPrice,
+                    operation.Id,
+                    workshopId);
+
+                if (!stockResult.IsSuccess)
+                {
+                    await transaction.RollbackAsync();
+
+                    return ServiceResult<RestoreServiceRequestItemResponse>.Fail(
+                        "Talep geri alınamadı. Bağlı parça işlemleri için stok yeterli olmayabilir.");
+                }
+            }
+
+            operation.IsDeleted = false;
+            operation.DeletedAt = null;
+        }
+
+        requestItem.IsDeleted = false;
+        requestItem.DeletedAt = null;
+
+        await _context.SaveChangesAsync();
+
+        var recordTotal = await _context.ServiceOperations
+            .Where(x => x.ServiceRecordId == serviceRecordId && !x.IsDeleted)
+            .SumAsync(x => x.TotalPrice);
+
+        var serviceRecord = await _context.ServiceRecords
+            .FirstOrDefaultAsync(x => x.Id == serviceRecordId && x.WorkshopId == workshopId);
+
+        if (serviceRecord is null)
+        {
+            await transaction.RollbackAsync();
+            return ServiceResult<RestoreServiceRequestItemResponse>.Fail("Servis kaydı bulunamadı.");
+        }
+
+        serviceRecord.TotalAmount = recordTotal;
+        serviceRecord.UpdatedAt = _dateTimeProvider.Now;
+
+        await _auditLogService.AddAsync(new AuditLogCreateDto
+        {
+            WorkshopId = workshopId,
+            ActionType = AuditActionType.SetActive,
+            EntityType = AuditEntityType.ServiceRecord,
+            EntityId = serviceRecord.Id,
+            Description = $"Servis talebi geri alındı: {GetServiceRecordDisplayName(serviceRecord)} - {requestItem.Title}",
+            OldValues = new
+            {
+                IsDeleted = true
+            },
+            NewValues = new
+            {
+                IsDeleted = false,
+                RelatedOperationCount = relatedOperations.Count,
+                RecordTotal = recordTotal
+            }
+        });
+
+        await _context.SaveChangesAsync();
+
+        await transaction.CommitAsync();
+
+        return ServiceResult<RestoreServiceRequestItemResponse>.Success(
+            new RestoreServiceRequestItemResponse
             {
                 ServiceRecordId = serviceRecordId,
                 ServiceRequestItemId = requestItemId,

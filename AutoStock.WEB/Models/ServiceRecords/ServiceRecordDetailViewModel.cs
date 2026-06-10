@@ -72,5 +72,6 @@ namespace AutoStock.WEB.Models.ServiceRecords
 
         public List<InvoiceListItemViewModel> Invoices { get; set; } = new();
         public List<StockItemSelectViewModel> StockItems { get; set; } = new();
+        public List<ServiceRequestItemViewModel> DeletedRequestItems { get; set; } = new();
     }
 }

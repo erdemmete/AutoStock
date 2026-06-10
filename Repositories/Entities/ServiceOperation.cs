@@ -29,5 +29,9 @@ namespace AutoStock.Repositories.Entities
         public int? ServiceRequestItemId { get; set; }
 
         public ServiceRequestItem? ServiceRequestItem { get; set; }
+
+        public bool IsDeleted { get; set; }
+
+        public DateTime? DeletedAt { get; set; }
     }
 }

@@ -5,16 +5,60 @@ namespace AutoStock.Services.Interfaces
 {
     public interface IServiceRecordService
     {
-        Task<ServiceResult<CreateServiceRecordResponse>> CreateAsync(CreateServiceRecordRequest request, int workshopId);
-        Task<ServiceResult<ServiceRecordDetailDto>> GetDetailAsync(int serviceRecordId, int workshopId);
-        Task<ServiceResult<List<ServiceRecordListItemDto>>> GetListAsync(int workshopId);
-        Task<ServiceResult<bool>> UpdateRequestItemAsync(int requestItemId, UpdateServiceRequestItemRequest request, int workshopId);
-        Task<ServiceResult<int>> AddRequestItemAsync(int serviceRecordId, CreateServiceRequestItemDto request, int workshopId);
-        Task<ServiceResult<ServiceOperationDto>> AddOperationAsync(int serviceRecordId, AddServiceOperationRequest request, int workshopId);
-        Task<ServiceResult<bool>> CompleteAsync(int serviceRecordId, int workshopId);
-        Task<ServiceResult<bool>> UpdateStatusAsync(int serviceRecordId, UpdateServiceRecordStatusRequest request, int workshopId);
-        Task<ServiceResult<DeleteServiceOperationResponse>> DeleteOperationAsync(int operationId, int workshopId);
-        Task<ServiceResult<DeleteServiceRequestItemResponse>> DeleteRequestItemAsync(int requestItemId, int workshopId);
-        Task<ServiceResult<PagedResult<ServiceRecordListItemDto>>> GetPagedAsync(int workshopId, ServiceRecordListQueryDto query);
+        Task<ServiceResult<CreateServiceRecordResponse>> CreateAsync(
+            CreateServiceRecordRequest request,
+            int workshopId);
+
+        Task<ServiceResult<ServiceRecordDetailDto>> GetDetailAsync(
+            int serviceRecordId,
+            int workshopId);
+
+        Task<ServiceResult<List<ServiceRecordListItemDto>>> GetListAsync(
+            int workshopId);
+
+        Task<ServiceResult<PagedResult<ServiceRecordListItemDto>>> GetPagedAsync(
+            int workshopId,
+            ServiceRecordListQueryDto query);
+
+        Task<ServiceResult<bool>> UpdateRequestItemAsync(
+            int requestItemId,
+            UpdateServiceRequestItemRequest request,
+            int workshopId);
+
+        Task<ServiceResult<int>> AddRequestItemAsync(
+            int serviceRecordId,
+            CreateServiceRequestItemDto request,
+            int workshopId);
+
+        Task<ServiceResult<ServiceOperationDto>> AddOperationAsync(
+            int serviceRecordId,
+            AddServiceOperationRequest request,
+            int workshopId);
+
+        Task<ServiceResult<ServiceOperationDto>> UpdateOperationAsync(
+            int operationId,
+            UpdateServiceOperationRequest request,
+            int workshopId);
+
+        Task<ServiceResult<bool>> CompleteAsync(
+            int serviceRecordId,
+            int workshopId);
+
+        Task<ServiceResult<bool>> UpdateStatusAsync(
+            int serviceRecordId,
+            UpdateServiceRecordStatusRequest request,
+            int workshopId);
+
+        Task<ServiceResult<DeleteServiceOperationResponse>> DeleteOperationAsync(
+            int operationId,
+            int workshopId);
+
+        Task<ServiceResult<DeleteServiceRequestItemResponse>> DeleteRequestItemAsync(
+            int requestItemId,
+            int workshopId);
+
+        Task<ServiceResult<RestoreServiceRequestItemResponse>> RestoreRequestItemAsync(
+            int requestItemId,
+            int workshopId);
     }
 }
