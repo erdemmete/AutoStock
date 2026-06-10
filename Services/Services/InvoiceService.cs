@@ -73,7 +73,7 @@ namespace AutoStock.Services.Services
                 Mileage = serviceRecord.MileageSnapshot
             };
 
-            foreach (var operation in serviceRecord.Operations)
+            foreach (var operation in serviceRecord.Operations.Where(x => !x.IsDeleted))
             {
                 dto.Items.Add(new CreateInvoiceDraftItemDto
                 {
@@ -532,6 +532,89 @@ namespace AutoStock.Services.Services
                 return ServiceResult<InvoiceDetailDto>.Fail("Taslak fatura bulunamadı.");
 
             return await GetDetailAsync(invoice.Id, workshopId);
+        }
+
+        public async Task<ServiceResult<bool>> SyncDraftByServiceRecordAsync(
+    int serviceRecordId,
+    int workshopId)
+        {
+            var invoice = await _context.Invoices
+                .Include(x => x.Items)
+                .FirstOrDefaultAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.ServiceRecordId == serviceRecordId &&
+                    x.Status == InvoiceStatus.Draft);
+
+            if (invoice is null)
+                return ServiceResult<bool>.Success(true);
+
+            var serviceRecordExists = await _context.ServiceRecords
+                .AnyAsync(x =>
+                    x.Id == serviceRecordId &&
+                    x.WorkshopId == workshopId);
+
+            if (!serviceRecordExists)
+                return ServiceResult<bool>.Fail("Servis kaydı bulunamadı.");
+
+            var operations = await _context.ServiceOperations
+                .Where(x =>
+                    x.ServiceRecordId == serviceRecordId &&
+                    !x.IsDeleted)
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+
+            _context.InvoiceItems.RemoveRange(invoice.Items);
+
+            decimal subtotal = 0;
+            decimal discountTotal = 0;
+            decimal vatTotal = 0;
+            decimal grandTotal = 0;
+
+            foreach (var operation in operations)
+            {
+                var quantity = operation.Quantity;
+                var unitPrice = operation.UnitPrice;
+                var discountRate = 0m;
+                var vatRate = 20m;
+
+                var lineSubtotal = quantity * unitPrice;
+                var discountAmount = lineSubtotal * discountRate / 100;
+                var taxableAmount = lineSubtotal - discountAmount;
+                var vatAmount = taxableAmount * vatRate / 100;
+                var lineTotal = taxableAmount + vatAmount;
+
+                subtotal += lineSubtotal;
+                discountTotal += discountAmount;
+                vatTotal += vatAmount;
+                grandTotal += lineTotal;
+
+                invoice.Items.Add(new InvoiceItem
+                {
+                    ItemType = operation.Type == OperationType.Part
+                        ? InvoiceItemType.Part
+                        : InvoiceItemType.Labor,
+
+                    Description = operation.Description.Trim(),
+                    Quantity = quantity,
+                    Unit = "Adet",
+                    UnitPrice = unitPrice,
+                    DiscountRate = discountRate,
+                    DiscountAmount = discountAmount,
+                    VatRate = vatRate,
+                    VatAmount = vatAmount,
+                    LineTotal = lineTotal,
+                    StockItemId = operation.StockItemId
+                });
+            }
+
+            invoice.Subtotal = subtotal;
+            invoice.DiscountTotal = discountTotal;
+            invoice.VatTotal = vatTotal;
+            invoice.GrandTotal = grandTotal;
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<bool>.Success(true);
         }
 
         public async Task<ServiceResult<InvoiceNavigationDto>> GetActiveInvoiceByServiceRecordAsync(int serviceRecordId, int workshopId)

@@ -20,6 +20,9 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<List<InvoiceListItemDto>>> GetListByServiceRecordAsync(int serviceRecordId, int workshopId);
 
         Task<ServiceResult<InvoiceDetailDto>> GetDraftByServiceRecordAsync(int serviceRecordId, int workshopId);
+        Task<ServiceResult<bool>> SyncDraftByServiceRecordAsync(
+    int serviceRecordId,
+    int workshopId);
 
         Task<ServiceResult<InvoiceNavigationDto>> GetActiveInvoiceByServiceRecordAsync(int serviceRecordId, int workshopId);
         Task<ServiceResult<CancelInvoiceResponseDto>> CancelAsync(int invoiceId, int workshopId);

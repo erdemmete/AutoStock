@@ -17,17 +17,20 @@ public class ServiceRecordService : IServiceRecordService
     private readonly IStockItemService _stockItemService;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditLogService _auditLogService;
+    private readonly IInvoiceService _invoiceService;
 
     public ServiceRecordService(
         AppDbContext context,
         IStockItemService stockItemService,
         IDateTimeProvider dateTimeProvider,
-        IAuditLogService auditLogService)
+        IAuditLogService auditLogService,
+        IInvoiceService invoiceService)
     {
         _context = context;
         _stockItemService = stockItemService;
         _dateTimeProvider = dateTimeProvider;
         _auditLogService = auditLogService;
+        _invoiceService = invoiceService;
     }
 
     public async Task<ServiceResult<CreateServiceRecordResponse>> CreateAsync(CreateServiceRecordRequest request,int workshopId)
@@ -551,6 +554,14 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
 
         await _context.SaveChangesAsync();
 
+        var invoiceSyncResult = await SyncDraftInvoiceAsync(serviceRecord.Id, workshopId);
+
+        if (!invoiceSyncResult.IsSuccess)
+        {
+            await transaction.RollbackAsync();
+            return ServiceResult<ServiceOperationDto>.Fail(invoiceSyncResult.ErrorMessage);
+        }
+
         await transaction.CommitAsync();
 
         return ServiceResult<ServiceOperationDto>.Success(new ServiceOperationDto
@@ -671,6 +682,14 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
         operation.ServiceRecord.UpdatedAt = _dateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
+
+        var invoiceSyncResult = await SyncDraftInvoiceAsync(operation.ServiceRecordId, workshopId);
+
+        if (!invoiceSyncResult.IsSuccess)
+        {
+            await transaction.RollbackAsync();
+            return ServiceResult<ServiceOperationDto>.Fail(invoiceSyncResult.ErrorMessage);
+        }
 
         await transaction.CommitAsync();
 
@@ -876,6 +895,16 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
 
         await _context.SaveChangesAsync();
 
+        
+
+        var invoiceSyncResult = await SyncDraftInvoiceAsync(serviceRecordId, workshopId);
+
+        if (!invoiceSyncResult.IsSuccess)
+        {
+            await transaction.RollbackAsync();
+            return ServiceResult<DeleteServiceOperationResponse>.Fail(invoiceSyncResult.ErrorMessage);
+        }
+
         await transaction.CommitAsync();
 
         return ServiceResult<DeleteServiceOperationResponse>.Success(
@@ -990,6 +1019,14 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
 
         await _context.SaveChangesAsync();
 
+        var invoiceSyncResult = await SyncDraftInvoiceAsync(serviceRecordId, workshopId);
+
+        if (!invoiceSyncResult.IsSuccess)
+        {
+            await transaction.RollbackAsync();
+            return ServiceResult<DeleteServiceRequestItemResponse>.Fail(invoiceSyncResult.ErrorMessage);
+        }
+
         await transaction.CommitAsync();
 
         return ServiceResult<DeleteServiceRequestItemResponse>.Success(
@@ -1091,6 +1128,14 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
         });
 
         await _context.SaveChangesAsync();
+
+        var invoiceSyncResult = await SyncDraftInvoiceAsync(serviceRecordId, workshopId);
+
+        if (!invoiceSyncResult.IsSuccess)
+        {
+            await transaction.RollbackAsync();
+            return ServiceResult<RestoreServiceRequestItemResponse>.Fail(invoiceSyncResult.ErrorMessage);
+        }
 
         await transaction.CommitAsync();
 
@@ -1274,5 +1319,18 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
         return $"Servis kaydı durumu güncellendi: {displayName} ({oldStatus} → {newStatus})";
     }
 
+    private async Task<ServiceResult<bool>> SyncDraftInvoiceAsync(
+    int serviceRecordId,
+    int workshopId)
+    {
+        var syncResult = await _invoiceService.SyncDraftByServiceRecordAsync(
+            serviceRecordId,
+            workshopId);
 
+        if (!syncResult.IsSuccess)
+            return ServiceResult<bool>.Fail(
+                syncResult.ErrorMessage ?? "Taslak fatura güncellenirken hata oluştu.");
+
+        return ServiceResult<bool>.Success(true);
+    }
 }
