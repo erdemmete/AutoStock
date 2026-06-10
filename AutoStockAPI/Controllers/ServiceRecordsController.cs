@@ -12,10 +12,12 @@ namespace AutoStock.API.Controllers;
 public class ServiceRecordsController : BaseApiController
 {
     private readonly IServiceRecordService _serviceRecordService;
+    private readonly IVehicleService _vehicleService;
 
-    public ServiceRecordsController(IServiceRecordService serviceRecordService)
+    public ServiceRecordsController(IServiceRecordService serviceRecordService, IVehicleService vehicleService)
     {
         _serviceRecordService = serviceRecordService;
+        _vehicleService = vehicleService;
     }
 
     [HttpPost]
@@ -163,6 +165,21 @@ public class ServiceRecordsController : BaseApiController
         var result = await _serviceRecordService.UpdateStatusAsync(
             id,
             request,
+            workshopIdResult.Data);
+
+        return ToActionResult(result);
+    }
+
+    [HttpGet("search-vehicles")]
+    public async Task<IActionResult> SearchVehicles([FromQuery] string plate)
+    {
+        var workshopIdResult = GetCurrentWorkshopId();
+
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
+
+        var result = await _vehicleService.SearchByPlateAsync(
+            plate,
             workshopIdResult.Data);
 
         return ToActionResult(result);

@@ -1,5 +1,7 @@
 ﻿using AutoStock.Services.Dtos.Common;
+using AutoStock.Services.Dtos.Customers;
 using AutoStock.Services.Dtos.ServiceRecords;
+using AutoStock.Services.Dtos.Vehicles;
 using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.ServiceRecords;
@@ -68,7 +70,7 @@ namespace AutoStock.WEB.Services
                 "Araç modelleri alınırken hata oluştu.");
         }
 
-        public async Task<ApiResponse<List<object>>> SearchCustomersAsync(string query)
+        public async Task<ApiResponse<List<CustomerSearchDto>>> SearchCustomersAsync(string query)
         {
             var url = BuildUrlWithQuery(
                 "/api/Customers/search",
@@ -77,7 +79,7 @@ namespace AutoStock.WEB.Services
                     ["query"] = query
                 });
 
-            return await GetAsync<List<object>>(
+            return await GetAsync<List<CustomerSearchDto>>(
                 url,
                 "Müşteri araması yapılırken hata oluştu.");
         }
@@ -224,6 +226,20 @@ namespace AutoStock.WEB.Services
                 $"/api/ServiceRecords/operations/{operationId}",
                 request,
                 "İşlem güncellenirken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<List<VehicleSearchDto>>> SearchVehiclesAsync(string plate)
+        {
+            var url = BuildUrlWithQuery(
+                "/api/ServiceRecords/search-vehicles",
+                new Dictionary<string, string?>
+                {
+                    ["plate"] = plate
+                });
+
+            return await GetAsync<List<VehicleSearchDto>>(
+                url,
+                "Araç/plaka araması yapılırken hata oluştu.");
         }
     }
 }

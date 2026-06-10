@@ -14,7 +14,7 @@ namespace AutoStock.Services.Services
     ICustomerRepository customerRepository,
     AppDbContext context,
     IAuditLogService auditLogService) : ICustomerService
-    {  
+    {
         public async Task<List<CustomerSearchDto>> SearchAsync(string query, int workshopId)
         {
             if (string.IsNullOrWhiteSpace(query))
@@ -22,14 +22,37 @@ namespace AutoStock.Services.Services
 
             var customers = await customerRepository.SearchAsync(query, workshopId);
 
-            return customers.Select(x => new CustomerSearchDto
+            return customers.Select(x =>
             {
-                Id = x.Id,
-                Name = !string.IsNullOrWhiteSpace(x.FullName)
+                var displayName = !string.IsNullOrWhiteSpace(x.FullName)
                     ? x.FullName
-                    : x.CompanyName ?? "-",
-                PhoneNumber = x.PhoneNumber,
-                Email = x.Email
+                    : !string.IsNullOrWhiteSpace(x.CompanyName)
+                        ? x.CompanyName
+                        : "-";
+
+                return new CustomerSearchDto
+                {
+                    Id = x.Id,
+                    Type = (int)x.Type,
+
+                    Name = displayName,
+                    CustomerName = displayName,
+
+                    CompanyName = x.CompanyName,
+                    AuthorizedPersonName = x.AuthorizedPersonName,
+
+                    PhoneNumber = x.PhoneNumber,
+                    Email = x.Email,
+
+                    NationalIdentityNumber = x.NationalIdentityNumber,
+
+                    TaxOffice = x.TaxOffice,
+                    TaxNumber = x.TaxNumber,
+
+                    AddressCity = x.AddressCity,
+                    AddressDistrict = x.AddressDistrict,
+                    CustomerAddress = x.Address
+                };
             }).ToList();
         }
 

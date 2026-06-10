@@ -1,5 +1,7 @@
 ﻿using AutoStock.Repositories.Enums;
+using AutoStock.Services.Dtos.Customers;
 using AutoStock.Services.Dtos.ServiceRecords;
+using AutoStock.Services.Dtos.Vehicles;
 using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Controllers;
 using AutoStock.WEB.Models.Invoices;
@@ -168,16 +170,30 @@ public class ServiceRecordsController : BaseController
         return View(model);
     }
 
-    [HttpGet("ServiceRecords/SearchCustomers")]
+    [HttpGet]
     public async Task<IActionResult> SearchCustomers(string query)
     {
-         if (string.IsNullOrWhiteSpace(query))
-            return Json(new List<object>());
+        if (string.IsNullOrWhiteSpace(query))
+            return Json(new List<CustomerSearchDto>());
 
         var result = await _serviceRecordApiService.SearchCustomersAsync(query);
 
         if (result.IsFailure || result.Data is null)
-            return Json(new List<object>());
+            return Json(new List<CustomerSearchDto>());
+
+        return Json(result.Data);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> SearchVehicles(string plate)
+    {
+        if (string.IsNullOrWhiteSpace(plate))
+            return Json(new List<VehicleSearchDto>());
+
+        var result = await _serviceRecordApiService.SearchVehiclesAsync(plate);
+
+        if (result.IsFailure || result.Data is null)
+            return Json(new List<VehicleSearchDto>());
 
         return Json(result.Data);
     }

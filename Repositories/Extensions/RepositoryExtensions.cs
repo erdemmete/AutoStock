@@ -26,6 +26,7 @@ namespace AutoStock.Repositories.Extensions
 
             services.AddScoped<IAuditLogRepository, AuditLogRepository>();
             services.AddScoped<ISupportRequestRepository, SupportRequestRepository>();
+            services.AddScoped<IVehicleRepository, VehicleRepository>();
 
             return services;
         }
