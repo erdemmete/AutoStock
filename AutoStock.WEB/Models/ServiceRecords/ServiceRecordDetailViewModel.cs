@@ -1,4 +1,5 @@
-﻿using AutoStock.WEB.Models.Invoices;
+﻿using AutoStock.Services.Dtos.ServiceRecords;
+using AutoStock.WEB.Models.Invoices;
 using AutoStock.WEB.Models.StockItems;
 using FuelLevelEnum = AutoStock.Repositories.Enums.FuelLevel;
 
@@ -85,5 +86,6 @@ namespace AutoStock.WEB.Models.ServiceRecords
         public List<InvoiceListItemViewModel> Invoices { get; set; } = new();
         public List<StockItemSelectViewModel> StockItems { get; set; } = new();
         public List<ServiceRequestItemViewModel> DeletedRequestItems { get; set; } = new();
+        public List<ServiceRecordImageDto> Images { get; set; } = new();
     }
 }

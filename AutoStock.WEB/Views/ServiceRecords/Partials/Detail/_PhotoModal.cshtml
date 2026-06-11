@@ -1,0 +1,209 @@
+@model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
+
+<div class="sr-photo-modal-backdrop"
+     id="photoModal"
+     data-service-record-id="@Model.Id"
+     hidden>
+    <div class="sr-photo-modal">
+
+        <header class="sr-photo-modal-header">
+            <div>
+                <span class="sr-photo-eyebrow">Araç kabul arşivi</span>
+                <h2>Servis Fotoğrafları</h2>
+                <p>Geliş, kilometre, yakıt, hasar ve işlem fotoğraflarını bu kayda ekleyin.</p>
+            </div>
+
+            <button type="button"
+                    class="sr-photo-close"
+                    data-action="close-photo-modal"
+                    aria-label="Fotoğraf penceresini kapat">
+                ×
+            </button>
+        </header>
+
+        <div class="sr-photo-modal-body">
+
+            <section class="sr-photo-upload-panel">
+
+                <form id="photoUploadForm"
+                      action="/ServiceRecords/@Model.Id/Photos"
+                      method="post"
+                      enctype="multipart/form-data">
+
+                    @Html.AntiForgeryToken()
+
+                    <div class="sr-photo-type-grid">
+
+                        <label class="sr-photo-type-card">
+                            <input type="radio" name="photoType" value="BeforeRepair" checked />
+                            <span>🚗</span>
+                            <strong>Geliş</strong>
+                        </label>
+
+                        <label class="sr-photo-type-card">
+                            <input type="radio" name="photoType" value="Odometer" />
+                            <span>🔢</span>
+                            <strong>KM</strong>
+                        </label>
+
+                        <label class="sr-photo-type-card">
+                            <input type="radio" name="photoType" value="FuelGauge" />
+                            <span>⛽</span>
+                            <strong>Yakıt</strong>
+                        </label>
+
+                        <label class="sr-photo-type-card">
+                            <input type="radio" name="photoType" value="Damage" />
+                            <span>⚠️</span>
+                            <strong>Hasar</strong>
+                        </label>
+
+                        <label class="sr-photo-type-card">
+                            <input type="radio" name="photoType" value="Interior" />
+                            <span>🪑</span>
+                            <strong>İç</strong>
+                        </label>
+
+                        <label class="sr-photo-type-card">
+                            <input type="radio" name="photoType" value="AfterRepair" />
+                            <span>✅</span>
+                            <strong>Teslim</strong>
+                        </label>
+
+                        <label class="sr-photo-type-card">
+                            <input type="radio" name="photoType" value="Other" />
+                            <span>📎</span>
+                            <strong>Diğer</strong>
+                        </label>
+
+                    </div>
+
+                    <input id="photoGalleryInput"
+                           type="file"
+                           accept="image/*"
+                           multiple
+                           hidden />
+
+                    <div class="sr-photo-source-grid">
+                        <button type="button"
+                                class="sr-photo-source-card"
+                                data-action="pick-photo-camera">
+                            <span>📷</span>
+                            <strong>Kamerayı Aç</strong>
+                            <small>Yeni fotoğraf çek</small>
+                        </button>
+
+                        <button type="button"
+                                class="sr-photo-source-card"
+                                data-action="pick-photo-gallery">
+                            <span>🖼️</span>
+                            <strong>Dosyadan Seç</strong>
+                            <small>Birden fazla fotoğraf seç</small>
+                        </button>
+                    </div>
+
+                    <div class="sr-photo-camera-panel" id="photoCameraPanel" hidden>
+                        <video id="photoCameraVideo"
+                               autoplay
+                               playsinline
+                               muted></video>
+
+                        <canvas id="photoCameraCanvas" hidden></canvas>
+
+                        <div class="sr-photo-camera-actions">
+                            <button type="button"
+                                    class="sr-photo-camera-secondary"
+                                    data-action="close-inline-camera">
+                                Kamerayı Kapat
+                            </button>
+
+                            <button type="button"
+                                    class="sr-photo-camera-primary"
+                                    data-action="capture-photo">
+                                Fotoğrafı Çek
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="sr-photo-selected-list"
+                         id="photoSelectedList"
+                         hidden>
+                    </div>
+
+                    <input type="text"
+                           id="photoDescriptionInput"
+                           name="description"
+                           maxlength="250"
+                           class="sr-photo-description"
+                           placeholder="Açıklama opsiyonel. Örn: Sağ ön çamurluk çizik" />
+
+                    <button type="button"
+                            class="sr-photo-upload-btn"
+                            data-action="upload-photo">
+                        Seçilen Fotoğrafları Kaydet
+                    </button>
+
+                </form>
+
+            </section>
+
+            <section class="sr-photo-gallery-panel">
+
+                <div class="sr-photo-gallery-header">
+                    <div>
+                        <h3>Eklenen Fotoğraflar</h3>
+                        <p>Kayıt içinde saklanan araç fotoğrafları.</p>
+                    </div>
+
+                    <span id="photoCountBadge">@Model.Images.Count fotoğraf</span>
+                </div>
+
+                <div class="sr-photo-gallery-grid" id="photoGalleryGrid">
+                    @if (Model.Images.Any())
+                    {
+                        @foreach (var image in Model.Images)
+                        {
+                            <article class="sr-photo-tile" data-photo-id="@image.Id">
+                                <button type="button"
+                                        class="sr-photo-delete"
+                                        data-action="delete-photo"
+                                        data-photo-id="@image.Id"
+                                        title="Fotoğrafı sil">
+                                    ×
+                                </button>
+
+                                <a href="/ServiceRecords/Photos/@image.Id" target="_blank">
+                                    <img src="/ServiceRecords/Photos/@image.Id"
+                                         alt="@image.TypeText" />
+                                </a>
+
+                                <div class="sr-photo-tile-meta">
+                                    <strong>@image.TypeText</strong>
+
+                                    @if (!string.IsNullOrWhiteSpace(image.Description))
+                                    {
+                                        <span>@image.Description</span>
+                                    }
+
+                                    <small>@image.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                                </div>
+                            </article>
+                        }
+                    }
+                </div>
+
+                <div class="sr-photo-empty-modern"
+                     id="photoEmptyState"
+                     @(Model.Images.Any() ? "hidden" : "")>
+                    <div>
+                        <strong>Henüz fotoğraf yok</strong>
+                        <span>İlk fotoğrafı kamera veya galeriden seçerek ekleyebilirsin.</span>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+
+    </div>
+</div>

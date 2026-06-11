@@ -1,0 +1,121 @@
+@model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
+
+@{
+    string FormatMoney(decimal value)
+    {
+        return value.ToString("N2") + " ₺";
+    }
+
+    var estimatedTotal = Model.RequestItems.Sum(x => x.EstimatedAmount ?? 0);
+    var subTotal = Model.TotalAmount;
+    var vatTotal = subTotal * 0.20m;
+    var grandTotal = subTotal + vatTotal;
+}
+
+<aside class="srx-side-panel">
+
+            <section class="srx-summary-card">
+
+                <h2>Servis Özeti</h2>
+
+                <div class="srx-estimate-box">
+                    <span>Tahmini Fiyat Verildi</span>
+                    <strong>@FormatMoney(estimatedTotal)</strong>
+                </div>
+
+                <div class="srx-summary-lines">
+
+                    <div>
+                        <span>Ara Toplam</span>
+                        <strong class="summary-total"
+                                data-total="@subTotal">
+                            @FormatMoney(subTotal)
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>KDV (%20)</span>
+                        <strong class="summary-vat"
+                                data-vat="@vatTotal">
+                            @FormatMoney(vatTotal)
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div class="srx-grand-total">
+                    <span>Genel Toplam</span>
+                    <strong class="summary-grand-total"
+                            data-grand-total="@grandTotal">
+                        @FormatMoney(grandTotal)
+                    </strong>
+                </div>
+
+                @if (Model.ActiveInvoiceId.HasValue)
+                {
+                    <a href="/Invoices/Detail/@Model.ActiveInvoiceId"
+                       class="srx-primary-action">
+                        @(Model.ActiveInvoiceStatus == 1 ? "Taslak Faturaya Git" : "Faturaya Git")
+                    </a>
+                }
+                else
+                {
+                    <a href="/Invoices/CreateFromServiceRecord/@Model.Id"
+                       class="srx-primary-action">
+                        Fatura Taslağına Geç
+                    </a>
+                }
+
+                <div class="srx-action-grid">
+
+                    <button type="button"
+                            class="srx-secondary-action wide"
+                            data-action="open-photo-modal">
+                        Araç Fotoğrafları
+                        <span id="photoActionCount">(@Model.Images.Count)</span>
+                    </button>
+
+                    <a href="/service-pdf/create/@Model.Id"
+                       target="_blank"
+                       class="srx-secondary-action">
+                        PDF Oluştur
+                    </a>
+
+                    <button type="button"
+                            class="srx-secondary-action"
+                            id="start-qr-scan-btn"
+                            onclick="startQrScanner(@Model.VehicleId, this)">
+                        QR Tara
+                    </button>
+
+                    @if (Model.Status == 1 || Model.Status == 2)
+                    {
+                        <button type="button"
+                                class="srx-secondary-action success status-btn"
+                                data-status="3">
+                            Servisi Tamamla
+                        </button>
+
+                        <button type="button"
+                                class="srx-secondary-action danger status-btn"
+                                data-status="4">
+                            İptal Et
+                        </button>
+                    }
+                    else if (Model.Status == 3 || Model.Status == 4)
+                    {
+                        <button type="button"
+                                class="srx-secondary-action status-btn wide"
+                                data-status="1">
+                            Tekrar Aktif Yap
+                        </button>
+                    }
+
+                </div>
+
+                <div id="qr-reader" class="srx-qr-reader" hidden></div>
+                <div id="qr-scan-result" class="srx-qr-result"></div>
+
+            </section>
+
+        </aside>

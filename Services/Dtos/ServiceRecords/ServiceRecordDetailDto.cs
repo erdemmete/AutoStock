@@ -62,5 +62,6 @@ namespace AutoStock.Services.Dtos.ServiceRecords
 
         public List<ServiceOperationDto> Operations { get; set; } = new();
         public List<ServiceRequestItemDto> DeletedRequestItems { get; set; } = new();
+        public List<ServiceRecordImageDto> Images { get; set; } = new();
     }
 }

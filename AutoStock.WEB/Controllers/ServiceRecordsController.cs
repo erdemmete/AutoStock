@@ -324,6 +324,137 @@ public class ServiceRecordsController : BaseController
     }
 
 
+    [HttpPost("ServiceRecords/{serviceRecordId:int}/Photos")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UploadPhoto(
+    int serviceRecordId,
+    List<IFormFile>? files,
+    IFormFile? file,
+    ServiceImageType type,
+    string? description)
+    {
+        var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+        var uploadFiles = new List<IFormFile>();
+
+        if (files is not null && files.Any())
+        {
+            uploadFiles.AddRange(files.Where(x => x is not null && x.Length > 0));
+        }
+
+        if (file is not null && file.Length > 0)
+        {
+            uploadFiles.Add(file);
+        }
+
+        if (!uploadFiles.Any())
+        {
+            if (isAjax)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "En az bir fotoğraf seçmelisin."
+                });
+            }
+
+            ShowError("En az bir fotoğraf seçmelisin.");
+            return RedirectToAction(nameof(Detail), new { id = serviceRecordId });
+        }
+
+        var uploadedImages = new List<object>();
+        var failedMessages = new List<string>();
+
+        foreach (var uploadFile in uploadFiles)
+        {
+            var result = await _serviceRecordApiService.UploadImageAsync(
+                serviceRecordId,
+                uploadFile,
+                type,
+                description);
+
+            if (result.IsFailure || result.Data is null)
+            {
+                failedMessages.Add(result.ErrorMessage ?? $"{uploadFile.FileName} yüklenemedi.");
+                continue;
+            }
+
+            uploadedImages.Add(new
+            {
+                id = result.Data.Id,
+                type = result.Data.Type.ToString(),
+                typeText = result.Data.TypeText,
+                description = result.Data.Description,
+                createdAt = result.Data.CreatedAt,
+                imageUrl = Url.Action(nameof(Photo), "ServiceRecords", new { id = result.Data.Id })
+            });
+        }
+
+        if (!uploadedImages.Any())
+        {
+            var message = failedMessages.FirstOrDefault() ?? "Fotoğraflar yüklenemedi.";
+
+            if (isAjax)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message
+                });
+            }
+
+            ShowError(message);
+            return RedirectToAction(nameof(Detail), new { id = serviceRecordId });
+        }
+
+        if (isAjax)
+        {
+            return Json(new
+            {
+                success = true,
+                message = failedMessages.Any()
+                    ? $"{uploadedImages.Count} fotoğraf yüklendi. {failedMessages.Count} fotoğraf yüklenemedi."
+                    : $"{uploadedImages.Count} fotoğraf başarıyla eklendi.",
+                images = uploadedImages
+            });
+        }
+
+        ShowSuccess($"{uploadedImages.Count} fotoğraf başarıyla eklendi.");
+        return RedirectToAction(nameof(Detail), new { id = serviceRecordId });
+    }
+
+    [HttpGet("ServiceRecords/Photos/{id:int}")]
+    public async Task<IActionResult> Photo(int id)
+    {
+        var result = await _serviceRecordApiService.GetImageContentAsync(id);
+
+        if (!result.Success)
+            return NotFound();
+
+        return File(result.Content, result.ContentType);
+    }
+
+    [HttpPost("ServiceRecords/Photos/{id:int}/Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeletePhoto(int id)
+    {
+        var result = await _serviceRecordApiService.DeleteImageAsync(id);
+
+        if (result.IsFailure)
+        {
+            return Json(new
+            {
+                success = false,
+                message = result.ErrorMessage ?? "Fotoğraf silinemedi."
+            });
+        }
+
+        return Json(new
+        {
+            success = true,
+            message = "Fotoğraf silindi."
+        });
+    }
 
     private async Task<List<VehicleBrandViewModel>> GetBrandsAsync()
     {

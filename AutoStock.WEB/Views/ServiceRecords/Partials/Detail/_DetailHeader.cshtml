@@ -1,0 +1,58 @@
+@model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
+
+@{
+    string GetStatusText(int status)
+    {
+        return status switch
+        {
+            1 => "Aktif",
+            2 => "Aktif",
+            3 => "Tamamlandı",
+            4 => "İptal",
+            _ => "Bilinmiyor"
+        };
+    }
+
+    string GetStatusClass(int status)
+    {
+        return status switch
+        {
+            1 => "active",
+            2 => "active",
+            3 => "completed",
+            4 => "cancelled",
+            _ => "unknown"
+        };
+    }
+}
+
+<header class="srx-page-header">
+
+        <a href="/ServiceRecords"
+           class="srx-back-btn"
+           title="Servis kayıtlarına dön">
+            ←
+        </a>
+
+        <div class="srx-header-main">
+            <div class="srx-header-title-row">
+                <h1>Kayıt @Model.RecordNumber</h1>
+
+                <span class="srx-status-badge @GetStatusClass(Model.Status)">
+                    @GetStatusText(Model.Status)
+                </span>
+            </div>
+
+            <p>
+                @Model.CreatedAt.ToString("dd MMMM yyyy") tarihinde açıldı.
+            </p>
+        </div>
+
+        <a asp-controller="Dashboard"
+           asp-action="Index"
+           class="srx-home-btn"
+           title="Ana sayfa">
+            ⌂
+        </a>
+
+    </header>

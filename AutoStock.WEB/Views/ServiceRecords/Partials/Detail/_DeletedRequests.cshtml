@@ -1,0 +1,56 @@
+@model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
+
+@if (Model.DeletedRequestItems.Any())
+            {
+                <section class="srx-deleted-requests-card">
+
+                    <button type="button"
+                            class="srx-deleted-requests-toggle"
+                            data-action="toggle-deleted-requests">
+                        <span>Silinen Şikayetler</span>
+                        <strong>@Model.DeletedRequestItems.Count</strong>
+                    </button>
+
+                    <div class="srx-deleted-requests-panel"
+                         id="deletedRequestsPanel"
+                         hidden>
+
+                        @foreach (var deletedRequest in Model.DeletedRequestItems)
+                        {
+                            <div class="srx-deleted-request-row"
+                                 id="deleted-request-@deletedRequest.Id">
+
+                                <div>
+                                    <strong>@deletedRequest.Title</strong>
+
+                                    @if (!string.IsNullOrWhiteSpace(deletedRequest.Note))
+                                    {
+                                        <small>@deletedRequest.Note</small>
+                                    }
+
+                                    <span>
+                                        @(deletedRequest.DeletedAt.HasValue
+                                            ? deletedRequest.DeletedAt.Value.ToString("dd.MM.yyyy HH:mm")
+                                            : "Silinme tarihi yok")
+
+                                        @if (deletedRequest.DeletedOperationCount > 0)
+                                        {
+                                            <text> • @deletedRequest.DeletedOperationCount işlem de pasife alınmış</text>
+                                        }
+                                    </span>
+                                </div>
+
+                                <button type="button"
+                                        class="srx-restore-request-btn"
+                                        data-action="restore-request"
+                                        data-request-id="@deletedRequest.Id">
+                                    Geri Al
+                                </button>
+
+                            </div>
+                        }
+
+                    </div>
+
+                </section>
+            }

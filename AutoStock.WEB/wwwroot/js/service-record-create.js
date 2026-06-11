@@ -14,6 +14,7 @@ let suppressDraftSave = false;
 let turkeyLocations = [];
 let taxOffices = [];
 
+
 const formatter = new Intl.NumberFormat("tr-TR", {
     style: "currency",
     currency: "TRY"
@@ -2004,7 +2005,14 @@ async function saveServiceRecord(action = "detail", clickedButton = null) {
 
         showCreatedResult(action);
 
+        showCreatedResult(action);
+
         showToast(result.message || "Servis kaydı başarıyla oluşturuldu.", "success");
+
+        if (action === "photos" && createdServiceRecordId) {
+            window.location.href = `/ServiceRecords/Detail/${createdServiceRecordId}?openPhotos=1`;
+            return;
+        }
 
         if (action === "print" && createdServiceRecordId) {
             window.open(`/service-pdf/create/${createdServiceRecordId}`, "_blank");

@@ -1,0 +1,152 @@
+@model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
+
+<section class="srx-info-card collapsed">
+
+        <button type="button"
+                class="srx-info-summary"
+                data-action="toggle-info">
+
+            <div class="srx-info-summary-left">
+                <span class="srx-info-icon">♙</span>
+
+                <strong>@Model.CustomerName</strong>
+
+                <span class="srx-dot">•</span>
+
+                <span class="srx-plate">@Model.VehiclePlate</span>
+
+                <span>@Model.VehicleBrandName @Model.VehicleModelName</span>
+            </div>
+
+            <div class="srx-info-summary-right">
+                <span>Müşteri ve Araç Detayları</span>
+                <span class="srx-chevron">⌃</span>
+            </div>
+
+        </button>
+
+        <div class="srx-info-body">
+
+            <div class="srx-info-column">
+                <h3>Müşteri Bilgileri</h3>
+
+                <div class="srx-info-grid">
+                    <span>Ad Soyad</span>
+                    <strong>@Model.CustomerName</strong>
+
+                    <span>Telefon</span>
+                    <strong>@Model.CustomerPhone</strong>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
+                    {
+                        <span>E-posta</span>
+                        <strong>@Model.CustomerEmail</strong>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.CompanyName))
+                    {
+                        <span>Firma</span>
+                        <strong>@Model.CompanyName</strong>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.AuthorizedPersonName))
+                    {
+                        <span>Yetkili</span>
+                        <strong>@Model.AuthorizedPersonName</strong>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.TaxOffice))
+                    {
+                        <span>Vergi Dairesi</span>
+                        <strong>@Model.TaxOffice</strong>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.TaxNumber))
+                    {
+                        <span>Vergi No</span>
+                        <strong>@Model.TaxNumber</strong>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.NationalIdentityNumber))
+                    {
+                        <span>TC Kimlik No</span>
+                        <strong>@Model.NationalIdentityNumber</strong>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.CustomerAddress)
+                        || !string.IsNullOrWhiteSpace(Model.AddressDistrict)
+                        || !string.IsNullOrWhiteSpace(Model.AddressCity))
+                    {
+                        <span>Adres</span>
+                        <strong>
+                            @Model.CustomerAddress
+                            @if (!string.IsNullOrWhiteSpace(Model.AddressDistrict)
+                                || !string.IsNullOrWhiteSpace(Model.AddressCity))
+                            {
+                                <small>
+                                    @Model.AddressDistrict / @Model.AddressCity
+                                </small>
+                            }
+                        </strong>
+                    }
+                </div>
+            </div>
+
+            <div class="srx-info-column">
+                <h3>Araç Bilgileri</h3>
+
+                <div class="srx-info-grid">
+                    <span>Marka/Model</span>
+                    <strong>@Model.VehicleBrandName @Model.VehicleModelName</strong>
+
+                    <span>Plaka</span>
+                    <strong>@Model.VehiclePlate</strong>
+
+                    <span>Kilometre</span>
+                    <strong>@((Model.Mileage ?? 0).ToString("N0")) km</strong>
+
+                    @if (Model.FuelLevel.HasValue)
+                    {
+                        <span>Yakıt Durumu</span>
+                        <strong>@Model.FuelLevelText</strong>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.ChassisNumber))
+                    {
+                        <span>Şasi No</span>
+                        <strong>@Model.ChassisNumber</strong>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.VehicleDeliveredBy))
+                    {
+                        <span>Aracı Getiren</span>
+                        <strong>@Model.VehicleDeliveredBy</strong>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.CustomerComplaint)
+            || !string.IsNullOrWhiteSpace(Model.ServiceReceptionNote))
+        {
+            <div class="srx-note-strip">
+                @if (!string.IsNullOrWhiteSpace(Model.CustomerComplaint))
+                {
+                    <div>
+                        <span>Müşteri Şikayeti</span>
+                        <p>@Model.CustomerComplaint</p>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.ServiceReceptionNote))
+                {
+                    <div>
+                        <span>Servis Kabul Notu</span>
+                        <p>@Model.ServiceReceptionNote</p>
+                    </div>
+                }
+            </div>
+        }
+
+    </section>

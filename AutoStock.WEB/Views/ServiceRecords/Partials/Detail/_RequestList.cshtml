@@ -1,0 +1,488 @@
+@model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
+
+@{
+    string FormatMoney(decimal value)
+    {
+        return value.ToString("N2") + " ₺";
+    }
+}
+
+<section class="srx-request-list" id="requestList">
+
+                @if (Model.RequestItems.Any())
+                {
+                    var requestIndex = 0;
+
+                    @foreach (var request in Model.RequestItems)
+                    {
+                        requestIndex++;
+
+                        var requestOperations = Model.Operations
+                            .Where(x => x.ServiceRequestItemId == request.Id)
+                            .OrderBy(x => x.Id)
+                            .ToList();
+
+                        var requestTotal = requestOperations.Sum(x => x.TotalPrice);
+
+                        var requestEstimatedAmountValue = (request.EstimatedAmount ?? 0)
+                            .ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+                        <article class="srx-request-card"
+                                 id="request-item-@request.Id"
+                                 data-request-id="@request.Id"
+                                 data-expanded="false">
+
+                            <header class="srx-request-card-header">
+
+                                <button type="button"
+                                        class="srx-request-summary"
+                                        data-action="toggle-request">
+
+                                    <span class="srx-request-number">@requestIndex</span>
+
+                                    <span class="srx-request-title-block">
+                                        <strong class="srx-request-title-text">@request.Title</strong>
+
+                                        @if (!string.IsNullOrWhiteSpace(request.Note))
+                                        {
+                                            <small class="srx-request-note-text">@request.Note</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="srx-request-note-text muted">Ön not girilmemiş.</small>
+                                        }
+                                    </span>
+
+                                </button>
+
+                                <div class="srx-request-card-actions">
+
+                                    <button type="button"
+                                            class="srx-request-toggle-btn"
+                                            data-action="toggle-request"
+                                            data-role="toggle-request-text">
+                                        İşlemleri Aç
+                                    </button>
+
+                                    <button type="button"
+                                            class="srx-secondary-mini-btn"
+                                            data-action="edit-request">
+                                        Düzenle
+                                    </button>
+
+                                    <button type="button"
+                                            class="srx-secondary-mini-btn danger"
+                                            data-action="delete-request"
+                                            data-request-id="@request.Id">
+                                        Sil
+                                    </button>
+
+                                </div>
+
+                            </header>
+
+                            <div class="srx-request-card-meta">
+
+                                <span>
+                                    <strong>@requestOperations.Count</strong>
+                                    işlem
+                                </span>
+
+                                <span>
+                                    İşlem toplamı
+                                    <strong>@FormatMoney(requestTotal)</strong>
+                                </span>
+
+                                <span>
+                                    Durum
+                                    <strong>@(request.IsResolved ? "Çözüldü" : "Açık")</strong>
+                                </span>
+
+                            </div>
+
+                            <div class="srx-request-card-body">
+
+                                <form action="/ServiceRecords/UpdateRequestItem"
+                                      method="post"
+                                      class="srx-request-edit-form ajax-request-edit-form"
+                                      data-request-id="@request.Id"
+                                      hidden>
+
+                                    <input type="hidden"
+                                           name="ServiceRequestItemId"
+                                           value="@request.Id" />
+
+                                    <div class="srx-form-grid request-edit-grid">
+
+                                        <label>
+                                            <span>Şikayet / Talep Başlığı</span>
+                                            <input type="text"
+                                                   name="Title"
+                                                   value="@request.Title"
+                                                   autocomplete="off"
+                                                   placeholder="Örn: Motor arıza ışığı yanıyor" />
+                                        </label>
+
+                                        <label>
+                                            <span>Ön Not</span>
+                                            <textarea name="Note"
+                                                      rows="2"
+                                                      placeholder="Örn: OBD kontrolü yapılacak.">@request.Note</textarea>
+                                        </label>
+
+                                        <label>
+                                            <span>Tahmini Fiyat</span>
+                                            <input type="number"
+                                                   name="EstimatedAmount"
+                                                   value="@requestEstimatedAmountValue"
+                                                   min="0"
+                                                   step="0.01"
+                                                   placeholder="Opsiyonel" />
+                                        </label>
+
+                                    </div>
+
+                                    <div class="srx-form-actions">
+                                        <button type="submit"
+                                                class="srx-primary-mini-btn">
+                                            Şikayeti Kaydet
+                                        </button>
+
+                                        <button type="button"
+                                                class="srx-secondary-mini-btn"
+                                                data-action="cancel-edit-request">
+                                            Vazgeç
+                                        </button>
+                                    </div>
+
+                                </form>
+
+                                <div class="srx-request-detail-strip">
+
+                                    <div>
+                                        <span>Tahmini Fiyat</span>
+                                        <strong>@FormatMoney(request.EstimatedAmount ?? 0)</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>Gerçekleşen İşlem Toplamı</span>
+                                        <strong>@FormatMoney(requestTotal)</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>İşlem Sayısı</span>
+                                        <strong>@requestOperations.Count</strong>
+                                    </div>
+
+                                </div>
+
+                                <section class="srx-operation-area">
+
+                                    <div class="srx-operation-area-header">
+                                        <div>
+                                            <span>Yapılan İşlemler</span>
+                                            <strong>Parça ve işçilik kayıtları</strong>
+                                        </div>
+                                    </div>
+
+                                    <div class="srx-operation-list"
+                                         data-operation-list
+                                         data-request-id="@request.Id">
+
+                                        @if (requestOperations.Any())
+                                        {
+                                            @foreach (var operation in requestOperations)
+                                            {
+                                                var typeClass = operation.Type == 1 ? "part" : "labor";
+                                                var typeText = operation.Type == 1 ? "Parça" : "İşçilik";
+
+                                                var operationQuantityValue = operation.Quantity
+                                                    .ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+                                                var operationUnitPriceValue = operation.UnitPrice
+                                                    .ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+                                                <article class="srx-operation-card request-operation-item"
+                                                         id="operation-item-@operation.Id"
+                                                         data-operation-id="@operation.Id">
+
+                                                    <div class="srx-operation-display">
+
+                                                        <div class="srx-operation-main">
+
+                                                            <span class="srx-type-badge @typeClass">
+                                                                @typeText
+                                                            </span>
+
+                                                            <div class="srx-operation-copy">
+                                                                <strong>@operation.Description</strong>
+
+                                                                @if (!string.IsNullOrWhiteSpace(operation.Note))
+                                                                {
+                                                                    <small>@operation.Note</small>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <small class="muted">Not yok</small>
+                                                                }
+                                                            </div>
+
+                                                        </div>
+
+                                                        <div class="srx-operation-price">
+                                                            <strong>@FormatMoney(operation.TotalPrice)</strong>
+                                                            <span>@operation.Quantity.ToString("N2") × @FormatMoney(operation.UnitPrice)</span>
+                                                        </div>
+
+                                                        <div class="srx-operation-actions">
+
+                                                            <button type="button"
+                                                                    class="srx-secondary-mini-btn"
+                                                                    data-action="edit-operation">
+                                                                Düzenle
+                                                            </button>
+
+                                                            <button type="button"
+                                                                    class="srx-secondary-mini-btn danger"
+                                                                    data-action="delete-operation"
+                                                                    data-operation-id="@operation.Id">
+                                                                Sil
+                                                            </button>
+
+                                                        </div>
+
+                                                    </div>
+
+                                                    <form action="/ServiceRecords/UpdateOperation"
+                                                          method="post"
+                                                          class="srx-operation-edit-form ajax-operation-edit-form"
+                                                          data-operation-id="@operation.Id"
+                                                          hidden>
+
+                                                        <input type="hidden"
+                                                               name="OperationId"
+                                                               value="@operation.Id" />
+
+                                                        <input type="hidden"
+                                                               name="ServiceRecordId"
+                                                               value="@Model.Id" />
+
+                                                        <input type="hidden"
+                                                               name="ServiceRequestItemId"
+                                                               value="@request.Id" />
+
+                                                        <input type="hidden"
+                                                               name="StockItemId"
+                                                               class="srx-stock-item-id" />
+
+                                                        <div class="srx-operation-editor">
+
+                                                            <div class="srx-type-switch">
+
+                                                                <input type="radio"
+                                                                       id="editPart_@operation.Id"
+                                                                       name="Type"
+                                                                       value="1"
+                                                                @(operation.Type == 1 ? "checked" : "") />
+
+                                                                <label for="editPart_@operation.Id" title="Parça">
+                                                                    P
+                                                                </label>
+
+                                                                <input type="radio"
+                                                                       id="editLabor_@operation.Id"
+                                                                       name="Type"
+                                                                       value="2"
+                                                                @(operation.Type == 2 ? "checked" : "") />
+
+                                                                <label for="editLabor_@operation.Id" title="İşçilik">
+                                                                    İ
+                                                                </label>
+
+                                                            </div>
+
+                                                            <div class="srx-search-box">
+
+                                                                <input type="text"
+                                                                       name="Description"
+                                                                       class="srx-operation-search-input"
+                                                                       value="@operation.Description"
+                                                                       autocomplete="off"
+                                                                       placeholder="Parça adı, kodu veya işlem açıklaması..." />
+
+                                                                <div class="srx-search-results"></div>
+
+                                                            </div>
+
+                                                            <input type="number"
+                                                                   name="Quantity"
+                                                                   class="srx-qty-input"
+                                                                   value="@operationQuantityValue"
+                                                                   min="1"
+                                                                   step="1"
+                                                                   placeholder="Miktar" />
+
+                                                            <div class="srx-money-input">
+
+                                                                <input type="text"
+                                                                       name="UnitPrice"
+                                                                       class="srx-price-input"
+                                                                       value="@operationUnitPriceValue"
+                                                                       inputmode="decimal"
+                                                                       autocomplete="off"
+                                                                       placeholder="Fiyat" />
+
+                                                                <span>₺</span>
+
+                                                            </div>
+
+                                                        </div>
+
+                                                        <input type="text"
+                                                               name="Note"
+                                                               class="srx-operation-note"
+                                                               value="@operation.Note"
+                                                               placeholder="İşlem notu opsiyonel" />
+
+                                                        <div class="srx-form-actions">
+                                                            <button type="submit"
+                                                                    class="srx-primary-mini-btn">
+                                                                İşlemi Kaydet
+                                                            </button>
+
+                                                            <button type="button"
+                                                                    class="srx-secondary-mini-btn"
+                                                                    data-action="cancel-edit-operation">
+                                                                Vazgeç
+                                                            </button>
+                                                        </div>
+
+                                                    </form>
+
+                                                </article>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <div class="srx-operation-empty">
+                                                <strong>Henüz işlem eklenmedi.</strong>
+                                                <span>Bu şikayetin altına parça veya işçilik ekleyin.</span>
+                                            </div>
+                                        }
+
+                                    </div>
+
+                                </section>
+
+                                <button type="button"
+                                        class="srx-add-operation-trigger"
+                                        data-action="show-operation-form">
+                                    + Bu Şikayete Parça / İşçilik Ekle
+                                </button>
+
+                                <form asp-action="AddOperation"
+                                      method="post"
+                                      class="srx-operation-form ajax-operation-form"
+                                      data-request-id="@request.Id"
+                                      hidden>
+
+                                    <input type="hidden"
+                                           name="ServiceRecordId"
+                                           value="@Model.Id" />
+
+                                    <input type="hidden"
+                                           name="ServiceRequestItemId"
+                                           value="@request.Id" />
+
+                                    <input type="hidden"
+                                           name="StockItemId"
+                                           class="srx-stock-item-id" />
+
+                                    <div class="srx-operation-editor">
+
+                                        <div class="srx-type-switch">
+
+                                            <input type="radio"
+                                                   id="partType_@request.Id"
+                                                   name="Type"
+                                                   value="1"
+                                                   checked />
+
+                                            <label for="partType_@request.Id" title="Parça">
+                                                P
+                                            </label>
+
+                                            <input type="radio"
+                                                   id="laborType_@request.Id"
+                                                   name="Type"
+                                                   value="2" />
+
+                                            <label for="laborType_@request.Id" title="İşçilik">
+                                                İ
+                                            </label>
+
+                                        </div>
+
+                                        <div class="srx-search-box">
+
+                                            <input type="text"
+                                                   name="Description"
+                                                   class="srx-operation-search-input"
+                                                   placeholder="Parça adı, kodu veya işlem açıklaması..."
+                                                   autocomplete="off" />
+
+                                            <div class="srx-search-results"></div>
+
+                                        </div>
+
+                                        <input type="number"
+                                               name="Quantity"
+                                               class="srx-qty-input"
+                                               value="1"
+                                               min="1"
+                                               step="1"
+                                               placeholder="Miktar" />
+
+                                        <div class="srx-money-input">
+
+                                            <input type="text"
+                                                   name="UnitPrice"
+                                                   class="srx-price-input"
+                                                   inputmode="decimal"
+                                                   autocomplete="off"
+                                                   placeholder="Fiyat" />
+
+                                            <span>₺</span>
+
+                                        </div>
+
+                                        <button type="submit"
+                                                class="srx-add-row-btn">
+                                            Ekle
+                                        </button>
+
+                                    </div>
+
+                                    <input type="text"
+                                           name="Note"
+                                           class="srx-operation-note"
+                                           placeholder="İşlem notu opsiyonel" />
+
+                                </form>
+
+                            </div>
+
+                        </article>
+                    }
+                }
+                else
+                {
+                    <div class="srx-empty-requests">
+                        <strong>Henüz şikayet / talep girilmemiş.</strong>
+                        <span>Servis kaydına başlamak için yeni şikayet ekleyin.</span>
+                    </div>
+                }
+
+            </section>
+
+            

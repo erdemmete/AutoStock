@@ -222,6 +222,7 @@ public class ServiceRecordService : IServiceRecordService
     .Include(x => x.Vehicle)
     .Include(x => x.Operations)
     .Include(x => x.RequestItems)
+    .Include(x => x.Images)
             .FirstOrDefaultAsync(x =>
                 x.Id == serviceRecordId &&
                 x.WorkshopId == workshopId);
@@ -265,6 +266,28 @@ public class ServiceRecordService : IServiceRecordService
             RepairNote = serviceRecord.RepairNote,
 
             TotalAmount = serviceRecord.TotalAmount,
+            Images = serviceRecord.Images
+    .OrderByDescending(x => x.CreatedAt)
+    .Select(x => new ServiceRecordImageDto
+    {
+        Id = x.Id,
+        ServiceRecordId = x.ServiceRecordId,
+        Type = x.Type,
+        TypeText = x.Type switch
+        {
+            ServiceImageType.BeforeRepair => "Geliş Fotoğrafı",
+            ServiceImageType.AfterRepair => "Teslim / Sonrası",
+            ServiceImageType.Odometer => "Kilometre",
+            ServiceImageType.FuelGauge => "Yakıt Göstergesi",
+            ServiceImageType.Damage => "Hasar",
+            ServiceImageType.Interior => "İç Mekan",
+            ServiceImageType.Other => "Diğer",
+            _ => "Fotoğraf"
+        },
+        Description = x.Description,
+        CreatedAt = x.CreatedAt
+    })
+    .ToList(),
 
             CreatedAt = serviceRecord.CreatedAt,
             CompletedAt = serviceRecord.CompletedAt,

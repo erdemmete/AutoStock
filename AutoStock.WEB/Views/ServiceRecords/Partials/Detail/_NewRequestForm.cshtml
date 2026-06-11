@@ -1,0 +1,74 @@
+@model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
+
+<section class="srx-new-request-card" id="newRequestCard">
+
+                <button type="button"
+                        class="srx-new-request-trigger"
+                        data-action="toggle-new-request">
+                    <strong>+ Yeni Şikayet / Talep Ekle</strong>
+                </button>
+
+                <form asp-action="AddRequestItem"
+                      method="post"
+                      class="srx-new-request-form ajax-request-form"
+                      hidden>
+
+                    <input type="hidden"
+                           name="serviceRecordId"
+                           value="@Model.Id" />
+
+                    <div class="srx-form-grid new-request-grid">
+
+                        <label>
+                            <span>Şikayet / Talep Başlığı</span>
+                            <input type="text"
+                                   name="Title"
+                                   list="requestSuggestions"
+                                   placeholder="Örn: Motor arıza ışığı yanıyor" />
+                        </label>
+
+                        <label>
+                            <span>Ön Not</span>
+                            <input type="text"
+                                   name="Note"
+                                   placeholder="Örn: OBD kontrolü yapılacak" />
+                        </label>
+
+                        <label>
+                            <span>Tahmini Fiyat</span>
+                            <input type="number"
+                                   name="EstimatedAmount"
+                                   min="0"
+                                   step="0.01"
+                                   placeholder="Opsiyonel" />
+                        </label>
+
+                    </div>
+
+                    <div class="srx-form-actions">
+                        <button type="submit"
+                                class="srx-primary-mini-btn">
+                            Şikayeti Kaydet
+                        </button>
+
+                        <button type="button"
+                                class="srx-secondary-mini-btn"
+                                data-action="cancel-new-request">
+                            Vazgeç
+                        </button>
+                    </div>
+
+                    <datalist id="requestSuggestions">
+                        <option value="Genel bakım"></option>
+                        <option value="Yağ değişimi"></option>
+                        <option value="Fren kontrolü"></option>
+                        <option value="Klima arızası"></option>
+                        <option value="Rot balans kontrolü"></option>
+                        <option value="Far ayarı"></option>
+                        <option value="Motor arıza ışığı yanıyor"></option>
+                        <option value="Motordan ses geliyor"></option>
+                    </datalist>
+
+                </form>
+
+            </section>

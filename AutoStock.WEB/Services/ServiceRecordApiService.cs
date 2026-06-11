@@ -1,4 +1,5 @@
-﻿using AutoStock.Services.Dtos.Common;
+﻿using AutoStock.Repositories.Enums;
+using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Customers;
 using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Services.Dtos.Vehicles;
@@ -6,6 +7,7 @@ using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.ServiceRecords;
 using AutoStock.WEB.Models.StockItems;
+using System.Net.Http.Headers;
 
 namespace AutoStock.WEB.Services
 {
@@ -247,6 +249,66 @@ namespace AutoStock.WEB.Services
             return await GetAsync<ServiceRecordCreateWorkshopInfoDto>(
                 "/api/ServiceRecords/create-workshop-info",
                 "Servis bilgileri alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<ServiceRecordImageDto>> UploadImageAsync(
+    int serviceRecordId,
+    IFormFile file,
+    ServiceImageType type,
+    string? description)
+        {
+            using var content = new MultipartFormDataContent();
+
+            await using var fileStream = file.OpenReadStream();
+
+            var fileContent = new StreamContent(fileStream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+
+            content.Add(fileContent, "file", file.FileName);
+            content.Add(new StringContent(((int)type).ToString()), "type");
+
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                content.Add(new StringContent(description), "description");
+            }
+
+            return await SendAsync<ServiceRecordImageDto>(
+    $"/api/service-record-images/{serviceRecordId}",
+    client => client.PostAsync($"/api/service-record-images/{serviceRecordId}", content),
+    "Fotoğraf yüklenirken hata oluştu.");
+        }
+
+        public async Task<(bool Success, byte[] Content, string ContentType, string? ErrorMessage)> GetImageContentAsync(
+            int imageId)
+        {
+            try
+            {
+                var client = CreateApiClient();
+
+                using var response = await client.GetAsync($"/api/service-record-images/{imageId}/content");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return (false, Array.Empty<byte>(), "application/octet-stream", "Fotoğraf alınamadı.");
+                }
+
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+
+                return (true, bytes, contentType, null);
+            }
+            catch
+            {
+                return (false, Array.Empty<byte>(), "application/octet-stream", "Fotoğraf alınamadı.");
+            }
+        }
+
+        public async Task<ApiResponse<bool>> DeleteImageAsync(int imageId)
+        {
+            return await SendAsync<bool>(
+                $"/api/service-record-images/{imageId}",
+                client => client.DeleteAsync($"/api/service-record-images/{imageId}"),
+                "Fotoğraf silinirken hata oluştu.");
         }
     }
 }
