@@ -39,14 +39,13 @@ public class PdfService : IPdfService
                     .FontFamily("Arial")
                     .FontColor(Colors.Grey.Darken4));
 
-                page.Header().Element(c =>
-                    BuildCompactHeader(
-                        c,
-                        documentNo,
-                        request.WorkshopName,
-                        null,
-                        null,
-                        now));
+                page.Header().Element(c => BuildCompactHeader(
+                c,
+                documentNo,
+                request.WorkshopName,
+                request.WorkshopAddress,
+                request.WorkshopPhone,
+                now));
 
                 page.Content().PaddingTop(8).Element(c =>
                     BuildServiceContent(c, request, requestRows));
@@ -199,18 +198,19 @@ public class PdfService : IPdfService
 
             column.Item().Element(c =>
                 BuildCompactInfoBand(
-                    c,
-                    new[]
-                    {
-                        ("Müşteri", request.CustomerName),
-                        ("Tel", request.CustomerPhone)
-                    },
-                    new[]
-                    {
-                        ("Araç", request.Plate),
-                        ("Marka/Model", brandModel),
-                        ("Yıl", request.ModelYear)
-                    }));
+                        c,
+                        new[]
+                        {
+                            ("Müşteri", request.CustomerName),
+                            ("Tel", request.CustomerPhone)
+                        },
+                        new[]
+                        {
+                            ("Araç", request.Plate),
+                            ("Marka/Model", brandModel),
+                            ("Yıl", request.ModelYear),
+                            ("Yakıt", request.FuelLevelText)
+                        }));
 
             if (!string.IsNullOrWhiteSpace(request.Note))
             {
@@ -419,51 +419,65 @@ public class PdfService : IPdfService
     }
 
     private static List<CompactRequestPdfRow> BuildServiceRows(CreateServicePdfRequest request)
+{
+    var rows = new List<CompactRequestPdfRow>();
+
+    if (request.RequestGroups == null || request.RequestGroups.Count == 0)
+        return rows;
+
+    foreach (var group in request.RequestGroups)
     {
-        var rows = new List<CompactRequestPdfRow>();
+            var operationsTotal = group.Operations?.Sum(x =>
+         x.TotalPrice > 0
+             ? x.TotalPrice
+             : x.Quantity * x.UnitPrice) ?? 0;
 
-        if (request.RequestGroups == null || request.RequestGroups.Count == 0)
-            return rows;
+            decimal? rowAmount = null;
 
-        foreach (var group in request.RequestGroups)
-        {
-            var groupTotal = group.Operations?.Sum(x => x.Quantity * x.UnitPrice) ?? 0;
+            if (operationsTotal > 0)
+            {
+                rowAmount = operationsTotal;
+            }
+            else if (group.EstimatedAmount.HasValue && group.EstimatedAmount.Value > 0)
+            {
+                rowAmount = group.EstimatedAmount.Value;
+            }
 
             var noteParts = new List<string>();
 
-            if (!string.IsNullOrWhiteSpace(group.Note))
-                noteParts.Add(group.Note.Trim());
+        if (!string.IsNullOrWhiteSpace(group.Note))
+            noteParts.Add(group.Note.Trim());
 
-            if (group.Operations != null && group.Operations.Count > 0)
+        if (group.Operations != null && group.Operations.Count > 0)
+        {
+            var operationTexts = group.Operations.Select(operation =>
             {
-                var operationTexts = group.Operations.Select(operation =>
-                {
-                    var typeText = string.IsNullOrWhiteSpace(operation.TypeText)
-                        ? ""
-                        : $"{operation.TypeText}: ";
+                var typeText = string.IsNullOrWhiteSpace(operation.TypeText)
+                    ? ""
+                    : $"{operation.TypeText}: ";
 
-                    var quantityText = operation.Quantity > 1
-                        ? $" ({operation.Quantity} adet)"
-                        : "";
+                var quantityText = operation.Quantity > 1
+                    ? $" ({operation.Quantity} adet)"
+                    : "";
 
-                    var noteText = string.IsNullOrWhiteSpace(operation.Note)
-                        ? ""
-                        : $" - {operation.Note.Trim()}";
+                var noteText = string.IsNullOrWhiteSpace(operation.Note)
+                    ? ""
+                    : $" - {operation.Note.Trim()}";
 
-                    return $"{typeText}{GetValue(operation.Name)}{quantityText}{noteText}";
-                });
+                return $"{typeText}{GetValue(operation.Name)}{quantityText}{noteText}";
+            });
 
-                noteParts.Add(string.Join(" | ", operationTexts));
-            }
-
-            rows.Add(new CompactRequestPdfRow(
-                group.Title,
-                noteParts.Count > 0 ? string.Join(" | ", noteParts) : null,
-                groupTotal > 0 ? groupTotal : null));
+            noteParts.Add(string.Join(" | ", operationTexts));
         }
 
-        return rows;
+        rows.Add(new CompactRequestPdfRow(
+            group.Title,
+            noteParts.Count > 0 ? string.Join(" | ", noteParts) : null,
+            rowAmount));
     }
+
+    return rows;
+}
 
     private static void CompactHeaderCell(
         IContainer container,

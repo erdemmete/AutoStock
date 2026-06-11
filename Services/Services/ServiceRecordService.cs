@@ -144,14 +144,16 @@ public class ServiceRecordService : IServiceRecordService
                 .Fail("Kurumsal müşterilerde aracı getiren / ilgili kişi zorunludur.");
         }
 
+        var now = _dateTimeProvider.Now;
+
         var serviceRecord = new ServiceRecord
         {
-            RecordNumber = GenerateRecordNumber(),
+            RecordNumber = GenerateRecordNumber(now),
             WorkshopId = workshopId,
             Customer = customer,
             Vehicle = vehicle,
             Status = ServiceRecordStatus.Open,
-
+            CreatedAt = now,
             CustomerNameSnapshot = request.CustomerName.Trim(),
             CustomerPhoneSnapshot = phoneNumber,
 
@@ -161,7 +163,7 @@ public class ServiceRecordService : IServiceRecordService
             VehicleDeliveredBySnapshot = vehicleDeliveredBy,
 
             MileageSnapshot = request.Mileage,
-
+            FuelLevelSnapshot = request.FuelLevel,
             CustomerComplaint = request.CustomerComplaint?.Trim(),
             ServiceReceptionNote = request.ServiceReceptionNote?.Trim(),
             EstimatedAmount = request.EstimatedAmount,
@@ -256,6 +258,7 @@ public class ServiceRecordService : IServiceRecordService
             VehicleModelName = serviceRecord.VehicleModelNameSnapshot,
 
             Mileage = serviceRecord.MileageSnapshot,
+            FuelLevel = serviceRecord.FuelLevelSnapshot,
 
             CustomerComplaint = serviceRecord.CustomerComplaint,
             ServiceReceptionNote = serviceRecord.ServiceReceptionNote,
@@ -1246,6 +1249,39 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
 
         return ServiceResult<PagedResult<ServiceRecordListItemDto>>.Success(pagedResult);
     }
+    public async Task<ServiceResult<ServiceRecordCreateWorkshopInfoDto>> GetCreateWorkshopInfoAsync(int workshopId)
+    {
+        var workshop = await _context.Workshops
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == workshopId);
+
+        if (workshop is null)
+            return ServiceResult<ServiceRecordCreateWorkshopInfoDto>.Fail("Servis bilgisi bulunamadı.");
+
+        var profile = await _context.WorkshopProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.WorkshopId == workshopId);
+
+        var displayName = !string.IsNullOrWhiteSpace(profile?.DisplayName)
+            ? profile.DisplayName.Trim()
+            : workshop.Name?.Trim();
+
+        var addressText = string.Join(" / ", new[]
+        {
+        profile?.AddressLine,
+        profile?.District,
+        profile?.City
+    }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+        var dto = new ServiceRecordCreateWorkshopInfoDto
+        {
+            DisplayName = displayName,
+            AddressText = string.IsNullOrWhiteSpace(addressText) ? null : addressText,
+            PhoneText = string.IsNullOrWhiteSpace(profile?.PhoneNumber) ? null : profile.PhoneNumber.Trim()
+        };
+
+        return ServiceResult<ServiceRecordCreateWorkshopInfoDto>.Success(dto);
+    }
 
     private async Task<string?> GetBrandNameAsync(int? brandId)
     {
@@ -1277,9 +1313,9 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
             .ToUpperInvariant();
     }
 
-    private string GenerateRecordNumber()
+    private static string GenerateRecordNumber(DateTime now)
     {
-        return $"SR-{_dateTimeProvider.Now:yyyyMMddHHmmssfff}";
+        return $"SR-{now:yyyyMMddHHmmssfff}";
     }
 
     private static string GetServiceRecordDisplayName(ServiceRecord serviceRecord)

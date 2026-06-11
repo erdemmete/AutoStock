@@ -50,14 +50,30 @@ namespace AutoStock.API.Controllers
             if (serviceRecord == null)
                 return NotFound("Servis kaydı bulunamadı.");
 
-            var workshopName = await _context.Workshops
-                .Where(x => x.Id == workshopId)
-                .Select(x => x.Name)
-                .FirstOrDefaultAsync();
+            var workshop = await _context.Workshops
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == workshopId);
+                
+                            var workshopProfile = await _context.WorkshopProfiles
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync(x => x.WorkshopId == workshopId);
+                
+                            var workshopName = !string.IsNullOrWhiteSpace(workshopProfile?.DisplayName)
+                                ? workshopProfile.DisplayName
+                                : workshop?.Name;
+                
+                            var workshopAddress = string.Join(" / ", new[]
+                            {
+                    workshopProfile?.AddressLine,
+                    workshopProfile?.District,
+                    workshopProfile?.City
+                }.Where(x => !string.IsNullOrWhiteSpace(x)));
 
             var request = new CreateServicePdfRequest
             {
-                WorkshopName = workshopName ?? "Sente360",
+                WorkshopName = workshopName ?? "Servis adı belirtilmedi",
+                WorkshopAddress = string.IsNullOrWhiteSpace(workshopAddress) ? null : workshopAddress,
+                WorkshopPhone = workshopProfile?.PhoneNumber,
                 RecordNumber = serviceRecord.RecordNumber,
 
                 StatusText = serviceRecord.Status switch
@@ -77,9 +93,9 @@ namespace AutoStock.API.Controllers
                 Brand = serviceRecord.Vehicle?.VehicleBrand?.Name,
                 Model = serviceRecord.Vehicle?.VehicleModel?.Name,
                 ModelYear = serviceRecord.Vehicle?.ModelYear?.ToString(),
+                FuelLevelText = ToFuelLevelText(serviceRecord.FuelLevelSnapshot),
 
                 Note = serviceRecord.ServiceReceptionNote,
-
                 RequestGroups = serviceRecord.RequestItems
                     .OrderBy(x => x.Id)
                     .Select(item => new ServicePdfRequestGroupDto
@@ -87,6 +103,7 @@ namespace AutoStock.API.Controllers
                         Id = item.Id,
                         Title = item.Title,
                         Note = item.Note,
+                        EstimatedAmount = item.EstimatedAmount,
                         Operations = serviceRecord.Operations
                             .Where(op => op.ServiceRequestItemId == item.Id)
                             .OrderBy(op => op.Id)
@@ -110,6 +127,18 @@ namespace AutoStock.API.Controllers
             var fileName = $"{plate}-{serviceRecord.RecordNumber}.pdf";
 
             return File(fileBytes, "application/pdf", fileName);
+        }
+        private static string ToFuelLevelText(FuelLevel? fuelLevel)
+        {
+            return fuelLevel switch
+            {
+                FuelLevel.Empty => "Boş",
+                FuelLevel.Quarter => "1/4",
+                FuelLevel.Half => "1/2",
+                FuelLevel.ThreeQuarters => "3/4",
+                FuelLevel.Full => "Dolu",
+                _ => "-"
+            };
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using FuelLevelEnum = AutoStock.Repositories.Enums.FuelLevel;
 
 namespace AutoStock.WEB.Models.ServiceRecords
 {
@@ -23,6 +24,8 @@ namespace AutoStock.WEB.Models.ServiceRecords
         public int? ModelYear { get; set; }
 
         public int? Mileage { get; set; }
+
+        public FuelLevelEnum? FuelLevel { get; set; }
         public string? ChassisNumber { get; set; }
 
         public string? CustomerComplaint { get; set; }
@@ -45,6 +48,12 @@ namespace AutoStock.WEB.Models.ServiceRecords
 
         public string? AddressDistrict { get; set; }
         public string? VehicleDeliveredBy { get; set; }
+        public string? WorkshopDisplayName { get; set; }
+
+        public string? WorkshopAddressText { get; set; }
+
+        public string? WorkshopPhoneText { get; set; }
+
 
         public List<CreateServiceRequestItemViewModel> RequestItems { get; set; } = new();
 

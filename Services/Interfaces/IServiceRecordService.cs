@@ -60,5 +60,7 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<RestoreServiceRequestItemResponse>> RestoreRequestItemAsync(
             int requestItemId,
             int workshopId);
+
+        Task<ServiceResult<ServiceRecordCreateWorkshopInfoDto>> GetCreateWorkshopInfoAsync(int workshopId);
     }
 }

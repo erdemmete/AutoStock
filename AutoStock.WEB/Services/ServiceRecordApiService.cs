@@ -241,5 +241,12 @@ namespace AutoStock.WEB.Services
                 url,
                 "Araç/plaka araması yapılırken hata oluştu.");
         }
+
+        public async Task<ApiResponse<ServiceRecordCreateWorkshopInfoDto>> GetCreateWorkshopInfoAsync()
+        {
+            return await GetAsync<ServiceRecordCreateWorkshopInfoDto>(
+                "/api/ServiceRecords/create-workshop-info",
+                "Servis bilgileri alınırken hata oluştu.");
+        }
     }
 }

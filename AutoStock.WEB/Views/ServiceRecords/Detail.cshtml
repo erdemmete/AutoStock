@@ -189,6 +189,12 @@
                     <span>Kilometre</span>
                     <strong>@((Model.Mileage ?? 0).ToString("N0")) km</strong>
 
+                    @if (Model.FuelLevel.HasValue)
+                    {
+                        <span>Yakıt Durumu</span>
+                        <strong>@Model.FuelLevelText</strong>
+                    }
+
                     @if (!string.IsNullOrWhiteSpace(Model.ChassisNumber))
                     {
                         <span>Şasi No</span>

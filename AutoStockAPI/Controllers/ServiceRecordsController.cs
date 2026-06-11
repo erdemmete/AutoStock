@@ -1,4 +1,5 @@
 ﻿using AutoStock.Services.Constants;
+using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -226,6 +227,19 @@ public class ServiceRecordsController : BaseApiController
         var result = await _serviceRecordService.RestoreRequestItemAsync(
             requestItemId,
             workshopIdResult.Data);
+
+        return ToActionResult(result);
+    }
+
+    [HttpGet("create-workshop-info")]
+    public async Task<IActionResult> GetCreateWorkshopInfo()
+    {
+        var workshopIdClaim = User.FindFirst("workshopId")?.Value;
+
+        if (!int.TryParse(workshopIdClaim, out var workshopId))
+            return Unauthorized(ServiceResult<ServiceRecordCreateWorkshopInfoDto>.Fail("Workshop bilgisi bulunamadı."));
+
+        var result = await _serviceRecordService.GetCreateWorkshopInfoAsync(workshopId);
 
         return ToActionResult(result);
     }

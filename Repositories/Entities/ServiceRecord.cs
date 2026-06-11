@@ -30,6 +30,7 @@ namespace AutoStock.Repositories.Entities
         public string? VehicleModelNameSnapshot { get; set; }
 
         public int? MileageSnapshot { get; set; }
+        public FuelLevel? FuelLevelSnapshot { get; set; }
 
         public string? CustomerComplaint { get; set; }
 

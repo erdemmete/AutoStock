@@ -1,5 +1,6 @@
 ﻿using AutoStock.WEB.Models.Invoices;
 using AutoStock.WEB.Models.StockItems;
+using FuelLevelEnum = AutoStock.Repositories.Enums.FuelLevel;
 
 namespace AutoStock.WEB.Models.ServiceRecords
 {
@@ -26,6 +27,17 @@ namespace AutoStock.WEB.Models.ServiceRecords
         public string? ChassisNumber { get; set; }
 
         public int? Mileage { get; set; }
+        public FuelLevelEnum? FuelLevel { get; set; }
+
+        public string FuelLevelText => FuelLevel switch
+        {
+            FuelLevelEnum.Empty => "Boş",
+            FuelLevelEnum.Quarter => "1/4",
+            FuelLevelEnum.Half => "1/2",
+            FuelLevelEnum.ThreeQuarters => "3/4",
+            FuelLevelEnum.Full => "Dolu",
+            _ => "-"
+        };
 
         public string? CustomerComplaint { get; set; }
 

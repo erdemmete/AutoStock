@@ -21,6 +21,7 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public string? VehicleModelName { get; set; }
 
         public int? Mileage { get; set; }
+        public FuelLevel? FuelLevel { get; set; }
 
         public string? CustomerComplaint { get; set; }
 

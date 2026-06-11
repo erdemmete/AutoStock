@@ -756,11 +756,24 @@
                                         </div>
 
                                         <div>
-                                            <h2 id="previewWorkshopName">OTOSERVİS A.Ş.</h2>
+                                            <h2 id="previewWorkshopName">
+                                                @(string.IsNullOrWhiteSpace(Model.WorkshopDisplayName)
+                                                    ? "Servis adı belirtilmedi"
+                                                    : Model.WorkshopDisplayName)
+                                            </h2>
 
                                             <p>
-                                                <span id="previewWorkshopAddress">Servis adresi belirtilmedi</span><br />
-                                                Tel: <span id="previewWorkshopPhone">Telefon belirtilmedi</span>
+                                                <span id="previewWorkshopAddress">
+                                                    @(string.IsNullOrWhiteSpace(Model.WorkshopAddressText)
+                                                        ? "Servis adresi belirtilmedi"
+                                                        : Model.WorkshopAddressText)
+                                                </span><br />
+                                                Tel:
+                                                <span id="previewWorkshopPhone">
+                                                    @(string.IsNullOrWhiteSpace(Model.WorkshopPhoneText)
+                                                        ? "Telefon belirtilmedi"
+                                                        : Model.WorkshopPhoneText)
+                                                </span>
                                             </p>
                                         </div>
                                     </div>
@@ -967,37 +980,46 @@
                     <strong id="estimatedTotalBox">0,00 ₺</strong>
                 </div>
 
-                <div class="quick-actions">
-                    <h4 class="quick-title">Hızlı İşlemler</h4>
+                <div class="summary-quick-actions">
+                    <h3>Hızlı İşlemler</h3>
 
                     <button type="button"
-                            class="quick-action"
+                            class="sr-quick-card sr-quick-card-preview"
                             onclick="goToStep(4)">
-                        <span class="quick-action-icon">📄</span>
-                        <span>
+                        <span class="sr-quick-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M7 3.75h7.25L19 8.5v11.75H7V3.75Z"></path>
+                                <path d="M14 3.75V8.5H19"></path>
+                                <path d="M9.75 12h6.5"></path>
+                                <path d="M9.75 15h6.5"></path>
+                                <path d="M9.75 18h4.25"></path>
+                            </svg>
+                        </span>
+
+                        <span class="sr-quick-text">
                             <strong>Form Önizleme</strong>
-                            <span>Kaydı açmadan önce servis formunu kontrol et</span>
+                            <small>Kaydı açmadan önce servis formunu kontrol et</small>
                         </span>
                     </button>
 
                     <button type="button"
-                            class="quick-action danger"
+                            class="sr-quick-card sr-quick-card-reset"
                             onclick="resetCreateFormDraft()">
-                        <span class="quick-action-icon">↻</span>
-                        <span>
+                        <span class="sr-quick-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M4.75 11.5A7.25 7.25 0 1 1 7 16.75"></path>
+                                <path d="M4.75 6.75v4.75H9.5"></path>
+                            </svg>
+                        </span>
+
+                        <span class="sr-quick-text">
                             <strong>Formu Sıfırla</strong>
-                            <span>Yarım kalan taslağı temizle ve yeni kayıt başlat</span>
+                            <small>Yarım kalan taslağı temizle ve yeni kayıt başlat</small>
                         </span>
                     </button>
                 </div>
 
-                <div class="summary-buttons">
-                    <button type="button"
-                            class="btn-primary js-create-action"
-                            onclick="saveServiceRecord('detail', this)">
-                        Kaydı Oluştur
-                    </button>
-                </div>
+               
             </aside>
 
         </div>

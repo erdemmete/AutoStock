@@ -45,11 +45,9 @@ public class ServiceRecordsController : BaseController
     [HttpGet]
     public async Task<IActionResult> Create()
     {
-        var model = new CreateServiceRecordViewModel
-        {
-            Brands = await GetBrandsAsync(),
-            ServiceAdvisorName = HttpContext.Session.GetString("FullName") ?? "Oturum Bilgisi Yok"
-        };
+        var model = new CreateServiceRecordViewModel();
+
+        await PrepareCreateModelAsync(model);
 
         return View(model);
     }
@@ -57,8 +55,7 @@ public class ServiceRecordsController : BaseController
     [HttpPost]
     public async Task<IActionResult> Create(CreateServiceRecordViewModel model)
     {
-        model.Brands = await GetBrandsAsync();
-        model.ServiceAdvisorName = HttpContext.Session.GetString("FullName") ?? "Oturum Bilgisi Yok";
+        await PrepareCreateModelAsync(model);
 
         if (!ModelState.IsValid)
         {
@@ -350,5 +347,20 @@ public class ServiceRecordsController : BaseController
         }
 
         return code;
+    }
+
+    private async Task PrepareCreateModelAsync(CreateServiceRecordViewModel model)
+    {
+        model.Brands = await GetBrandsAsync();
+        model.ServiceAdvisorName = HttpContext.Session.GetString("FullName") ?? "Oturum Bilgisi Yok";
+
+        var workshopInfoResult = await _serviceRecordApiService.GetCreateWorkshopInfoAsync();
+
+        if (workshopInfoResult.IsSuccess && workshopInfoResult.Data is not null)
+        {
+            model.WorkshopDisplayName = workshopInfoResult.Data.DisplayName;
+            model.WorkshopAddressText = workshopInfoResult.Data.AddressText;
+            model.WorkshopPhoneText = workshopInfoResult.Data.PhoneText;
+        }
     }
 }

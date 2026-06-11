@@ -1359,18 +1359,7 @@ function initializeCustomerSearch() {
         }, 280);
     });
 
-    document.addEventListener("click", function (e) {
-        if (!searchResults.contains(e.target) && e.target !== searchInput) {
-            searchResults.style.display = "none";
-        }
-    });
-
-    document.addEventListener("keydown", function (e) {
-        if (e.ctrlKey && e.key.toLocaleLowerCase("tr-TR") === "k") {
-            e.preventDefault();
-            searchInput.focus();
-        }
-    });
+   
 }
 
     document.addEventListener("click", function (e) {
@@ -2051,7 +2040,16 @@ function lockCreatedForm() {
 
     document.querySelectorAll(".js-create-action").forEach(button => {
         button.disabled = true;
-        button.innerText = "Kayıt Oluşturuldu";
+
+        const actionCard = button.closest(
+            ".quick-action-card, .preview-action-card, .summary-action-card, .action-card, .service-action-card"
+        );
+
+        if (actionCard) {
+            actionCard.style.display = "none";
+        } else {
+            button.style.display = "none";
+        }
     });
 }
 
