@@ -1246,9 +1246,15 @@ function capturePhotoFromCamera() {
     canvas.height = height;
 
     const context = canvas.getContext("2d");
+
+    if (!context) {
+        showToast("Fotoğraf işlenemedi.", "error");
+        return;
+    }
+
     context.drawImage(video, 0, 0, width, height);
 
-    canvas.toBlob(blob => {
+    canvas.toBlob(async function (blob) {
         if (!blob) {
             showToast("Fotoğraf alınamadı.", "error");
             return;
@@ -1260,23 +1266,11 @@ function capturePhotoFromCamera() {
             type: "image/jpeg"
         });
 
-        addSelectedPhotos([file]);
+        await addSelectedPhotos([file]);
 
         showToast("Fotoğraf seçilenlere eklendi.", "success");
     }, "image/jpeg", 0.82);
-
-        const fileName = `kamera-${new Date().toISOString().replace(/[:.]/g, "-")}.jpg`;
-
-        const file = new File([blob], fileName, {
-            type: "image/jpeg"
-        });
-
-        addSelectedPhotos([file]);
-
-        showToast("Fotoğraf seçilenlere eklendi.", "success");
-    }, "image/jpeg", 0.9);
 }
-
 function openPhotoModal() {
     const modal = document.getElementById("photoModal");
 
