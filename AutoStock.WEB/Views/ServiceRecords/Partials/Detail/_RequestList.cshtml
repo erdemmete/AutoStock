@@ -47,37 +47,32 @@
                                         {
                                             <small class="srx-request-note-text">@request.Note</small>
                                         }
-                                        else
-                                        {
-                                            <small class="srx-request-note-text muted">Ön not girilmemiş.</small>
-                                        }
                                     </span>
 
                                 </button>
 
-                                <div class="srx-request-card-actions">
+                                <div class="srx-request-card-actions srx-request-card-actions-menu">
 
-                                    <button type="button"
-                                            class="srx-request-toggle-btn"
-                                            data-action="toggle-request"
-                                            data-role="toggle-request-text">
-                                        İşlemleri Aç
-                                    </button>
+    <details class="srx-request-menu">
+        <summary aria-label="Şikayet işlemleri">•••</summary>
 
-                                    <button type="button"
-                                            class="srx-secondary-mini-btn"
-                                            data-action="edit-request">
-                                        Düzenle
-                                    </button>
+        <div class="srx-request-menu-list">
+            <button type="button"
+                    class="srx-menu-action"
+                    data-action="edit-request">
+                Şikayeti Düzenle
+            </button>
 
-                                    <button type="button"
-                                            class="srx-secondary-mini-btn danger"
-                                            data-action="delete-request"
-                                            data-request-id="@request.Id">
-                                        Sil
-                                    </button>
+            <button type="button"
+                    class="srx-menu-action danger"
+                    data-action="delete-request"
+                    data-request-id="@request.Id">
+                Şikayeti Sil
+            </button>
+        </div>
+    </details>
 
-                                </div>
+</div>
 
                             </header>
 

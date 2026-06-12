@@ -1,0 +1,740 @@
+/* Service record detail UX pass
+   Amaç: özellikle mobilde ana işi öne çıkarmak: şikayete parça/işçilik eklemek. */
+
+.srx-mobile-first-detail {
+    --srx-main: #4f46e5;
+    --srx-main-dark: #312e81;
+    --srx-green: #059669;
+    --srx-red: #e11d48;
+    --srx-amber: #d97706;
+    --srx-ink: #0f172a;
+    --srx-muted: #64748b;
+    --srx-soft: #f8fafc;
+    --srx-line: #dbe3ef;
+}
+
+.srx-service-ticket {
+    overflow: visible;
+}
+
+.srx-ticket-header {
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.srx-ticket-summary {
+    flex: 1;
+    min-width: 0;
+}
+
+.srx-request-title-block small:empty,
+.srx-request-note-text.muted {
+    display: none !important;
+}
+
+.srx-ticket-side {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.srx-ticket-estimate {
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    font-size: 12px;
+    font-weight: 950;
+    white-space: nowrap;
+}
+
+.srx-request-menu {
+    position: relative;
+    z-index: 6;
+}
+
+.srx-request-menu summary {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    color: #334155;
+    font-size: 24px;
+    font-weight: 950;
+    cursor: pointer;
+    list-style: none;
+}
+
+.srx-request-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.srx-request-menu[open] summary {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: var(--srx-main);
+}
+
+.srx-request-menu-list {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 210px;
+    padding: 8px;
+    border-radius: 18px;
+    border: 1px solid #dbe3ef;
+    background: white;
+    box-shadow: 0 22px 52px rgba(15, 23, 42, .16);
+    display: grid;
+    gap: 7px;
+}
+
+.srx-request-menu-list button {
+    width: 100%;
+}
+
+.srx-request-card-meta,
+.srx-request-detail-strip,
+.srx-operation-area-header:not(.srx-ops-header) {
+    display: none !important;
+}
+
+.srx-ops-header {
+    margin-bottom: 12px;
+    padding: 0;
+    border: none;
+}
+
+.srx-ops-header > div > span {
+    display: block;
+    margin-bottom: 4px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+}
+
+.srx-ops-header > div > strong {
+    color: var(--srx-ink);
+    font-size: 16px;
+    font-weight: 950;
+}
+
+.srx-ops-total {
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.srx-ops-total span {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 950;
+}
+
+.srx-ops-total strong {
+    color: var(--srx-ink);
+    font-size: 13px;
+    font-weight: 950;
+}
+
+.srx-main-add-operation {
+    width: 100%;
+    min-height: 56px;
+    margin: 4px 0 14px;
+    border-radius: 20px;
+    border: none;
+    background: linear-gradient(135deg, #4f46e5, #6d5dfc);
+    color: white;
+    box-shadow: 0 18px 34px rgba(79, 70, 229, .24);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    font-size: 16px;
+    font-weight: 950;
+}
+
+.srx-main-add-operation span {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, .18);
+    font-size: 21px;
+    line-height: 1;
+}
+
+.srx-form-intro {
+    margin-bottom: 14px;
+    padding: 13px 14px;
+    border-radius: 18px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    display: grid;
+    gap: 4px;
+}
+
+.srx-form-intro strong {
+    color: var(--srx-ink);
+    font-size: 14px;
+    font-weight: 950;
+}
+
+.srx-form-intro span {
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.45;
+    font-weight: 750;
+}
+
+.srx-type-switch-friendly {
+    width: 100%;
+    height: 48px;
+    padding: 5px;
+    border-radius: 16px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+
+.srx-type-switch-friendly input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.srx-type-switch-friendly label {
+    height: 100%;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 950;
+    cursor: pointer;
+}
+
+.srx-type-switch-friendly input:checked + label {
+    background: white;
+    color: var(--srx-main);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, .08);
+}
+
+.srx-operation-form-friendly {
+    margin-bottom: 14px;
+    padding: 16px;
+    border-radius: 24px;
+    background: #fbfdff;
+    border: 1px solid #dbe3ef;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, .06);
+}
+
+.srx-op-field {
+    min-width: 0;
+    display: grid;
+    gap: 7px;
+}
+
+.srx-op-field span {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 950;
+}
+
+.srx-op-field > input,
+.srx-op-field .srx-search-box > input,
+.srx-operation-note {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 16px;
+}
+
+.srx-operation-form-friendly .srx-add-row-btn {
+    min-height: 48px;
+    border-radius: 16px;
+    font-weight: 950;
+}
+
+.srx-operation-list {
+    gap: 10px;
+}
+
+.srx-operation-card {
+    border-radius: 20px;
+}
+
+.srx-operation-copy small.muted {
+    display: none !important;
+}
+
+.srx-operation-empty {
+    padding: 22px 18px;
+    border-radius: 22px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+}
+
+.srx-operation-empty strong {
+    color: var(--srx-ink);
+}
+
+.srx-new-request-card {
+    margin-top: 14px;
+}
+
+.srx-new-request-trigger {
+    min-height: 58px;
+    gap: 9px;
+    border-radius: 22px;
+    background: #fff;
+}
+
+.srx-plus-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    display: inline-grid;
+    place-items: center;
+    background: #eef2ff;
+    color: var(--srx-main);
+    font-size: 22px;
+    line-height: 1;
+}
+
+.srx-summary-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.srx-summary-head > div:first-child > span {
+    display: block;
+    margin-bottom: 4px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+}
+
+.srx-summary-head > div:first-child > strong {
+    display: block;
+    color: var(--srx-main);
+    font-size: 30px;
+    font-weight: 950;
+    letter-spacing: -.9px;
+    white-space: nowrap;
+}
+
+.srx-summary-estimate-mini {
+    padding: 9px 11px;
+    border-radius: 16px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    text-align: right;
+}
+
+.srx-summary-estimate-mini span {
+    display: block;
+    color: #9a3412;
+    font-size: 11px;
+    font-weight: 950;
+}
+
+.srx-summary-estimate-mini strong {
+    display: block;
+    margin-top: 3px;
+    color: #7c2d12;
+    font-size: 13px;
+    font-weight: 950;
+    white-space: nowrap;
+}
+
+.srx-summary-lines-compact {
+    margin-bottom: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #edf2f7;
+}
+
+.srx-grand-total,
+.srx-estimate-box {
+    display: none !important;
+}
+
+.srx-action-grid-ux {
+    display: grid;
+    gap: 10px;
+}
+
+.srx-action-grid-ux > .srx-primary-action,
+.srx-action-grid-ux > .srx-secondary-action.success,
+.srx-action-grid-ux > .srx-secondary-action.status-btn:not(.danger) {
+    min-height: 52px;
+    border-radius: 18px;
+    font-size: 15px;
+    font-weight: 950;
+}
+
+.srx-more-actions {
+    display: block;
+}
+
+.srx-more-actions summary {
+    min-height: 48px;
+    border-radius: 16px;
+    border: 1px solid #dbe3ef;
+    background: #f8fafc;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 950;
+    cursor: pointer;
+    list-style: none;
+}
+
+.srx-more-actions summary::-webkit-details-marker {
+    display: none;
+}
+
+.srx-more-actions[open] summary {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: var(--srx-main);
+}
+
+.srx-more-actions-panel {
+    margin-top: 10px;
+    display: grid;
+    gap: 8px;
+}
+
+.srx-more-actions-panel .srx-secondary-action {
+    min-height: 44px;
+    border-radius: 15px;
+}
+
+@media (min-width: 921px) {
+    .srx-service-ticket:hover {
+        transform: translateY(-1px);
+    }
+
+    .srx-operation-form-friendly .srx-operation-editor {
+        grid-template-columns: 180px minmax(260px, 1fr) 110px 150px 96px;
+        align-items: end;
+    }
+
+    .srx-operation-edit-form.srx-operation-form-friendly .srx-operation-editor {
+        grid-template-columns: 180px minmax(260px, 1fr) 110px 150px;
+    }
+
+    .srx-side-panel-ux .srx-summary-card {
+        position: sticky;
+        top: 18px;
+    }
+}
+
+@media (max-width: 920px) {
+    .srx-mobile-first-detail {
+        padding-bottom: 28px;
+    }
+
+    .srx-page-header {
+        margin-bottom: 14px;
+    }
+
+    .srx-header-title-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .srx-header-title-row h1 {
+        font-size: 24px;
+        line-height: 1.1;
+    }
+
+    .srx-info-summary-left {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .srx-info-summary-left > span:last-child {
+        grid-column: 1 / -1;
+        margin-left: 30px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .srx-info-summary-right {
+        display: none !important;
+    }
+
+    .srx-request-list {
+        gap: 14px;
+    }
+
+    .srx-request-card {
+        border-radius: 28px;
+        box-shadow: 0 16px 36px rgba(15, 23, 42, .07);
+    }
+
+    .srx-ticket-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .srx-ticket-summary {
+        align-items: flex-start;
+    }
+
+    .srx-request-number {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        border-radius: 16px;
+        font-size: 17px;
+    }
+
+    .srx-request-title-text {
+        font-size: 21px;
+        line-height: 1.12;
+    }
+
+    .srx-request-note-text {
+        margin-top: 5px;
+        font-size: 13px;
+        line-height: 1.35;
+    }
+
+    .srx-ticket-side {
+        align-items: flex-start;
+    }
+
+    .srx-ticket-estimate {
+        display: none;
+    }
+
+    .srx-request-menu-list {
+        right: -2px;
+    }
+
+    .srx-request-card-body {
+        padding-top: 14px;
+    }
+
+    .srx-ops-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .srx-ops-total {
+        flex: 0 0 auto;
+    }
+
+    .srx-main-add-operation {
+        margin-top: 8px;
+        margin-bottom: 16px;
+    }
+
+    .srx-operation-form-friendly {
+        padding: 14px;
+        border-radius: 22px;
+    }
+
+    .srx-operation-form-friendly .srx-operation-editor,
+    .srx-operation-edit-form.srx-operation-form-friendly .srx-operation-editor {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .srx-type-switch-friendly,
+    .srx-op-desc-field,
+    .srx-operation-form-friendly .srx-add-row-btn {
+        grid-column: 1 / -1;
+    }
+
+    .srx-operation-note {
+        margin-top: 12px;
+    }
+
+    .srx-operation-display {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        align-items: start;
+    }
+
+    .srx-operation-main {
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .srx-operation-copy strong {
+        font-size: 17px;
+        line-height: 1.2;
+    }
+
+    .srx-operation-price {
+        width: 100%;
+        padding: 12px 13px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .srx-operation-price strong {
+        font-size: 17px;
+    }
+
+    .srx-operation-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .srx-operation-actions .srx-secondary-mini-btn {
+        width: 100%;
+        min-height: 42px;
+        border-radius: 14px;
+    }
+
+    .srx-new-request-trigger {
+        justify-content: center;
+        color: #334155;
+    }
+
+    .srx-new-request-form,
+    .srx-request-edit-form {
+        padding: 14px;
+        border-radius: 22px;
+        background: #fbfdff;
+        border: 1px solid #dbe3ef;
+    }
+
+    .new-request-grid,
+    .request-edit-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .srx-form-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .srx-form-actions button {
+        width: 100%;
+        min-height: 46px;
+        border-radius: 15px;
+    }
+
+    .srx-side-panel-ux {
+        margin-top: 14px;
+    }
+
+    .srx-side-panel-ux .srx-summary-card {
+        border-radius: 26px;
+    }
+
+    .srx-summary-head {
+        align-items: center;
+    }
+
+    .srx-summary-head > div:first-child > strong {
+        font-size: 28px;
+    }
+
+    .srx-action-grid-ux {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 460px) {
+    .srx-request-card {
+        border-radius: 24px;
+    }
+
+    .srx-ticket-header {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .srx-request-number {
+        width: 38px;
+        height: 38px;
+        flex-basis: 38px;
+        border-radius: 14px;
+    }
+
+    .srx-request-title-text {
+        font-size: 19px;
+    }
+
+    .srx-operation-form-friendly .srx-operation-editor,
+    .srx-operation-edit-form.srx-operation-form-friendly .srx-operation-editor {
+        grid-template-columns: 1fr;
+    }
+
+    .srx-type-switch-friendly,
+    .srx-op-desc-field,
+    .srx-operation-form-friendly .srx-add-row-btn {
+        grid-column: auto;
+    }
+
+    .srx-operation-price {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .srx-operation-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .srx-form-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .srx-summary-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .srx-summary-estimate-mini {
+        width: 100%;
+        text-align: left;
+    }
+}

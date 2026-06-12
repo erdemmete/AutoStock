@@ -14,108 +14,140 @@
 
 <aside class="srx-side-panel">
 
-            <section class="srx-summary-card">
+    <section class="srx-summary-card">
 
-                <h2>Servis Özeti</h2>
+        <h2>Servis Özeti</h2>
 
-                <div class="srx-estimate-box">
-                    <span>Tahmini Fiyat Verildi</span>
-                    <strong>@FormatMoney(estimatedTotal)</strong>
-                </div>
+        <div class="srx-estimate-box">
+            <span>Tahmini Fiyat Verildi</span>
+            <strong>@FormatMoney(estimatedTotal)</strong>
+        </div>
 
-                <div class="srx-summary-lines">
+        <div class="srx-summary-lines">
 
+            <div>
+                <span>Ara Toplam</span>
+                <strong class="summary-total"
+                        data-total="@subTotal">
+                    @FormatMoney(subTotal)
+                </strong>
+            </div>
+
+            <div>
+                <span>KDV (%20)</span>
+                <strong class="summary-vat"
+                        data-vat="@vatTotal">
+                    @FormatMoney(vatTotal)
+                </strong>
+            </div>
+
+        </div>
+
+        <div class="srx-grand-total">
+            <span>Genel Toplam</span>
+            <strong class="summary-grand-total"
+                    data-grand-total="@grandTotal">
+                @FormatMoney(grandTotal)
+            </strong>
+        </div>
+
+        <div class="srx-summary-main-actions">
+            @if (Model.ActiveInvoiceId.HasValue)
+            {
+                <a href="/Invoices/Detail/@Model.ActiveInvoiceId"
+                   class="srx-primary-action">
+                    @(Model.ActiveInvoiceStatus == 1 ? "Taslak Faturaya Git" : "Faturaya Git")
+                </a>
+            }
+            else
+            {
+                <a href="/Invoices/CreateFromServiceRecord/@Model.Id"
+                   class="srx-primary-action">
+                    Fatura Taslağına Geç
+                </a>
+            }
+
+            @if (Model.Status == 1 || Model.Status == 2)
+            {
+                <button type="button"
+                        class="srx-secondary-action success status-btn srx-complete-action"
+                        data-status="3">
+                    Servisi Tamamla
+                </button>
+            }
+            else if (Model.Status == 3 || Model.Status == 4)
+            {
+                <button type="button"
+                        class="srx-secondary-action status-btn srx-complete-action"
+                        data-status="1">
+                    Tekrar Aktif Yap
+                </button>
+            }
+        </div>
+
+        <details class="srx-more-actions">
+            <summary>Diğer İşlemler</summary>
+
+            <div class="srx-action-grid">
+
+                <button type="button"
+                        class="srx-secondary-action wide"
+                        data-action="open-photo-modal">
+                    Araç Fotoğrafları
+                    <span id="photoActionCount">(@Model.Images.Count)</span>
+                </button>
+
+                <a href="/service-pdf/create/@Model.Id"
+                   target="_blank"
+                   class="srx-secondary-action">
+                    PDF Oluştur
+                </a>
+
+                <button type="button"
+                        class="srx-secondary-action"
+                        id="start-qr-scan-btn"
+                        onclick="startQrScanner(@Model.VehicleId, this)">
+                    QR Tara
+                </button>
+
+                @if (Model.Status == 1 || Model.Status == 2)
+                {
+                    <button type="button"
+                            class="srx-secondary-action danger status-btn wide"
+                            data-status="4">
+                        İptal Et
+                    </button>
+                }
+
+            </div>
+        </details>
+
+        <div id="qr-reader" class="srx-qr-reader" hidden></div>
+        <div id="qr-scan-result" class="srx-qr-result"></div>
+
+        <div id="qrAssignModal" class="srx-qr-modal" aria-hidden="true">
+            <div class="srx-qr-modal-card">
+                <div class="srx-qr-modal-head">
                     <div>
-                        <span>Ara Toplam</span>
-                        <strong class="summary-total"
-                                data-total="@subTotal">
-                            @FormatMoney(subTotal)
-                        </strong>
+                        <h3>QR Kod Tara</h3>
+                        <p>Kamera açıkken bu pencereyi kapatırsanız kamera da kapanır.</p>
                     </div>
 
-                    <div>
-                        <span>KDV (%20)</span>
-                        <strong class="summary-vat"
-                                data-vat="@vatTotal">
-                            @FormatMoney(vatTotal)
-                        </strong>
-                    </div>
-
-                </div>
-
-                <div class="srx-grand-total">
-                    <span>Genel Toplam</span>
-                    <strong class="summary-grand-total"
-                            data-grand-total="@grandTotal">
-                        @FormatMoney(grandTotal)
-                    </strong>
-                </div>
-
-                @if (Model.ActiveInvoiceId.HasValue)
-                {
-                    <a href="/Invoices/Detail/@Model.ActiveInvoiceId"
-                       class="srx-primary-action">
-                        @(Model.ActiveInvoiceStatus == 1 ? "Taslak Faturaya Git" : "Faturaya Git")
-                    </a>
-                }
-                else
-                {
-                    <a href="/Invoices/CreateFromServiceRecord/@Model.Id"
-                       class="srx-primary-action">
-                        Fatura Taslağına Geç
-                    </a>
-                }
-
-                <div class="srx-action-grid">
-
                     <button type="button"
-                            class="srx-secondary-action wide"
-                            data-action="open-photo-modal">
-                        Araç Fotoğrafları
-                        <span id="photoActionCount">(@Model.Images.Count)</span>
+                            class="srx-qr-close"
+                            onclick="closeQrAssignModal()"
+                            aria-label="QR kamerayı kapat">
+                        ×
                     </button>
-
-                    <a href="/service-pdf/create/@Model.Id"
-                       target="_blank"
-                       class="srx-secondary-action">
-                        PDF Oluştur
-                    </a>
-
-                    <button type="button"
-                            class="srx-secondary-action"
-                            id="start-qr-scan-btn"
-                            onclick="startQrScanner(@Model.VehicleId, this)">
-                        QR Tara
-                    </button>
-
-                    @if (Model.Status == 1 || Model.Status == 2)
-                    {
-                        <button type="button"
-                                class="srx-secondary-action success status-btn"
-                                data-status="3">
-                            Servisi Tamamla
-                        </button>
-
-                        <button type="button"
-                                class="srx-secondary-action danger status-btn"
-                                data-status="4">
-                            İptal Et
-                        </button>
-                    }
-                    else if (Model.Status == 3 || Model.Status == 4)
-                    {
-                        <button type="button"
-                                class="srx-secondary-action status-btn wide"
-                                data-status="1">
-                            Tekrar Aktif Yap
-                        </button>
-                    }
-
                 </div>
 
-                <div id="qr-reader" class="srx-qr-reader" hidden></div>
-                <div id="qr-scan-result" class="srx-qr-result"></div>
+                <div class="srx-qr-modal-body">
+                    <div id="qr-modal-reader"></div>
+                    <div id="qr-modal-result">Kamera hazırlanıyor.</div>
+                </div>
+            </div>
+        </div>
 
-            </section>
+    </section>
 
-        </aside>
+</aside>

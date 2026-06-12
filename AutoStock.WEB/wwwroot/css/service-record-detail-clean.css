@@ -1,0 +1,315 @@
+/* Service record detail clean UX patch
+   Amaç: çalışan ilk yapıyı bozmadan şikayet kartı ve özet aksiyonlarını sadeleştirmek. */
+
+.srx-clean-detail {
+    --srx-clean-main: #4f46e5;
+    --srx-clean-main-dark: #4338ca;
+    --srx-clean-soft: #eef2ff;
+    --srx-clean-line: #dbe3ef;
+    --srx-clean-ink: #0f172a;
+    --srx-clean-muted: #64748b;
+    --srx-clean-bg: #f8fafc;
+}
+
+/* Şikayet kartı: kartın kendisi modern, başlık tıklanabilir, aksiyonlar sade. */
+.srx-clean-detail .srx-request-card {
+    position: relative;
+    overflow: visible;
+    border-radius: 24px;
+    border-color: #dbe4f0;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .055);
+    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.srx-clean-detail .srx-request-card:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 18px 42px rgba(15, 23, 42, .075);
+    transform: translateY(-1px);
+}
+
+.srx-clean-detail .srx-request-card[data-expanded="true"] {
+    border-color: #bfc9ff;
+    box-shadow: 0 18px 44px rgba(79, 70, 229, .11);
+}
+
+.srx-clean-detail .srx-request-card-header {
+    cursor: pointer;
+    border-bottom: 0;
+}
+
+.srx-clean-detail .srx-request-summary {
+    cursor: pointer;
+}
+
+.srx-clean-detail .srx-request-title-text {
+    letter-spacing: -.35px;
+}
+
+.srx-clean-detail .srx-request-note-text {
+    color: #64748b;
+}
+
+.srx-clean-detail .srx-request-card-actions-menu {
+    position: relative;
+    gap: 10px;
+}
+
+.srx-clean-detail .srx-request-open-hint {
+    min-height: 34px;
+    padding: 0 13px;
+    border-radius: 999px;
+    background: var(--srx-clean-soft);
+    color: var(--srx-clean-main);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 950;
+    white-space: nowrap;
+}
+
+.srx-clean-detail .srx-request-card[data-expanded="true"] .srx-request-open-hint {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+
+.srx-clean-detail .srx-request-menu {
+    position: relative;
+    z-index: 30;
+}
+
+.srx-clean-detail .srx-request-menu summary {
+    width: 42px;
+    height: 42px;
+    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: var(--srx-clean-main);
+    font-size: 20px;
+    font-weight: 950;
+    letter-spacing: 1px;
+    cursor: pointer;
+    list-style: none;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .04);
+}
+
+.srx-clean-detail .srx-request-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.srx-clean-detail .srx-request-menu[open] summary {
+    background: var(--srx-clean-soft);
+    border-color: #c7d2fe;
+}
+
+.srx-clean-detail .srx-request-menu-list {
+    position: absolute;
+    top: calc(100% + 9px);
+    right: 0;
+    width: 220px;
+    padding: 8px;
+    border-radius: 18px;
+    border: 1px solid var(--srx-clean-line);
+    background: #fff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .18);
+    display: grid;
+    gap: 8px;
+}
+
+.srx-clean-detail .srx-request-menu-list button {
+    width: 100%;
+    min-height: 42px;
+    justify-content: center;
+}
+
+/* Kapalı kartta bilgi kalabalığı yok; tahmini fiyat ve işlem detayları kart açılınca görünür. */
+.srx-clean-detail .srx-request-card[data-expanded="false"] .srx-request-card-meta,
+.srx-clean-detail .srx-request-card[data-expanded="false"] .srx-request-card-body {
+    display: none !important;
+}
+
+.srx-clean-detail .srx-request-card[data-expanded="true"] .srx-request-card-meta {
+    display: flex;
+}
+
+.srx-clean-detail .srx-request-card[data-expanded="true"] .srx-request-card-body {
+    display: grid;
+}
+
+.srx-clean-detail .srx-request-card-meta {
+    margin: 0 20px;
+    padding: 0 0 16px;
+    background: transparent;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.srx-clean-detail .srx-request-card-meta span {
+    background: #f8fafc;
+}
+
+.srx-clean-detail .srx-request-detail-strip div {
+    background: #fbfdff;
+}
+
+.srx-clean-detail .srx-add-operation-trigger {
+    min-height: 52px;
+    border-radius: 18px;
+    border: 1px dashed #c7d2fe;
+    background: #f8faff;
+    color: var(--srx-clean-main);
+}
+
+/* P / İ alanı: küçük ama daha okunaklı segment. */
+.srx-clean-detail .srx-type-switch {
+    height: 44px;
+    padding: 4px;
+    border-radius: 16px;
+    background: #eef2ff;
+    border: 1px solid #dbe3ef;
+    gap: 4px;
+    overflow: visible;
+}
+
+.srx-clean-detail .srx-type-switch label {
+    border-radius: 12px;
+    color: #64748b;
+}
+
+.srx-clean-detail .srx-type-switch input:checked + label {
+    background: var(--srx-clean-main);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(79, 70, 229, .22);
+}
+
+/* Servis özeti: ana aksiyonlar net, diğerleri kapalı menü altında. */
+.srx-clean-detail .srx-summary-main-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.srx-clean-detail .srx-summary-main-actions .srx-primary-action,
+.srx-clean-detail .srx-summary-main-actions .srx-secondary-action {
+    margin: 0;
+    min-height: 50px;
+}
+
+.srx-clean-detail .srx-complete-action {
+    border-color: #bbf7d0;
+    background: #fff;
+    color: #166534;
+}
+
+.srx-clean-detail .srx-complete-action:hover {
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.srx-clean-detail .srx-more-actions {
+    margin-top: 12px;
+}
+
+.srx-clean-detail .srx-more-actions summary {
+    min-height: 48px;
+    border-radius: 15px;
+    border: 1px solid #dbe3ef;
+    background: #fff;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 950;
+    cursor: pointer;
+    list-style: none;
+}
+
+.srx-clean-detail .srx-more-actions summary::-webkit-details-marker {
+    display: none;
+}
+
+.srx-clean-detail .srx-more-actions summary::after {
+    content: "⌄";
+    font-size: 14px;
+    color: #64748b;
+    transform: translateY(-1px);
+}
+
+.srx-clean-detail .srx-more-actions[open] summary {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.srx-clean-detail .srx-more-actions[open] summary::after {
+    transform: rotate(180deg);
+}
+
+.srx-clean-detail .srx-more-actions .srx-action-grid {
+    margin-top: 10px;
+}
+
+@media (max-width: 900px) {
+    .srx-clean-detail .srx-request-card-header {
+        grid-template-columns: 1fr auto;
+        align-items: start;
+    }
+
+    .srx-clean-detail .srx-request-open-hint {
+        display: none;
+    }
+
+    .srx-clean-detail .srx-request-card-actions-menu {
+        width: auto;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .srx-clean-detail .srx-request-menu summary {
+        width: 42px;
+        height: 42px;
+    }
+
+    .srx-clean-detail .srx-request-menu-list {
+        width: 210px;
+    }
+
+    .srx-clean-detail .srx-summary-main-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .srx-clean-detail .srx-action-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 620px) {
+    .srx-clean-detail .srx-request-card-header {
+        padding: 18px;
+    }
+
+    .srx-clean-detail .srx-request-summary {
+        gap: 12px;
+    }
+
+    .srx-clean-detail .srx-request-number {
+        width: 40px;
+        height: 40px;
+    }
+
+    .srx-clean-detail .srx-request-card-meta {
+        margin: 0 18px;
+        display: grid !important;
+        gap: 8px;
+    }
+
+    .srx-clean-detail .srx-request-card[data-expanded="false"] .srx-request-card-meta {
+        display: none !important;
+    }
+
+    .srx-clean-detail .srx-request-detail-strip {
+        grid-template-columns: 1fr;
+    }
+}

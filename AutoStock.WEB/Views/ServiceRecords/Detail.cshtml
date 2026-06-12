@@ -5,8 +5,9 @@
 }
 
 <link rel="stylesheet" href="~/css/service-record-detail.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/service-record-detail-clean.css" asp-append-version="true" />
 
-<div class="srx-page">
+<div class="srx-page srx-clean-detail">
 
     <div id="toastMessage" class="srx-toast"></div>
 
@@ -38,7 +39,7 @@
 
 <script>
     window.serviceRecordDetailConfig = {
-        
+        serviceRecordId: @Model.Id,
         vehicleId: @Model.VehicleId,
         photoUploadUrl: "/ServiceRecords/@Model.Id/Photos",
         photoContentBaseUrl: "/ServiceRecords/Photos",
@@ -47,3 +48,4 @@
 </script>
 
 <script src="~/js/service-record-detail.js" asp-append-version="true"></script>
+<script src="~/js/service-record-detail-clean.js" asp-append-version="true"></script>

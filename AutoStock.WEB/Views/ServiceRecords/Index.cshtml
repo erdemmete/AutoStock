@@ -245,6 +245,8 @@
                     _ => "status-unknown"
                 };
 
+                var vatIncludedTotal = Math.Round(record.TotalAmount * 1.20m, 2);
+
                 <a class="srv-card" href="/ServiceRecords/Detail/@record.Id">
                     <div class="srv-card-plate-block">
                         <div class="srv-plate">
@@ -280,7 +282,8 @@
                     </div>
 
                     <div class="srv-card-amount">
-                        <strong>@record.TotalAmount.ToString("N2") ₺</strong>
+                        <strong>@vatIncludedTotal.ToString("N2") ₺</strong>
+                        <small>KDV dahil</small>
                     </div>
 
                     <div class="srv-card-status">
@@ -786,6 +789,15 @@
 
     .srv-card-amount strong {
         color: #0f172a;
+    }
+
+    .srv-card-amount small {
+        display: block;
+        margin-top: 5px;
+        color: #8aa0bd;
+        font-size: 11px;
+        font-weight: 900;
+        white-space: nowrap;
     }
 
     .srv-card-status {

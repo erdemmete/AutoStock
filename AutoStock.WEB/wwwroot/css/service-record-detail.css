@@ -2805,3 +2805,290 @@
         padding-bottom: 32px !important;
     }
 }
+/* Request action cleanup */
+.srx-request-open-hint {
+    display: none !important;
+}
+
+.srx-request-card {
+    position: relative !important;
+    overflow: visible !important;
+}
+
+    .srx-request-card.srx-menu-open {
+        z-index: 9999 !important;
+    }
+
+.srx-request-card-header {
+    cursor: pointer;
+}
+
+.srx-request-card-actions,
+.srx-request-card-actions-menu {
+    position: relative !important;
+    z-index: 10000 !important;
+}
+
+.srx-request-menu {
+    position: relative !important;
+    z-index: 10000 !important;
+}
+
+    .srx-request-menu summary {
+        width: 46px;
+        height: 46px;
+        border-radius: 17px;
+        border: 1px solid #d4deeb;
+        background: #fff;
+        color: #4f46e5;
+        display: grid;
+        place-items: center;
+        list-style: none;
+        cursor: pointer;
+        font-size: 22px;
+        font-weight: 950;
+        letter-spacing: 2px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .05);
+    }
+
+        .srx-request-menu summary::-webkit-details-marker {
+            display: none;
+        }
+
+    .srx-request-menu[open] summary {
+        background: #eef2ff;
+        border-color: #c7d2fe;
+    }
+
+.srx-request-menu-list {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 220px;
+    padding: 8px;
+    border-radius: 18px;
+    border: 1px solid #dbe3ef;
+    background: #fff;
+    box-shadow: 0 26px 70px rgba(15, 23, 42, .20);
+    display: grid;
+    gap: 8px;
+    z-index: 10001;
+}
+
+.srx-menu-action {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    background: #f8fafc;
+    color: #0f172a;
+    font-weight: 950;
+}
+
+    .srx-menu-action:hover {
+        background: #eef2ff;
+        border-color: #c7d2fe;
+        color: #4f46e5;
+    }
+
+    .srx-menu-action.danger {
+        color: #be123c;
+    }
+
+        .srx-menu-action.danger:hover {
+            background: #fff1f2;
+            border-color: #fecdd3;
+        }
+
+/* Kart içi bilgi kalabalığını azalt */
+.srx-request-card-meta {
+    display: none !important;
+}
+
+.srx-request-detail-strip {
+    grid-template-columns: 1fr !important;
+}
+
+    .srx-request-detail-strip div:nth-child(n+2) {
+        display: none !important;
+    }
+
+/* =========================================================
+   Request menu stacking fix
+   Açık üç nokta menüsü her zaman diğer kartların üstünde kalsın
+   ========================================================= */
+
+.srx-request-list {
+    position: relative !important;
+    overflow: visible !important;
+    isolation: isolate !important;
+}
+
+.srx-request-card {
+    position: relative !important;
+    overflow: visible !important;
+    z-index: 1 !important;
+}
+
+    .srx-request-card:hover {
+        z-index: 2 !important;
+    }
+
+    /* Chrome/Edge destekliyor: açık menü olan kartı en üste alır */
+    .srx-request-card:has(.srx-request-menu[open]) {
+        z-index: 99999 !important;
+    }
+
+    /* JS class fallback */
+    .srx-request-card.srx-menu-open {
+        z-index: 99999 !important;
+    }
+
+.srx-request-card-actions,
+.srx-request-card-actions-menu,
+.srx-request-menu {
+    position: relative !important;
+    z-index: 100000 !important;
+}
+
+    .srx-request-menu[open] {
+        z-index: 100001 !important;
+    }
+
+.srx-request-menu-list {
+    z-index: 100002 !important;
+}
+
+/* =========================================================
+   QR scanner modal
+   ========================================================= */
+
+.srx-qr-reader,
+.srx-qr-result {
+    display: none !important;
+}
+
+.srx-qr-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(15, 23, 42, .62);
+    backdrop-filter: blur(8px);
+}
+
+    .srx-qr-modal.show {
+        display: flex;
+    }
+
+.srx-qr-modal-card {
+    width: min(520px, 100%);
+    max-height: calc(100dvh - 36px);
+    overflow: hidden;
+    border-radius: 26px;
+    background: #ffffff;
+    box-shadow: 0 34px 90px rgba(15, 23, 42, .34);
+    display: flex;
+    flex-direction: column;
+}
+
+.srx-qr-modal-head {
+    padding: 20px 22px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+    .srx-qr-modal-head h3 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 22px;
+        font-weight: 950;
+        letter-spacing: -.4px;
+    }
+
+    .srx-qr-modal-head p {
+        margin: 6px 0 0;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 750;
+        line-height: 1.45;
+    }
+
+.srx-qr-close {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border: none;
+    border-radius: 14px;
+    background: #f1f5f9;
+    color: #0f172a;
+    font-size: 28px;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+    .srx-qr-close:hover {
+        background: #fee2e2;
+        color: #be123c;
+    }
+
+.srx-qr-modal-body {
+    padding: 18px 22px 22px;
+    overflow-y: auto;
+}
+
+#qr-modal-reader {
+    width: 100%;
+    min-height: 300px;
+    border-radius: 22px;
+    overflow: hidden;
+    background: #0f172a;
+}
+
+    #qr-modal-reader video {
+        border-radius: 22px;
+    }
+
+#qr-modal-result {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 850;
+    line-height: 1.45;
+}
+
+@media (max-width: 620px) {
+    .srx-qr-modal {
+        padding: 12px;
+        align-items: flex-end;
+    }
+
+    .srx-qr-modal-card {
+        border-radius: 24px;
+        max-height: calc(100dvh - 24px);
+    }
+
+    .srx-qr-modal-head {
+        padding: 17px;
+    }
+
+    .srx-qr-modal-body {
+        padding: 14px 17px 17px;
+    }
+
+    #qr-modal-reader {
+        min-height: 280px;
+    }
+}
