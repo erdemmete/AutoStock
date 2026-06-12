@@ -247,6 +247,9 @@ namespace Services.Services.StockItems
             if (stockItem == null)
                 return ServiceResult<int>.Fail("Stok kartı bulunamadı.");
 
+            if (dto.NewQuantity < 0)
+                return ServiceResult<int>.Fail("Stok miktarı negatif olamaz.");
+
             if (stockItem.Quantity == dto.NewQuantity)
                 return ServiceResult<int>.Fail("Stok miktarında değişiklik yok.");
 
@@ -319,8 +322,14 @@ namespace Services.Services.StockItems
                 .ToListAsync();
         }
 
-        public async Task<ServiceResult<int>> StockInAsync(int stockItemId, StockTransactionDto dto,int workshopId)
+        public async Task<ServiceResult<int>> StockInAsync(int stockItemId, StockTransactionDto dto, int workshopId)
         {
+            if (dto.Quantity <= 0)
+                return ServiceResult<int>.Fail("Stok giriş miktarı sıfırdan büyük olmalıdır.");
+
+            if (!dto.UnitPrice.HasValue || dto.UnitPrice.Value <= 0)
+                return ServiceResult<int>.Fail("Stok girişi için geçerli bir birim alış fiyatı girilmelidir.");
+
             var stockItem = await _context.StockItems
                 .FirstOrDefaultAsync(x =>
                     x.Id == stockItemId &&
@@ -331,17 +340,32 @@ namespace Services.Services.StockItems
                 return ServiceResult<int>.Fail("Stok kartı bulunamadı.");
 
             var oldQuantity = stockItem.Quantity;
+            var oldAveragePurchasePrice = stockItem.PurchasePrice;
 
-            stockItem.Quantity += dto.Quantity;
+            var incomingQuantity = dto.Quantity;
+            var incomingUnitPrice = dto.UnitPrice.Value;
+
+            var newQuantity = oldQuantity + incomingQuantity;
+
+            var newAveragePurchasePrice = CalculateWeightedAveragePurchasePrice(
+                oldQuantity,
+                oldAveragePurchasePrice,
+                incomingQuantity,
+                incomingUnitPrice);
+
+            stockItem.Quantity = newQuantity;
+            stockItem.PurchasePrice = newAveragePurchasePrice;
 
             var movement = new StockMovement
             {
                 WorkshopId = workshopId,
                 StockItemId = stockItem.Id,
                 MovementType = StockMovementType.In,
-                Quantity = dto.Quantity,
-                UnitPrice = dto.UnitPrice ?? stockItem.PurchasePrice,
-                Description = dto.Description,
+                Quantity = incomingQuantity,
+                UnitPrice = incomingUnitPrice,
+                Description = string.IsNullOrWhiteSpace(dto.Description)
+                    ? "Stok girişi"
+                    : dto.Description.Trim(),
                 CreatedAt = _dateTimeProvider.Now
             };
 
@@ -353,16 +377,18 @@ namespace Services.Services.StockItems
                 ActionType = AuditActionType.StockIn,
                 EntityType = AuditEntityType.StockItem,
                 EntityId = stockItem.Id,
-                Description = $"Stok girişi yapıldı: {GetStockDisplayName(stockItem)} - Miktar: {dto.Quantity}",
+                Description = $"Stok girişi yapıldı: {GetStockDisplayName(stockItem)} - Miktar: {incomingQuantity}",
                 OldValues = new
                 {
-                    Quantity = oldQuantity
+                    Quantity = oldQuantity,
+                    AveragePurchasePrice = oldAveragePurchasePrice
                 },
                 NewValues = new
                 {
                     Quantity = stockItem.Quantity,
-                    AddedQuantity = dto.Quantity,
-                    movement.UnitPrice,
+                    AddedQuantity = incomingQuantity,
+                    IncomingUnitPrice = incomingUnitPrice,
+                    AveragePurchasePrice = stockItem.PurchasePrice,
                     movement.Description
                 }
             });
@@ -374,6 +400,9 @@ namespace Services.Services.StockItems
 
         public async Task<ServiceResult<int>> StockOutAsync(int stockItemId, StockTransactionDto dto, int workshopId)
         {
+            if (dto.Quantity <= 0)
+                return ServiceResult<int>.Fail("Stok çıkış miktarı sıfırdan büyük olmalıdır.");
+
             var stockItem = await _context.StockItems
                 .FirstOrDefaultAsync(x =>
                     x.Id == stockItemId &&
@@ -688,6 +717,30 @@ namespace Services.Services.StockItems
                 return $"{stockItem.Name} ({stockItem.Code})";
 
             return stockItem.Name;
+        }
+        private static decimal CalculateWeightedAveragePurchasePrice(
+    decimal currentQuantity,
+    decimal currentAveragePurchasePrice,
+    decimal incomingQuantity,
+    decimal incomingUnitPrice)
+        {
+            if (incomingQuantity <= 0)
+                return currentAveragePurchasePrice;
+
+            if (currentQuantity <= 0)
+                return incomingUnitPrice;
+
+            var totalQuantity = currentQuantity + incomingQuantity;
+
+            if (totalQuantity <= 0)
+                return incomingUnitPrice;
+
+            var currentTotalCost = currentQuantity * currentAveragePurchasePrice;
+            var incomingTotalCost = incomingQuantity * incomingUnitPrice;
+
+            var average = (currentTotalCost + incomingTotalCost) / totalQuantity;
+
+            return Math.Round(average, 4);
         }
     }
 }

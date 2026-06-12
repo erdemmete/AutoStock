@@ -82,6 +82,8 @@ namespace AutoStock.WEB.Services
                 "Stok düzeltme işlemi başarısız oldu.");
         }
 
+
+
         public async Task<ApiResponse<EditStockItemViewModel>> GetEditModelAsync(int id)
         {
             var detailResult = await GetByIdAsync(id);
@@ -133,6 +135,14 @@ namespace AutoStock.WEB.Services
             return await GetAsync<List<StockItemSelectViewModel>>(
                 "/api/StockItems/select-list",
                 "Stok seçim listesi alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<object>> StockInAsync(int stockItemId, StockTransactionViewModel model)
+        {
+            return await PostJsonAsync<StockTransactionViewModel, object>(
+                $"/api/StockItems/{stockItemId}/stock-in",
+                model,
+                "Stok girişi yapılırken hata oluştu.");
         }
 
         public async Task<ApiResponse<StockItemFilterOptionsViewModel>> GetFilterOptionsAsync()

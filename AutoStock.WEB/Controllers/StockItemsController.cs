@@ -92,7 +92,31 @@ namespace AutoStock.WEB.Controllers
                 successMessage: "Stok miktarı başarıyla güncellendi.");
         }
 
-       
+        [HttpPost("StockItems/StockIn/{id:int}")]
+        public async Task<IActionResult> StockIn(int id, StockTransactionViewModel model)
+        {
+            if (model.Quantity <= 0)
+            {
+                TempData["ToastError"] = "Stok giriş miktarı sıfırdan büyük olmalıdır.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            if (!model.UnitPrice.HasValue || model.UnitPrice.Value <= 0)
+            {
+                TempData["ToastError"] = "Geçerli bir birim alış fiyatı giriniz.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            var result = await _stockItemApiService.StockInAsync(id, model);
+
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(Details), new { id }),
+                onFailure: () => RedirectToAction(nameof(Details), new { id }),
+                defaultErrorMessage: "Stok girişi yapılırken hata oluştu.",
+                successMessage: "Stok girişi başarıyla kaydedildi.");
+        }
+
         [HttpGet("StockItems/Edit/{id:int}")]
         public async Task<IActionResult> Edit(int id)
         {
