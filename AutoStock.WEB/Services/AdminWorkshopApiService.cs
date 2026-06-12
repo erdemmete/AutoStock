@@ -28,9 +28,9 @@ namespace AutoStock.WEB.Services
                 "Servis detayı alınırken hata oluştu.");
         }
 
-        public async Task<ApiResponse<int>> CreateAsync(CreateAdminWorkshopViewModel model)
+        public async Task<ApiResponse<AdminWorkshopUserCreatedViewModel>> CreateAsync(CreateAdminWorkshopViewModel model)
         {
-            return await PostJsonAsync<CreateAdminWorkshopViewModel, int>(
+            return await PostJsonAsync<CreateAdminWorkshopViewModel, AdminWorkshopUserCreatedViewModel>(
                 "/api/admin/workshops",
                 model,
                 "Servis oluşturulurken hata oluştu.");

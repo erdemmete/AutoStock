@@ -147,12 +147,16 @@ namespace AutoStock.Services.Services
             return ServiceResult<AdminWorkshopDetailDto>.Success(workshop);
         }
 
-        public async Task<ServiceResult<int>> CreateAsync(CreateAdminWorkshopRequestDto request)
+        public async Task<ServiceResult<AdminWorkshopUserCreatedDto>> CreateAsync(CreateAdminWorkshopRequestDto request)
         {
             var validationResult = await ValidateCreateRequestAsync(request);
 
             if (validationResult.IsFailure)
-                return validationResult;
+            {
+                return ServiceResult<AdminWorkshopUserCreatedDto>.Fail(
+                    validationResult.ErrorMessages,
+                    (HttpStatusCode)validationResult.StatusCode);
+            }
 
             var role = request.FirstUserRole.Trim();
 
@@ -199,10 +203,14 @@ namespace AutoStock.Services.Services
                 Email = string.IsNullOrWhiteSpace(request.FirstUserEmail)
                     ? null
                     : request.FirstUserEmail.Trim(),
-                IsActive = true
+                PhoneNumber = string.IsNullOrWhiteSpace(request.FirstUserPhoneNumber)
+                    ? null
+                    : request.FirstUserPhoneNumber.Trim(),
+                IsActive = true,
+                CreatedAt = _dateTimeProvider.Now
             };
 
-            var createUserResult = await _userManager.CreateAsync(user, request.FirstUserPassword);
+            var createUserResult = await _userManager.CreateAsync(user);
 
             if (!createUserResult.Succeeded)
             {
@@ -212,7 +220,7 @@ namespace AutoStock.Services.Services
                     .Select(x => x.Description)
                     .ToList();
 
-                return ServiceResult<int>.Fail(errors);
+                return ServiceResult<AdminWorkshopUserCreatedDto>.Fail(errors);
             }
 
             var addRoleResult = await _userManager.AddToRoleAsync(user, role);
@@ -225,7 +233,7 @@ namespace AutoStock.Services.Services
                     .Select(x => x.Description)
                     .ToList();
 
-                return ServiceResult<int>.Fail(errors);
+                return ServiceResult<AdminWorkshopUserCreatedDto>.Fail(errors);
             }
 
             var workshopUser = new WorkshopUser
@@ -238,6 +246,24 @@ namespace AutoStock.Services.Services
             _context.WorkshopUsers.Add(workshopUser);
 
             await _context.SaveChangesAsync();
+
+            var tokenResult = await _userSecurityTokenService.CreateAsync(
+                new CreateUserSecurityTokenRequestDto
+                {
+                    UserId = user.Id,
+                    Purpose = UserSecurityTokenPurpose.PasswordSetup,
+                    DeliveryChannel = UserSecurityTokenDeliveryChannel.Manual,
+                    ValidFor = TimeSpan.FromDays(7)
+                });
+
+            if (tokenResult.IsFailure)
+            {
+                await transaction.RollbackAsync();
+
+                return ServiceResult<AdminWorkshopUserCreatedDto>.Fail(
+                    tokenResult.ErrorMessages,
+                    (HttpStatusCode)tokenResult.StatusCode);
+            }
 
             await _auditLogService.AddAsync(new AuditLogCreateDto
             {
@@ -271,7 +297,10 @@ namespace AutoStock.Services.Services
                     user.FullName,
                     user.UserName,
                     Role = role,
-                    user.IsActive
+                    user.Email,
+                    user.PhoneNumber,
+                    user.IsActive,
+                    PasswordSetupLinkGenerated = true
                 }
             });
 
@@ -279,7 +308,21 @@ namespace AutoStock.Services.Services
 
             await transaction.CommitAsync();
 
-            return ServiceResult<int>.Success(workshop.Id);
+            var response = new AdminWorkshopUserCreatedDto
+            {
+                UserId = user.Id,
+                WorkshopId = workshop.Id,
+                FullName = user.FullName,
+                UserName = user.UserName!,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Role = role,
+                PasswordSetupToken = tokenResult.Data!.Token,
+                PasswordSetupCode = tokenResult.Data.Code,
+                PasswordSetupExpiresAt = tokenResult.Data.ExpiresAt
+            };
+
+            return ServiceResult<AdminWorkshopUserCreatedDto>.Success(response);
         }
 
         public async Task<ServiceResult<bool>> UpdateSubscriptionAsync(int id, UpdateAdminWorkshopSubscriptionRequestDto request)
@@ -1094,8 +1137,7 @@ namespace AutoStock.Services.Services
             if (string.IsNullOrWhiteSpace(request.FirstUserName))
                 return ServiceResult<int>.Fail("İlk kullanıcı kullanıcı adı zorunludur.");
 
-            if (string.IsNullOrWhiteSpace(request.FirstUserPassword))
-                return ServiceResult<int>.Fail("İlk kullanıcı şifresi zorunludur.");
+          
 
             var role = request.FirstUserRole?.Trim();
 

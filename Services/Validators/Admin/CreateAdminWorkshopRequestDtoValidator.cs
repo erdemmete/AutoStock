@@ -53,11 +53,7 @@ public class CreateAdminWorkshopRequestDtoValidator : AbstractValidator<CreateAd
             .EmailAddress().WithMessage("Geçerli bir e-posta adresi giriniz.")
             .When(x => !string.IsNullOrWhiteSpace(x.FirstUserEmail));
 
-        RuleFor(x => x.FirstUserPassword)
-            .Cascade(CascadeMode.Stop)
-            .NotEmpty().WithMessage("Geçici şifre zorunludur.")
-            .MinimumLength(6).WithMessage("Geçici şifre en az 6 karakter olmalıdır.")
-            .MaximumLength(100).WithMessage("Geçici şifre en fazla 100 karakter olabilir.");
+    
 
         RuleFor(x => x.FirstUserRole)
             .Cascade(CascadeMode.Stop)

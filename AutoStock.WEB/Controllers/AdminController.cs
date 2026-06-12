@@ -75,12 +75,21 @@ namespace AutoStock.WEB.Controllers
 
             var result = await _adminWorkshopApiService.CreateAsync(model);
 
-            return HandleCommandResult(
-                result,
-                onSuccess: () => RedirectToAction(nameof(WorkshopDetails), new { id = result.Data }),
-                onFailure: () => View(model),
-                defaultErrorMessage: "Servis oluşturulurken hata oluştu.",
-                successMessage: "Servis başarıyla oluşturuldu.");
+            if (result.IsFailure || result.Data == null)
+            {
+                if (result.ErrorMessages.Any())
+                    ShowErrors(result.ErrorMessages);
+                else
+                    ShowError(result.ErrorMessage ?? "Servis oluşturulurken hata oluştu.");
+
+                return View(model);
+            }
+
+            StoreCreatedUserInviteTempData(result.Data);
+
+            ShowSuccess("Servis başarıyla oluşturuldu. İlk kullanıcı için davet bağlantısı oluşturuldu.");
+
+            return RedirectToAction(nameof(WorkshopDetails), new { id = result.Data.WorkshopId });
         }
 
         [HttpGet("Admin/Workshops/Details/{id:int}")]

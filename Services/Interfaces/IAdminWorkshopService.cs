@@ -9,7 +9,7 @@ namespace AutoStock.Services.Interfaces
 
         Task<ServiceResult<AdminWorkshopDetailDto>> GetByIdAsync(int id);
 
-        Task<ServiceResult<int>> CreateAsync(CreateAdminWorkshopRequestDto request);
+        Task<ServiceResult<AdminWorkshopUserCreatedDto>> CreateAsync(CreateAdminWorkshopRequestDto request);
         Task<ServiceResult<bool>> UpdateSubscriptionAsync(int id, UpdateAdminWorkshopSubscriptionRequestDto request);
         Task<ServiceResult<List<AdminWorkshopUserDto>>> GetUsersAsync(int workshopId);
 

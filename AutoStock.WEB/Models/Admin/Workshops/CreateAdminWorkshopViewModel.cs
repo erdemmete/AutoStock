@@ -26,8 +26,7 @@ namespace AutoStock.WEB.Models.Admin.Workshops
         [EmailAddress(ErrorMessage = "Geçerli bir e-posta adresi giriniz.")]
         public string? FirstUserEmail { get; set; }
 
-        [Required(ErrorMessage = "Şifre zorunludur.")]
-        public string FirstUserPassword { get; set; } = string.Empty;
+        public string? FirstUserPhoneNumber { get; set; }
 
         public string FirstUserRole { get; set; } = "Owner";
     }

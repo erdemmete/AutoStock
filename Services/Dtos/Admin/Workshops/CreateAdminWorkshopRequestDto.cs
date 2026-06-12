@@ -22,7 +22,7 @@ namespace AutoStock.Services.Dtos.Admin.Workshops
 
         public string? FirstUserEmail { get; set; }
 
-        public string FirstUserPassword { get; set; } = null!;
+        public string? FirstUserPhoneNumber { get; set; }
 
         // Sadece Owner veya Staff kabul edeceğiz.
         public string FirstUserRole { get; set; } = "Owner";
