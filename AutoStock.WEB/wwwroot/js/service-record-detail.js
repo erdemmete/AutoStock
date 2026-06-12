@@ -1603,9 +1603,27 @@ async function deletePhoto(photoId, button) {
 
 function initializePhotoModal() {
     const galleryInput = document.getElementById("photoGalleryInput");
+    const cameraInput = document.getElementById("photoCameraInput");
 
-    galleryInput?.addEventListener("change", function () {
-        addSelectedPhotos(this.files);
+    galleryInput?.addEventListener("change", async function () {
+        const files = Array.from(this.files || []);
+
+        if (!files.length) {
+            return;
+        }
+
+        await addSelectedPhotos(files);
+        this.value = "";
+    });
+
+    cameraInput?.addEventListener("change", async function () {
+        const files = Array.from(this.files || []);
+
+        if (!files.length) {
+            return;
+        }
+
+        await addSelectedPhotos(files);
         this.value = "";
     });
 
@@ -1627,7 +1645,7 @@ function initializePhotoModal() {
         }
 
         if (action === "pick-photo-camera") {
-            openInlineCamera();
+            cameraInput?.click();
             return;
         }
 
@@ -1653,15 +1671,6 @@ function initializePhotoModal() {
 
         if (action === "delete-photo") {
             deletePhoto(actionElement.dataset.photoId, actionElement);
-            return;
-        }
-        if (action === "close-inline-camera") {
-            closeInlineCamera();
-            return;
-        }
-
-        if (action === "capture-photo") {
-            capturePhotoFromCamera();
             return;
         }
     });
