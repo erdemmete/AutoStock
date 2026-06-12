@@ -1,6 +1,5 @@
 ﻿@model AutoStock.WEB.Models.Customers.CustomerIndexViewModel
 @using AutoStock.Repositories.Enums
-@using AutoStock.WEB.Models.Common
 @using AutoStock.WEB.Models.Customers
 
 @{
@@ -9,440 +8,1296 @@
     var items = Model.Customers.Items ?? new List<CustomerListItemViewModel>();
 
     var totalCustomerCount = Model.Customers.TotalCount;
-    var currentPageCount = items.Count;
-
     var pageNumber = Model.Customers.PageNumber > 0 ? Model.Customers.PageNumber : Model.Query.PageNumber;
     var pageSize = Model.Customers.PageSize > 0 ? Model.Customers.PageSize : Model.Query.PageSize;
+    var totalPages = Model.Customers.TotalPages;
 
-    var paginationModel = new PaginationViewModel
-    {
-        Controller = "Customers",
-        Action = "Index",
-        PageNumber = pageNumber,
-        PageSize = pageSize,
-        TotalCount = totalCustomerCount,
-        RouteValues = new Dictionary<string, string?>
-        {
-            ["search"] = Model.Query.Search,
-            ["type"] = Model.Query.Type.HasValue ? ((int)Model.Query.Type.Value).ToString() : null
-        }
-    };
+    var currentType = Model.Query.Type;
+
+    var hasAdvancedFilter =
+        currentType.HasValue ||
+        pageSize != 10;
 
     string GetTypeText(string? typeText)
     {
         return typeText switch
         {
             "Corporate" => "Kurumsal",
-            "SoleProprietorship" => "Şahıs Firması",
+            "SoleProprietorship" => "Şahıs",
             "Individual" => "Bireysel",
+            "Kurumsal" => "Kurumsal",
+            "Şahıs" => "Şahıs",
+            "Şahıs Firması" => "Şahıs",
+            "Bireysel" => "Bireysel",
             _ => "Bireysel"
         };
     }
+
+    string GetTypeClass(string? typeText)
+    {
+        return GetTypeText(typeText) switch
+        {
+            "Kurumsal" => "type-corporate",
+            "Şahıs" => "type-sole",
+            _ => "type-individual"
+        };
+    }
+
+    string GetInitials(string? displayName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName))
+            return "?";
+
+        var words = displayName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (words.Length == 1)
+            return words[0].Substring(0, 1).ToUpper();
+
+        return $"{words[0][0]}{words[^1][0]}".ToUpper();
+    }
 }
 
-<div class="customer-page">
-
-    <div class="page-badge">👥 Müşteri Yönetimi</div>
-
-    <div class="customer-header">
-        <div>
-            <h1>Müşteriler</h1>
-            <p>
-                Tüm bireysel, şahıs ve kurumsal müşterilerinizi yönetin,
-                servis geçmişlerini inceleyin ve yeni kayıtlar oluşturun.
-            </p>
-        </div>
-
-        @await Html.PartialAsync("_PageActions", new PageActionViewModel
-        {
-            BackController = "Dashboard",
-            BackAction = "Index",
-            HomeController = "Dashboard",
-            HomeAction = "Index",
-            PrimaryText = "+ Yeni Müşteri Ekle",
-            PrimaryController = "Customers",
-            PrimaryAction = "Create"
-        })
-    </div>
-
-    <div class="customer-table-card">
-
-        <form method="get" asp-controller="Customers" asp-action="Index" class="table-toolbar">
-
-            <div class="search-box">
-                <span>⌕</span>
-                <input name="Search"
-                       value="@Model.Query.Search"
-                       type="text"
-                       placeholder="İsim, firma, telefon, e-posta, TCKN veya VKN ile ara..." />
-            </div>
-
-            <select name="Type" class="filter-select">
-                <option value="">Tüm müşteri türleri</option>
-
-                <option value="@((int)CustomerType.Individual)"
-                        selected="@(Model.Query.Type == CustomerType.Individual ? "selected" : null)">
-                    Bireysel
-                </option>
-
-                <option value="@((int)CustomerType.SoleProprietorship)"
-                        selected="@(Model.Query.Type == CustomerType.SoleProprietorship ? "selected" : null)">
-                    Şahıs
-                </option>
-
-                <option value="@((int)CustomerType.Corporate)"
-                        selected="@(Model.Query.Type == CustomerType.Corporate ? "selected" : null)">
-                    Kurumsal
-                </option>
-            </select>
-
-            <select name="PageSize" class="filter-select">
-                <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
-                <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
-                <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
-            </select>
-
-            <input type="hidden" name="PageNumber" value="1" />
-
-            <button type="submit" class="filter-btn">
-                Filtrele
-            </button>
-
-            <a asp-controller="Customers"
+<div class="cus-page">
+    <section class="cus-hero">
+        <div class="cus-hero-left">
+            <a asp-controller="Dashboard"
                asp-action="Index"
-               class="clear-btn">
-                Temizle
+               class="cus-home-btn"
+               title="Ana sayfa">
+                ⌂
             </a>
 
+            <div>
+                <span class="cus-eyebrow">SENTE360</span>
+                <h1>Müşteriler</h1>
+                <p>Müşteri bilgilerini, iletişim detaylarını ve cari durumlarını hızlıca yönetin.</p>
+            </div>
+        </div>
+
+        <a asp-controller="Customers"
+           asp-action="Create"
+           class="cus-create-btn">
+            <span>+</span>
+            <strong>Yeni Müşteri</strong>
+        </a>
+    </section>
+
+    <section class="cus-filter-shell">
+        <form method="get" asp-controller="Customers" asp-action="Index" id="customerFilterForm">
+            <input type="hidden" name="PageNumber" value="1" />
+            <input type="hidden" name="Type" id="CustomerTypeFilter" value="@(currentType.HasValue ? ((int)currentType.Value).ToString() : "")" />
+
+            <div class="cus-search-row">
+                <div class="cus-search-box">
+                    <span class="cus-search-icon">⌕</span>
+                    <input name="Search"
+                           value="@Model.Query.Search"
+                           type="text"
+                           placeholder="İsim, firma, telefon veya e-posta ara..." />
+                </div>
+
+                <button type="submit" class="cus-search-submit">
+                    Ara
+                </button>
+
+                <button type="button"
+                        class="cus-filter-toggle @(hasAdvancedFilter ? "is-open" : "")"
+                        data-filter-toggle
+                        aria-expanded="@(hasAdvancedFilter ? "true" : "false")">
+                    <span>☷</span>
+                    <strong>Filtreler</strong>
+                    <em>⌄</em>
+                </button>
+            </div>
+
+            <div class="cus-advanced-filters @(hasAdvancedFilter ? "is-open" : "")" data-filter-panel>
+                <div class="cus-filter-section">
+                    <label>Müşteri Türü</label>
+
+                    <div class="cus-type-chips">
+                        <button type="button"
+                                class="cus-type-chip @(!currentType.HasValue ? "active" : "")"
+                                data-type-value="">
+                            Tümü
+                        </button>
+
+                        <button type="button"
+                                class="cus-type-chip @(currentType == CustomerType.Individual ? "active" : "")"
+                                data-type-value="@((int)CustomerType.Individual)">
+                            Bireysel
+                        </button>
+
+                        <button type="button"
+                                class="cus-type-chip @(currentType == CustomerType.SoleProprietorship ? "active" : "")"
+                                data-type-value="@((int)CustomerType.SoleProprietorship)">
+                            Şahıs
+                        </button>
+
+                        <button type="button"
+                                class="cus-type-chip @(currentType == CustomerType.Corporate ? "active" : "")"
+                                data-type-value="@((int)CustomerType.Corporate)">
+                            Kurumsal
+                        </button>
+                    </div>
+                </div>
+
+                <div class="cus-filter-section">
+                    <label>Sayfa Boyutu</label>
+                    <select name="PageSize">
+                        <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
+                        <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
+                        <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
+                    </select>
+                </div>
+
+                <div class="cus-filter-actions">
+                    <button type="submit" class="cus-apply-btn">Filtrele</button>
+                    <a asp-controller="Customers"
+                       asp-action="Index"
+                       class="cus-clear-btn">
+                        Temizle
+                    </a>
+                </div>
+            </div>
         </form>
+    </section>
 
-        @await Html.PartialAsync("_Pagination", paginationModel)
-
-        <table class="customer-table">
-            <thead>
-                <tr>
-                    <th>Müşteri Profili</th>
-                    <th>İletişim</th>
-                    <th>Tür</th>
-                    <th class="text-end">Cari Bakiye</th>
-                    <th class="text-end">İşlem</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                @if (!items.Any())
+    <section class="cus-list-shell">
+        <div class="cus-list-toolbar">
+            <div class="cus-list-summary">
+                @if (totalCustomerCount > 0)
                 {
-                    <tr>
-                        <td colspan="5">
-                            <div class="empty-state">
-                                Kayıt bulunamadı. Arama veya filtre kriterlerini değiştirerek tekrar deneyin.
-                            </div>
-                        </td>
-                    </tr>
+                    <span>
+                        <strong>@totalCustomerCount</strong> müşteri —
+                        <strong>Sayfa @pageNumber / @totalPages</strong>
+                    </span>
                 }
                 else
                 {
-                    foreach (var item in items)
-                    {
-                        var initials = string.IsNullOrWhiteSpace(item.DisplayName)
-                            ? "?"
-                            : item.DisplayName.Substring(0, 1).ToUpper();
-
-                        var balanceClass = item.Balance >= 0 ? "positive" : "negative";
-
-                        <tr class="customer-row">
-                            <td>
-                                <div class="profile-cell">
-                                    <div class="avatar">@initials</div>
-
-                                    <div>
-                                        <strong>
-                                            @item.DisplayName
-                                            <span class="active-dot"></span>
-                                        </strong>
-                                        <small>Müşteri No: @item.Id</small>
-                                    </div>
-                                </div>
-                            </td>
-
-                            <td>
-                                <div class="contact-cell">
-                                    <div>☎ @(item.PhoneNumber ?? "-")</div>
-                                    <small>✉ @(item.Email ?? "-")</small>
-                                </div>
-                            </td>
-
-                            <td>
-                                <span class="type-badge">
-                                    @GetTypeText(item.TypeText)
-                                </span>
-                            </td>
-
-                            <td class="text-end">
-                                <strong class="@balanceClass">
-                                    @item.Balance.ToString("N2") TL
-                                </strong>
-                            </td>
-
-                            <td class="text-end">
-                                <div class="action-group">
-                                    <a class="action-btn"
-                                       href="/CurrentAccounts/Customer/@item.Id">
-                                        Cari
-                                    </a>
-
-                                    <a asp-controller="Customers"
-                                       asp-action="Details"
-                                       asp-route-id="@item.Id"
-                                       class="action-btn">
-                                        Detay
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    }
+                    <span>Müşteri bulunamadı.</span>
                 }
-            </tbody>
-        </table>
+            </div>
 
-        @await Html.PartialAsync("_Pagination", paginationModel)
+            @if (totalPages > 1)
+            {
+                <div class="cus-top-pager">
+                    <a class="cus-top-nav @(pageNumber > 1 ? "" : "disabled")"
+                       href="@(pageNumber > 1
+                                                      ? Url.Action("Index", "Customers", new
+                                                      {
+                                                          Search = Model.Query.Search,
+                                                          Type = currentType.HasValue ? (int?)currentType.Value : null,
+                                                          PageNumber = pageNumber - 1,
+                                                          PageSize = pageSize
+                                                      })
+                                                      : "#")">
+                        ‹
+                    </a>
 
-    </div>
+                    <div class="cus-top-page-list">
+                        @for (var number = 1; number <= totalPages; number++)
+                        {
+                            if (number == 1 ||
+                                number == totalPages ||
+                                Math.Abs(number - pageNumber) <= 1)
+                            {
+                                <a class="cus-top-page @(number == pageNumber ? "active" : "")"
+                                   href="@Url.Action("Index", "Customers", new
+                                   {
+                                       Search = Model.Query.Search,
+                                       Type = currentType.HasValue ? (int?)currentType.Value : null,
+                                       PageNumber = number,
+                                       PageSize = pageSize
+                                   })">
+                                    @number
+                                </a>
+                            }
+                        }
+                    </div>
 
+                    <a class="cus-top-nav @(pageNumber < totalPages ? "" : "disabled")"
+                       href="@(pageNumber<totalPages
+                                                      ? Url.Action("Index", "Customers", new
+                                                      {
+                                                          Search = Model.Query.Search,
+                                                          Type = currentType.HasValue ? (int?)currentType.Value : null,
+                                                          PageNumber = pageNumber + 1,
+                                                          PageSize = pageSize
+                                                      })
+                              : "#")">
+                        ›
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="cus-list">
+            @if (!items.Any())
+            {
+                <div class="cus-empty">
+                    <div class="cus-empty-icon">⌕</div>
+                    <strong>Müşteri bulunamadı</strong>
+                    <span>Arama veya filtre kriterlerini değiştirerek tekrar deneyebilirsin.</span>
+                </div>
+            }
+            else
+            {
+                foreach (var item in items)
+                {
+                    var typeText = GetTypeText(item.TypeText);
+                    var typeClass = GetTypeClass(item.TypeText);
+                    var initials = GetInitials(item.DisplayName);
+                    var balanceClass = item.Balance >= 0 ? "is-positive" : "is-negative";
+
+                    <article class="cus-card">
+                        <a asp-controller="Customers"
+                           asp-action="Details"
+                           asp-route-id="@item.Id"
+                           class="cus-card-main">
+                            <div class="cus-avatar">@initials</div>
+
+                            <div class="cus-profile">
+                                <div class="cus-name-row">
+                                    <strong>@item.DisplayName</strong>
+                                    <span class="cus-live-dot"></span>
+                                </div>
+
+                                <span class="cus-no">Müşteri No: @item.Id</span>
+                            </div>
+                        </a>
+
+                        <div class="cus-contact">
+                            <div class="cus-line">
+                                <span>☎</span>
+                                <strong>@(string.IsNullOrWhiteSpace(item.PhoneNumber) ? "-" : item.PhoneNumber)</strong>
+                            </div>
+
+                            <div class="cus-line">
+                                <span>✉</span>
+                                <strong>@(string.IsNullOrWhiteSpace(item.Email) ? "-" : item.Email)</strong>
+                            </div>
+                        </div>
+
+                        <div class="cus-type-area">
+                            <span class="cus-type-badge @typeClass">@typeText</span>
+                        </div>
+
+                        <div class="cus-balance">
+                            <span>Cari Bakiye</span>
+                            <strong class="@balanceClass">@item.Balance.ToString("N2") TL</strong>
+                        </div>
+
+                        <div class="cus-actions">
+                            <a class="cus-action-btn"
+                               href="/CurrentAccounts/Customer/@item.Id">
+                                Cari
+                            </a>
+
+                            <a asp-controller="Customers"
+                               asp-action="Details"
+                               asp-route-id="@item.Id"
+                               class="cus-action-btn primary">
+                                Detay
+                            </a>
+                        </div>
+                    </article>
+                }
+            }
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <div class="cus-pagination">
+                <a class="cus-page-btn @(pageNumber > 1 ? "" : "disabled")"
+                   href="@(pageNumber > 1
+                                              ? Url.Action("Index", "Customers", new
+                                              {
+                                                  Search = Model.Query.Search,
+                                                  Type = currentType.HasValue ? (int?)currentType.Value : null,
+                                                  PageNumber = pageNumber - 1,
+                                                  PageSize = pageSize
+                                              })
+                                              : "#")">
+                    Önceki
+                </a>
+
+                <div class="cus-page-numbers">
+                    @for (var number = 1; number <= totalPages; number++)
+                    {
+                        if (number == 1 ||
+                            number == totalPages ||
+                            Math.Abs(number - pageNumber) <= 2)
+                        {
+                            <a class="cus-page-number @(number == pageNumber ? "active" : "")"
+                               href="@Url.Action("Index", "Customers", new
+                               {
+                                   Search = Model.Query.Search,
+                                   Type = currentType.HasValue ? (int?)currentType.Value : null,
+                                   PageNumber = number,
+                                   PageSize = pageSize
+                               })">
+                                @number
+                            </a>
+                        }
+                    }
+                </div>
+
+                <a class="cus-page-btn @(pageNumber < totalPages ? "" : "disabled")"
+                   href="@(pageNumber<totalPages
+                                              ? Url.Action("Index", "Customers", new
+                                              {
+                                                  Search = Model.Query.Search,
+                                                  Type = currentType.HasValue ? (int?)currentType.Value : null,
+                                                  PageNumber = pageNumber + 1,
+                                                  PageSize = pageSize
+                                              })
+                          : "#")">
+                    Sonraki
+                </a>
+            </div>
+        }
+    </section>
 </div>
 
 <style>
-    .customer-page {
-        max-width: 1320px;
+    .cus-page {
+        width: min(1280px, calc(100% - 56px));
         margin: 0 auto;
-        padding: 32px 24px;
+        padding: 30px 0 64px;
         color: #061936;
     }
 
-    .page-badge {
-        display: inline-flex;
-        align-items: center;
-        background: #eef2ff;
-        color: #4f35e8;
-        padding: 8px 14px;
-        border-radius: 999px;
-        font-weight: 800;
-        font-size: 14px;
-        margin-bottom: 16px;
-    }
-
-    .customer-header {
+    .cus-hero {
+        margin-bottom: 22px;
+        padding: 24px 28px;
+        border-radius: 30px;
+        background: radial-gradient(circle at 78% 40%, rgba(255,255,255,.16), transparent 30%), linear-gradient(135deg, #07111f 0%, #111827 48%, #4f46e5 100%);
+        color: white;
+        box-shadow: 0 26px 70px rgba(15, 23, 42, .20);
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-bottom: 36px;
-        gap: 24px;
-    }
-
-        .customer-header h1 {
-            font-size: 34px;
-            font-weight: 900;
-            margin: 0 0 10px;
-        }
-
-        .customer-header p {
-            max-width: 620px;
-            color: #667896;
-            font-size: 17px;
-            line-height: 1.5;
-            margin: 0;
-        }
-
-    .customer-table-card {
-        background: #fff;
-        border-radius: 18px;
+        justify-content: space-between;
+        gap: 22px;
         overflow: hidden;
-        border: 1px solid #e4ebf5;
-        box-shadow: 0 14px 40px rgba(15, 23, 42, .07);
     }
 
-    .table-toolbar {
-        padding: 22px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        border-bottom: 1px solid #edf2f7;
-        flex-wrap: wrap;
-    }
-
-    .search-box {
-        width: 430px;
-        height: 48px;
-        border: 1px solid #d4deec;
-        border-radius: 13px;
+    .cus-hero-left {
         display: flex;
         align-items: center;
-        padding: 0 16px;
-        gap: 10px;
+        gap: 18px;
+        min-width: 0;
     }
 
-        .search-box input {
-            border: none;
-            outline: none;
-            width: 100%;
-            font-size: 15px;
-        }
-
-    .filter-select {
-        height: 48px;
-        border: 1px solid #d4deec;
-        border-radius: 13px;
-        padding: 0 14px;
-        font-weight: 700;
-        color: #18365d;
-        background: #fff;
-        outline: none;
-    }
-
-    .filter-btn,
-    .clear-btn,
-    .action-btn {
-        border: 1px solid #cbd8ea;
-        background: #fff;
-        color: #18365d;
-        border-radius: 10px;
-        padding: 10px 16px;
-        font-weight: 800;
+    .cus-home-btn {
+        width: 54px;
+        height: 54px;
+        flex: 0 0 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #2563eb, #16a34a);
+        color: white;
         text-decoration: none;
+        font-size: 24px;
+        font-weight: 950;
+        box-shadow: 0 18px 36px rgba(37, 99, 235, .25);
+    }
+
+    .cus-eyebrow {
+        display: inline-flex;
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.18);
+        color: rgba(255,255,255,.82);
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: .2px;
+    }
+
+    .cus-hero h1 {
+        margin: 0;
+        font-size: clamp(30px, 4vw, 42px);
+        line-height: 1;
+        letter-spacing: -1.6px;
+    }
+
+    .cus-hero p {
+        margin: 10px 0 0;
+        color: rgba(255,255,255,.72);
+        font-size: 15px;
+        line-height: 1.45;
+    }
+
+    .cus-create-btn {
+        height: 56px;
+        padding: 0 22px;
+        border-radius: 18px;
+        background: #4f46e5;
+        color: white;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 10px;
+        text-decoration: none;
+        font-size: 16px;
+        box-shadow: 0 18px 34px rgba(79, 70, 229, .36);
+        white-space: nowrap;
     }
 
-    .filter-btn {
-        height: 48px;
+        .cus-create-btn span {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .cus-create-btn strong {
+            font-weight: 950;
+        }
+
+    .cus-filter-shell {
+        margin-bottom: 22px;
+        padding: 20px;
+        border-radius: 26px;
+        background: rgba(255,255,255,.96);
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, .07);
+    }
+
+    .cus-search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .cus-search-box {
+        position: relative;
+        min-width: 0;
+    }
+
+    .cus-search-icon {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #8aa0bd;
+        font-size: 24px;
+        pointer-events: none;
+    }
+
+    .cus-search-box input {
+        width: 100%;
+        height: 56px;
+        padding: 0 18px 0 52px;
+        border-radius: 18px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 16px;
+        font-weight: 750;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+        .cus-search-box input::placeholder {
+            color: #8aa0bd;
+            font-weight: 700;
+        }
+
+        .cus-search-box input:focus {
+            background: white;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, .10);
+        }
+
+    .cus-search-submit,
+    .cus-filter-toggle {
+        height: 56px;
+        border-radius: 18px;
+        border: 1px solid #c7d2fe;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .cus-search-submit {
+        padding: 0 22px;
+        background: #4f46e5;
+        color: white;
+        border-color: #4f46e5;
+        box-shadow: 0 12px 24px rgba(79, 70, 229, .20);
+    }
+
+    .cus-filter-toggle {
+        padding: 0 18px;
+        background: #f8fafc;
+        color: #312e81;
+    }
+
+        .cus-filter-toggle span {
+            font-size: 18px;
+        }
+
+        .cus-filter-toggle em {
+            font-style: normal;
+            transition: .18s ease;
+        }
+
+        .cus-filter-toggle.is-open em {
+            transform: rotate(180deg);
+        }
+
+    .cus-advanced-filters {
+        display: none;
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid #e2e8f0;
+        grid-template-columns: minmax(0, 1.4fr) minmax(180px, .5fr) auto;
+        gap: 14px;
+        align-items: end;
+    }
+
+        .cus-advanced-filters.is-open {
+            display: grid;
+        }
+
+    .cus-filter-section {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+    }
+
+        .cus-filter-section label {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 950;
+            letter-spacing: .7px;
+            text-transform: uppercase;
+        }
+
+        .cus-filter-section select {
+            width: 100%;
+            height: 46px;
+            padding: 0 14px;
+            border-radius: 15px;
+            border: 1px solid #d4deeb;
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 800;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+    .cus-type-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+    }
+
+    .cus-type-chip {
+        height: 36px;
+        padding: 0 16px;
+        border: none;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 900;
         cursor: pointer;
     }
 
-    .clear-btn {
-        height: 48px;
-    }
-
-    .customer-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-        .customer-table thead {
-            background: #f7faff;
+        .cus-type-chip.active {
+            background: #0f172a;
+            color: white;
         }
 
-        .customer-table th {
-            text-align: left;
-            padding: 18px 24px;
-            color: #667896;
-            font-size: 13px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-        }
-
-        .customer-table td {
-            padding: 22px 24px;
-            border-top: 1px solid #edf2f7;
-            vertical-align: middle;
-        }
-
-    .profile-cell {
+    .cus-filter-actions {
         display: flex;
-        align-items: center;
-        gap: 16px;
+        gap: 10px;
     }
 
-    .avatar {
-        width: 52px;
-        height: 52px;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        display: flex;
+    .cus-apply-btn,
+    .cus-clear-btn {
+        height: 46px;
+        padding: 0 18px;
+        border-radius: 15px;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-weight: 900;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .cus-apply-btn {
+        border: none;
+        background: #4f46e5;
+        color: white;
+        cursor: pointer;
+    }
+
+    .cus-clear-btn {
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #4f46e5;
+    }
+
+    .cus-list-toolbar {
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+    }
+
+    .cus-list-summary {
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 850;
+    }
+
+        .cus-list-summary strong {
+            color: #334155;
+        }
+
+    .cus-top-pager {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px;
+        border-radius: 999px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
+    }
+
+    .cus-top-page-list {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .cus-top-nav,
+    .cus-top-page {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #475569;
+        font-size: 14px;
+        font-weight: 950;
+        transition: .15s ease;
+    }
+
+    .cus-top-nav {
+        font-size: 24px;
+        line-height: 1;
+        background: #f8fafc;
+    }
+
+    .cus-top-page.active {
+        background: #4f46e5;
+        color: white;
+        box-shadow: 0 8px 18px rgba(79, 70, 229, .28);
+    }
+
+    .cus-top-nav:not(.disabled):hover,
+    .cus-top-page:not(.active):hover {
+        background: #eef2ff;
+        color: #4f46e5;
+    }
+
+    .cus-top-nav.disabled {
+        opacity: .35;
+        pointer-events: none;
+    }
+
+    .cus-list {
+        display: grid;
+        gap: 14px;
+    }
+
+    .cus-card {
+        min-height: 92px;
+        padding: 20px 24px;
+        border-radius: 24px;
+        border: 1px solid #dbe3ef;
+        background: white;
+        color: #0f172a;
+        display: grid;
+        grid-template-columns: minmax(260px, 1.45fr) minmax(260px, 1.25fr) 120px 150px 150px;
+        gap: 20px;
+        align-items: center;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, .045);
+        transition: .16s ease;
+    }
+
+        .cus-card:hover {
+            transform: translateY(-2px);
+            border-color: #c7d2fe;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, .08);
+        }
+
+    .cus-card-main {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .cus-avatar {
+        width: 54px;
+        height: 54px;
+        flex: 0 0 54px;
+        border-radius: 18px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
         color: #17365d;
-    }
-
-    .profile-cell strong {
-        display: block;
+        display: grid;
+        place-items: center;
         font-size: 16px;
-        margin-bottom: 6px;
+        font-weight: 950;
     }
 
-    .profile-cell small,
-    .contact-cell small {
-        color: #667896;
+    .cus-profile {
+        min-width: 0;
     }
 
-    .active-dot {
-        display: inline-block;
+    .cus-name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+        .cus-name-row strong {
+            color: #0f172a;
+            font-size: 17px;
+            font-weight: 950;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+    .cus-live-dot {
         width: 7px;
         height: 7px;
-        background: #10b981;
-        border-radius: 50%;
-        margin-left: 6px;
-    }
-
-    .contact-cell div {
-        margin-bottom: 6px;
-    }
-
-    .type-badge {
-        background: #eef2ff;
-        color: #4f35e8;
-        padding: 7px 13px;
+        flex: 0 0 7px;
         border-radius: 999px;
-        font-weight: 900;
+        background: #10b981;
+    }
+
+    .cus-no {
+        display: block;
+        margin-top: 6px;
+        color: #8aa0bd;
         font-size: 13px;
+        font-weight: 850;
     }
 
-    .positive {
-        color: #009966;
+    .cus-contact {
+        min-width: 0;
+        display: grid;
+        gap: 8px;
     }
 
-    .negative {
-        color: #e60046;
+    .cus-line {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #526782;
+        font-size: 14px;
+        font-weight: 800;
     }
 
-    .text-end {
-        text-align: right !important;
+        .cus-line span {
+            width: 18px;
+            flex: 0 0 18px;
+            color: #8aa0bd;
+            text-align: center;
+        }
+
+        .cus-line strong {
+            min-width: 0;
+            color: #526782;
+            font-size: 14px;
+            font-weight: 850;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+    .cus-type-area {
+        display: flex;
+        justify-content: flex-start;
     }
 
-    .action-group {
+    .cus-type-badge {
+        min-width: 86px;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 999px;
         display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+        .cus-type-badge.type-individual {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .cus-type-badge.type-sole {
+            background: #ecfeff;
+            color: #0891b2;
+        }
+
+        .cus-type-badge.type-corporate {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+    .cus-balance span {
+        display: block;
+        margin-bottom: 5px;
+        color: #8aa0bd;
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    .cus-balance strong {
+        display: block;
+        color: #0f172a;
+        font-size: 15px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+        .cus-balance strong.is-positive {
+            color: #059669;
+        }
+
+        .cus-balance strong.is-negative {
+            color: #e11d48;
+        }
+
+    .cus-actions {
+        display: flex;
         justify-content: flex-end;
         gap: 8px;
     }
 
-    .empty-state {
-        padding: 28px;
-        text-align: center;
-        color: #667896;
-        font-weight: 800;
+    .cus-action-btn {
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 13px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #18365d;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 950;
+        white-space: nowrap;
     }
 
-    @@media (max-width: 900px) {
-        .customer-header,
-        .table-toolbar {
-            flex-direction: column;
+        .cus-action-btn.primary {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: white;
+        }
+
+    .cus-empty {
+        padding: 48px 20px;
+        border-radius: 24px;
+        background: white;
+        border: 1px dashed #cbd5e1;
+        color: #64748b;
+        text-align: center;
+        display: grid;
+        justify-items: center;
+        gap: 8px;
+    }
+
+    .cus-empty-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
+        display: grid;
+        place-items: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 28px;
+        font-weight: 950;
+    }
+
+    .cus-empty strong {
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 950;
+    }
+
+    .cus-pagination {
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 22px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+    }
+
+    .cus-page-numbers {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        flex-wrap: wrap;
+    }
+
+    .cus-page-number,
+    .cus-page-btn {
+        min-width: 40px;
+        height: 40px;
+        padding: 0 13px;
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+        background: white;
+        color: #334155;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+        .cus-page-number.active {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: white;
+        }
+
+        .cus-page-btn.disabled {
+            pointer-events: none;
+            opacity: .45;
+        }
+
+    @@media (max-width: 1180px) {
+        .cus-card {
+            grid-template-columns: minmax(250px, 1.3fr) minmax(230px, 1.2fr) 110px 140px;
+        }
+
+        .cus-actions {
+            grid-column: 1 / -1;
+            justify-content: flex-end;
+        }
+
+        .cus-advanced-filters {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .cus-filter-actions {
+            grid-column: span 2;
+        }
+    }
+
+    @@media (max-width: 920px) {
+        .cus-page {
+            width: min(100% - 24px, 1280px);
+            padding: 18px 0 44px;
+        }
+
+        .cus-hero {
+            padding: 18px;
+            border-radius: 26px;
             align-items: flex-start;
         }
 
-        .search-box {
+        .cus-hero-left {
+            align-items: flex-start;
+            gap: 13px;
+        }
+
+        .cus-home-btn {
+            width: 46px;
+            height: 46px;
+            flex-basis: 46px;
+            border-radius: 16px;
+            margin-top: 3px;
+        }
+
+        .cus-hero h1 {
+            font-size: 30px;
+            letter-spacing: -1.2px;
+        }
+
+        .cus-hero p {
+            font-size: 14px;
+        }
+
+        .cus-create-btn {
+            width: 50px;
+            height: 50px;
+            padding: 0;
+            border-radius: 17px;
+            flex: 0 0 50px;
+        }
+
+            .cus-create-btn strong {
+                display: none;
+            }
+
+        .cus-filter-shell {
+            padding: 14px;
+            border-radius: 24px;
+        }
+
+        .cus-search-row {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .cus-search-box {
+            grid-column: span 2;
+        }
+
+            .cus-search-box input,
+            .cus-search-submit,
+            .cus-filter-toggle {
+                height: 52px;
+                border-radius: 18px;
+            }
+
+        .cus-filter-toggle,
+        .cus-search-submit {
             width: 100%;
         }
 
-        .customer-table-card {
-            overflow-x: auto;
+        .cus-advanced-filters {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
 
-        .customer-table {
-            min-width: 980px;
+        .cus-filter-section:first-child {
+            grid-column: span 2;
+        }
+
+        .cus-filter-actions {
+            grid-column: span 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .cus-apply-btn,
+        .cus-clear-btn {
+            width: 100%;
+            height: 50px;
+            border-radius: 17px;
+        }
+
+        .cus-list-toolbar {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .cus-top-pager {
+            width: fit-content;
+            max-width: 100%;
+        }
+
+        .cus-list-summary {
+            line-height: 1.45;
+        }
+
+        .cus-card {
+            padding: 16px;
+            border-radius: 22px;
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+
+        .cus-card-main {
+            align-items: flex-start;
+        }
+
+        .cus-name-row strong {
+            font-size: 20px;
+            white-space: normal;
+            line-height: 1.15;
+        }
+
+        .cus-contact {
+            padding: 12px;
+            border-radius: 18px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .cus-line strong {
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .cus-type-area,
+        .cus-actions {
+            justify-content: flex-start;
+        }
+
+        .cus-balance {
+            padding: 12px;
+            border-radius: 18px;
+            background: white;
+            border: 1px solid #e2e8f0;
+        }
+
+        .cus-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .cus-action-btn {
+            width: 100%;
+            height: 46px;
+            border-radius: 16px;
+        }
+
+        .cus-pagination {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .cus-page-numbers {
+            order: -1;
+        }
+
+        .cus-page-btn {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 460px) {
+        .cus-page {
+            width: min(100% - 18px, 1280px);
+            padding-top: 12px;
+        }
+
+        .cus-hero {
+            padding: 16px;
+            border-radius: 24px;
+        }
+
+        .cus-home-btn {
+            width: 42px;
+            height: 42px;
+            flex-basis: 42px;
+            border-radius: 15px;
+            font-size: 21px;
+        }
+
+        .cus-eyebrow {
+            padding: 5px 10px;
+            font-size: 11px;
+        }
+
+        .cus-hero h1 {
+            font-size: 27px;
+        }
+
+        .cus-hero p {
+            font-size: 13px;
+        }
+
+        .cus-create-btn {
+            width: 46px;
+            height: 46px;
+            flex-basis: 46px;
+        }
+
+        .cus-type-chips {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .cus-type-chip {
+            width: 100%;
+        }
+
+        .cus-advanced-filters {
+            grid-template-columns: 1fr;
+        }
+
+        .cus-filter-section:first-child,
+        .cus-filter-actions {
+            grid-column: auto;
+        }
+
+        .cus-filter-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .cus-card-main {
+            gap: 12px;
+        }
+
+        .cus-avatar {
+            width: 48px;
+            height: 48px;
+            flex-basis: 48px;
+            border-radius: 16px;
         }
     }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleButton = document.querySelector("[data-filter-toggle]");
+        const filterPanel = document.querySelector("[data-filter-panel]");
+        const typeInput = document.getElementById("CustomerTypeFilter");
+        const typeButtons = document.querySelectorAll("[data-type-value]");
+
+        toggleButton?.addEventListener("click", function () {
+            const isOpen = filterPanel?.classList.toggle("is-open");
+
+            toggleButton.classList.toggle("is-open", !!isOpen);
+            toggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+
+        typeButtons.forEach(button => {
+            button.addEventListener("click", function () {
+                if (!typeInput) {
+                    return;
+                }
+
+                typeInput.value = this.dataset.typeValue ?? "";
+
+                typeButtons.forEach(x => x.classList.remove("active"));
+                this.classList.add("active");
+            });
+        });
+    });
+</script>
