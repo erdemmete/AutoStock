@@ -1,5 +1,4 @@
 ﻿@model AutoStock.WEB.Models.CurrentAccounts.CurrentAccountIndexViewModel
-@using AutoStock.WEB.Models.Common
 @using AutoStock.WEB.Models.CurrentAccounts
 
 @{
@@ -17,204 +16,347 @@
         : Model.Query.PageSize;
 
     var totalCount = summary.CustomerBalances.TotalCount;
+    var totalPages = pageSize > 0
+        ? Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize))
+        : 1;
 
-    var paginationModel = new PaginationViewModel
+    string GetInitials(string? name)
     {
-        Controller = "CurrentAccounts",
-        Action = "Index",
-        PageNumber = pageNumber,
-        PageSize = pageSize,
-        TotalCount = totalCount,
-        RouteValues = new Dictionary<string, string?>
-        {
-            ["search"] = Model.Query.Search
-        }
-    };
+        if (string.IsNullOrWhiteSpace(name))
+            return "?";
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 1)
+            return parts[0].Substring(0, 1).ToUpper();
+
+        return $"{parts[0][0]}{parts[^1][0]}".ToUpper();
+    }
+
+    string GetBalanceText(decimal balance)
+    {
+        if (balance > 0) return "Alacaklıyız";
+        if (balance < 0) return "Borçluyuz";
+        return "Bakiye yok";
+    }
+
+    string GetBalanceClass(decimal balance)
+    {
+        if (balance > 0) return "is-positive";
+        if (balance < 0) return "is-negative";
+        return "is-zero";
+    }
 }
 
-<div class="ca-page">
-    <div class="ca-header">
-        <div>
-            <h1>Cari Yönetimi</h1>
-            <p>Müşteri hesaplarını görüntüleyin, yönetin ve takip edin.</p>
+<div class="cur-page">
+    <section class="cur-hero">
+        <div class="cur-hero-left">
+            <a asp-controller="Dashboard"
+               asp-action="Index"
+               class="cur-home-btn"
+               title="Ana sayfa">
+                ⌂
+            </a>
+
+            <div>
+                <span class="cur-eyebrow">SENTE360</span>
+                <h1>Cari Yönetimi</h1>
+                <p>Müşteri bakiyelerini, tahsilatları ve açık alacakları hızlıca takip edin.</p>
+            </div>
         </div>
+    </section>
 
-        @await Html.PartialAsync("_PageActions", new PageActionViewModel
-        {
-            BackController = "Dashboard",
-            BackAction = "Index",
-            HomeController = "Dashboard",
-            HomeAction = "Index"
-        })
-    </div>
-
-    <div class="ca-stats">
-        <div class="ca-card">
-            <div class="ca-icon ca-icon-blue">₺</div>
+    <section class="cur-stats">
+        <article class="cur-stat-card">
+            <div class="cur-stat-icon icon-blue">₺</div>
             <div>
                 <span>Bu Ay Net Fatura</span>
                 <strong>@summary.ThisMonthInvoiceTotal.ToString("N2") TL</strong>
                 <small>kesilen - iptal</small>
             </div>
-        </div>
+        </article>
 
-        <div class="ca-card">
-            <div class="ca-icon ca-icon-purple">✓</div>
+        <article class="cur-stat-card">
+            <div class="cur-stat-icon icon-purple">✓</div>
             <div>
                 <span>Bu Ay Tahsilat</span>
                 <strong>@summary.ThisMonthPaymentTotal.ToString("N2") TL</strong>
                 <small>gelen ödeme</small>
             </div>
-        </div>
+        </article>
 
-        <div class="ca-card">
-            <div class="ca-icon ca-icon-green">↗</div>
+        <article class="cur-stat-card highlight">
+            <div class="cur-stat-icon icon-green">↗</div>
             <div>
                 <span>Toplam Açık Alacak</span>
                 <strong>@summary.TotalReceivableBalance.ToString("N2") TL</strong>
                 <small>tahsil edilecek</small>
             </div>
-        </div>
-    </div>
+        </article>
+    </section>
 
-    <div class="ca-table-card">
+    <section class="cur-filter-shell">
         <form method="get"
               asp-controller="CurrentAccounts"
               asp-action="Index"
-              class="ca-toolbar">
-
-            <div class="ca-search">
-                <span>⌕</span>
-                <input name="Search"
-                       value="@Model.Query.Search"
-                       type="text"
-                       placeholder="Müşteri adı, firma veya telefon ile ara..." />
-            </div>
-
-            <select name="PageSize" class="ca-page-size">
-                <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
-                <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
-                <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
-            </select>
+              class="cur-filter-form">
 
             <input type="hidden" name="PageNumber" value="1" />
 
-            <button class="ca-btn ca-btn-outline" type="submit">
-                Filtrele
-            </button>
+            <div class="cur-search-row">
+                <div class="cur-search-box">
+                    <span class="cur-search-icon">⌕</span>
+                    <input name="Search"
+                           value="@Model.Query.Search"
+                           type="text"
+                           placeholder="Müşteri adı, firma veya telefon ile ara..." />
+                </div>
 
-            <a asp-controller="CurrentAccounts"
-               asp-action="Index"
-               class="ca-btn ca-btn-outline">
-                Temizle
-            </a>
+                <button type="submit" class="cur-search-submit">
+                    Ara
+                </button>
+
+                <button type="button"
+                        class="cur-filter-toggle @(pageSize != 10 ? "is-open" : "")"
+                        data-filter-toggle
+                        aria-expanded="@(pageSize != 10 ? "true" : "false")">
+                    <span>☷</span>
+                    <strong>Filtreler</strong>
+                    <em>⌄</em>
+                </button>
+            </div>
+
+            <div class="cur-advanced-filters @(pageSize != 10 ? "is-open" : "")" data-filter-panel>
+                <div class="cur-filter-section">
+                    <label>Sayfa Boyutu</label>
+
+                    <select name="PageSize">
+                        <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
+                        <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
+                        <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
+                    </select>
+                </div>
+
+                <div class="cur-filter-actions">
+                    <button type="submit" class="cur-apply-btn">Filtrele</button>
+
+                    <a asp-controller="CurrentAccounts"
+                       asp-action="Index"
+                       class="cur-clear-btn">
+                        Temizle
+                    </a>
+                </div>
+            </div>
         </form>
+    </section>
 
-        @await Html.PartialAsync("_Pagination", paginationModel)
-
-        <table class="ca-table">
-            <thead>
-                <tr>
-                    <th>Müşteri</th>
-                    <th>Güncel Bakiye</th>
-                    <th class="text-end">İşlem</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (!balances.Any())
+    <section class="cur-list-shell">
+        <div class="cur-list-toolbar">
+            <div class="cur-list-summary">
+                @if (totalCount > 0)
                 {
-                    <tr>
-                        <td colspan="3">
-                            <div class="empty-state">
-                                Kayıt bulunamadı. Arama kriterini değiştirerek tekrar deneyin.
-                            </div>
-                        </td>
-                    </tr>
+                    <span>
+                        <strong>@totalCount</strong> cari hesap —
+                        <strong>Sayfa @pageNumber / @totalPages</strong>
+                    </span>
                 }
                 else
                 {
-                    foreach (var item in balances)
-                    {
-                        var balanceClass = item.Balance > 0 ? "positive" : "negative";
-                        var balanceText = item.Balance > 0 ? "Alacaklıyız" : "Borçluyuz";
-
-                        <tr>
-                            <td>
-                                <div class="ca-customer">
-                                    <div class="ca-avatar">
-                                        @(string.IsNullOrWhiteSpace(item.CustomerName) ? "?" : item.CustomerName.Substring(0, 1).ToUpper())
-                                    </div>
-                                    <div>
-                                        <strong>@item.CustomerName</strong>
-                                        <small>Müşteri hesabı</small>
-                                    </div>
-                                </div>
-                            </td>
-
-                            <td>
-                                <div class="ca-balance @balanceClass">
-                                    @item.Balance.ToString("N2") TL
-                                </div>
-                                <small>@balanceText</small>
-                            </td>
-
-                            <td class="text-end">
-                                <button type="button"
-                                        class="ca-btn ca-btn-success js-payment-button"
-                                        data-customer-id="@item.CustomerId"
-                                        data-customer-name="@item.CustomerName">
-                                    Tahsilat
-                                </button>
-
-                                <a class="ca-btn ca-btn-outline"
-                                   href="/CurrentAccounts/Customer/@item.CustomerId">
-                                    Ekstre
-                                </a>
-                            </td>
-                        </tr>
-                    }
+                    <span>Cari hesap bulunamadı.</span>
                 }
-            </tbody>
-        </table>
+            </div>
 
-        @await Html.PartialAsync("_Pagination", paginationModel)
-    </div>
+            @if (totalPages > 1)
+            {
+                <div class="cur-top-pager">
+                    <a class="cur-top-nav @(pageNumber > 1 ? "" : "disabled")"
+                       href="@(pageNumber > 1
+                                                      ? Url.Action("Index", "CurrentAccounts", new
+                                                      {
+                                                          Search = Model.Query.Search,
+                                                          PageNumber = pageNumber - 1,
+                                                          PageSize = pageSize
+                                                      })
+                                                      : "#")">
+                        ‹
+                    </a>
+
+                    <div class="cur-top-page-list">
+                        @for (var number = 1; number <= totalPages; number++)
+                        {
+                            if (number == 1 ||
+                                number == totalPages ||
+                                Math.Abs(number - pageNumber) <= 1)
+                            {
+                                <a class="cur-top-page @(number == pageNumber ? "active" : "")"
+                                   href="@Url.Action("Index", "CurrentAccounts", new
+                                   {
+                                       Search = Model.Query.Search,
+                                       PageNumber = number,
+                                       PageSize = pageSize
+                                   })">
+                                    @number
+                                </a>
+                            }
+                        }
+                    </div>
+
+                    <a class="cur-top-nav @(pageNumber < totalPages ? "" : "disabled")"
+                       href="@(pageNumber<totalPages
+                                                      ? Url.Action("Index", "CurrentAccounts", new
+                                                      {
+                                                          Search = Model.Query.Search,
+                                                          PageNumber = pageNumber + 1,
+                                                          PageSize = pageSize
+                                                      })
+                              : "#")">
+                        ›
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="cur-list">
+            @if (!balances.Any())
+            {
+                <div class="cur-empty">
+                    <div class="cur-empty-icon">⌕</div>
+                    <strong>Kayıt bulunamadı</strong>
+                    <span>Arama kriterini değiştirerek tekrar deneyebilirsin.</span>
+                </div>
+            }
+            else
+            {
+                foreach (var item in balances)
+                {
+                    var balanceClass = GetBalanceClass(item.Balance);
+                    var balanceText = GetBalanceText(item.Balance);
+                    var initials = GetInitials(item.CustomerName);
+
+                    <article class="cur-card">
+                        <a class="cur-customer-main"
+                           href="/CurrentAccounts/Customer/@item.CustomerId">
+                            <div class="cur-avatar">@initials</div>
+
+                            <div class="cur-customer-text">
+                                <strong>@item.CustomerName</strong>
+                                <span>Müşteri hesabı</span>
+                            </div>
+                        </a>
+
+                        <div class="cur-balance-box">
+                            <span>Güncel Bakiye</span>
+                            <strong class="@balanceClass">@item.Balance.ToString("N2") TL</strong>
+                            <small>@balanceText</small>
+                        </div>
+
+                        <div class="cur-card-actions">
+                            <button type="button"
+                                    class="cur-action-btn success js-payment-button"
+                                    data-customer-id="@item.CustomerId"
+                                    data-customer-name="@item.CustomerName">
+                                Tahsilat
+                            </button>
+
+                            <a class="cur-action-btn"
+                               href="/CurrentAccounts/Customer/@item.CustomerId">
+                                Ekstre
+                            </a>
+                        </div>
+                    </article>
+                }
+            }
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <div class="cur-pagination">
+                <a class="cur-page-btn @(pageNumber > 1 ? "" : "disabled")"
+                   href="@(pageNumber > 1
+                                              ? Url.Action("Index", "CurrentAccounts", new
+                                              {
+                                                  Search = Model.Query.Search,
+                                                  PageNumber = pageNumber - 1,
+                                                  PageSize = pageSize
+                                              })
+                                              : "#")">
+                    Önceki
+                </a>
+
+                <div class="cur-page-numbers">
+                    @for (var number = 1; number <= totalPages; number++)
+                    {
+                        if (number == 1 ||
+                            number == totalPages ||
+                            Math.Abs(number - pageNumber) <= 2)
+                        {
+                            <a class="cur-page-number @(number == pageNumber ? "active" : "")"
+                               href="@Url.Action("Index", "CurrentAccounts", new
+                               {
+                                   Search = Model.Query.Search,
+                                   PageNumber = number,
+                                   PageSize = pageSize
+                               })">
+                                @number
+                            </a>
+                        }
+                    }
+                </div>
+
+                <a class="cur-page-btn @(pageNumber < totalPages ? "" : "disabled")"
+                   href="@(pageNumber<totalPages
+                                              ? Url.Action("Index", "CurrentAccounts", new
+                                              {
+                                                  Search = Model.Query.Search,
+                                                  PageNumber = pageNumber + 1,
+                                                  PageSize = pageSize
+                                              })
+                          : "#")">
+                    Sonraki
+                </a>
+            </div>
+        }
+    </section>
 </div>
 
 <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content cur-modal-content">
 
-            <div class="modal-header">
-                <h5 class="modal-title">Tahsilat Ekle</h5>
+            <div class="modal-header cur-modal-header">
+                <div>
+                    <span class="cur-modal-eyebrow">Cari İşlem</span>
+                    <h5 class="modal-title">Tahsilat Ekle</h5>
+                </div>
+
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <div class="modal-body">
+            <div class="modal-body cur-modal-body">
                 <input type="hidden" id="paymentCustomerId" />
 
-                <div class="mb-3">
-                    <label class="form-label">Müşteri</label>
-                    <input type="text" id="paymentCustomerName" class="form-control" disabled />
+                <div class="cur-modal-field">
+                    <label>Müşteri</label>
+                    <input type="text" id="paymentCustomerName" disabled />
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Tutar</label>
-                    <input type="number" id="paymentAmount" class="form-control" step="0.01" />
+                <div class="cur-modal-field">
+                    <label>Tutar</label>
+                    <input type="number" id="paymentAmount" step="0.01" placeholder="0,00" />
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Açıklama</label>
-                    <textarea id="paymentDescription" class="form-control"></textarea>
+                <div class="cur-modal-field">
+                    <label>Açıklama</label>
+                    <textarea id="paymentDescription" rows="3" placeholder="Örn: Nakit tahsilat"></textarea>
                 </div>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <div class="modal-footer cur-modal-footer">
+                <button type="button" class="cur-modal-btn soft" data-bs-dismiss="modal">
                     Vazgeç
                 </button>
 
-                <button type="button" class="btn btn-success" onclick="submitPayment()">
+                <button type="button" class="cur-modal-btn success" onclick="submitPayment()">
                     Tahsilat Kaydet
                 </button>
             </div>
@@ -225,6 +367,16 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        const toggleButton = document.querySelector("[data-filter-toggle]");
+        const filterPanel = document.querySelector("[data-filter-panel]");
+
+        toggleButton?.addEventListener("click", function () {
+            const isOpen = filterPanel?.classList.toggle("is-open");
+
+            toggleButton.classList.toggle("is-open", !!isOpen);
+            toggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+
         document.querySelectorAll(".js-payment-button").forEach(function (button) {
             button.addEventListener("click", function () {
                 const customerId = parseInt(this.dataset.customerId);
@@ -289,279 +441,928 @@
         location.reload();
     }
 </script>
+
 <style>
-    .ca-page {
-        max-width: 1320px;
+    .cur-page {
+        width: min(1280px, calc(100% - 56px));
         margin: 0 auto;
-        padding: 32px 24px;
-        color: #001632;
+        padding: 30px 0 64px;
+        color: #061936;
     }
 
-    .ca-header {
+    .cur-hero {
+        margin-bottom: 22px;
+        padding: 24px 28px;
+        border-radius: 30px;
+        background: radial-gradient(circle at 78% 40%, rgba(255,255,255,.16), transparent 30%), linear-gradient(135deg, #07111f 0%, #111827 48%, #4f46e5 100%);
+        color: white;
+        box-shadow: 0 26px 70px rgba(15, 23, 42, .20);
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        align-items: center;
-        margin-bottom: 36px;
-        gap: 20px;
-    }
-
-        .ca-header h1 {
-            font-size: 30px;
-            font-weight: 800;
-            margin: 0;
-        }
-
-        .ca-header p {
-            margin: 8px 0 0;
-            color: #536b8a;
-            font-size: 16px;
-        }
-
-    .ca-stats {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
-        margin-bottom: 38px;
-    }
-
-    .ca-card {
-        background: #fff;
-        border: 1px solid #dbe4f0;
-        border-radius: 16px;
-        padding: 26px;
-        display: flex;
-        gap: 18px;
-        align-items: center;
-        box-shadow: 0 2px 6px rgba(15, 23, 42, .08);
-    }
-
-        .ca-card span {
-            display: block;
-            color: #51698b;
-            font-weight: 600;
-            margin-bottom: 14px;
-        }
-
-        .ca-card strong {
-            font-size: 30px;
-            font-weight: 800;
-            margin-right: 8px;
-        }
-
-        .ca-card small {
-            color: #51698b;
-            font-weight: 600;
-        }
-
-    .ca-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        font-weight: 700;
-    }
-
-    .ca-icon-green {
-        background: #e7fbf1;
-        color: #0ca66f;
-    }
-
-    .ca-icon-blue {
-        background: #eef3ff;
-        color: #335cff;
-    }
-
-    .ca-icon-purple {
-        background: #f1ecff;
-        color: #4f35e8;
-    }
-
-    .ca-table-card {
-        background: #fff;
-        border: 1px solid #dbe4f0;
-        border-radius: 18px;
+        gap: 22px;
         overflow: hidden;
-        box-shadow: 0 2px 6px rgba(15, 23, 42, .06);
     }
 
-    .ca-toolbar {
-        padding: 24px;
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        border-bottom: 1px solid #e5edf7;
-        flex-wrap: wrap;
-    }
-
-    .ca-search {
-        width: 520px;
-        height: 48px;
-        border: 1px solid #cbd8ea;
-        border-radius: 12px;
+    .cur-hero-left {
         display: flex;
         align-items: center;
-        padding: 0 16px;
-        gap: 10px;
+        gap: 18px;
+        min-width: 0;
     }
 
-        .ca-search input {
-            border: none;
-            outline: none;
-            width: 100%;
-            font-size: 15px;
-            color: #001632;
-        }
-
-            .ca-search input::placeholder {
-                color: #8ca0bd;
-            }
-
-    .ca-page-size {
-        width: 130px;
-        height: 48px;
-        border: 1px solid #cbd8ea;
-        border-radius: 12px;
-        padding: 0 14px;
-        color: #001632;
-        font-weight: 700;
-        background: #fff;
-        outline: none;
+    .cur-home-btn {
+        width: 54px;
+        height: 54px;
+        flex: 0 0 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #2563eb, #16a34a);
+        color: white;
+        text-decoration: none;
+        font-size: 24px;
+        font-weight: 950;
+        box-shadow: 0 18px 36px rgba(37, 99, 235, .25);
     }
 
-    .ca-table {
-        width: 100%;
-        border-collapse: collapse;
+    .cur-eyebrow {
+        display: inline-flex;
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.18);
+        color: rgba(255,255,255,.82);
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: .2px;
     }
 
-        .ca-table thead {
-            background: #f6f9fd;
-        }
+    .cur-hero h1 {
+        margin: 0;
+        font-size: clamp(30px, 4vw, 42px);
+        line-height: 1;
+        letter-spacing: -1.6px;
+    }
 
-        .ca-table th {
-            text-align: left;
-            padding: 18px 28px;
-            font-size: 14px;
-            letter-spacing: .05em;
-            color: #536b8a;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
+    .cur-hero p {
+        margin: 10px 0 0;
+        color: rgba(255,255,255,.72);
+        font-size: 15px;
+        line-height: 1.45;
+    }
 
-        .ca-table td {
-            padding: 24px 28px;
-            border-top: 1px solid #edf2f7;
-            vertical-align: middle;
-        }
+    .cur-stats {
+        margin-bottom: 22px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
 
-    .ca-customer {
+    .cur-stat-card {
+        min-width: 0;
+        padding: 22px;
+        border-radius: 24px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
         display: flex;
         align-items: center;
         gap: 16px;
     }
 
-    .ca-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background: #f1f5f9;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        color: #18365d;
+        .cur-stat-card.highlight {
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+        }
+
+    .cur-stat-icon {
+        width: 50px;
+        height: 50px;
+        flex: 0 0 50px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        font-size: 24px;
+        font-weight: 950;
     }
 
-    .ca-customer strong {
+        .cur-stat-icon.icon-blue {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .cur-stat-icon.icon-purple {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .cur-stat-icon.icon-green {
+            background: #dcfce7;
+            color: #059669;
+        }
+
+    .cur-stat-card span {
         display: block;
-        font-size: 18px;
-        margin-bottom: 4px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 900;
+        margin-bottom: 6px;
     }
 
-    .ca-customer small,
-    .ca-table td small {
-        color: #536b8a;
+    .cur-stat-card strong {
+        display: block;
+        color: #0f172a;
+        font-size: clamp(21px, 2.4vw, 30px);
+        font-weight: 950;
+        letter-spacing: -.8px;
+        white-space: nowrap;
     }
 
-    .ca-balance {
-        font-size: 18px;
+    .cur-stat-card small {
+        display: block;
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 13px;
         font-weight: 800;
-        margin-bottom: 4px;
     }
 
-        .ca-balance.positive {
-            color: #009966;
+    .cur-filter-shell {
+        margin-bottom: 22px;
+        padding: 20px;
+        border-radius: 26px;
+        background: rgba(255,255,255,.96);
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, .07);
+    }
+
+    .cur-search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .cur-search-box {
+        position: relative;
+        min-width: 0;
+    }
+
+    .cur-search-icon {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #8aa0bd;
+        font-size: 24px;
+        pointer-events: none;
+    }
+
+    .cur-search-box input {
+        width: 100%;
+        height: 56px;
+        padding: 0 18px 0 52px;
+        border-radius: 18px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 16px;
+        font-weight: 750;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+        .cur-search-box input::placeholder {
+            color: #8aa0bd;
+            font-weight: 700;
         }
 
-        .ca-balance.negative {
-            color: #e60046;
+        .cur-search-box input:focus {
+            background: white;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, .10);
         }
 
-    .ca-btn {
+    .cur-search-submit,
+    .cur-filter-toggle {
+        height: 56px;
+        border-radius: 18px;
+        border: 1px solid #c7d2fe;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 40px;
-        padding: 0 16px;
-        border-radius: 9px;
-        font-weight: 700;
+        gap: 9px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .cur-search-submit {
+        padding: 0 22px;
+        background: #4f46e5;
+        color: white;
+        border-color: #4f46e5;
+        box-shadow: 0 12px 24px rgba(79, 70, 229, .20);
+    }
+
+    .cur-filter-toggle {
+        padding: 0 18px;
+        background: #f8fafc;
+        color: #312e81;
+    }
+
+        .cur-filter-toggle span {
+            font-size: 18px;
+        }
+
+        .cur-filter-toggle em {
+            font-style: normal;
+            transition: .18s ease;
+        }
+
+        .cur-filter-toggle.is-open em {
+            transform: rotate(180deg);
+        }
+
+    .cur-advanced-filters {
+        display: none;
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid #e2e8f0;
+        grid-template-columns: minmax(180px, .5fr) auto;
+        gap: 14px;
+        align-items: end;
+    }
+
+        .cur-advanced-filters.is-open {
+            display: grid;
+        }
+
+    .cur-filter-section {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+    }
+
+        .cur-filter-section label {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 950;
+            letter-spacing: .7px;
+            text-transform: uppercase;
+        }
+
+        .cur-filter-section select {
+            width: 100%;
+            height: 46px;
+            padding: 0 14px;
+            border-radius: 15px;
+            border: 1px solid #d4deeb;
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 800;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+    .cur-filter-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .cur-apply-btn,
+    .cur-clear-btn {
+        height: 46px;
+        padding: 0 18px;
+        border-radius: 15px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         text-decoration: none;
-        border: 1px solid transparent;
-        background: #fff;
+        font-size: 14px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .cur-apply-btn {
+        border: none;
+        background: #4f46e5;
+        color: white;
         cursor: pointer;
     }
 
-    .ca-btn-outline {
-        color: #18365d;
-        border-color: #cbd8ea;
-        box-shadow: 0 2px 4px rgba(15, 23, 42, .08);
+    .cur-clear-btn {
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #4f46e5;
     }
 
-    .ca-btn-success {
-        background: #059669;
-        color: #fff;
-        margin-right: 8px;
+    .cur-list-toolbar {
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
     }
 
-    .empty-state {
-        padding: 26px;
-        text-align: center;
-        color: #536b8a;
-        font-weight: 700;
+    .cur-list-summary {
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 850;
     }
 
-    .text-end {
-        text-align: right !important;
-    }
-
-    @@media (max-width: 900px) {
-        .ca-header {
-            align-items: flex-start;
-            gap: 16px;
-            flex-direction: column;
+        .cur-list-summary strong {
+            color: #334155;
         }
 
-        .ca-stats {
+    .cur-top-pager {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px;
+        border-radius: 999px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
+    }
+
+    .cur-top-page-list {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .cur-top-nav,
+    .cur-top-page {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #475569;
+        font-size: 14px;
+        font-weight: 950;
+        transition: .15s ease;
+    }
+
+    .cur-top-nav {
+        font-size: 24px;
+        line-height: 1;
+        background: #f8fafc;
+    }
+
+    .cur-top-page.active {
+        background: #4f46e5;
+        color: white;
+        box-shadow: 0 8px 18px rgba(79, 70, 229, .28);
+    }
+
+    .cur-top-nav:not(.disabled):hover,
+    .cur-top-page:not(.active):hover {
+        background: #eef2ff;
+        color: #4f46e5;
+    }
+
+    .cur-top-nav.disabled {
+        opacity: .35;
+        pointer-events: none;
+    }
+
+    .cur-list {
+        display: grid;
+        gap: 14px;
+    }
+
+    .cur-card {
+        min-height: 92px;
+        padding: 20px 24px;
+        border-radius: 24px;
+        border: 1px solid #dbe3ef;
+        background: white;
+        color: #0f172a;
+        display: grid;
+        grid-template-columns: minmax(260px, 1.45fr) minmax(220px, .85fr) 190px;
+        gap: 20px;
+        align-items: center;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, .045);
+        transition: .16s ease;
+    }
+
+        .cur-card:hover {
+            transform: translateY(-2px);
+            border-color: #c7d2fe;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, .08);
+        }
+
+    .cur-customer-main {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .cur-avatar {
+        width: 54px;
+        height: 54px;
+        flex: 0 0 54px;
+        border-radius: 18px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #17365d;
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+        font-weight: 950;
+    }
+
+    .cur-customer-text {
+        min-width: 0;
+    }
+
+        .cur-customer-text strong {
+            display: block;
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 950;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .cur-customer-text span {
+            display: block;
+            margin-top: 6px;
+            color: #8aa0bd;
+            font-size: 13px;
+            font-weight: 850;
+        }
+
+    .cur-balance-box {
+        padding: 12px 14px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+        .cur-balance-box span {
+            display: block;
+            color: #8aa0bd;
+            font-size: 12px;
+            font-weight: 900;
+            margin-bottom: 5px;
+        }
+
+        .cur-balance-box strong {
+            display: block;
+            color: #0f172a;
+            font-size: 17px;
+            font-weight: 950;
+            white-space: nowrap;
+        }
+
+            .cur-balance-box strong.is-positive {
+                color: #059669;
+            }
+
+            .cur-balance-box strong.is-negative {
+                color: #e11d48;
+            }
+
+            .cur-balance-box strong.is-zero {
+                color: #334155;
+            }
+
+        .cur-balance-box small {
+            display: block;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+    .cur-card-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 9px;
+    }
+
+    .cur-action-btn {
+        height: 42px;
+        padding: 0 15px;
+        border-radius: 14px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #18365d;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 950;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+        .cur-action-btn.success {
+            background: #059669;
+            border-color: #059669;
+            color: white;
+            box-shadow: 0 12px 24px rgba(5, 150, 105, .18);
+        }
+
+    .cur-empty {
+        padding: 48px 20px;
+        border-radius: 24px;
+        background: white;
+        border: 1px dashed #cbd5e1;
+        color: #64748b;
+        text-align: center;
+        display: grid;
+        justify-items: center;
+        gap: 8px;
+    }
+
+    .cur-empty-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
+        display: grid;
+        place-items: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 28px;
+        font-weight: 950;
+    }
+
+    .cur-empty strong {
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 950;
+    }
+
+    .cur-pagination {
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 22px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+    }
+
+    .cur-page-numbers {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        flex-wrap: wrap;
+    }
+
+    .cur-page-number,
+    .cur-page-btn {
+        min-width: 40px;
+        height: 40px;
+        padding: 0 13px;
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+        background: white;
+        color: #334155;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+        .cur-page-number.active {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: white;
+        }
+
+        .cur-page-btn.disabled {
+            pointer-events: none;
+            opacity: .45;
+        }
+
+    .cur-modal-content {
+        border: none;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 28px 70px rgba(15, 23, 42, .24);
+    }
+
+    .cur-modal-header {
+        padding: 20px 22px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .cur-modal-eyebrow {
+        display: inline-flex;
+        margin-bottom: 4px;
+        color: #4f46e5;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .cur-modal-header h5 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 22px;
+        font-weight: 950;
+    }
+
+    .cur-modal-body {
+        padding: 22px;
+        display: grid;
+        gap: 14px;
+    }
+
+    .cur-modal-field {
+        display: grid;
+        gap: 7px;
+    }
+
+        .cur-modal-field label {
+            color: #334155;
+            font-size: 13px;
+            font-weight: 950;
+        }
+
+        .cur-modal-field input,
+        .cur-modal-field textarea {
+            width: 100%;
+            border: 1px solid #d4deeb;
+            border-radius: 16px;
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 750;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .cur-modal-field input {
+            height: 50px;
+            padding: 0 14px;
+        }
+
+        .cur-modal-field textarea {
+            padding: 12px 14px;
+            resize: vertical;
+        }
+
+    .cur-modal-footer {
+        padding: 18px 22px 22px;
+        border-top: 1px solid #e2e8f0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .cur-modal-btn {
+        height: 48px;
+        border-radius: 16px;
+        border: none;
+        font-weight: 950;
+    }
+
+        .cur-modal-btn.soft {
+            background: #f8fafc;
+            color: #334155;
+            border: 1px solid #d4deeb;
+        }
+
+        .cur-modal-btn.success {
+            background: #059669;
+            color: white;
+        }
+
+    @@media (max-width: 1120px) {
+        .cur-stats {
             grid-template-columns: 1fr;
         }
 
-        .ca-toolbar {
-            flex-direction: column;
+        .cur-card {
+            grid-template-columns: 1fr;
         }
 
-        .ca-search,
-        .ca-page-size {
+        .cur-card-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    @@media (max-width: 920px) {
+        .cur-page {
+            width: min(100% - 24px, 1280px);
+            padding: 18px 0 44px;
+        }
+
+        .cur-hero {
+            padding: 18px;
+            border-radius: 26px;
+            align-items: flex-start;
+        }
+
+        .cur-hero-left {
+            align-items: flex-start;
+            gap: 13px;
+        }
+
+        .cur-home-btn {
+            width: 46px;
+            height: 46px;
+            flex-basis: 46px;
+            border-radius: 16px;
+            margin-top: 3px;
+        }
+
+        .cur-hero h1 {
+            font-size: 30px;
+            letter-spacing: -1.2px;
+        }
+
+        .cur-hero p {
+            font-size: 14px;
+        }
+
+        .cur-stat-card {
+            padding: 18px;
+            border-radius: 22px;
+        }
+
+            .cur-stat-card strong {
+                white-space: normal;
+            }
+
+        .cur-filter-shell {
+            padding: 14px;
+            border-radius: 24px;
+        }
+
+        .cur-search-row {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .cur-search-box {
+            grid-column: span 2;
+        }
+
+            .cur-search-box input,
+            .cur-search-submit,
+            .cur-filter-toggle {
+                height: 52px;
+                border-radius: 18px;
+            }
+
+        .cur-filter-toggle,
+        .cur-search-submit {
             width: 100%;
         }
 
-        .ca-table {
-            min-width: 760px;
+        .cur-advanced-filters {
+            grid-template-columns: 1fr;
+            gap: 12px;
         }
 
-        .ca-table-card {
-            overflow-x: auto;
+        .cur-filter-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .cur-apply-btn,
+        .cur-clear-btn {
+            width: 100%;
+            height: 50px;
+            border-radius: 17px;
+        }
+
+        .cur-list-toolbar {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .cur-top-pager {
+            width: fit-content;
+            max-width: 100%;
+        }
+
+        .cur-list-summary {
+            line-height: 1.45;
+        }
+
+        .cur-card {
+            padding: 16px;
+            border-radius: 22px;
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+
+        .cur-customer-main {
+            align-items: flex-start;
+        }
+
+        .cur-customer-text strong {
+            font-size: 21px;
+            white-space: normal;
+            line-height: 1.15;
+        }
+
+        .cur-balance-box {
+            padding: 13px;
+        }
+
+        .cur-card-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .cur-action-btn {
+            width: 100%;
+            height: 46px;
+            border-radius: 16px;
+        }
+
+        .cur-pagination {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .cur-page-numbers {
+            order: -1;
+        }
+
+        .cur-page-btn {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 460px) {
+        .cur-page {
+            width: min(100% - 18px, 1280px);
+            padding-top: 12px;
+        }
+
+        .cur-hero {
+            padding: 16px;
+            border-radius: 24px;
+        }
+
+        .cur-home-btn {
+            width: 42px;
+            height: 42px;
+            flex-basis: 42px;
+            border-radius: 15px;
+            font-size: 21px;
+        }
+
+        .cur-eyebrow {
+            padding: 5px 10px;
+            font-size: 11px;
+        }
+
+        .cur-hero h1 {
+            font-size: 27px;
+        }
+
+        .cur-hero p {
+            font-size: 13px;
+        }
+
+        .cur-stat-card {
+            align-items: flex-start;
+        }
+
+        .cur-stat-icon {
+            width: 46px;
+            height: 46px;
+            flex-basis: 46px;
+            border-radius: 16px;
+        }
+
+        .cur-filter-actions,
+        .cur-card-actions,
+        .cur-modal-footer {
+            grid-template-columns: 1fr;
+        }
+
+        .cur-avatar {
+            width: 48px;
+            height: 48px;
+            flex-basis: 48px;
+            border-radius: 16px;
         }
     }
 </style>
