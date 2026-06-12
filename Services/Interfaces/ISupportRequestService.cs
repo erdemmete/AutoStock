@@ -6,13 +6,16 @@ namespace AutoStock.Services.Interfaces
     public interface ISupportRequestService
     {
         Task<ServiceResult<PagedResult<SupportRequestListItemDto>>> GetPagedForWorkshopAsync(
-            SupportRequestListQueryDto query,
-            int workshopId);
+    SupportRequestListQueryDto query,
+    int workshopId,
+    int currentUserId,
+    string? currentUserRole);
 
         Task<ServiceResult<SupportRequestDetailDto>> GetByIdForWorkshopAsync(
             int id,
-            int workshopId);
-
+            int workshopId,
+            int currentUserId,
+            string? currentUserRole);
         Task<ServiceResult<int>> CreateIssueAsync(
             CreateIssueSupportRequestDto request,
             int workshopId,

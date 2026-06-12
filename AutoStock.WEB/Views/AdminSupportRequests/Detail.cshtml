@@ -1,83 +1,127 @@
-﻿@model AutoStock.WEB.Models.SupportRequests.SupportRequestDetailViewModel
+@model AutoStock.WEB.Models.SupportRequests.SupportRequestDetailViewModel
 @using AutoStock.Repositories.Enums
-@using AutoStock.WEB.Models.Common
 
 @{
-    ViewData["Title"] = "Destek Talebi Detayı";
+    ViewData["Title"] = "Admin Destek Talebi";
 
     var isClosedOrCancelled =
         Model.Status == SupportRequestStatus.Closed ||
         Model.Status == SupportRequestStatus.Cancelled;
+
+    var workshopName = string.IsNullOrWhiteSpace(Model.WorkshopName)
+        ? $"Servis #{Model.WorkshopId}"
+        : Model.WorkshopName;
+
+    string GetStatusClass(string? statusText)
+    {
+        return statusText switch
+        {
+            "Açık" => "open",
+            "İşlemde" => "progress",
+            "Yanıtlandı" => "answered",
+            "Kapandı" => "closed",
+            "İptal Edildi" => "cancelled",
+            _ => "default"
+        };
+    }
+
+    string GetTypeClass(string? typeText)
+    {
+        return typeText switch
+        {
+            "Kullanıcı Ekleme" => "user",
+            "Sorun Bildirimi" => "issue",
+            _ => "default"
+        };
+    }
 }
 
-<div class="support-page">
-    <div class="support-header">
-        <div class="support-title-area">
-            <div class="support-icon">
-                <span>?</span>
-            </div>
+<div class="admin-ticket-page">
+    <section class="admin-ticket-hero">
+        <div class="admin-ticket-hero-main">
+            <a asp-controller="AdminSupportRequests"
+               asp-action="Index"
+               class="admin-ticket-back"
+               title="Destek taleplerine dön">
+                ←
+            </a>
 
             <div>
-                <h1>Destek Talebi Detayı</h1>
-                <p>Servisten gelen destek talebini inceleyebilir, cevap yazabilir ve durumunu güncelleyebilirsiniz.</p>
+                <span class="admin-ticket-kicker">Admin Destek Merkezi</span>
+                <h1>@Model.Subject</h1>
+
+                <div class="admin-ticket-hero-meta">
+                    <span>@workshopName</span>
+                    <span>@Model.CreatedByUserName</span>
+                    <span>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                </div>
             </div>
         </div>
 
-        @await Html.PartialAsync("_PageActions", new PageActionViewModel
-        {
-            BackController = "AdminSupportRequests",
-            BackAction = "Index",
-            HomeController = "Admin",
-            HomeAction = "Dashboard"
-        })
-    </div>
+        <div class="admin-ticket-hero-actions">
+            <a asp-controller="Admin"
+               asp-action="Dashboard"
+               class="admin-ticket-soft-btn">
+                Ana Sayfa
+            </a>
+        </div>
+    </section>
 
-    <div class="support-detail-grid">
-        <div class="support-detail-card">
-            <div class="detail-card-header">
+    <section class="admin-ticket-layout">
+        <main class="admin-ticket-main-card">
+            <div class="admin-ticket-card-head">
                 <div>
-                    <div class="detail-label">Konu</div>
+                    <span class="admin-ticket-section-label">Talep Özeti</span>
                     <h2>@Model.Subject</h2>
                 </div>
 
-                <span class="status-badge-custom">@Model.StatusText</span>
+                <div class="admin-ticket-badges">
+                    <span class="admin-ticket-type @GetTypeClass(Model.RequestTypeText)">
+                        @Model.RequestTypeText
+                    </span>
+
+                    <span class="admin-ticket-status @GetStatusClass(Model.StatusText)">
+                        @Model.StatusText
+                    </span>
+                </div>
             </div>
 
-            <div class="detail-meta-grid">
-                <div class="meta-box">
+            <div class="admin-ticket-meta-grid">
+                <div class="admin-ticket-meta-box">
                     <span>Servis</span>
-                    <strong>@(string.IsNullOrWhiteSpace(Model.WorkshopName) ? $"Servis #{Model.WorkshopId}" : Model.WorkshopName)</strong>
+                    <strong>@workshopName</strong>
                 </div>
 
-                <div class="meta-box">
+                <div class="admin-ticket-meta-box">
+                    <span>Oluşturan</span>
+                    <strong>@Model.CreatedByUserName</strong>
+                </div>
+
+                <div class="admin-ticket-meta-box">
                     <span>Talep Tipi</span>
                     <strong>@Model.RequestTypeText</strong>
                 </div>
 
-                <div class="meta-box">
-                    <span>Öncelik</span>
-                    <strong>@Model.PriorityText</strong>
-                </div>
-
-                <div class="meta-box">
-                    <span>Oluşturan</span>
-                    <strong>@Model.CreatedByUserName</strong>
+                <div class="admin-ticket-meta-box">
+                    <span>Oluşturma</span>
+                    <strong>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</strong>
                 </div>
             </div>
 
-            <div class="detail-section">
-                <div class="detail-label">Açıklama</div>
-                <div class="description-box">
+            <section class="admin-ticket-section">
+                <div class="admin-ticket-section-label">Açıklama</div>
+
+                <div class="admin-ticket-description">
                     @Model.Description
                 </div>
-            </div>
+            </section>
 
             @if (Model.RequestType == SupportRequestType.UserCreateRequest)
             {
-                <div class="detail-section">
-                    <div class="detail-label">Talep Edilen Kullanıcı</div>
+                <section class="admin-ticket-section">
+                    <div class="admin-ticket-section-label">Talep Edilen Kullanıcı</div>
 
-                    <div class="requested-user-card">
+                    <div class="admin-ticket-user-grid">
                         <div>
                             <span>Ad Soyad</span>
                             <strong>@Model.RequestedUserFullName</strong>
@@ -99,24 +143,23 @@
                         </div>
                     </div>
 
-                    <div class="support-info-box mt-3">
-                        <strong>Not:</strong>
-                        Bu talep kullanıcıyı otomatik oluşturmaz. Kullanıcıyı admin servis detay ekranından manuel oluşturduktan sonra bu talebi yanıtlandı veya kapandı durumuna alabilirsiniz.
+                    <div class="admin-ticket-admin-note">
+                        Kullanıcı hesabı servis detay ekranından oluşturulduktan sonra bu talep yanıtlandı veya kapandı durumuna alınabilir.
                     </div>
-                </div>
+                </section>
             }
 
             @if (!string.IsNullOrWhiteSpace(Model.AdminResponse))
             {
-                <div class="detail-section">
-                    <div class="detail-label">Mevcut Admin Cevabı</div>
+                <section class="admin-ticket-section">
+                    <div class="admin-ticket-section-label">Mevcut Admin Cevabı</div>
 
-                    <div class="admin-response-box">
-                        <div class="response-text">
+                    <div class="admin-ticket-response">
+                        <div class="admin-ticket-response-text">
                             @Model.AdminResponse
                         </div>
 
-                        <div class="response-meta">
+                        <div class="admin-ticket-response-meta">
                             @if (!string.IsNullOrWhiteSpace(Model.RespondedByUserName))
                             {
                                 <span>@Model.RespondedByUserName</span>
@@ -128,100 +171,679 @@
                             }
                         </div>
                     </div>
+                </section>
+            }
+        </main>
+
+        <aside class="admin-ticket-side">
+            <div class="admin-ticket-action-card">
+                <div class="admin-ticket-side-head">
+                    <span>Admin İşlemleri</span>
+                    <h3>Cevap ve Durum</h3>
                 </div>
-            }
-        </div>
 
-        <div class="support-side-card">
-            <h3>Admin İşlemleri</h3>
-
-            @if (isClosedOrCancelled)
-            {
-                <div class="closed-box">
-                    Bu talep kapalı veya iptal edilmiş durumda. Cevap yazılamaz.
-                </div>
-            }
-            else
-            {
-                <form asp-controller="AdminSupportRequests"
-                      asp-action="Answer"
-                      method="post">
-
-                    @Html.AntiForgeryToken()
-
-                    <input type="hidden" name="Id" value="@Model.Id" />
-
-                    <div class="form-group">
-                        <label>Admin Cevabı</label>
-                        <textarea name="AdminResponse"
-                                  class="form-control-custom textarea"
-                                  rows="7"
-                                  placeholder="Servise gösterilecek cevabı yazın...">@Model.AdminResponse</textarea>
+                @if (isClosedOrCancelled)
+                {
+                    <div class="admin-ticket-closed-box">
+                        Bu talep kapalı veya iptal edilmiş durumda. Yeni cevap yazılamaz.
                     </div>
+                }
+                else
+                {
+                    <form asp-controller="AdminSupportRequests"
+                          asp-action="Answer"
+                          method="post"
+                          class="admin-ticket-form">
 
-                    <div class="form-group">
-                        <label>Durum</label>
-                        <select name="Status" class="form-control-custom">
-                            <option value="@SupportRequestStatus.InProgress">İşlemde</option>
-                            <option value="@SupportRequestStatus.Answered" selected>Yanıtlandı</option>
-                            <option value="@SupportRequestStatus.Closed">Kapandı</option>
-                        </select>
-                    </div>
+                        @Html.AntiForgeryToken()
 
-                    <button type="submit" class="primary-btn w-100">
-                        Cevabı Kaydet
-                    </button>
-                </form>
+                        <input type="hidden" name="Id" value="@Model.Id" />
 
-                <hr />
+                        <div class="admin-ticket-field">
+                            <label>Admin Cevabı</label>
+                            <textarea name="AdminResponse"
+                                      rows="7"
+                                      placeholder="Servise gösterilecek cevabı yazın...">@Model.AdminResponse</textarea>
+                        </div>
 
-                <form asp-controller="AdminSupportRequests"
-                      asp-action="UpdateStatus"
-                      method="post">
+                        <div class="admin-ticket-field">
+                            <label>Cevap Sonrası Durum</label>
+                            <select name="Status">
+                                <option value="@((int)SupportRequestStatus.InProgress)"
+                                        selected="@(Model.Status == SupportRequestStatus.InProgress ? "selected" : null)">
+                                    İşlemde
+                                </option>
 
-                    @Html.AntiForgeryToken()
+                                <option value="@((int)SupportRequestStatus.Answered)"
+                                        selected="@(Model.Status == SupportRequestStatus.Answered || Model.Status == SupportRequestStatus.Open ? "selected" : null)">
+                                    Yanıtlandı
+                                </option>
 
-                    <input type="hidden" name="Id" value="@Model.Id" />
+                                <option value="@((int)SupportRequestStatus.Closed)"
+                                        selected="@(Model.Status == SupportRequestStatus.Closed ? "selected" : null)">
+                                    Kapandı
+                                </option>
+                            </select>
+                        </div>
 
-                    <div class="form-group">
-                        <label>Hızlı Durum Güncelle</label>
-                        <select name="Status" class="form-control-custom">
-                            <option value="@SupportRequestStatus.Open">Açık</option>
-                            <option value="@SupportRequestStatus.InProgress">İşlemde</option>
-                            <option value="@SupportRequestStatus.Answered">Yanıtlandı</option>
-                            <option value="@SupportRequestStatus.Closed">Kapandı</option>
-                            <option value="@SupportRequestStatus.Cancelled">İptal Edildi</option>
-                        </select>
-                    </div>
+                        <button type="submit" class="admin-ticket-primary-btn">
+                            Cevabı Kaydet
+                        </button>
+                    </form>
 
-                    <button type="submit" class="secondary-btn w-100">
-                        Durumu Güncelle
-                    </button>
-                </form>
-            }
+                    <div class="admin-ticket-divider"></div>
 
-            <div class="side-info-box">
-                <span>Oluşturma Tarihi</span>
-                <strong>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</strong>
+                    <form asp-controller="AdminSupportRequests"
+                          asp-action="UpdateStatus"
+                          method="post"
+                          class="admin-ticket-form">
+
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" name="Id" value="@Model.Id" />
+
+                        <div class="admin-ticket-field">
+                            <label>Hızlı Durum Güncelle</label>
+
+                            <select name="Status">
+                                <option value="@((int)SupportRequestStatus.Open)"
+                                        selected="@(Model.Status == SupportRequestStatus.Open ? "selected" : null)">
+                                    Açık
+                                </option>
+
+                                <option value="@((int)SupportRequestStatus.InProgress)"
+                                        selected="@(Model.Status == SupportRequestStatus.InProgress ? "selected" : null)">
+                                    İşlemde
+                                </option>
+
+                                <option value="@((int)SupportRequestStatus.Answered)"
+                                        selected="@(Model.Status == SupportRequestStatus.Answered ? "selected" : null)">
+                                    Yanıtlandı
+                                </option>
+
+                                <option value="@((int)SupportRequestStatus.Closed)"
+                                        selected="@(Model.Status == SupportRequestStatus.Closed ? "selected" : null)">
+                                    Kapandı
+                                </option>
+
+                                <option value="@((int)SupportRequestStatus.Cancelled)"
+                                        selected="@(Model.Status == SupportRequestStatus.Cancelled ? "selected" : null)">
+                                    İptal Edildi
+                                </option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="admin-ticket-secondary-btn">
+                            Durumu Güncelle
+                        </button>
+                    </form>
+                }
             </div>
 
-            @if (Model.UpdatedAt.HasValue)
-            {
-                <div class="side-info-box">
-                    <span>Son Güncelleme</span>
-                    <strong>@Model.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</strong>
+            <div class="admin-ticket-side-card">
+                <div class="admin-ticket-side-head">
+                    <span>Kayıt Bilgisi</span>
+                    <h3>Zaman Çizelgesi</h3>
                 </div>
-            }
 
-            @if (Model.ClosedAt.HasValue)
-            {
-                <div class="side-info-box">
-                    <span>Kapanış Tarihi</span>
-                    <strong>@Model.ClosedAt.Value.ToString("dd.MM.yyyy HH:mm")</strong>
+                <div class="admin-ticket-timeline">
+                    <div class="admin-ticket-timeline-item active">
+                        <i></i>
+                        <div>
+                            <strong>Talep oluşturuldu</strong>
+                            <span>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                    </div>
+
+                    @if (Model.UpdatedAt.HasValue)
+                    {
+                        <div class="admin-ticket-timeline-item active">
+                            <i></i>
+                            <div>
+                                <strong>Son güncelleme</strong>
+                                <span>@Model.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (Model.RespondedAt.HasValue)
+                    {
+                        <div class="admin-ticket-timeline-item active">
+                            <i></i>
+                            <div>
+                                <strong>Admin cevap yazdı</strong>
+                                <span>@Model.RespondedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (Model.ClosedAt.HasValue)
+                    {
+                        <div class="admin-ticket-timeline-item active">
+                            <i></i>
+                            <div>
+                                <strong>Talep kapandı</strong>
+                                <span>@Model.ClosedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                            </div>
+                        </div>
+                    }
                 </div>
-            }
-        </div>
-    </div>
+
+                <div class="admin-ticket-current-status">
+                    <span>Güncel Durum</span>
+                    <strong>@Model.StatusText</strong>
+                </div>
+            </div>
+        </aside>
+    </section>
 </div>
 
-@await Html.PartialAsync("_SupportRequestStyles")
+<style>
+    .admin-ticket-page {
+        width: min(1280px, calc(100% - 56px));
+        margin: 0 auto;
+        padding: 30px 0 64px;
+        color: #061936;
+    }
+
+    .admin-ticket-hero {
+        margin-bottom: 18px;
+        padding: 26px;
+        border-radius: 30px;
+        background:
+            radial-gradient(circle at 92% 18%, rgba(255,255,255,.16), transparent 28%),
+            linear-gradient(135deg, #0f172a 0%, #111827 48%, #3730a3 100%);
+        color: white;
+        box-shadow: 0 26px 70px rgba(15, 23, 42, .20);
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+    }
+
+    .admin-ticket-hero-main {
+        min-width: 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .admin-ticket-back {
+        width: 54px;
+        height: 54px;
+        flex: 0 0 54px;
+        border-radius: 20px;
+        background: rgba(255,255,255,.13);
+        border: 1px solid rgba(255,255,255,.18);
+        display: grid;
+        place-items: center;
+        color: white;
+        text-decoration: none;
+        font-size: 25px;
+        font-weight: 950;
+    }
+
+    .admin-ticket-kicker {
+        display: inline-flex;
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.13);
+        color: rgba(255,255,255,.82);
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .admin-ticket-hero h1 {
+        margin: 0;
+        max-width: 780px;
+        font-size: clamp(27px, 4vw, 42px);
+        line-height: 1.05;
+        letter-spacing: -1.4px;
+    }
+
+    .admin-ticket-hero-meta {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .admin-ticket-hero-meta span {
+        min-height: 28px;
+        padding: 0 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.11);
+        color: rgba(255,255,255,.76);
+        display: inline-flex;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 850;
+    }
+
+    .admin-ticket-hero-actions {
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .admin-ticket-soft-btn {
+        height: 46px;
+        padding: 0 17px;
+        border-radius: 16px;
+        background: rgba(255,255,255,.12);
+        border: 1px solid rgba(255,255,255,.20);
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .admin-ticket-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(340px, .42fr);
+        gap: 18px;
+        align-items: start;
+    }
+
+    .admin-ticket-main-card,
+    .admin-ticket-action-card,
+    .admin-ticket-side-card {
+        background: white;
+        border: 1px solid #dbe3ef;
+        border-radius: 26px;
+        box-shadow: 0 14px 36px rgba(15, 23, 42, .06);
+    }
+
+    .admin-ticket-main-card {
+        padding: 24px;
+    }
+
+    .admin-ticket-action-card,
+    .admin-ticket-side-card {
+        padding: 20px;
+    }
+
+    .admin-ticket-side {
+        display: grid;
+        gap: 14px;
+        position: sticky;
+        top: 18px;
+    }
+
+    .admin-ticket-card-head {
+        padding-bottom: 18px;
+        border-bottom: 1px solid #edf2f7;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .admin-ticket-section-label,
+    .admin-ticket-side-head span {
+        display: inline-flex;
+        margin-bottom: 8px;
+        color: #4f46e5;
+        font-size: 12px;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .admin-ticket-card-head h2,
+    .admin-ticket-side-head h3 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 24px;
+        font-weight: 950;
+        letter-spacing: -.6px;
+    }
+
+    .admin-ticket-badges {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .admin-ticket-type,
+    .admin-ticket-status {
+        height: 34px;
+        padding: 0 12px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .admin-ticket-type.issue {
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .admin-ticket-type.user {
+        background: #f0fdf4;
+        color: #15803d;
+    }
+
+    .admin-ticket-status.open {
+        background: #fff7ed;
+        color: #c2410c;
+    }
+
+    .admin-ticket-status.progress {
+        background: #eef2ff;
+        color: #4f46e5;
+    }
+
+    .admin-ticket-status.answered {
+        background: #ecfeff;
+        color: #0891b2;
+    }
+
+    .admin-ticket-status.closed {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .admin-ticket-status.cancelled {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .admin-ticket-meta-grid,
+    .admin-ticket-user-grid {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .admin-ticket-meta-box,
+    .admin-ticket-user-grid > div {
+        min-width: 0;
+        padding: 14px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .admin-ticket-meta-box span,
+    .admin-ticket-user-grid span {
+        display: block;
+        color: #8aa0bd;
+        font-size: 12px;
+        font-weight: 950;
+        margin-bottom: 6px;
+    }
+
+    .admin-ticket-meta-box strong,
+    .admin-ticket-user-grid strong {
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 950;
+        word-break: break-word;
+    }
+
+    .admin-ticket-section {
+        margin-top: 22px;
+    }
+
+    .admin-ticket-description,
+    .admin-ticket-response {
+        padding: 18px;
+        border-radius: 20px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #334155;
+        font-size: 15px;
+        line-height: 1.65;
+        font-weight: 700;
+        white-space: pre-wrap;
+    }
+
+    .admin-ticket-admin-note {
+        margin-top: 12px;
+        padding: 13px 14px;
+        border-radius: 18px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.45;
+    }
+
+    .admin-ticket-response-text {
+        white-space: pre-wrap;
+    }
+
+    .admin-ticket-response-meta {
+        margin-top: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 850;
+    }
+
+    .admin-ticket-form {
+        display: grid;
+        gap: 13px;
+    }
+
+    .admin-ticket-field {
+        display: grid;
+        gap: 8px;
+    }
+
+    .admin-ticket-field label {
+        color: #334155;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .admin-ticket-field textarea,
+    .admin-ticket-field select {
+        width: 100%;
+        border-radius: 17px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 750;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    .admin-ticket-field textarea {
+        min-height: 150px;
+        padding: 13px 14px;
+        resize: vertical;
+    }
+
+    .admin-ticket-field select {
+        height: 50px;
+        padding: 0 14px;
+    }
+
+    .admin-ticket-field textarea:focus,
+    .admin-ticket-field select:focus {
+        background: white;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 4px rgba(79,70,229,.10);
+    }
+
+    .admin-ticket-primary-btn,
+    .admin-ticket-secondary-btn {
+        width: 100%;
+        height: 50px;
+        border-radius: 17px;
+        border: none;
+        font-size: 14px;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+    .admin-ticket-primary-btn {
+        background: #4f46e5;
+        color: white;
+        box-shadow: 0 14px 26px rgba(79,70,229,.20);
+    }
+
+    .admin-ticket-secondary-btn {
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #d4deeb;
+    }
+
+    .admin-ticket-divider {
+        height: 1px;
+        margin: 18px 0;
+        background: #e2e8f0;
+    }
+
+    .admin-ticket-closed-box {
+        padding: 15px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 850;
+        line-height: 1.45;
+    }
+
+    .admin-ticket-timeline {
+        margin-top: 14px;
+        display: grid;
+        gap: 12px;
+    }
+
+    .admin-ticket-timeline-item {
+        display: flex;
+        gap: 12px;
+    }
+
+    .admin-ticket-timeline-item i {
+        width: 12px;
+        height: 12px;
+        flex: 0 0 12px;
+        margin-top: 5px;
+        border-radius: 999px;
+        background: #4f46e5;
+        box-shadow: 0 0 0 5px #eef2ff;
+    }
+
+    .admin-ticket-timeline-item strong {
+        display: block;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .admin-ticket-timeline-item span {
+        display: block;
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .admin-ticket-current-status {
+        margin-top: 16px;
+        padding: 14px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .admin-ticket-current-status span {
+        display: block;
+        color: #8aa0bd;
+        font-size: 12px;
+        font-weight: 950;
+        margin-bottom: 6px;
+    }
+
+    .admin-ticket-current-status strong {
+        color: #0f172a;
+        font-size: 16px;
+        font-weight: 950;
+    }
+
+    @@media (max-width: 1080px) {
+        .admin-ticket-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-ticket-side {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 920px) {
+        .admin-ticket-page {
+            width: min(100% - 24px, 1280px);
+            padding: 18px 0 44px;
+        }
+
+        .admin-ticket-hero {
+            padding: 18px;
+            border-radius: 26px;
+            flex-direction: column;
+        }
+
+        .admin-ticket-card-head {
+            flex-direction: column;
+        }
+
+        .admin-ticket-badges {
+            justify-content: flex-start;
+        }
+
+        .admin-ticket-meta-grid,
+        .admin-ticket-user-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-ticket-main-card,
+        .admin-ticket-action-card,
+        .admin-ticket-side-card {
+            padding: 18px;
+            border-radius: 24px;
+        }
+    }
+
+    @@media (max-width: 460px) {
+        .admin-ticket-page {
+            width: min(100% - 18px, 1280px);
+            padding-top: 12px;
+        }
+
+        .admin-ticket-hero-main {
+            gap: 12px;
+        }
+
+        .admin-ticket-back {
+            width: 44px;
+            height: 44px;
+            flex-basis: 44px;
+            border-radius: 16px;
+            font-size: 22px;
+        }
+
+        .admin-ticket-hero h1 {
+            font-size: 26px;
+        }
+
+        .admin-ticket-card-head h2 {
+            font-size: 22px;
+        }
+    }
+</style>

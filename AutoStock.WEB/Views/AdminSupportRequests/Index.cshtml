@@ -1,10 +1,9 @@
-﻿@model AutoStock.WEB.Models.SupportRequests.AdminSupportRequestIndexViewModel
+@model AutoStock.WEB.Models.SupportRequests.AdminSupportRequestIndexViewModel
 @using AutoStock.Repositories.Enums
-@using AutoStock.WEB.Models.Common
 @using AutoStock.WEB.Models.SupportRequests
 
 @{
-    ViewData["Title"] = "Destek Talepleri";
+    ViewData["Title"] = "Admin Destek Talepleri";
 
     var requests = Model.Requests.Items ?? new List<SupportRequestListItemViewModel>();
     var query = Model.Query;
@@ -13,529 +12,986 @@
     var pageSize = Model.Requests.PageSize > 0 ? Model.Requests.PageSize : query.PageSize;
     var totalCount = Model.Requests.TotalCount;
 
-    var paginationModel = new PaginationViewModel
+    var totalPages = pageSize > 0
+        ? Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize))
+        : 1;
+
+    string GetStatusClass(string? statusText)
     {
-        Controller = "AdminSupportRequests",
-        Action = "Index",
-        PageNumber = pageNumber,
-        PageSize = pageSize,
-        TotalCount = totalCount,
-        RouteValues = new Dictionary<string, string?>
+        return statusText switch
         {
-            ["search"] = query.Search,
-            ["status"] = query.Status.HasValue ? ((int)query.Status.Value).ToString() : null,
-            ["requestType"] = query.RequestType.HasValue ? ((int)query.RequestType.Value).ToString() : null,
-            ["workshopId"] = query.WorkshopId?.ToString()
-        }
-    };
+            "Açık" => "open",
+            "İşlemde" => "progress",
+            "Yanıtlandı" => "answered",
+            "Kapandı" => "closed",
+            "İptal Edildi" => "cancelled",
+            _ => "default"
+        };
+    }
+
+    string GetTypeClass(string? typeText)
+    {
+        return typeText switch
+        {
+            "Kullanıcı Ekleme" => "user",
+            "Sorun Bildirimi" => "issue",
+            _ => "default"
+        };
+    }
 }
 
-<div class="support-list-page">
-    <div class="support-list-header">
-        <div class="support-title-area">
-            <div class="support-icon">
-                <span>?</span>
-            </div>
+<div class="admin-support-page">
+    <section class="admin-support-hero">
+        <div class="admin-support-hero-main">
+            <div class="admin-support-icon">?</div>
 
             <div>
+                <span class="admin-support-kicker">Admin Destek Merkezi</span>
                 <h1>Destek Talepleri</h1>
-                <p>Servislerden gelen sorun bildirimlerini ve kullanıcı ekleme taleplerini buradan yönetebilirsiniz.</p>
+                <p>Servislerden gelen sorun bildirimlerini ve kullanıcı ekleme taleplerini tek ekrandan yönetin.</p>
             </div>
         </div>
 
-        @await Html.PartialAsync("_PageActions", new PageActionViewModel
-        {
-            BackController = "Admin",
-            BackAction = "Dashboard",
-            HomeController = "Admin",
-            HomeAction = "Dashboard"
-        })
-    </div>
+        <div class="admin-support-actions">
+            <a asp-controller="Admin" asp-action="Dashboard" class="admin-support-soft-btn">
+                Ana Sayfa
+            </a>
+        </div>
+    </section>
 
-    <form class="support-filter-card"
-          method="get"
-          asp-controller="AdminSupportRequests"
-          asp-action="Index">
+    <section class="admin-support-filter-card">
+        <form method="get"
+              asp-controller="AdminSupportRequests"
+              asp-action="Index"
+              id="adminSupportFilterForm">
 
-        <div class="support-search-box">
-            <span class="search-icon">⌕</span>
-            <input name="Search"
-                   value="@query.Search"
-                   type="text"
-                   placeholder="Konu, açıklama, servis veya kullanıcı ara..." />
+            <input type="hidden" name="PageNumber" value="1" />
+            <input type="hidden"
+                   name="Status"
+                   id="SupportStatusFilter"
+                   value="@(query.Status.HasValue ? ((int)query.Status.Value).ToString() : "")" />
+
+            <input type="hidden"
+                   name="RequestType"
+                   id="SupportTypeFilter"
+                   value="@(query.RequestType.HasValue ? ((int)query.RequestType.Value).ToString() : "")" />
+
+            <div class="admin-support-search-row">
+                <div class="admin-support-search">
+                    <span>⌕</span>
+                    <input name="Search"
+                           value="@query.Search"
+                           type="text"
+                           placeholder="Konu, açıklama, servis veya kullanıcı ara..." />
+                </div>
+
+                <button type="submit" class="admin-support-primary-btn">
+                    Ara
+                </button>
+
+                <button type="button"
+                        class="admin-support-filter-toggle"
+                        data-admin-filter-toggle
+                        aria-expanded="false">
+                    Filtreler
+                    <em>⌄</em>
+                </button>
+            </div>
+
+            <div class="admin-support-advanced" data-admin-filter-panel>
+                <div class="admin-support-filter-group">
+                    <label>Durum</label>
+
+                    <div class="admin-support-chip-list">
+                        <button type="button"
+                                class="admin-support-chip @(!query.Status.HasValue ? "active" : "")"
+                                data-status-value="">
+                            Tümü
+                        </button>
+
+                        <button type="button"
+                                class="admin-support-chip @(query.Status == SupportRequestStatus.Open ? "active" : "")"
+                                data-status-value="@((int)SupportRequestStatus.Open)">
+                            Açık
+                        </button>
+
+                        <button type="button"
+                                class="admin-support-chip @(query.Status == SupportRequestStatus.InProgress ? "active" : "")"
+                                data-status-value="@((int)SupportRequestStatus.InProgress)">
+                            İşlemde
+                        </button>
+
+                        <button type="button"
+                                class="admin-support-chip @(query.Status == SupportRequestStatus.Answered ? "active" : "")"
+                                data-status-value="@((int)SupportRequestStatus.Answered)">
+                            Yanıtlandı
+                        </button>
+
+                        <button type="button"
+                                class="admin-support-chip @(query.Status == SupportRequestStatus.Closed ? "active" : "")"
+                                data-status-value="@((int)SupportRequestStatus.Closed)">
+                            Kapandı
+                        </button>
+
+                        <button type="button"
+                                class="admin-support-chip @(query.Status == SupportRequestStatus.Cancelled ? "active" : "")"
+                                data-status-value="@((int)SupportRequestStatus.Cancelled)">
+                            İptal
+                        </button>
+                    </div>
+                </div>
+
+                <div class="admin-support-filter-group">
+                    <label>Talep Tipi</label>
+
+                    <div class="admin-support-chip-list">
+                        <button type="button"
+                                class="admin-support-chip @(!query.RequestType.HasValue ? "active" : "")"
+                                data-type-value="">
+                            Tümü
+                        </button>
+
+                        <button type="button"
+                                class="admin-support-chip @(query.RequestType == SupportRequestType.Issue ? "active" : "")"
+                                data-type-value="@((int)SupportRequestType.Issue)">
+                            Sorun
+                        </button>
+
+                        <button type="button"
+                                class="admin-support-chip @(query.RequestType == SupportRequestType.UserCreateRequest ? "active" : "")"
+                                data-type-value="@((int)SupportRequestType.UserCreateRequest)">
+                            Kullanıcı
+                        </button>
+                    </div>
+                </div>
+
+                <div class="admin-support-filter-grid">
+                    <div class="admin-support-field">
+                        <label>Servis Id</label>
+                        <input name="WorkshopId"
+                               value="@query.WorkshopId"
+                               type="number"
+                               min="1"
+                               placeholder="Örn: 12" />
+                    </div>
+
+                    <div class="admin-support-field">
+                        <label>Sayfa Boyutu</label>
+                        <select name="PageSize">
+                            <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
+                            <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
+                            <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="admin-support-filter-actions">
+                    <button type="submit" class="admin-support-primary-btn">Filtrele</button>
+
+                    <a asp-controller="AdminSupportRequests"
+                       asp-action="Index"
+                       class="admin-support-clear-btn">
+                        Temizle
+                    </a>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <section class="admin-support-list-section">
+        <div class="admin-support-toolbar">
+            <div class="admin-support-summary">
+                @if (totalCount > 0)
+                {
+                    <span>
+                        <strong>@totalCount</strong> destek talebi —
+                        <strong>Sayfa @pageNumber / @totalPages</strong>
+                    </span>
+                }
+                else
+                {
+                    <span>Destek talebi bulunamadı.</span>
+                }
+            </div>
+
+            @if (totalPages > 1)
+            {
+                <div class="admin-support-mini-pager">
+                    <a class="admin-support-page-link @(pageNumber > 1 ? "" : "disabled")"
+                       href="@(pageNumber > 1
+                               ? Url.Action("Index", "AdminSupportRequests", new
+                               {
+                                   Search = query.Search,
+                                   Status = query.Status.HasValue ? (int?)query.Status.Value : null,
+                                   RequestType = query.RequestType.HasValue ? (int?)query.RequestType.Value : null,
+                                   WorkshopId = query.WorkshopId,
+                                   PageNumber = pageNumber - 1,
+                                   PageSize = pageSize
+                               })
+                               : "#")">
+                        ‹
+                    </a>
+
+                    @for (var number = 1; number <= totalPages; number++)
+                    {
+                        if (number == 1 ||
+                            number == totalPages ||
+                            Math.Abs(number - pageNumber) <= 1)
+                        {
+                            <a class="admin-support-page-link @(number == pageNumber ? "active" : "")"
+                               href="@Url.Action("Index", "AdminSupportRequests", new
+                               {
+                                   Search = query.Search,
+                                   Status = query.Status.HasValue ? (int?)query.Status.Value : null,
+                                   RequestType = query.RequestType.HasValue ? (int?)query.RequestType.Value : null,
+                                   WorkshopId = query.WorkshopId,
+                                   PageNumber = number,
+                                   PageSize = pageSize
+                               })">
+                                @number
+                            </a>
+                        }
+                    }
+
+                    <a class="admin-support-page-link @(pageNumber < totalPages ? "" : "disabled")"
+                       href="@(pageNumber < totalPages
+                               ? Url.Action("Index", "AdminSupportRequests", new
+                               {
+                                   Search = query.Search,
+                                   Status = query.Status.HasValue ? (int?)query.Status.Value : null,
+                                   RequestType = query.RequestType.HasValue ? (int?)query.RequestType.Value : null,
+                                   WorkshopId = query.WorkshopId,
+                                   PageNumber = pageNumber + 1,
+                                   PageSize = pageSize
+                               })
+                               : "#")">
+                        ›
+                    </a>
+                </div>
+            }
         </div>
 
-        <input name="WorkshopId"
-               value="@query.WorkshopId"
-               type="number"
-               min="1"
-               class="support-filter-input"
-               placeholder="Servis Id" />
-
-        <select name="Status" class="support-filter-select">
-            <option value="">Tüm Durumlar</option>
-
-            @if (query.Status == SupportRequestStatus.Open)
+        <div class="admin-support-list">
+            @if (!requests.Any())
             {
-                <option value="@((int)SupportRequestStatus.Open)" selected>Açık</option>
+                <div class="admin-support-empty">
+                    <strong>Kayıt bulunamadı</strong>
+                    <span>Arama veya filtre kriterlerini değiştirerek tekrar deneyebilirsin.</span>
+                </div>
             }
             else
             {
-                <option value="@((int)SupportRequestStatus.Open)">Açık</option>
-            }
+                foreach (var item in requests)
+                {
+                    var workshopName = string.IsNullOrWhiteSpace(item.WorkshopName)
+                        ? $"Servis #{item.WorkshopId}"
+                        : item.WorkshopName;
 
-            @if (query.Status == SupportRequestStatus.InProgress)
-            {
-                <option value="@((int)SupportRequestStatus.InProgress)" selected>İşlemde</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestStatus.InProgress)">İşlemde</option>
-            }
+                    var statusClass = GetStatusClass(item.StatusText);
+                    var typeClass = GetTypeClass(item.RequestTypeText);
 
-            @if (query.Status == SupportRequestStatus.Answered)
-            {
-                <option value="@((int)SupportRequestStatus.Answered)" selected>Yanıtlandı</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestStatus.Answered)">Yanıtlandı</option>
-            }
+                    <article class="admin-support-ticket">
+                        <div class="admin-support-ticket-main">
+                            <div class="admin-support-ticket-mark">
+                                @workshopName.Substring(0, 1).ToUpper()
+                            </div>
 
-            @if (query.Status == SupportRequestStatus.Closed)
-            {
-                <option value="@((int)SupportRequestStatus.Closed)" selected>Kapandı</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestStatus.Closed)">Kapandı</option>
-            }
+                            <div class="admin-support-ticket-title">
+                                <span>@workshopName</span>
+                                <strong>@item.Subject</strong>
 
-            @if (query.Status == SupportRequestStatus.Cancelled)
-            {
-                <option value="@((int)SupportRequestStatus.Cancelled)" selected>İptal Edildi</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestStatus.Cancelled)">İptal Edildi</option>
-            }
-        </select>
-
-        <select name="RequestType" class="support-filter-select">
-            <option value="">Tüm Talepler</option>
-
-            @if (query.RequestType == SupportRequestType.Issue)
-            {
-                <option value="@((int)SupportRequestType.Issue)" selected>Sorun Bildirimi</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestType.Issue)">Sorun Bildirimi</option>
-            }
-
-            @if (query.RequestType == SupportRequestType.UserCreateRequest)
-            {
-                <option value="@((int)SupportRequestType.UserCreateRequest)" selected>Kullanıcı Ekleme</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestType.UserCreateRequest)">Kullanıcı Ekleme</option>
-            }
-        </select>
-
-        <input type="hidden" name="PageNumber" value="1" />
-
-        <select name="PageSize" class="support-filter-select">
-            <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
-            <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
-            <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
-        </select>
-
-        <button type="submit"
-                class="support-filter-button"
-                title="Ara">
-            ⌕
-        </button>
-
-        <a asp-controller="AdminSupportRequests"
-           asp-action="Index"
-           class="support-clear-button"
-           title="Filtreleri temizle">
-            ×
-        </a>
-    </form>
-
-    @await Html.PartialAsync("_Pagination", paginationModel)
-
-    <div class="support-table-card">
-        <div class="table-responsive">
-            <table class="support-table">
-                <thead>
-                    <tr>
-                        <th>Servis</th>
-                        <th>Konu</th>
-                        <th>Tip</th>
-                        <th>Durum</th>
-                        <th>Öncelik</th>
-                        <th>Oluşturan</th>
-                        <th>Tarih</th>
-                        <th class="text-right">İşlem</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    @if (!requests.Any())
-                    {
-                        <tr>
-                            <td colspan="8" class="empty-cell">
-                                Henüz destek talebi bulunamadı.
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        foreach (var item in requests)
-                        {
-                            <tr class="support-row">
-                                <td>
-                                    <div class="support-name">
-                                        @(string.IsNullOrWhiteSpace(item.WorkshopName) ? $"Servis #{item.WorkshopId}" : item.WorkshopName)
-                                    </div>
-                                </td>
-
-                                <td>
-                                    <div class="support-subject">@item.Subject</div>
+                                <div class="admin-support-ticket-meta">
+                                    <em>@item.CreatedByUserName</em>
+                                    <em>@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</em>
 
                                     @if (item.RespondedAt.HasValue)
                                     {
-                                        <div class="small-success">Cevaplandı</div>
+                                        <em class="answered">Cevaplandı</em>
                                     }
-                                </td>
+                                </div>
+                            </div>
+                        </div>
 
-                                <td>
-                                    <span class="type-pill">@item.RequestTypeText</span>
-                                </td>
+                        <div class="admin-support-ticket-tags">
+                            <span class="admin-support-type @typeClass">@item.RequestTypeText</span>
+                            <span class="admin-support-status @statusClass">@item.StatusText</span>
+                        </div>
 
-                                <td>
-                                    <span class="status-pill">@item.StatusText</span>
-                                </td>
-
-                                <td>
-                                    <strong>@item.PriorityText</strong>
-                                </td>
-
-                                <td>@item.CreatedByUserName</td>
-
-                                <td>@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
-
-                                <td class="text-right">
-                                    <a asp-controller="AdminSupportRequests"
-                                       asp-action="Detail"
-                                       asp-route-id="@item.Id"
-                                       class="detail-btn">
-                                        Detay
-                                    </a>
-                                </td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
+                        <a asp-controller="AdminSupportRequests"
+                           asp-action="Detail"
+                           asp-route-id="@item.Id"
+                           class="admin-support-detail-btn">
+                            İncele
+                        </a>
+                    </article>
+                }
+            }
         </div>
-    </div>
+
+        @if (totalPages > 1)
+        {
+            <div class="admin-support-bottom-pager">
+                <a class="admin-support-large-page @(pageNumber > 1 ? "" : "disabled")"
+                   href="@(pageNumber > 1
+                           ? Url.Action("Index", "AdminSupportRequests", new
+                           {
+                               Search = query.Search,
+                               Status = query.Status.HasValue ? (int?)query.Status.Value : null,
+                               RequestType = query.RequestType.HasValue ? (int?)query.RequestType.Value : null,
+                               WorkshopId = query.WorkshopId,
+                               PageNumber = pageNumber - 1,
+                               PageSize = pageSize
+                           })
+                           : "#")">
+                    Önceki
+                </a>
+
+                <a class="admin-support-large-page @(pageNumber < totalPages ? "" : "disabled")"
+                   href="@(pageNumber < totalPages
+                           ? Url.Action("Index", "AdminSupportRequests", new
+                           {
+                               Search = query.Search,
+                               Status = query.Status.HasValue ? (int?)query.Status.Value : null,
+                               RequestType = query.RequestType.HasValue ? (int?)query.RequestType.Value : null,
+                               WorkshopId = query.WorkshopId,
+                               PageNumber = pageNumber + 1,
+                               PageSize = pageSize
+                           })
+                           : "#")">
+                    Sonraki
+                </a>
+            </div>
+        }
+    </section>
 </div>
 
 <style>
-    .support-list-page {
-        padding-top: 28px;
-        padding-bottom: 32px;
+    .admin-support-page {
+        width: min(1280px, calc(100% - 56px));
+        margin: 0 auto;
+        padding: 30px 0 64px;
+        color: #061936;
     }
 
-    .support-list-header {
+    .admin-support-hero {
+        margin-bottom: 18px;
+        padding: 26px;
+        border-radius: 30px;
+        background:
+            radial-gradient(circle at 92% 18%, rgba(255,255,255,.16), transparent 28%),
+            linear-gradient(135deg, #0f172a 0%, #111827 48%, #3730a3 100%);
+        color: white;
+        box-shadow: 0 26px 70px rgba(15, 23, 42, .20);
         display: flex;
-        align-items: center;
         justify-content: space-between;
         gap: 20px;
-        margin-bottom: 32px;
     }
 
-    .support-title-area {
+    .admin-support-hero-main {
+        min-width: 0;
         display: flex;
         align-items: flex-start;
-        gap: 14px;
+        gap: 16px;
     }
 
-    .support-icon {
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        background: #eef2ff;
-        color: #4f46e5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 22px;
-        font-weight: 800;
-    }
-
-    .support-list-header h1 {
-        margin: 0;
-        font-size: 28px;
-        font-weight: 800;
-        color: #0f172a;
-    }
-
-    .support-list-header p {
-        margin: 8px 0 0;
-        color: #64748b;
-        font-size: 14px;
-    }
-
-    .support-filter-card {
+    .admin-support-icon {
+        width: 54px;
+        height: 54px;
+        flex: 0 0 54px;
+        border-radius: 20px;
+        background: rgba(255,255,255,.13);
+        border: 1px solid rgba(255,255,255,.18);
         display: grid;
-        grid-template-columns: minmax(320px, 1fr) 120px 160px 170px 130px 48px 48px;
-        gap: 12px;
-        background: #fff;
-        border: 1px solid #dbe3ef;
-        border-radius: 16px;
-        padding: 16px;
-        margin-bottom: 18px;
-        box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
+        place-items: center;
+        color: white;
+        font-size: 25px;
+        font-weight: 950;
     }
 
-    .support-search-box {
+    .admin-support-kicker {
+        display: inline-flex;
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.13);
+        color: rgba(255,255,255,.82);
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .admin-support-hero h1 {
+        margin: 0;
+        font-size: clamp(31px, 4vw, 44px);
+        line-height: 1;
+        letter-spacing: -1.6px;
+    }
+
+    .admin-support-hero p {
+        margin: 10px 0 0;
+        max-width: 660px;
+        color: rgba(255,255,255,.72);
+        font-size: 15px;
+        line-height: 1.45;
+    }
+
+    .admin-support-actions {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .admin-support-soft-btn {
+        height: 46px;
+        padding: 0 17px;
+        border-radius: 16px;
+        background: rgba(255,255,255,.12);
+        border: 1px solid rgba(255,255,255,.20);
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .admin-support-filter-card {
+        margin-bottom: 18px;
+        padding: 16px;
+        border-radius: 26px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, .06);
+    }
+
+    .admin-support-search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 10px;
+    }
+
+    .admin-support-search {
+        min-width: 0;
         position: relative;
     }
 
-    .search-icon {
+    .admin-support-search span {
         position: absolute;
-        left: 16px;
+        left: 17px;
         top: 50%;
         transform: translateY(-50%);
         color: #94a3b8;
         font-size: 22px;
     }
 
-    .support-search-box input,
-    .support-filter-select,
-    .support-filter-input {
+    .admin-support-search input,
+    .admin-support-field input,
+    .admin-support-field select {
         width: 100%;
-        height: 48px;
-        border: 1px solid #cfd8e6;
-        border-radius: 13px;
-        background: #fff;
+        height: 52px;
+        border-radius: 17px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
         color: #0f172a;
-        font-size: 14px;
+        font-size: 15px;
+        font-weight: 750;
         outline: none;
+        box-sizing: border-box;
     }
 
-    .support-search-box input {
-        padding: 0 16px 0 48px;
+    .admin-support-search input {
+        padding: 0 16px 0 50px;
     }
 
-    .support-filter-select,
-    .support-filter-input {
+    .admin-support-field input,
+    .admin-support-field select {
         padding: 0 14px;
     }
 
-        .support-search-box input:focus,
-        .support-filter-select:focus,
-        .support-filter-input:focus {
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
-        }
+    .admin-support-search input:focus,
+    .admin-support-field input:focus,
+    .admin-support-field select:focus {
+        background: white;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 4px rgba(79,70,229,.10);
+    }
 
-    .support-filter-button,
-    .support-clear-button {
-        width: 48px;
-        height: 48px;
-        border: 1px solid #cfd8e6;
-        border-radius: 13px;
+    .admin-support-primary-btn,
+    .admin-support-filter-toggle,
+    .admin-support-clear-btn {
+        height: 52px;
+        border-radius: 17px;
+        padding: 0 18px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-weight: 800;
+        gap: 8px;
         text-decoration: none;
+        font-size: 14px;
+        font-weight: 950;
         cursor: pointer;
-        transition: .18s ease;
+        white-space: nowrap;
     }
 
-    .support-filter-button {
+    .admin-support-primary-btn {
+        border: none;
+        background: #4f46e5;
+        color: white;
+        box-shadow: 0 12px 24px rgba(79,70,229,.18);
+    }
+
+    .admin-support-filter-toggle,
+    .admin-support-clear-btn {
+        border: 1px solid #d4deeb;
         background: #f8fafc;
-        color: #475569;
-        font-size: 20px;
-    }
-
-        .support-filter-button:hover {
-            background: #eef2ff;
-            border-color: #c7d2fe;
-            color: #4f46e5;
-        }
-
-    .support-clear-button {
-        background: #fff;
-        color: #64748b;
-        font-size: 22px;
-    }
-
-        .support-clear-button:hover {
-            background: #fff1f2;
-            border-color: #fecdd3;
-            color: #e11d48;
-        }
-
-    .support-list-page > .pagination-bar {
-        margin-bottom: 18px;
-        border: 1px solid #dbe3ef;
-        border-radius: 16px;
-        box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
-    }
-
-    .support-table-card {
-        background: #fff;
-        border: 1px solid #dbe3ef;
-        border-radius: 18px;
-        overflow: hidden;
-        box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
-    }
-
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto;
-    }
-
-    .support-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 1080px;
-    }
-
-        .support-table thead {
-            background: #f8fafc;
-        }
-
-        .support-table th {
-            padding: 17px 24px;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: .04em;
-            color: #64748b;
-            font-weight: 800;
-            text-align: left;
-            border-bottom: 1px solid #dbe3ef;
-        }
-
-        .support-table td {
-            padding: 20px 24px;
-            border-bottom: 1px solid #edf2f7;
-            vertical-align: middle;
-            color: #0f172a;
-            font-size: 14px;
-        }
-
-        .support-table tr:last-child td {
-            border-bottom: none;
-        }
-
-    .support-row:hover {
-        background: #fafbff;
-    }
-
-    .support-name,
-    .support-subject {
-        font-weight: 800;
-        color: #0f172a;
-    }
-
-    .small-success {
-        margin-top: 4px;
-        color: #16a34a;
-        font-size: 12px;
-        font-weight: 800;
-    }
-
-    .type-pill {
-        display: inline-flex;
-        align-items: center;
-        padding: 5px 10px;
-        border-radius: 8px;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        color: #475569;
-        font-size: 12px;
-        font-weight: 700;
-    }
-
-    .status-pill {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: #eef2ff;
-        color: #3730a3;
-        font-size: 12px;
-        font-weight: 800;
-    }
-
-    .detail-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 74px;
-        height: 40px;
-        border: 1px solid #cfd8e6;
-        border-radius: 10px;
         color: #334155;
-        background: #fff;
-        text-decoration: none;
-        font-weight: 800;
-        font-size: 13px;
+    }
+
+    .admin-support-filter-toggle em {
+        font-style: normal;
         transition: .18s ease;
     }
 
-        .detail-btn:hover {
-            background: #f8fafc;
-            color: #0f172a;
-        }
-
-    .text-right {
-        text-align: right !important;
+    .admin-support-filter-toggle.is-open em {
+        transform: rotate(180deg);
     }
 
-    .empty-cell {
-        padding: 38px !important;
+    .admin-support-advanced {
+        display: none;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #e2e8f0;
+        gap: 14px;
+    }
+
+    .admin-support-advanced.is-open {
+        display: grid;
+    }
+
+    .admin-support-filter-group {
+        display: grid;
+        gap: 8px;
+    }
+
+    .admin-support-filter-group label,
+    .admin-support-field label {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+    }
+
+    .admin-support-chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .admin-support-chip {
+        height: 34px;
+        padding: 0 14px;
+        border: none;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .admin-support-chip.active {
+        background: #0f172a;
+        color: white;
+    }
+
+    .admin-support-filter-grid {
+        display: grid;
+        grid-template-columns: minmax(160px, .4fr) minmax(160px, .4fr);
+        gap: 12px;
+    }
+
+    .admin-support-field {
+        display: grid;
+        gap: 8px;
+    }
+
+    .admin-support-filter-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .admin-support-toolbar {
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .admin-support-summary {
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 850;
+    }
+
+    .admin-support-summary strong {
+        color: #334155;
+    }
+
+    .admin-support-mini-pager {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px;
+        border-radius: 999px;
+        background: white;
+        border: 1px solid #dbe3ef;
+    }
+
+    .admin-support-page-link {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        color: #475569;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 950;
+    }
+
+    .admin-support-page-link.active {
+        background: #4f46e5;
+        color: white;
+    }
+
+    .admin-support-page-link.disabled,
+    .admin-support-large-page.disabled {
+        opacity: .4;
+        pointer-events: none;
+    }
+
+    .admin-support-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .admin-support-ticket {
+        padding: 18px;
+        border-radius: 24px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, .045);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 16px;
+        align-items: center;
+        transition: .16s ease;
+    }
+
+    .admin-support-ticket:hover {
+        transform: translateY(-2px);
+        border-color: #c7d2fe;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, .08);
+    }
+
+    .admin-support-ticket-main {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .admin-support-ticket-mark {
+        width: 52px;
+        height: 52px;
+        flex: 0 0 52px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 17px;
+        font-weight: 950;
+    }
+
+    .admin-support-ticket-title {
+        min-width: 0;
+    }
+
+    .admin-support-ticket-title > span {
+        display: block;
+        margin-bottom: 4px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 900;
+    }
+
+    .admin-support-ticket-title strong {
+        display: block;
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 950;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .admin-support-ticket-meta {
+        margin-top: 7px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .admin-support-ticket-meta em {
+        color: #8aa0bd;
+        font-size: 12px;
+        font-style: normal;
+        font-weight: 800;
+    }
+
+    .admin-support-ticket-meta em.answered {
+        color: #059669;
+    }
+
+    .admin-support-ticket-tags {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .admin-support-type,
+    .admin-support-status {
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .admin-support-type.issue {
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .admin-support-type.user {
+        background: #f0fdf4;
+        color: #15803d;
+    }
+
+    .admin-support-status.open {
+        background: #fff7ed;
+        color: #c2410c;
+    }
+
+    .admin-support-status.progress {
+        background: #eef2ff;
+        color: #4f46e5;
+    }
+
+    .admin-support-status.answered {
+        background: #ecfeff;
+        color: #0891b2;
+    }
+
+    .admin-support-status.closed {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .admin-support-status.cancelled {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .admin-support-detail-btn {
+        height: 42px;
+        padding: 0 15px;
+        border-radius: 14px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #18365d;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .admin-support-empty {
+        padding: 42px 18px;
+        border-radius: 24px;
+        background: white;
+        border: 1px dashed #cbd5e1;
+        color: #64748b;
+        display: grid;
+        justify-items: center;
+        gap: 8px;
         text-align: center;
-        color: #64748b !important;
     }
 
-    @@media (max-width: 1100px) {
-        .support-filter-card {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .support-search-box {
-            grid-column: 1 / -1;
-        }
+    .admin-support-empty strong {
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 950;
     }
 
-    @@media (max-width: 700px) {
-        .support-list-header {
-            align-items: flex-start;
+    .admin-support-bottom-pager {
+        margin-top: 16px;
+        display: none;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .admin-support-large-page {
+        height: 46px;
+        border-radius: 16px;
+        border: 1px solid #d4deeb;
+        background: white;
+        color: #334155;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 950;
+    }
+
+    @@media (max-width: 920px) {
+        .admin-support-page {
+            width: min(100% - 24px, 1280px);
+            padding: 18px 0 44px;
+        }
+
+        .admin-support-hero {
+            padding: 18px;
+            border-radius: 26px;
             flex-direction: column;
         }
 
-        .support-filter-card {
+        .admin-support-search-row {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .admin-support-search {
+            grid-column: span 2;
+        }
+
+        .admin-support-primary-btn,
+        .admin-support-filter-toggle,
+        .admin-support-clear-btn {
+            width: 100%;
+        }
+
+        .admin-support-filter-grid {
             grid-template-columns: 1fr;
         }
 
-        .support-search-box {
-            grid-column: auto;
+        .admin-support-filter-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
         }
 
-        .support-filter-button,
-        .support-clear-button {
+        .admin-support-toolbar {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .admin-support-ticket {
+            grid-template-columns: 1fr;
+            align-items: stretch;
+        }
+
+        .admin-support-ticket-tags {
+            justify-content: flex-start;
+        }
+
+        .admin-support-ticket-title strong {
+            white-space: normal;
+            font-size: 20px;
+            line-height: 1.18;
+        }
+
+        .admin-support-detail-btn {
             width: 100%;
+            height: 46px;
+        }
+
+        .admin-support-bottom-pager {
+            display: grid;
+        }
+    }
+
+    @@media (max-width: 460px) {
+        .admin-support-page {
+            width: min(100% - 18px, 1280px);
+            padding-top: 12px;
+        }
+
+        .admin-support-hero-main {
+            gap: 12px;
+        }
+
+        .admin-support-icon {
+            width: 44px;
+            height: 44px;
+            flex-basis: 44px;
+            border-radius: 16px;
+        }
+
+        .admin-support-hero h1 {
+            font-size: 28px;
+        }
+
+        .admin-support-filter-actions {
+            grid-template-columns: 1fr;
         }
     }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleButton = document.querySelector("[data-admin-filter-toggle]");
+        const filterPanel = document.querySelector("[data-admin-filter-panel]");
+        const statusInput = document.getElementById("SupportStatusFilter");
+        const typeInput = document.getElementById("SupportTypeFilter");
+
+        toggleButton?.addEventListener("click", function () {
+            const isOpen = filterPanel?.classList.toggle("is-open");
+
+            toggleButton.classList.toggle("is-open", !!isOpen);
+            toggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+
+        document.querySelectorAll("[data-status-value]").forEach(button => {
+            button.addEventListener("click", function () {
+                if (!statusInput) return;
+
+                statusInput.value = this.dataset.statusValue ?? "";
+
+                document.querySelectorAll("[data-status-value]").forEach(x => x.classList.remove("active"));
+                this.classList.add("active");
+            });
+        });
+
+        document.querySelectorAll("[data-type-value]").forEach(button => {
+            button.addEventListener("click", function () {
+                if (!typeInput) return;
+
+                typeInput.value = this.dataset.typeValue ?? "";
+
+                document.querySelectorAll("[data-type-value]").forEach(x => x.classList.remove("active"));
+                this.classList.add("active");
+            });
+        });
+    });
+</script>

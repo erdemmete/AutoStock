@@ -7,25 +7,32 @@ namespace AutoStock.Repositories.Interfaces
     {
         Task<SupportRequest?> GetByIdAsync(int id);
 
-        Task<SupportRequest?> GetByIdForWorkshopAsync(int id, int workshopId);
+        Task<SupportRequest?> GetByIdForWorkshopAsync(
+    int id,
+    int workshopId,
+    int? createdByUserId = null);
 
         Task<List<SupportRequest>> GetListForWorkshopAsync(
-            int workshopId,
-            SupportRequestStatus? status,
-            SupportRequestType? requestType,
-            string? search,
-            DateTime? startDate,
-            DateTime? endDate,
-            int page,
-            int pageSize);
+    int workshopId,
+    SupportRequestStatus? status,
+    SupportRequestType? requestType,
+    string? search,
+    DateTime? startDate,
+    DateTime? endDate,
+    int page,
+    int pageSize,
+    int? createdByUserId = null,
+    bool excludeClosedAndCancelled = false);
 
         Task<int> GetCountForWorkshopAsync(
-            int workshopId,
-            SupportRequestStatus? status,
-            SupportRequestType? requestType,
-            string? search,
-            DateTime? startDate,
-            DateTime? endDate);
+    int workshopId,
+    SupportRequestStatus? status,
+    SupportRequestType? requestType,
+    string? search,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? createdByUserId = null,
+    bool excludeClosedAndCancelled = false);
 
         Task<List<SupportRequest>> GetListForAdminAsync(
             int? workshopId,

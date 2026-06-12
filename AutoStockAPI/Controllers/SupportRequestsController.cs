@@ -29,9 +29,16 @@ namespace AutoStock.API.Controllers
             if (workshopIdResult.IsFailure)
                 return UnauthorizedResult(workshopIdResult);
 
+            var userIdResult = GetCurrentUserId();
+
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
             var result = await _supportRequestService.GetPagedForWorkshopAsync(
                 query,
-                workshopIdResult.Data);
+                workshopIdResult.Data,
+                userIdResult.Data,
+                GetCurrentUserRole());
 
             return ToActionResult(result);
         }
@@ -44,9 +51,16 @@ namespace AutoStock.API.Controllers
             if (workshopIdResult.IsFailure)
                 return UnauthorizedResult(workshopIdResult);
 
+            var userIdResult = GetCurrentUserId();
+
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
             var result = await _supportRequestService.GetByIdForWorkshopAsync(
                 id,
-                workshopIdResult.Data);
+                workshopIdResult.Data,
+                userIdResult.Data,
+                GetCurrentUserRole());
 
             return ToActionResult(result);
         }

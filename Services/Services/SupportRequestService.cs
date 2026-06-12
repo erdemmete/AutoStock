@@ -16,11 +16,19 @@ namespace AutoStock.Services.Services
         IDateTimeProvider dateTimeProvider) : ISupportRequestService
     {
         public async Task<ServiceResult<PagedResult<SupportRequestListItemDto>>> GetPagedForWorkshopAsync(
-            SupportRequestListQueryDto query,
-            int workshopId)
+    SupportRequestListQueryDto query,
+    int workshopId,
+    int currentUserId,
+    string? currentUserRole)
         {
             query ??= new SupportRequestListQueryDto();
             query.Normalize();
+
+            var createdByUserId = currentUserRole == AppRoles.Staff
+                ? currentUserId
+                : (int?)null;
+
+            var excludeClosedAndCancelled = !query.Status.HasValue;
 
             var totalCount = await supportRequestRepository.GetCountForWorkshopAsync(
                 workshopId,
@@ -28,7 +36,9 @@ namespace AutoStock.Services.Services
                 query.RequestType,
                 query.Search,
                 query.StartDate,
-                query.EndDate);
+                query.EndDate,
+                createdByUserId,
+                excludeClosedAndCancelled);
 
             var items = await supportRequestRepository.GetListForWorkshopAsync(
                 workshopId,
@@ -38,7 +48,9 @@ namespace AutoStock.Services.Services
                 query.StartDate,
                 query.EndDate,
                 query.PageNumber,
-                query.PageSize);
+                query.PageSize,
+                createdByUserId,
+                excludeClosedAndCancelled);
 
             var result = new PagedResult<SupportRequestListItemDto>
             {
@@ -52,10 +64,19 @@ namespace AutoStock.Services.Services
         }
 
         public async Task<ServiceResult<SupportRequestDetailDto>> GetByIdForWorkshopAsync(
-            int id,
-            int workshopId)
+    int id,
+    int workshopId,
+    int currentUserId,
+    string? currentUserRole)
         {
-            var supportRequest = await supportRequestRepository.GetByIdForWorkshopAsync(id, workshopId);
+            var createdByUserId = currentUserRole == AppRoles.Staff
+                ? currentUserId
+                : (int?)null;
+
+            var supportRequest = await supportRequestRepository.GetByIdForWorkshopAsync(
+                id,
+                workshopId,
+                createdByUserId);
 
             if (supportRequest == null)
                 return ServiceResult<SupportRequestDetailDto>.Fail("Destek talebi bulunamadı.");
@@ -76,7 +97,7 @@ namespace AutoStock.Services.Services
                 CreatedByUserId = createdByUserId,
                 RequestType = SupportRequestType.Issue,
                 Status = SupportRequestStatus.Open,
-                Priority = request.Priority,
+                Priority = SupportRequestPriority.Normal,
                 Subject = request.Subject.Trim(),
                 Description = request.Description.Trim(),
                 CreatedAt = now
@@ -127,7 +148,7 @@ namespace AutoStock.Services.Services
                 CreatedByUserId = createdByUserId,
                 RequestType = SupportRequestType.UserCreateRequest,
                 Status = SupportRequestStatus.Open,
-                Priority = request.Priority,
+                Priority = SupportRequestPriority.Normal,
                 Subject = "Kullanıcı ekleme talebi",
                 Description = string.IsNullOrWhiteSpace(request.Note)
                     ? "Servis kullanıcısı ekleme talebi oluşturuldu."

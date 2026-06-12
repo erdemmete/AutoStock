@@ -1,6 +1,5 @@
-﻿@model AutoStock.WEB.Models.SupportRequests.SupportRequestIndexViewModel
+@model AutoStock.WEB.Models.SupportRequests.SupportRequestIndexViewModel
 @using AutoStock.Repositories.Enums
-@using AutoStock.WEB.Models.Common
 @using AutoStock.WEB.Models.SupportRequests
 
 @{
@@ -13,234 +12,1031 @@
     var pageSize = Model.Requests.PageSize > 0 ? Model.Requests.PageSize : query.PageSize;
     var totalCount = Model.Requests.TotalCount;
 
-    var paginationModel = new PaginationViewModel
+    var totalPages = pageSize > 0
+        ? Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize))
+        : 1;
+
+    var hasAdvancedFilter = false;
+
+    string GetStatusClass(string? statusText)
     {
-        Controller = "SupportRequests",
-        Action = "Index",
-        PageNumber = pageNumber,
-        PageSize = pageSize,
-        TotalCount = totalCount,
-        RouteValues = new Dictionary<string, string?>
-        {
-            ["search"] = query.Search,
-            ["status"] = query.Status.HasValue ? ((int)query.Status.Value).ToString() : null,
-            ["requestType"] = query.RequestType.HasValue ? ((int)query.RequestType.Value).ToString() : null
-        }
-    };
+        if (string.IsNullOrWhiteSpace(statusText))
+            return "status-default";
+
+        if (statusText.Contains("Açık", StringComparison.OrdinalIgnoreCase))
+            return "status-open";
+
+        if (statusText.Contains("İşlem", StringComparison.OrdinalIgnoreCase))
+            return "status-progress";
+
+        if (statusText.Contains("Yanıt", StringComparison.OrdinalIgnoreCase) ||
+            statusText.Contains("Cevap", StringComparison.OrdinalIgnoreCase))
+            return "status-answered";
+
+        if (statusText.Contains("Kapan", StringComparison.OrdinalIgnoreCase))
+            return "status-closed";
+
+        if (statusText.Contains("İptal", StringComparison.OrdinalIgnoreCase))
+            return "status-cancelled";
+
+        return "status-default";
+    }
+
+    string GetTypeClass(string? typeText)
+    {
+        if (string.IsNullOrWhiteSpace(typeText))
+            return "type-default";
+
+        if (typeText.Contains("Kullanıcı", StringComparison.OrdinalIgnoreCase))
+            return "type-user";
+
+        return "type-issue";
+    }
+
+    string GetInitial(string? subject)
+    {
+        if (string.IsNullOrWhiteSpace(subject))
+            return "?";
+
+        return subject.Trim().Substring(0, 1).ToUpper();
+    }
 }
 
-<div class="stock-page">
-    <div class="stock-header">
-        <div class="stock-title-area">
-            <div class="stock-icon">
-                <span>?</span>
-            </div>
+<div class="sup-page">
+    <section class="sup-hero">
+        <div class="sup-hero-main">
+            <div class="sup-icon-mark">?</div>
 
             <div>
+                <span class="sup-eyebrow">Destek Merkezi</span>
                 <h1>Destek Talepleri</h1>
-                <p>Sorun bildirimlerinizi ve kullanıcı ekleme taleplerinizi buradan takip edebilirsiniz.</p>
+                <p>Sorun bildirimlerinizi ve kullanıcı taleplerinizi buradan takip edin.</p>
             </div>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="sup-hero-actions">
+            <a asp-controller="SupportRequests"
+               asp-action="CreateIssue"
+               class="sup-action-card primary">
+                <span>+</span>
+                <strong>Yeni Sorun Bildir</strong>
+            </a>
+
             @if (Model.IsOwner)
             {
                 <a asp-controller="SupportRequests"
                    asp-action="CreateUserRequest"
-                   class="detail-btn">
-                    Kullanıcı Talebi
+                   class="sup-action-card secondary">
+                    <span>👤</span>
+                    <strong>Kullanıcı Talebi</strong>
                 </a>
             }
 
-            @await Html.PartialAsync("_PageActions", new PageActionViewModel
-            {
-                BackController = "Dashboard",
-                BackAction = "Index",
-                HomeController = "Dashboard",
-                HomeAction = "Index",
-                PrimaryText = "+ Yeni Sorun Bildir",
-                PrimaryController = "SupportRequests",
-                PrimaryAction = "CreateIssue"
-            })
+            <a asp-controller="Dashboard"
+               asp-action="Index"
+               class="sup-action-card ghost">
+                <span>⌂</span>
+                <strong>Ana Sayfa</strong>
+            </a>
         </div>
-    </div>
+    </section>
 
-    <form class="stock-filter-card"
-          method="get"
-          asp-controller="SupportRequests"
-          asp-action="Index">
+    <section class="sup-filter">
+        <form method="get"
+              asp-controller="SupportRequests"
+              asp-action="Index"
+              id="supportFilterForm">
 
-        <div class="stock-search-box">
-            <span class="search-icon">⌕</span>
-            <input name="Search"
-                   value="@query.Search"
-                   type="text"
-                   placeholder="Konu veya açıklama ara..." />
-        </div>
+            <input type="hidden" name="PageNumber" value="1" />
 
-        <select name="Status" class="stock-filter-select">
-            <option value="">Tüm Durumlar</option>
+            <div class="sup-search-row">
+                <div class="sup-search-box">
+                    <span>⌕</span>
+                    <input name="Search"
+                           value="@query.Search"
+                           type="text"
+                           placeholder="Konu veya açıklama ara" />
+                </div>
 
-            @if (query.Status == SupportRequestStatus.Open)
+                <button type="submit" class="sup-search-btn">
+                    Ara
+                </button>
+
+                <button type="button"
+                        class="sup-filter-btn @(hasAdvancedFilter ? "is-open" : "")"
+                        data-filter-toggle
+                        aria-expanded="@(hasAdvancedFilter ? "true" : "false")">
+                    Filtreler
+                    <em>⌄</em>
+                </button>
+            </div>
+
+            <div class="sup-filter-panel @(hasAdvancedFilter ? "is-open" : "")" data-filter-panel>
+                <div class="sup-field">
+                    <label>Durum</label>
+
+                    <select name="Status">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="@((int)SupportRequestStatus.Open)" selected="@(query.Status == SupportRequestStatus.Open ? "selected" : null)">Açık</option>
+                        <option value="@((int)SupportRequestStatus.InProgress)" selected="@(query.Status == SupportRequestStatus.InProgress ? "selected" : null)">İşlemde</option>
+                        <option value="@((int)SupportRequestStatus.Answered)" selected="@(query.Status == SupportRequestStatus.Answered ? "selected" : null)">Yanıtlandı</option>
+                        <option value="@((int)SupportRequestStatus.Closed)" selected="@(query.Status == SupportRequestStatus.Closed ? "selected" : null)">Kapandı</option>
+                        <option value="@((int)SupportRequestStatus.Cancelled)" selected="@(query.Status == SupportRequestStatus.Cancelled ? "selected" : null)">İptal Edildi</option>
+                    </select>
+                </div>
+
+                <div class="sup-field">
+                    <label>Talep Tipi</label>
+
+                    <select name="RequestType">
+                        <option value="">Tüm Talepler</option>
+                        <option value="@((int)SupportRequestType.Issue)" selected="@(query.RequestType == SupportRequestType.Issue ? "selected" : null)">Sorun Bildirimi</option>
+                        <option value="@((int)SupportRequestType.UserCreateRequest)" selected="@(query.RequestType == SupportRequestType.UserCreateRequest ? "selected" : null)">Kullanıcı Ekleme</option>
+                    </select>
+                </div>
+
+                <div class="sup-field">
+                    <label>Sayfa</label>
+
+                    <select name="PageSize">
+                        <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
+                        <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
+                        <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
+                    </select>
+                </div>
+
+                <div class="sup-filter-actions">
+                    <button type="submit">Uygula</button>
+
+                    <a asp-controller="SupportRequests"
+                       asp-action="Index">
+                        Temizle
+                    </a>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <section class="sup-list-shell">
+        <div class="sup-list-head">
+            <div>
+                @if (totalCount > 0)
+                {
+                    <span>
+                        <strong>@totalCount</strong> talep —
+                        <strong>Sayfa @pageNumber / @totalPages</strong>
+                    </span>
+                }
+                else
+                {
+                    <span>Destek talebi bulunamadı.</span>
+                }
+            </div>
+
+            @if (totalPages > 1)
             {
-                <option value="@((int)SupportRequestStatus.Open)" selected>Açık</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestStatus.Open)">Açık</option>
-            }
+                <div class="sup-top-pager">
+                    <a class="sup-pager-nav @(pageNumber > 1 ? "" : "disabled")"
+                       href="@(pageNumber > 1
+                               ? Url.Action("Index", "SupportRequests", new
+                               {
+                                   Search = query.Search,
+                                   Status = query.Status.HasValue ? (int?)query.Status.Value : null,
+                                   RequestType = query.RequestType.HasValue ? (int?)query.RequestType.Value : null,
+                                   PageNumber = pageNumber - 1,
+                                   PageSize = pageSize
+                               })
+                               : "#")">
+                        ‹
+                    </a>
 
-            @if (query.Status == SupportRequestStatus.InProgress)
-            {
-                <option value="@((int)SupportRequestStatus.InProgress)" selected>İşlemde</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestStatus.InProgress)">İşlemde</option>
-            }
-
-            @if (query.Status == SupportRequestStatus.Answered)
-            {
-                <option value="@((int)SupportRequestStatus.Answered)" selected>Yanıtlandı</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestStatus.Answered)">Yanıtlandı</option>
-            }
-
-            @if (query.Status == SupportRequestStatus.Closed)
-            {
-                <option value="@((int)SupportRequestStatus.Closed)" selected>Kapandı</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestStatus.Closed)">Kapandı</option>
-            }
-
-            @if (query.Status == SupportRequestStatus.Cancelled)
-            {
-                <option value="@((int)SupportRequestStatus.Cancelled)" selected>İptal Edildi</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestStatus.Cancelled)">İptal Edildi</option>
-            }
-        </select>
-
-        <select name="RequestType" class="stock-filter-select">
-            <option value="">Tüm Talepler</option>
-
-            @if (query.RequestType == SupportRequestType.Issue)
-            {
-                <option value="@((int)SupportRequestType.Issue)" selected>Sorun Bildirimi</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestType.Issue)">Sorun Bildirimi</option>
-            }
-
-            @if (query.RequestType == SupportRequestType.UserCreateRequest)
-            {
-                <option value="@((int)SupportRequestType.UserCreateRequest)" selected>Kullanıcı Ekleme</option>
-            }
-            else
-            {
-                <option value="@((int)SupportRequestType.UserCreateRequest)">Kullanıcı Ekleme</option>
-            }
-        </select>
-
-        <input type="hidden" name="PageNumber" value="1" />
-
-        <select name="PageSize" class="stock-filter-select">
-            <option value="10" selected="@(pageSize == 10 ? "selected" : null)">10 kayıt</option>
-            <option value="25" selected="@(pageSize == 25 ? "selected" : null)">25 kayıt</option>
-            <option value="50" selected="@(pageSize == 50 ? "selected" : null)">50 kayıt</option>
-        </select>
-
-        <button type="submit"
-                class="stock-filter-button"
-                title="Ara">
-            ⌕
-        </button>
-
-        <a asp-controller="SupportRequests"
-           asp-action="Index"
-           class="stock-clear-button"
-           title="Filtreleri temizle">
-            ×
-        </a>
-    </form>
-
-    @await Html.PartialAsync("_Pagination", paginationModel)
-
-    <div class="stock-table-card">
-        <div class="table-responsive">
-            <table class="stock-table">
-                <thead>
-                    <tr>
-                        <th>Konu</th>
-                        <th>Tip</th>
-                        <th>Durum</th>
-                        <th>Öncelik</th>
-                        <th>Oluşturan</th>
-                        <th>Tarih</th>
-                        <th class="text-right">İşlem</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    @if (!requests.Any())
+                    @for (var number = 1; number <= totalPages; number++)
                     {
-                        <tr>
-                            <td colspan="7" class="empty-cell">
-                                Henüz destek talebi bulunamadı.
-                            </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        foreach (var item in requests)
+                        if (number == 1 ||
+                            number == totalPages ||
+                            Math.Abs(number - pageNumber) <= 1)
                         {
-                            <tr class="stock-row">
-                                <td>
-                                    <div class="stock-name">@item.Subject</div>
-
-                                    @if (item.RespondedAt.HasValue)
-                                    {
-                                        <div class="small text-success mt-1">Admin cevabı mevcut</div>
-                                    }
-                                </td>
-
-                                <td>
-                                    <span class="brand-pill">@item.RequestTypeText</span>
-                                </td>
-
-                                <td>
-                                    <span class="status-badge">@item.StatusText</span>
-                                </td>
-
-                                <td>
-                                    <strong>@item.PriorityText</strong>
-                                </td>
-
-                                <td>@item.CreatedByUserName</td>
-
-                                <td>@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
-
-                                <td class="text-right">
-                                    <a asp-controller="SupportRequests"
-                                       asp-action="Detail"
-                                       asp-route-id="@item.Id"
-                                       class="detail-btn">
-                                        Detay
-                                    </a>
-                                </td>
-                            </tr>
+                            <a class="sup-page-number @(number == pageNumber ? "active" : "")"
+                               href="@Url.Action("Index", "SupportRequests", new
+                               {
+                                   Search = query.Search,
+                                   Status = query.Status.HasValue ? (int?)query.Status.Value : null,
+                                   RequestType = query.RequestType.HasValue ? (int?)query.RequestType.Value : null,
+                                   PageNumber = number,
+                                   PageSize = pageSize
+                               })">
+                                @number
+                            </a>
                         }
                     }
-                </tbody>
-            </table>
+
+                    <a class="sup-pager-nav @(pageNumber < totalPages ? "" : "disabled")"
+                       href="@(pageNumber < totalPages
+                               ? Url.Action("Index", "SupportRequests", new
+                               {
+                                   Search = query.Search,
+                                   Status = query.Status.HasValue ? (int?)query.Status.Value : null,
+                                   RequestType = query.RequestType.HasValue ? (int?)query.RequestType.Value : null,
+                                   PageNumber = pageNumber + 1,
+                                   PageSize = pageSize
+                               })
+                               : "#")">
+                        ›
+                    </a>
+                </div>
+            }
         </div>
-    </div>
+
+        <div class="sup-ticket-list">
+            @if (!requests.Any())
+            {
+                <div class="sup-empty">
+                    <div>?</div>
+                    <strong>Talep bulunamadı</strong>
+                    <span>Arama veya filtre kriterlerini değiştirerek tekrar deneyebilirsiniz.</span>
+                </div>
+            }
+            else
+            {
+                foreach (var item in requests)
+                {
+                    var statusClass = GetStatusClass(item.StatusText);
+                    var typeClass = GetTypeClass(item.RequestTypeText);
+
+                    <article class="sup-ticket-card">
+                        <a asp-controller="SupportRequests"
+                           asp-action="Detail"
+                           asp-route-id="@item.Id"
+                           class="sup-ticket-main">
+                            <div class="sup-ticket-avatar">@GetInitial(item.Subject)</div>
+
+                            <div class="sup-ticket-title">
+                                <strong>@item.Subject</strong>
+
+                                <span>
+                                    @if (item.RespondedAt.HasValue)
+                                    {
+                                        <text>Yanıt mevcut</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Yanıt bekleniyor</text>
+                                    }
+                                </span>
+                            </div>
+                        </a>
+
+                        <div class="sup-ticket-badges">
+                            <span class="sup-type @typeClass">@item.RequestTypeText</span>
+                            <span class="sup-status @statusClass">@item.StatusText</span>
+                        </div>
+
+                        <div class="sup-ticket-meta">
+                            <span>Oluşturan</span>
+                            <strong>@item.CreatedByUserName</strong>
+                        </div>
+
+                        <div class="sup-ticket-date">
+                            <span>Tarih</span>
+                            <strong>@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</strong>
+                        </div>
+
+                        <a asp-controller="SupportRequests"
+                           asp-action="Detail"
+                           asp-route-id="@item.Id"
+                           class="sup-detail-btn">
+                            Detay
+                        </a>
+                    </article>
+                }
+            }
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <div class="sup-bottom-pager">
+                <a class="sup-bottom-btn @(pageNumber > 1 ? "" : "disabled")"
+                   href="@(pageNumber > 1
+                           ? Url.Action("Index", "SupportRequests", new
+                           {
+                               Search = query.Search,
+                               Status = query.Status.HasValue ? (int?)query.Status.Value : null,
+                               RequestType = query.RequestType.HasValue ? (int?)query.RequestType.Value : null,
+                               PageNumber = pageNumber - 1,
+                               PageSize = pageSize
+                           })
+                           : "#")">
+                    Önceki
+                </a>
+
+                <a class="sup-bottom-btn @(pageNumber < totalPages ? "" : "disabled")"
+                   href="@(pageNumber < totalPages
+                           ? Url.Action("Index", "SupportRequests", new
+                           {
+                               Search = query.Search,
+                               Status = query.Status.HasValue ? (int?)query.Status.Value : null,
+                               RequestType = query.RequestType.HasValue ? (int?)query.RequestType.Value : null,
+                               PageNumber = pageNumber + 1,
+                               PageSize = pageSize
+                           })
+                           : "#")">
+                    Sonraki
+                </a>
+            </div>
+        }
+    </section>
 </div>
-@await Html.PartialAsync("_SupportRequestIndexStyles")
+
+<style>
+    .sup-page {
+        width: min(1180px, calc(100% - 56px));
+        margin: 0 auto;
+        padding: 30px 0 64px;
+        color: #071a36;
+    }
+
+    .sup-hero {
+        margin-bottom: 18px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: stretch;
+    }
+
+    .sup-hero-main {
+        padding: 26px;
+        border-radius: 30px;
+        background:
+            radial-gradient(circle at 20% 0%, rgba(79, 70, 229, .16), transparent 30%),
+            linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 18px 46px rgba(15, 23, 42, .08);
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .sup-icon-mark {
+        width: 58px;
+        height: 58px;
+        flex: 0 0 58px;
+        border-radius: 20px;
+        display: grid;
+        place-items: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 28px;
+        font-weight: 950;
+    }
+
+    .sup-eyebrow {
+        display: inline-flex;
+        margin-bottom: 7px;
+        padding: 6px 11px;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .sup-hero h1 {
+        margin: 0;
+        color: #061936;
+        font-size: clamp(30px, 4vw, 42px);
+        letter-spacing: -1.6px;
+        line-height: 1;
+    }
+
+    .sup-hero p {
+        margin: 10px 0 0;
+        color: #64748b;
+        font-size: 15px;
+        line-height: 1.45;
+        font-weight: 750;
+    }
+
+    .sup-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .sup-action-card {
+        min-height: 46px;
+        padding: 0 16px;
+        border-radius: 15px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        text-decoration: none;
+        border: 1px solid #dbe3ef;
+        background: #ffffff;
+        color: #0f172a;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+        transition: .16s ease;
+        white-space: nowrap;
+    }
+
+    .sup-action-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px rgba(15, 23, 42, .09);
+    }
+
+    .sup-action-card span {
+        width: 28px;
+        height: 28px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 15px;
+        font-weight: 950;
+        line-height: 1;
+    }
+
+    .sup-action-card strong {
+        font-size: 14px;
+        font-weight: 950;
+        line-height: 1;
+    }
+
+    .sup-action-card.primary {
+        background: #4f46e5;
+        color: white;
+        border-color: #4f46e5;
+    }
+
+    .sup-action-card.primary span {
+        background: rgba(255,255,255,.16);
+    }
+
+    .sup-action-card.secondary {
+        background: #ffffff;
+        color: #0f172a;
+    }
+
+    .sup-action-card.secondary span {
+        background: #ecfeff;
+        color: #0891b2;
+    }
+
+    .sup-action-card.ghost {
+        background: #ffffff;
+        color: #0f172a;
+    }
+
+    .sup-action-card.ghost span {
+        background: #f0fdf4;
+        color: #16a34a;
+    }
+
+    .sup-filter {
+        margin-bottom: 18px;
+        padding: 16px;
+        border-radius: 26px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 14px 36px rgba(15, 23, 42, .06);
+    }
+
+    .sup-search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 10px;
+    }
+
+    .sup-search-box {
+        position: relative;
+        min-width: 0;
+    }
+
+    .sup-search-box span {
+        position: absolute;
+        left: 17px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #8aa0bd;
+        font-size: 22px;
+    }
+
+    .sup-search-box input {
+        width: 100%;
+        height: 54px;
+        padding: 0 16px 0 50px;
+        border-radius: 18px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 15px;
+        font-weight: 750;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    .sup-search-box input:focus {
+        background: white;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, .10);
+    }
+
+    .sup-search-btn,
+    .sup-filter-btn {
+        height: 54px;
+        padding: 0 18px;
+        border-radius: 18px;
+        border: 1px solid #c7d2fe;
+        background: #f8fafc;
+        color: #312e81;
+        font-size: 15px;
+        font-weight: 950;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .sup-search-btn {
+        background: #111827;
+        color: white;
+        border-color: #111827;
+    }
+
+    .sup-filter-btn em {
+        font-style: normal;
+        transition: .18s ease;
+    }
+
+    .sup-filter-btn.is-open em {
+        transform: rotate(180deg);
+    }
+
+    .sup-filter-panel {
+        display: none;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid #edf2f7;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .sup-filter-panel.is-open {
+        display: grid;
+    }
+
+    .sup-field {
+        display: grid;
+        gap: 7px;
+    }
+
+    .sup-field label {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .sup-field select {
+        width: 100%;
+        height: 46px;
+        padding: 0 13px;
+        border-radius: 15px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        font-weight: 850;
+    }
+
+    .sup-filter-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .sup-filter-actions button,
+    .sup-filter-actions a {
+        height: 46px;
+        padding: 0 16px;
+        border-radius: 15px;
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 950;
+        font-size: 14px;
+        white-space: nowrap;
+    }
+
+    .sup-filter-actions button {
+        background: #4f46e5;
+        color: white;
+    }
+
+    .sup-filter-actions a {
+        background: #f8fafc;
+        color: #4f46e5;
+        border: 1px solid #d4deeb;
+    }
+
+    .sup-list-shell {
+        padding: 16px;
+        border-radius: 28px;
+        background: #f8fafc;
+        border: 1px solid #dbe3ef;
+    }
+
+    .sup-list-head {
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 850;
+    }
+
+    .sup-list-head strong {
+        color: #334155;
+    }
+
+    .sup-top-pager {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px;
+        border-radius: 999px;
+        background: white;
+        border: 1px solid #dbe3ef;
+    }
+
+    .sup-pager-nav,
+    .sup-page-number {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #475569;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 950;
+    }
+
+    .sup-pager-nav {
+        font-size: 24px;
+        background: #f8fafc;
+    }
+
+    .sup-page-number.active {
+        background: #4f46e5;
+        color: white;
+    }
+
+    .sup-pager-nav.disabled {
+        pointer-events: none;
+        opacity: .35;
+    }
+
+    .sup-ticket-list {
+        display: grid;
+        gap: 11px;
+    }
+
+    .sup-ticket-card {
+        padding: 16px;
+        border-radius: 22px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        display: grid;
+        grid-template-columns: minmax(260px, 1.4fr) minmax(210px, .9fr) 150px 165px 90px;
+        gap: 14px;
+        align-items: center;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
+    }
+
+    .sup-ticket-main {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .sup-ticket-avatar {
+        width: 50px;
+        height: 50px;
+        flex: 0 0 50px;
+        border-radius: 17px;
+        display: grid;
+        place-items: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 18px;
+        font-weight: 950;
+    }
+
+    .sup-ticket-title {
+        min-width: 0;
+    }
+
+    .sup-ticket-title strong {
+        display: block;
+        color: #0f172a;
+        font-size: 17px;
+        font-weight: 950;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .sup-ticket-title span {
+        display: block;
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .sup-ticket-badges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .sup-type,
+    .sup-status {
+        min-height: 31px;
+        padding: 0 11px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .sup-type.type-issue {
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .sup-type.type-user {
+        background: #ecfeff;
+        color: #0891b2;
+    }
+
+    .sup-status.status-open {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .sup-status.status-progress {
+        background: #eef2ff;
+        color: #4f46e5;
+    }
+
+    .sup-status.status-answered {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .sup-status.status-closed {
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .sup-status.status-cancelled {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .sup-status.status-default,
+    .sup-type.type-default {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .sup-ticket-meta,
+    .sup-ticket-date {
+        min-width: 0;
+    }
+
+    .sup-ticket-meta span,
+    .sup-ticket-date span {
+        display: block;
+        margin-bottom: 4px;
+        color: #8aa0bd;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .sup-ticket-meta strong,
+    .sup-ticket-date strong {
+        display: block;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 900;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .sup-detail-btn {
+        height: 42px;
+        padding: 0 15px;
+        border-radius: 14px;
+        background: #111827;
+        color: white;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .sup-empty {
+        padding: 42px 18px;
+        border-radius: 22px;
+        background: white;
+        border: 1px dashed #cbd5e1;
+        color: #64748b;
+        display: grid;
+        justify-items: center;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .sup-empty div {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 26px;
+        font-weight: 950;
+    }
+
+    .sup-empty strong {
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 950;
+    }
+
+    .sup-bottom-pager {
+        margin-top: 14px;
+        display: none;
+        gap: 10px;
+    }
+
+    .sup-bottom-btn {
+        height: 46px;
+        border-radius: 16px;
+        border: 1px solid #d4deeb;
+        background: white;
+        color: #334155;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-weight: 950;
+        flex: 1;
+    }
+
+    .sup-bottom-btn.disabled {
+        pointer-events: none;
+        opacity: .45;
+    }
+
+    @@media (max-width: 1100px) {
+        .sup-hero {
+            grid-template-columns: 1fr;
+        }
+
+        .sup-ticket-card {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .sup-ticket-main {
+            grid-column: span 2;
+        }
+    }
+
+    @@media (max-width: 760px) {
+        .sup-page {
+            width: min(100% - 20px, 1180px);
+            padding: 16px 0 44px;
+        }
+
+        .sup-hero-main {
+            padding: 18px;
+            border-radius: 24px;
+            align-items: flex-start;
+        }
+
+        .sup-icon-mark {
+            width: 48px;
+            height: 48px;
+            flex-basis: 48px;
+            border-radius: 17px;
+        }
+
+        .sup-hero h1 {
+            font-size: 29px;
+            letter-spacing: -1.1px;
+        }
+
+        .sup-hero p {
+            font-size: 14px;
+        }
+
+        .sup-hero-actions {
+            justify-content: stretch;
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .sup-action-card {
+            width: 100%;
+            min-height: 50px;
+        }
+
+        .sup-search-row {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .sup-search-box {
+            grid-column: span 2;
+        }
+
+        .sup-search-btn,
+        .sup-filter-btn {
+            width: 100%;
+        }
+
+        .sup-filter-panel {
+            grid-template-columns: 1fr;
+        }
+
+        .sup-filter-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .sup-list-head {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .sup-ticket-card {
+            grid-template-columns: 1fr;
+            border-radius: 21px;
+        }
+
+        .sup-ticket-main {
+            grid-column: auto;
+            align-items: flex-start;
+        }
+
+        .sup-ticket-title strong {
+            font-size: 20px;
+            white-space: normal;
+            line-height: 1.15;
+        }
+
+        .sup-ticket-meta strong,
+        .sup-ticket-date strong {
+            white-space: normal;
+        }
+
+        .sup-detail-btn {
+            width: 100%;
+            height: 46px;
+        }
+
+        .sup-bottom-pager {
+            display: flex;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleButton = document.querySelector("[data-filter-toggle]");
+        const filterPanel = document.querySelector("[data-filter-panel]");
+
+        toggleButton?.addEventListener("click", function () {
+            const isOpen = filterPanel?.classList.toggle("is-open");
+
+            toggleButton.classList.toggle("is-open", !!isOpen);
+            toggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+    });
+</script>

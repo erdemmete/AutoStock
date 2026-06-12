@@ -23,34 +23,58 @@ namespace AutoStock.Repositories.Repositories
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public async Task<SupportRequest?> GetByIdForWorkshopAsync(int id, int workshopId)
+        public async Task<SupportRequest?> GetByIdForWorkshopAsync(
+    int id,
+    int workshopId,
+    int? createdByUserId = null)
         {
-            return await _context.SupportRequests
+            var query = _context.SupportRequests
                 .Include(x => x.Workshop)
                 .Include(x => x.CreatedByUser)
                 .Include(x => x.RespondedByUser)
-                .FirstOrDefaultAsync(x =>
+                .Where(x =>
                     x.Id == id &&
                     x.WorkshopId == workshopId);
+
+            if (createdByUserId.HasValue)
+            {
+                query = query.Where(x => x.CreatedByUserId == createdByUserId.Value);
+            }
+
+            return await query.FirstOrDefaultAsync();
         }
 
         public async Task<List<SupportRequest>> GetListForWorkshopAsync(
-            int workshopId,
-            SupportRequestStatus? status,
-            SupportRequestType? requestType,
-            string? search,
-            DateTime? startDate,
-            DateTime? endDate,
-            int page,
-            int pageSize)
+     int workshopId,
+     SupportRequestStatus? status,
+     SupportRequestType? requestType,
+     string? search,
+     DateTime? startDate,
+     DateTime? endDate,
+     int page,
+     int pageSize,
+     int? createdByUserId = null,
+     bool excludeClosedAndCancelled = false)
         {
             var query = _context.SupportRequests
                 .AsNoTracking()
+                .Include(x => x.Workshop)
                 .Include(x => x.CreatedByUser)
                 .Include(x => x.RespondedByUser)
                 .Where(x => x.WorkshopId == workshopId);
 
-            query = ApplyCommonFilters(query, status, requestType, search, startDate, endDate);
+            query = ApplyWorkshopVisibilityFilters(
+                query,
+                createdByUserId,
+                excludeClosedAndCancelled);
+
+            query = ApplyCommonFilters(
+                query,
+                status,
+                requestType,
+                search,
+                startDate,
+                endDate);
 
             return await query
                 .OrderByDescending(x => x.CreatedAt)
@@ -61,18 +85,32 @@ namespace AutoStock.Repositories.Repositories
         }
 
         public async Task<int> GetCountForWorkshopAsync(
-            int workshopId,
-            SupportRequestStatus? status,
-            SupportRequestType? requestType,
-            string? search,
-            DateTime? startDate,
-            DateTime? endDate)
+    int workshopId,
+    SupportRequestStatus? status,
+    SupportRequestType? requestType,
+    string? search,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? createdByUserId = null,
+    bool excludeClosedAndCancelled = false)
         {
             var query = _context.SupportRequests
                 .AsNoTracking()
+                .Include(x => x.Workshop)
                 .Where(x => x.WorkshopId == workshopId);
 
-            query = ApplyCommonFilters(query, status, requestType, search, startDate, endDate);
+            query = ApplyWorkshopVisibilityFilters(
+                query,
+                createdByUserId,
+                excludeClosedAndCancelled);
+
+            query = ApplyCommonFilters(
+                query,
+                status,
+                requestType,
+                search,
+                startDate,
+                endDate);
 
             return await query.CountAsync();
         }
@@ -188,6 +226,26 @@ namespace AutoStock.Repositories.Repositories
             {
                 var exclusiveEndDate = endDate.Value.Date.AddDays(1);
                 query = query.Where(x => x.CreatedAt < exclusiveEndDate);
+            }
+
+            return query;
+        }
+
+        private static IQueryable<SupportRequest> ApplyWorkshopVisibilityFilters(
+    IQueryable<SupportRequest> query,
+    int? createdByUserId,
+    bool excludeClosedAndCancelled)
+        {
+            if (createdByUserId.HasValue)
+            {
+                query = query.Where(x => x.CreatedByUserId == createdByUserId.Value);
+            }
+
+            if (excludeClosedAndCancelled)
+            {
+                query = query.Where(x =>
+                    x.Status != SupportRequestStatus.Closed &&
+                    x.Status != SupportRequestStatus.Cancelled);
             }
 
             return query;
