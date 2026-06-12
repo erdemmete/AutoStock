@@ -1,0 +1,1042 @@
+@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+
+<script>
+    const invoiceStatus = @Model.Status;
+    const invoiceId = @Model.Id;
+
+    const invoiceState = {
+        id: @Model.Id,
+        customerId: @Model.CustomerId,
+        serviceRecordId: @(Model.ServiceRecordId.HasValue ? Model.ServiceRecordId.Value.ToString() : "null"),
+
+        customerTitle: @Json.Serialize(Model.CustomerTitle),
+        customerTaxOffice: @Json.Serialize(Model.CustomerTaxOffice),
+        customerTaxNumber: @Json.Serialize(Model.CustomerTaxNumber),
+        customerTckn: @Json.Serialize(Model.CustomerTckn),
+        customerAddress: @Json.Serialize(Model.CustomerAddress),
+
+        plate: @Json.Serialize(Model.Plate),
+        chassisNumber: @Json.Serialize(Model.ChassisNumber),
+        mileage: @(Model.Mileage.HasValue ? Model.Mileage.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null"),
+
+        notes: @Json.Serialize(Model.Notes),
+
+        items: [
+            @foreach (var item in Model.Items)
+            {
+                    <text>{
+                            id: @item.Id,
+                            itemType: @item.ItemType,
+                            description: @Json.Serialize(item.Description),
+                            quantity: @item.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            unit: @Json.Serialize(item.Unit),
+                            unitPrice: @item.UnitPrice.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            discountRate: @item.DiscountRate.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            vatRate: @item.VatRate.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            stockItemId: @(item.StockItemId.HasValue ? item.StockItemId.Value.ToString() : "null")
+                        },</text>
+                }
+            ]
+        };
+
+        function toNumber(value) {
+            if (value === null || value === undefined || value === "") return 0;
+            return Number(String(value).replace(",", ".")) || 0;
+        }
+
+        function formatMoney(value) {
+            return toNumber(value).toLocaleString("tr-TR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }) + " ₺";
+        }
+
+        function formatQuantity(value) {
+            return toNumber(value).toLocaleString("tr-TR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return "";
+
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function getItemTypeText(type) {
+            type = Number(type);
+
+            if (type === 1) return "İşçilik";
+            if (type === 2) return "Parça";
+            return "Diğer";
+        }
+
+        function isServiceLinkedInvoice() {
+            return invoiceState.serviceRecordId !== null &&
+                   invoiceState.serviceRecordId !== undefined &&
+                   Number(invoiceState.serviceRecordId) > 0;
+        }
+
+        function isOperationalInvoiceItemType(type) {
+            type = Number(type);
+
+            return type === 1 || type === 2;
+        }
+
+        function mapInvoiceItemTypeToOperationType(itemType) {
+            itemType = Number(itemType);
+
+            if (itemType === 2) return 1; // Invoice Parça -> Operation Part
+            if (itemType === 1) return 2; // Invoice İşçilik -> Operation Labor
+
+            return 2;
+        }
+
+        function calculateLine(item) {
+            const gross = toNumber(item.quantity) * toNumber(item.unitPrice);
+            const discountAmount = gross * toNumber(item.discountRate) / 100;
+            const taxableAmount = gross - discountAmount;
+            const vatAmount = taxableAmount * toNumber(item.vatRate) / 100;
+            const lineTotal = taxableAmount + vatAmount;
+
+            return {
+                gross,
+                discountAmount,
+                vatAmount,
+                lineTotal
+            };
+        }
+
+        function calculateTotals() {
+            let subtotal = 0;
+            let discountTotal = 0;
+            let vatTotal = 0;
+            let grandTotal = 0;
+
+            invoiceState.items.forEach(item => {
+                const line = calculateLine(item);
+
+                subtotal += line.gross;
+                discountTotal += line.discountAmount;
+                vatTotal += line.vatAmount;
+                grandTotal += line.lineTotal;
+            });
+
+            return {
+                subtotal,
+                discountTotal,
+                vatTotal,
+                grandTotal
+            };
+        }
+
+        function renderItems() {
+            const body = document.getElementById("invoiceItemsBody");
+
+            if (!body) return;
+
+            body.innerHTML = "";
+
+            invoiceState.items.forEach((item, index) => {
+                const line = calculateLine(item);
+
+                const discountText = line.discountAmount > 0
+                    ? "-" + formatMoney(line.discountAmount)
+                    : "-";
+
+                const row = document.createElement("div");
+
+                row.className = invoiceStatus === 1
+                    ? "table-row has-actions editable-row"
+                    : "table-row";
+
+                row.innerHTML = `
+                    <span data-label="Tür">
+                        <b class="item-badge type-${Number(item.itemType)}">
+                            ${getItemTypeText(item.itemType)}
+                        </b>
+                    </span>
+
+                    <span class="description" data-label="Açıklama">${escapeHtml(item.description || "-")}</span>
+                    <span data-label="Miktar">${formatQuantity(item.quantity)}</span>
+                    <span data-label="Birim Fiyat">${formatMoney(item.unitPrice)}</span>
+                    <span class="discount" data-label="İskonto">${discountText}</span>
+                    <span data-label="KDV">%${toNumber(item.vatRate).toLocaleString("tr-TR", { maximumFractionDigits: 2 })}</span>
+                    <span class="line-total" data-label="Tutar">${formatMoney(line.lineTotal)}</span>
+
+                    ${invoiceStatus === 1
+                        ? `<span class="row-actions-cell"><button type="button" class="row-edit-btn">Düzenle</button></span>`
+                        : ""}
+                `;
+
+                if (invoiceStatus === 1) {
+                    row.addEventListener("click", () => openItemModal(index));
+                }
+
+                body.appendChild(row);
+            });
+
+            const tableHead = document.querySelector(".table-head");
+
+            if (tableHead && invoiceStatus === 1) {
+                tableHead.classList.add("has-actions");
+            }
+
+            renderTotals();
+        }
+
+        function renderTotals() {
+            const totals = calculateTotals();
+            const totalBox = document.querySelector(".total-box");
+
+            if (!totalBox) return;
+
+            const rows = totalBox.querySelectorAll("strong");
+
+            if (rows.length >= 4) {
+                rows[0].textContent = formatMoney(totals.subtotal);
+                rows[1].textContent = "-" + formatMoney(totals.discountTotal);
+                rows[2].textContent = formatMoney(totals.vatTotal);
+                rows[3].textContent = formatMoney(totals.grandTotal);
+            }
+        }
+
+                  function showInvoiceElement(id) {
+            const element = document.getElementById(id);
+
+            if (!element) return;
+
+            element.hidden = false;
+            element.removeAttribute("hidden");
+        }
+
+        function hideInvoiceElement(element) {
+            if (!element) return;
+
+            element.hidden = true;
+            element.setAttribute("hidden", "hidden");
+        }
+
+        function openBackdrop() {
+            showInvoiceElement("invoiceModalBackdrop");
+        }
+
+        function closeAllInvoiceModals() {
+            document.querySelectorAll(".invoice-modal").forEach(modal => {
+                hideInvoiceElement(modal);
+            });
+
+            hideInvoiceElement(document.getElementById("invoiceModalBackdrop"));
+
+            closeStockSearchResults();
+        }
+
+                let invoiceCustomerType = getInitialInvoiceCustomerType();
+
+        function getInitialInvoiceCustomerType() {
+            const hasTaxInfo =
+                Boolean(invoiceState.customerTaxOffice) ||
+                Boolean(invoiceState.customerTaxNumber);
+
+            const hasTckn = Boolean(invoiceState.customerTckn);
+
+            if (hasTaxInfo) return "corporate";
+            if (hasTckn) return "individual";
+
+            return "individual";
+        }
+
+        function onlyDigits(value, maxLength) {
+            return String(value || "")
+                .replace(/\D/g, "")
+                .slice(0, maxLength);
+        }
+
+        function normalizePlate(value) {
+            return String(value || "")
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")
+                .slice(0, 12);
+        }
+
+        function normalizeChassis(value) {
+            return String(value || "")
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")
+                .slice(0, 17);
+        }
+
+        function setInvoiceCustomerType(type) {
+            invoiceCustomerType = type;
+
+            document.querySelectorAll(".customer-type-switch-modal button").forEach(button => {
+                button.classList.toggle(
+                    "active",
+                    button.dataset.customerType === type
+                );
+            });
+
+            const isIndividual = type === "individual";
+            const isTaxCustomer = type === "sole" || type === "corporate";
+
+            document.querySelectorAll(".customer-individual-field").forEach(field => {
+                field.hidden = !isIndividual;
+            });
+
+            document.querySelectorAll(".customer-tax-field").forEach(field => {
+                field.hidden = !isTaxCustomer;
+            });
+
+            const titleLabel = document.getElementById("customerTitleInputLabel");
+
+            if (titleLabel) {
+                titleLabel.textContent = isIndividual
+                    ? "Ad Soyad"
+                    : type === "sole"
+                        ? "Şahıs / Cari Ünvanı"
+                        : "Firma Ünvanı";
+            }
+
+            if (isIndividual) {
+                document.getElementById("customerTaxOfficeInput").value = "";
+                document.getElementById("customerTaxNumberInput").value = "";
+            } else {
+                document.getElementById("customerTcknInput").value = "";
+            }
+        }
+
+        function refreshCustomerCard() {
+            const isIndividual = invoiceCustomerType === "individual";
+
+            document.getElementById("customerTitleView").textContent =
+                invoiceState.customerTitle || "-";
+
+            document.getElementById("customerTcknView").textContent =
+                invoiceState.customerTckn || "-";
+
+            document.getElementById("customerTaxNumberView").textContent =
+                invoiceState.customerTaxNumber || "-";
+
+            document.getElementById("customerTaxOfficeView").textContent =
+                invoiceState.customerTaxOffice || "-";
+
+            document.getElementById("customerAddressView").textContent =
+                invoiceState.customerAddress || "-";
+
+            document.getElementById("customerTcknLine").hidden = !isIndividual;
+            document.getElementById("customerTaxNumberLine").hidden = isIndividual;
+            document.getElementById("customerTaxOfficeLine").hidden = isIndividual;
+        }
+
+        function openCustomerModal() {
+            if (invoiceStatus !== 1) return;
+
+            invoiceCustomerType = getInitialInvoiceCustomerType();
+
+            document.getElementById("customerTitleInput").value = invoiceState.customerTitle || "";
+            document.getElementById("customerTaxOfficeInput").value = invoiceState.customerTaxOffice || "";
+            document.getElementById("customerTaxNumberInput").value = invoiceState.customerTaxNumber || "";
+            document.getElementById("customerTcknInput").value = invoiceState.customerTckn || "";
+            document.getElementById("customerAddressInput").value = invoiceState.customerAddress || "";
+
+            setInvoiceCustomerType(invoiceCustomerType);
+
+                    openBackdrop();
+        showInvoiceElement("customerModal");
+
+            setTimeout(() => {
+                document.getElementById("customerTitleInput")?.focus();
+            }, 50);
+        }
+
+        async function saveCustomerModal() {
+            const titleInput = document.getElementById("customerTitleInput");
+            const tcknInput = document.getElementById("customerTcknInput");
+            const taxOfficeInput = document.getElementById("customerTaxOfficeInput");
+            const taxNumberInput = document.getElementById("customerTaxNumberInput");
+            const addressInput = document.getElementById("customerAddressInput");
+
+            const title = titleInput.value.trim();
+            const tckn = onlyDigits(tcknInput.value, 11);
+            const taxNumber = onlyDigits(taxNumberInput.value, 10);
+            const taxOffice = taxOfficeInput.value.trim();
+            const address = addressInput.value.trim();
+
+            if (!title) {
+                alert("Alıcı adı / ünvan zorunludur.");
+                titleInput.focus();
+                return;
+            }
+
+            if (invoiceCustomerType === "individual" && tckn && tckn.length !== 11) {
+                alert("TC kimlik numarası 11 haneli olmalıdır.");
+                tcknInput.focus();
+                return;
+            }
+
+            if (invoiceCustomerType !== "individual" && taxNumber && taxNumber.length !== 10) {
+                alert("Vergi numarası 10 haneli olmalıdır.");
+                taxNumberInput.focus();
+                return;
+            }
+
+            invoiceState.customerTitle = title;
+
+            if (invoiceCustomerType === "individual") {
+                invoiceState.customerTckn = tckn || null;
+                invoiceState.customerTaxOffice = null;
+                invoiceState.customerTaxNumber = null;
+            } else {
+                invoiceState.customerTckn = null;
+                invoiceState.customerTaxOffice = taxOffice || null;
+                invoiceState.customerTaxNumber = taxNumber || null;
+            }
+
+            invoiceState.customerAddress = address || null;
+
+            try {
+                await persistInvoice();
+                refreshCustomerCard();
+                closeAllInvoiceModals();
+            } catch {
+                // persistInvoice zaten alert basıyor
+            }
+        }
+
+        function openVehicleModal() {
+            if (invoiceStatus !== 1) return;
+
+            document.getElementById("plateInput").value = invoiceState.plate || "";
+            document.getElementById("chassisNumberInput").value = invoiceState.chassisNumber || "";
+            document.getElementById("mileageInput").value = invoiceState.mileage || "";
+
+                          openBackdrop();
+        showInvoiceElement("vehicleModal");
+
+            setTimeout(() => {
+                document.getElementById("plateInput")?.focus();
+            }, 50);
+        }
+
+        async function saveVehicleModal() {
+            const plateInput = document.getElementById("plateInput");
+            const chassisInput = document.getElementById("chassisNumberInput");
+            const mileageInput = document.getElementById("mileageInput");
+
+            const plate = normalizePlate(plateInput.value);
+            const chassisNumber = normalizeChassis(chassisInput.value);
+            const mileage = mileageInput.value
+                ? Number(String(mileageInput.value).replace(/\D/g, ""))
+                : null;
+
+            if (!plate) {
+                alert("Plaka zorunludur.");
+                plateInput.focus();
+                return;
+            }
+
+            if (chassisNumber && chassisNumber.length > 17) {
+                alert("Şasi numarası en fazla 17 karakter olabilir.");
+                chassisInput.focus();
+                return;
+            }
+
+            invoiceState.plate = plate;
+            invoiceState.chassisNumber = chassisNumber || null;
+            invoiceState.mileage = mileage;
+
+            try {
+                await persistInvoice();
+
+                document.getElementById("plateView").textContent = invoiceState.plate || "-";
+                document.getElementById("chassisNumberView").textContent = invoiceState.chassisNumber || "-";
+                document.getElementById("mileageView").textContent = invoiceState.mileage
+                    ? Number(invoiceState.mileage).toLocaleString("tr-TR") + " km"
+                    : "-";
+
+                const plateBox = document.querySelector(".plate-box strong");
+
+                if (plateBox) {
+                    plateBox.textContent = invoiceState.plate || "-";
+                }
+
+                closeAllInvoiceModals();
+            } catch {
+                // persistInvoice zaten alert basıyor
+            }
+        }
+
+        function openItemModal(index = -1) {
+            if (invoiceStatus !== 1) return;
+
+            const isEdit = index >= 0;
+
+            const item = isEdit
+                ? invoiceState.items[index]
+                : {
+                    id: 0,
+                    itemType: 3,
+                    description: "",
+                    quantity: 1,
+                    unit: "Adet",
+                    unitPrice: 0,
+                    discountRate: 0,
+                    vatRate: 20,
+                    stockItemId: null
+                };
+
+            document.getElementById("itemModalTitle").textContent = isEdit
+                ? "Fatura Kalemi Düzenle"
+                : "Fatura Kalemi Ekle";
+
+            document.getElementById("itemEditIndex").value = index;
+            document.getElementById("itemTypeInput").value = item.itemType;
+            document.getElementById("itemDescriptionInput").value = item.description || "";
+            document.getElementById("itemStockItemIdInput").value = item.stockItemId || "";
+            document.getElementById("itemQuantityInput").value = item.quantity;
+            document.getElementById("itemUnitInput").value = item.unit || "Adet";
+            document.getElementById("itemUnitPriceInput").value = item.unitPrice;
+            document.getElementById("itemDiscountRateInput").value = item.discountRate;
+            document.getElementById("itemVatRateInput").value = item.vatRate;
+
+            document.getElementById("deleteItemBtn").hidden = !isEdit;
+
+            updateItemModalMode();
+
+                    openBackdrop();
+        showInvoiceElement("itemModal");
+
+            setTimeout(() => {
+                document.getElementById("itemDescriptionInput")?.focus();
+            }, 50);
+        }
+
+        function updateItemModalMode() {
+            const itemType = Number(document.getElementById("itemTypeInput")?.value || 3);
+            const isOperational = isOperationalInvoiceItemType(itemType);
+            const isServiceLinked = isServiceLinkedInvoice();
+
+            const requestField = document.getElementById("itemServiceRequestField");
+            const stockHelp = document.getElementById("itemStockHelp");
+            const descriptionLabel = document.getElementById("itemDescriptionLabel");
+            const stockInput = document.getElementById("itemStockItemIdInput");
+            const results = document.getElementById("itemStockSearchResults");
+
+            if (requestField) {
+                requestField.hidden = !(isServiceLinked && isOperational);
+            }
+
+            if (stockHelp) {
+                stockHelp.hidden = itemType !== 2;
+            }
+
+            if (descriptionLabel) {
+                descriptionLabel.textContent = itemType === 2
+                    ? "Parça / Stok Kartı"
+                    : "Açıklama";
+            }
+
+            if (itemType !== 2) {
+                if (stockInput) {
+                    stockInput.value = "";
+                }
+
+                if (results) {
+                    results.innerHTML = "";
+                    results.classList.remove("active");
+                }
+            }
+        }
+
+        function closeStockSearchResults() {
+            const results = document.getElementById("itemStockSearchResults");
+
+            if (!results) return;
+
+            results.innerHTML = "";
+            results.classList.remove("active");
+        }
+
+        function bindInvoiceItemModalEvents() {
+            const typeInput = document.getElementById("itemTypeInput");
+
+            if (typeInput && typeInput.dataset.bound !== "true") {
+                typeInput.dataset.bound = "true";
+
+                typeInput.addEventListener("change", function () {
+                    document.getElementById("itemStockItemIdInput").value = "";
+                    closeStockSearchResults();
+                    updateItemModalMode();
+                });
+            }
+
+            bindInvoiceStockSearch();
+        }
+
+        function bindInvoiceStockSearch() {
+            const input = document.getElementById("itemDescriptionInput");
+            const stockInput = document.getElementById("itemStockItemIdInput");
+            const results = document.getElementById("itemStockSearchResults");
+            const priceInput = document.getElementById("itemUnitPriceInput");
+
+            if (!input || !stockInput || !results || input.dataset.stockSearchBound === "true") {
+                return;
+            }
+
+            input.dataset.stockSearchBound = "true";
+
+            let timer = null;
+
+            input.addEventListener("input", function () {
+                clearTimeout(timer);
+                stockInput.value = "";
+
+                const query = input.value.trim();
+                const itemType = Number(document.getElementById("itemTypeInput")?.value || 3);
+
+                if (itemType !== 2 || query.length < 2) {
+                    closeStockSearchResults();
+                    return;
+                }
+
+                timer = setTimeout(async function () {
+                    try {
+                        const response = await fetch(
+                            `/ServiceRecords/SearchStockItems?q=${encodeURIComponent(query)}`,
+                            {
+                                credentials: "same-origin"
+                            }
+                        );
+
+                        if (!response.ok) {
+                            closeStockSearchResults();
+                            return;
+                        }
+
+                        const payload = await response.json();
+
+                        const items = Array.isArray(payload)
+                            ? payload
+                            : (payload.data || payload.Data || []);
+
+                        results.innerHTML = "";
+
+                        if (!items.length) {
+                            results.innerHTML = `
+                                <div class="invoice-stock-search-item">
+                                    <div>
+                                        <strong>Sonuç bulunamadı</strong>
+                                        <small>Bu parçayı serbest açıklama olarak ekleyebilirsiniz.</small>
+                                    </div>
+                                </div>
+                            `;
+
+                            results.classList.add("active");
+                            return;
+                        }
+
+                        items.forEach(item => {
+                            const id = item.id ?? item.Id;
+                            const name =
+                                item.name ??
+                                item.Name ??
+                                item.description ??
+                                item.Description ??
+                                "";
+
+                            const code =
+                                item.code ??
+                                item.Code ??
+                                item.itemCode ??
+                                item.ItemCode ??
+                                item.stockCode ??
+                                item.StockCode ??
+                                "";
+
+                            const quantity =
+                                item.quantity ??
+                                item.Quantity ??
+                                item.currentQuantity ??
+                                item.CurrentQuantity ??
+                                item.stockQuantity ??
+                                item.StockQuantity ??
+                                0;
+
+                            const salePrice =
+                                item.salePrice ??
+                                item.SalePrice ??
+                                item.sellingPrice ??
+                                item.SellingPrice ??
+                                item.unitPrice ??
+                                item.UnitPrice ??
+                                null;
+
+                            const element = document.createElement("div");
+                            element.className = "invoice-stock-search-item";
+
+                            element.innerHTML = `
+                                <div>
+                                    <strong>${escapeHtml(name)}</strong>
+                                    <small>
+                                        ${code ? `Kod: ${escapeHtml(code)} • ` : ""}
+                                        Stok: ${toNumber(quantity).toLocaleString("tr-TR")}
+                                    </small>
+                                </div>
+
+                                <span>${salePrice !== null ? formatMoney(salePrice) : ""}</span>
+                            `;
+
+                            element.addEventListener("click", function () {
+                                input.value = name;
+                                stockInput.value = id;
+
+                                if (salePrice !== null && priceInput) {
+                                    priceInput.value = toNumber(salePrice);
+                                }
+
+                                closeStockSearchResults();
+                                input.focus();
+                            });
+
+                            results.appendChild(element);
+                        });
+
+                        results.classList.add("active");
+                    }
+                    catch {
+                        closeStockSearchResults();
+                    }
+                }, 250);
+            });
+
+            input.addEventListener("keydown", function (event) {
+                if (event.key === "Escape") {
+                    closeStockSearchResults();
+                }
+            });
+        }
+
+        async function saveItemModal() {
+            const index = Number(document.getElementById("itemEditIndex").value);
+
+            const item = {
+                id: index >= 0 ? invoiceState.items[index].id : 0,
+                itemType: Number(document.getElementById("itemTypeInput").value),
+                description: document.getElementById("itemDescriptionInput").value.trim(),
+                quantity: toNumber(document.getElementById("itemQuantityInput").value),
+                unit: document.getElementById("itemUnitInput").value.trim() || "Adet",
+                unitPrice: toNumber(document.getElementById("itemUnitPriceInput").value),
+                discountRate: toNumber(document.getElementById("itemDiscountRateInput").value),
+                vatRate: toNumber(document.getElementById("itemVatRateInput").value),
+                stockItemId: document.getElementById("itemStockItemIdInput").value
+                    ? Number(document.getElementById("itemStockItemIdInput").value)
+                    : null
+            };
+
+            if (!item.description) {
+                alert("Kalem açıklaması zorunludur.");
+                return;
+            }
+
+            if (item.quantity <= 0) {
+                alert("Miktar 0'dan büyük olmalıdır.");
+                return;
+            }
+
+            const isServiceLinked = isServiceLinkedInvoice();
+            const isOperational = isOperationalInvoiceItemType(item.itemType);
+
+            if (isServiceLinked && isOperational) {
+                if (index >= 0) {
+                    alert(
+                        "Servis kaydından gelen parça/işçilik kalemleri servis operasyonudur.\n\n" +
+                        "Bu kalemi düzenlemek için servis kaydı üzerinden düzenleme yapılmalıdır. " +
+                        "Mevcut kalemleri aynı ekrandan düzenlemek için sonraki adımda ServiceOperation bağlantısını kuracağız."
+                    );
+
+                    return;
+                }
+
+                await addServiceOperationFromInvoiceItem(item);
+                return;
+            }
+
+            if (index >= 0) {
+                invoiceState.items[index] = item;
+            } else {
+                invoiceState.items.push(item);
+            }
+
+            await persistInvoice();
+            renderItems();
+            closeAllInvoiceModals();
+        }
+
+        async function addServiceOperationFromInvoiceItem(item) {
+            const serviceRequestInput = document.getElementById("itemServiceRequestItemIdInput");
+            const serviceRequestItemId = Number(serviceRequestInput?.value || 0);
+
+            if (serviceRequestItemId <= 0) {
+                alert("Bu parça/işçilik için servis şikayeti veya talep seçmelisiniz.");
+                serviceRequestInput?.focus();
+                return;
+            }
+
+            if (item.itemType === 2 && !item.stockItemId) {
+                const confirmed = confirm(
+                    "Stok kartı seçilmedi.\n\n" +
+                    "Bu parça servis kaydına eklenecek ancak stoktan düşmeyecek. Devam etmek istiyor musunuz?"
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+            }
+
+            const formData = new FormData();
+
+            formData.append("ServiceRecordId", invoiceState.serviceRecordId);
+            formData.append("ServiceRequestItemId", serviceRequestItemId);
+            formData.append("Type", mapInvoiceItemTypeToOperationType(item.itemType));
+            formData.append("Description", item.description);
+            formData.append("Quantity", item.quantity);
+            formData.append("UnitPrice", item.unitPrice);
+            formData.append("Note", "Fatura ekranından eklendi.");
+
+            if (item.stockItemId) {
+                formData.append("StockItemId", item.stockItemId);
+            }
+
+            const response = await fetch("/ServiceRecords/AddOperation", {
+                method: "POST",
+                body: formData,
+                credentials: "same-origin"
+            });
+
+            const text = await response.text();
+
+            let result = null;
+
+            try {
+                result = JSON.parse(text);
+            } catch {
+                result = null;
+            }
+
+            if (!response.ok || result?.isSuccess === false) {
+                const message =
+                    result?.errorMessage ||
+                    result?.errorMessages?.[0] ||
+                    "Servis işlemine kalem eklenirken hata oluştu.";
+
+                alert(message);
+                return;
+            }
+
+            closeAllInvoiceModals();
+            window.location.reload();
+        }
+
+        async function deleteCurrentItem() {
+            const index = Number(document.getElementById("itemEditIndex").value);
+
+            if (index < 0) return;
+
+            if (invoiceState.items.length <= 1) {
+                alert("En az bir fatura kalemi kalmalıdır.");
+                return;
+            }
+
+            const item = invoiceState.items[index];
+
+            if (isServiceLinkedInvoice() && isOperationalInvoiceItemType(item.itemType)) {
+                alert(
+                    "Servis kaydından gelen parça/işçilik kalemleri servis operasyonudur.\n\n" +
+                    "Silme işlemi servis kaydı üzerinden yapılmalıdır."
+                );
+
+                return;
+            }
+
+            const confirmed = confirm("Bu fatura kalemini silmek istediğinize emin misiniz?");
+
+            if (!confirmed) return;
+
+            invoiceState.items.splice(index, 1);
+
+            await persistInvoice();
+            renderItems();
+            closeAllInvoiceModals();
+        }
+
+        function buildUpdatePayload() {
+            return {
+                id: invoiceState.id,
+                invoiceId: invoiceState.id,
+                customerId: invoiceState.customerId,
+                serviceRecordId: invoiceState.serviceRecordId,
+
+                customerTitle: invoiceState.customerTitle,
+                customerTaxOffice: invoiceState.customerTaxOffice || null,
+                customerTaxNumber: invoiceState.customerTaxNumber || null,
+                customerTckn: invoiceState.customerTckn || null,
+                customerAddress: invoiceState.customerAddress || null,
+
+                plate: invoiceState.plate || null,
+                chassisNumber: invoiceState.chassisNumber || null,
+                mileage: invoiceState.mileage,
+
+                notes: invoiceState.notes || null,
+
+                items: invoiceState.items.map(item => ({
+                    id: item.id,
+                    itemType: Number(item.itemType),
+                    description: item.description,
+                    quantity: toNumber(item.quantity),
+                    unit: item.unit || "Adet",
+                    unitPrice: toNumber(item.unitPrice),
+                    discountRate: toNumber(item.discountRate),
+                    vatRate: toNumber(item.vatRate),
+                    stockItemId: item.stockItemId
+                }))
+            };
+        }
+
+        async function persistInvoice() {
+            const response = await fetch(`/Invoices/Edit/${invoiceState.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(buildUpdatePayload())
+            });
+
+            const text = await response.text();
+
+            let result = null;
+
+            try {
+                result = JSON.parse(text);
+            } catch {
+                result = null;
+            }
+
+            if (!response.ok || result?.isSuccess === false) {
+                const message =
+                    result?.errorMessage ||
+                    result?.errorMessages?.[0] ||
+                    "Fatura güncellenirken hata oluştu.";
+
+                alert(message);
+                throw new Error(message);
+            }
+
+            return result;
+        }
+
+        async function issueInvoice(invoiceId) {
+            const confirmed = confirm(
+                "Bu faturayı kesmek istediğinize emin misiniz?\n\n" +
+                "Kesilen faturalar artık taslak olarak düzenlenemez."
+            );
+
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch(`/Invoices/Issue/${invoiceId}`, {
+                    method: "POST"
+                });
+
+                const text = await response.text();
+
+                let result = null;
+
+                try {
+                    result = JSON.parse(text);
+                } catch {
+                    result = null;
+                }
+
+                if (!response.ok || !result?.isSuccess) {
+                    alert(result?.errorMessage || "Fatura kesilirken hata oluştu.");
+                    return;
+                }
+
+                window.location.reload();
+            }
+            catch {
+                alert("Beklenmeyen bir hata oluştu.");
+            }
+        }
+
+        async function cancelInvoice(invoiceId) {
+            const confirmed = confirm("Bu faturayı iptal etmek istediğinize emin misiniz?");
+
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch(`/Invoices/Cancel/${invoiceId}`, {
+                    method: "POST"
+                });
+
+                if (!response.ok) {
+                    alert("Fatura iptal edilemedi.");
+                    return;
+                }
+
+                location.reload();
+            }
+            catch {
+                alert("Beklenmeyen bir hata oluştu.");
+            }
+        }
+
+                window.openCustomerModal = openCustomerModal;
+        window.openVehicleModal = openVehicleModal;
+        window.openItemModal = openItemModal;
+        window.closeAllInvoiceModals = closeAllInvoiceModals;
+
+        window.saveCustomerModal = saveCustomerModal;
+        window.saveVehicleModal = saveVehicleModal;
+        window.saveItemModal = saveItemModal;
+        window.deleteCurrentItem = deleteCurrentItem;
+
+        window.issueInvoice = issueInvoice;
+        window.cancelInvoice = cancelInvoice;
+        window.setInvoiceCustomerType = setInvoiceCustomerType;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            renderItems();
+                refreshCustomerCard();
+            bindInvoiceItemModalEvents();
+
+            const backdrop = document.getElementById("invoiceModalBackdrop");
+
+            if (backdrop) {
+                backdrop.addEventListener("click", closeAllInvoiceModals);
+            }
+
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "Escape") {
+                    closeAllInvoiceModals();
+                }
+            });
+
+            document.addEventListener("click", function (event) {
+                const itemModal = document.getElementById("itemModal");
+                const results = document.getElementById("itemStockSearchResults");
+
+                if (!itemModal || !results) return;
+
+                if (!itemModal.contains(event.target)) {
+                    closeStockSearchResults();
+                }
+            });
+        });
+    </script>

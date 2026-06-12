@@ -1,0 +1,84 @@
+@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+
+<section class="info-section">
+
+    <article class="info-box editable-box"
+             data-editable="@(Model.Status == 1 ? "true" : "false")"
+             onclick="openCustomerModal()">
+
+        <div class="box-header">
+            <div class="box-title">♙ ALICI BİLGİLERİ</div>
+
+            @if (Model.Status == 1)
+            {
+                <button type="button"
+                        class="edit-pill"
+                        onclick="event.stopPropagation(); openCustomerModal();">
+                    Düzenle
+                </button>
+            }
+        </div>
+
+        <h3 id="customerTitleView">@Model.CustomerTitle</h3>
+
+        <div class="info-lines">
+            <p id="customerTcknLine">
+                <span>#</span>
+                TC:
+                <strong id="customerTcknView">@(Model.CustomerTckn ?? "-")</strong>
+            </p>
+
+            <p id="customerTaxNumberLine">
+                <span>#</span>
+                Vergi No:
+                <strong id="customerTaxNumberView">@(Model.CustomerTaxNumber ?? "-")</strong>
+            </p>
+
+            <p id="customerTaxOfficeLine">
+                <span>◎</span>
+                Vergi Dairesi:
+                <strong id="customerTaxOfficeView">@(Model.CustomerTaxOffice ?? "-")</strong>
+            </p>
+
+            <p>
+                <span>⌖</span>
+                <strong id="customerAddressView">@(Model.CustomerAddress ?? "-")</strong>
+            </p>
+        </div>
+
+    </article>
+
+    <article class="info-box editable-box"
+             data-editable="@(Model.Status == 1 ? "true" : "false")"
+             onclick="openVehicleModal()">
+
+        <div class="box-header">
+            <div class="box-title">▣ ARAÇ BİLGİLERİ</div>
+
+            @if (Model.Status == 1)
+            {
+                <button type="button"
+                        class="edit-pill"
+                        onclick="event.stopPropagation(); openVehicleModal();">
+                    Düzenle
+                </button>
+            }
+        </div>
+
+        <h3 id="plateView">@(Model.Plate ?? "-")</h3>
+
+        <div class="vehicle-grid">
+            <div>
+                <label>Kilometre</label>
+                <strong id="mileageView">@((Model.Mileage ?? 0).ToString("N0")) km</strong>
+            </div>
+
+            <div>
+                <label>Şasi Numarası</label>
+                <strong id="chassisNumberView">@(Model.ChassisNumber ?? "-")</strong>
+            </div>
+        </div>
+
+    </article>
+
+</section>

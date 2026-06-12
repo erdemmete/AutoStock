@@ -1,0 +1,21 @@
+@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+
+<section class="invoice-head">
+    <div>
+        <h2>@Model.InvoiceNumber</h2>
+
+        <div class="meta-line">
+            <span>▣ @Model.InvoiceDate.ToString("dd MMMM yyyy")</span>
+
+            @if (Model.ServiceRecordId.HasValue)
+            {
+                <span>🔧 Servis Kaydı: #@Model.ServiceRecordId</span>
+            }
+        </div>
+    </div>
+
+    <div class="plate-box">
+        <span>TR</span>
+        <strong>@(Model.Plate ?? "-")</strong>
+    </div>
+</section>

@@ -1,0 +1,40 @@
+@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+
+<section class="bottom-section">
+    <div class="notes-box">
+        <h4>ⓘ Servis Notları & Uyarılar</h4>
+
+        <div>
+            @if (!string.IsNullOrWhiteSpace(Model.Notes))
+            {
+                @Model.Notes
+            }
+            else
+            {
+                <span>Bu fatura için ek not bulunmuyor.</span>
+            }
+        </div>
+    </div>
+
+    <div class="total-box">
+        <div>
+            <span>Ara Toplam</span>
+            <strong>@Model.Subtotal.ToString("N2") ₺</strong>
+        </div>
+
+        <div class="red">
+            <span>Toplam İskonto</span>
+            <strong>-@Model.DiscountTotal.ToString("N2") ₺</strong>
+        </div>
+
+        <div>
+            <span>Hesaplanan KDV</span>
+            <strong>@Model.VatTotal.ToString("N2") ₺</strong>
+        </div>
+
+        <div class="grand">
+            <span>Genel Toplam</span>
+            <strong>@Model.GrandTotal.ToString("N2") ₺</strong>
+        </div>
+    </div>
+</section>

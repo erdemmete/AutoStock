@@ -1,0 +1,33 @@
+@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+
+<section class="items-section">
+    <div class="items-title-row">
+        <h4>FATURA KALEMLERİ</h4>
+
+        @if (Model.Status == 1)
+        {
+            <button type="button" class="small-outline-btn" onclick="openItemModal()">
+                + Kalem Ekle
+            </button>
+        }
+    </div>
+
+    <div class="invoice-table" id="invoiceItemsTable">
+        <div class="table-head">
+            <span>Tür</span>
+            <span>Açıklama</span>
+            <span>Miktar</span>
+            <span>Birim Fiyat</span>
+            <span>İskonto</span>
+            <span>KDV</span>
+            <span>Tutar</span>
+
+            @if (Model.Status == 1)
+            {
+                <span></span>
+            }
+        </div>
+
+        <div id="invoiceItemsBody"></div>
+    </div>
+</section>

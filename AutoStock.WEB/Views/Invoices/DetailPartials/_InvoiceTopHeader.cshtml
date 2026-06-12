@@ -1,0 +1,57 @@
+@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+
+@{
+    string GetStatusText(int status) => status switch
+    {
+        1 => "Onay Bekliyor",
+        2 => "Kesildi",
+        3 => "İptal Edildi",
+        _ => "Bilinmiyor"
+    };
+
+    var title = Model.Status switch
+    {
+        1 => "Fatura Taslağı",
+        2 => "Kesilmiş Fatura",
+        3 => "İptal Edilmiş Fatura",
+        _ => "Fatura Detayı"
+    };
+}
+
+<header class="top-header">
+    <div>
+        <div class="title-row">
+            <h1>@title</h1>
+            <span class="status-badge status-@Model.Status">@GetStatusText(Model.Status)</span>
+        </div>
+
+        <p>
+            <span>▧</span>
+            @Model.InvoiceNumber numaralı belge referansı
+        </p>
+    </div>
+
+    <div class="header-actions">
+        @if (Model.Status == 2)
+        {
+            <a href="/Invoices/Print/@Model.Id" target="_blank" class="action-btn light">
+                🖨 Yazdır
+            </a>
+
+            <button type="button" class="action-btn danger" onclick="cancelInvoice(@Model.Id)">
+                × İptal Et
+            </button>
+        }
+
+        @if (Model.Status == 1)
+        {
+            <button type="button" class="action-btn primary" onclick="openCustomerModal()">
+                ✎ Bilgileri Düzenle
+            </button>
+
+            <button type="button" class="action-btn success" onclick="issueInvoice(@Model.Id)">
+                Faturayı Kes
+            </button>
+        }
+    </div>
+</header>

@@ -1,0 +1,14 @@
+@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+
+<section class="footer-actions">
+    @if (Model.ServiceRecordId.HasValue)
+    {
+        <a href="/ServiceRecords/Detail/@Model.ServiceRecordId" class="footer-link">
+            ← Servis Kaydına Git
+        </a>
+    }
+
+    <a href="/Invoices" class="footer-link">
+        Fatura Listesine Dön
+    </a>
+</section>
