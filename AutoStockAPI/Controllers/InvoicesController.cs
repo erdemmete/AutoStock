@@ -1,5 +1,7 @@
 ﻿using AutoStock.Services.Constants;
+using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Invoices;
+using AutoStock.Services.Dtos.Vehicles;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +14,12 @@ namespace AutoStock.API.Controllers
     public class InvoicesController : BaseApiController
     {
         private readonly IInvoiceService _invoiceService;
+        private readonly IVehicleCatalogService _vehicleCatalogService;
 
-        public InvoicesController(IInvoiceService invoiceService)
+        public InvoicesController(IInvoiceService invoiceService, IVehicleCatalogService vehicleCatalogService)
         {
             _invoiceService = invoiceService;
+            _vehicleCatalogService = vehicleCatalogService;
         }
 
         [HttpGet("draft/from-service-record/{serviceRecordId:int}")]
@@ -183,6 +187,22 @@ namespace AutoStock.API.Controllers
                 workshopIdResult.Data);
 
             return ToActionResult(result);
+        }
+
+        [HttpGet("vehicle-brands")]
+        public async Task<IActionResult> GetVehicleBrands()
+        {
+            var brands = await _vehicleCatalogService.GetBrandsAsync();
+
+            return ToActionResult(ServiceResult<List<VehicleBrandDto>>.Success(brands));
+        }
+
+        [HttpGet("vehicle-models")]
+        public async Task<IActionResult> GetVehicleModels([FromQuery] int brandId)
+        {
+            var models = await _vehicleCatalogService.GetModelsByBrandIdAsync(brandId);
+
+            return ToActionResult(ServiceResult<List<VehicleModelDto>>.Success(models));
         }
     }
 }

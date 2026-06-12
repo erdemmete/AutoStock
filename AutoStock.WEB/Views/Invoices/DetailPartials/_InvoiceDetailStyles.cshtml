@@ -1067,4 +1067,403 @@
         }
     }
 
+
+
+    /* =========================================================
+       Professional invoice edit modal patch
+       Genel fatura görünümüne dokunmadan alıcı/araç edit modalını müşteri oluşturma ekranı mantığına yaklaştırır.
+       ========================================================= */
+
+    .invoice-professional-modal {
+        width: min(840px, 100%);
+        padding: 26px;
+        border-radius: 26px;
+    }
+
+    .invoice-modal-titlebar {
+        margin-bottom: 22px;
+    }
+
+    .invoice-modal-titlebar h3 {
+        font-size: 24px;
+        letter-spacing: -.55px;
+    }
+
+    .invoice-edit-type-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        padding: 0;
+        margin-bottom: 24px;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .customer-type-switch-modal.invoice-edit-type-grid button.invoice-edit-type-card,
+    .invoice-edit-type-card {
+        position: relative;
+        min-height: 126px;
+        border: 1px solid #dfe7f3;
+        border-radius: 18px;
+        background: #fff;
+        color: #0f172a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        cursor: pointer;
+        transition: .18s ease;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, .04);
+    }
+
+    .customer-type-switch-modal.invoice-edit-type-grid button.invoice-edit-type-card.active,
+    .invoice-edit-type-card.active {
+        border-color: #4f46e5;
+        background: #f4f6ff;
+        box-shadow: 0 0 0 1px #4f46e5 inset, 0 16px 34px rgba(79, 70, 229, .13);
+        color: #0f172a;
+    }
+
+    .customer-type-switch-modal.invoice-edit-type-grid button.invoice-edit-type-card.sole.active,
+    .invoice-edit-type-card.sole.active {
+        border-color: #f59e0b;
+        background: #fffbeb;
+        box-shadow: 0 0 0 1px #f59e0b inset, 0 16px 34px rgba(245, 158, 11, .13);
+    }
+
+    .invoice-edit-type-check {
+        display: none;
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        color: #4f46e5;
+        font-size: 14px;
+        font-weight: 950;
+    }
+
+    .invoice-edit-type-card.active .invoice-edit-type-check {
+        display: block;
+    }
+
+    .invoice-edit-type-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 21px;
+        font-weight: 950;
+    }
+
+    .invoice-edit-type-card.sole.active .invoice-edit-type-icon {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .invoice-edit-type-card strong {
+        font-size: 15px;
+        font-weight: 950;
+    }
+
+    .invoice-edit-type-card small {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 750;
+    }
+
+    .invoice-edit-section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 15px;
+        margin-bottom: 18px;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .invoice-edit-section-title span {
+        color: #94a3b8;
+        font-size: 22px;
+    }
+
+    .invoice-edit-section-title h4 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 950;
+    }
+
+    .invoice-edit-grid {
+        gap: 18px 20px;
+    }
+
+    .invoice-edit-grid span {
+        color: #475569;
+        font-size: 13px;
+        font-weight: 900;
+    }
+
+    .invoice-edit-grid input,
+    .invoice-edit-grid textarea,
+    .invoice-edit-grid select {
+        min-height: 52px;
+        border-radius: 16px;
+        background: #f8fafc;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .invoice-edit-grid textarea {
+        min-height: 104px;
+    }
+
+    .invoice-sync-check-card {
+        margin-top: 18px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid #dbe3ef;
+        background: #f8fafc;
+        cursor: pointer;
+        user-select: none;
+        transition: .18s ease;
+    }
+
+    .invoice-sync-check-card:hover {
+        border-color: #c7d2fe;
+        background: #f4f6ff;
+    }
+
+    .invoice-sync-check-card input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .invoice-sync-check-box {
+        width: 22px;
+        height: 22px;
+        flex: 0 0 22px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: transparent;
+        display: grid;
+        place-items: center;
+        font-size: 13px;
+        font-weight: 950;
+        margin-top: 1px;
+    }
+
+    .invoice-sync-check-card input:checked + .invoice-sync-check-box {
+        border-color: #4f46e5;
+        background: #4f46e5;
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(79, 70, 229, .22);
+    }
+
+    .invoice-sync-check-card strong {
+        display: block;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 950;
+        margin-bottom: 4px;
+    }
+
+    .invoice-sync-check-card small {
+        display: block;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.45;
+        font-weight: 750;
+    }
+
+    .invoice-edit-actions {
+        margin-top: 24px;
+    }
+
+    .invoice-edit-actions .modal-primary-btn,
+    .invoice-edit-actions .modal-secondary-btn {
+        min-height: 48px;
+        min-width: 104px;
+        border-radius: 15px;
+    }
+
+    @@media (max-width: 760px) {
+        .invoice-professional-modal {
+            padding: 20px;
+            border-radius: 24px;
+        }
+
+        .invoice-edit-type-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .customer-type-switch-modal.invoice-edit-type-grid button.invoice-edit-type-card,
+        .invoice-edit-type-card {
+            min-height: 96px;
+            align-items: flex-start;
+            padding: 16px 18px;
+        }
+
+        .invoice-edit-type-icon {
+            width: 40px;
+            height: 40px;
+        }
+
+        .invoice-edit-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .invoice-edit-actions .modal-primary-btn,
+        .invoice-edit-actions .modal-secondary-btn {
+            width: 100%;
+        }
+    }
+
+</style>
+
+<style>
+    /* =========================================================
+       Invoice edit modal v2: customer-like form, scroll body, home action
+       ========================================================= */
+
+    .invoice-home-link {
+        min-height: 42px;
+        padding: 0 13px;
+        border-radius: 999px;
+        border: 1px solid #dbe3ef;
+        background: #fff;
+        color: #334155;
+        font-weight: 950;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 6px 16px rgba(15, 23, 42, .07);
+    }
+
+    .invoice-home-link span {
+        width: 26px;
+        height: 26px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        background: #eef2ff;
+        color: #4f46e5;
+        font-size: 15px;
+        font-weight: 950;
+    }
+
+    .invoice-home-link strong {
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .invoice-home-link:hover {
+        color: #4f46e5;
+        border-color: #c7d2fe;
+        background: #f8faff;
+    }
+
+    .invoice-scroll-modal {
+        width: min(1040px, calc(100vw - 32px));
+        max-height: calc(100dvh - 34px);
+        padding: 0 !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .invoice-scroll-modal .invoice-modal-titlebar {
+        flex: 0 0 auto;
+        padding: 24px 28px 18px;
+        margin-bottom: 0;
+    }
+
+    .invoice-modal-scroll-body {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 18px 28px 22px;
+    }
+
+    .invoice-sticky-actions {
+        flex: 0 0 auto;
+        margin-top: 0 !important;
+        padding: 16px 28px 22px;
+        border-top: 1px solid #eef2f7;
+        background: rgba(255, 255, 255, .96);
+        backdrop-filter: blur(8px);
+    }
+
+    .invoice-edit-section-title.with-space {
+        margin-top: 34px;
+    }
+
+    .invoice-half-field {
+        max-width: none;
+    }
+
+    .vehicle-edit-modal {
+        width: min(980px, calc(100vw - 32px));
+    }
+
+    .vehicle-subtitle-line {
+        margin-top: -6px;
+        margin-bottom: 14px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+    .vehicle-grid-extended {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .vehicle-grid-extended .full {
+        grid-column: 1 / -1;
+    }
+
+    @@media (max-width: 760px) {
+        .invoice-home-link strong {
+            display: none;
+        }
+
+        .invoice-home-link {
+            width: 42px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        .invoice-home-link span {
+            background: transparent;
+        }
+
+        .invoice-scroll-modal {
+            width: calc(100vw - 20px);
+            max-height: calc(100dvh - 20px);
+            border-radius: 24px;
+        }
+
+        .invoice-scroll-modal .invoice-modal-titlebar {
+            padding: 18px 18px 14px;
+        }
+
+        .invoice-modal-scroll-body {
+            padding: 14px 18px 18px;
+        }
+
+        .invoice-sticky-actions {
+            padding: 14px 18px 18px;
+        }
+
+        .vehicle-grid-extended {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>

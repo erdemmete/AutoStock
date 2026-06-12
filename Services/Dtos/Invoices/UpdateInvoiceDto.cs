@@ -15,6 +15,24 @@ public class UpdateInvoiceDto
     public int? Mileage { get; set; }
 
     public string? Notes { get; set; }
+    public bool UpdateCustomerCard { get; set; }
+
+    public bool UpdateVehicleCard { get; set; }
+
+    public string? CustomerType { get; set; }
+
+    public string? VehicleBrandName { get; set; }
+
+    public string? VehicleModelName { get; set; }
+
+    public int? VehicleModelYear { get; set; }
+    public string? CustomerAddressLine { get; set; }
+    public string? CustomerAddressCity { get; set; }
+    public string? CustomerAddressDistrict { get; set; }
+
+    public int? VehicleBrandId { get; set; }
+    public int? VehicleModelId { get; set; }
+    
 
     public List<UpdateInvoiceItemDto> Items { get; set; } = new();
 }

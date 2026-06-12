@@ -32,6 +32,15 @@
     </div>
 
     <div class="header-actions">
+        <a asp-controller="Dashboard"
+           asp-action="Index"
+           class="invoice-home-link"
+           title="Ana Sayfa"
+           aria-label="Ana Sayfa">
+            <span>⌂</span>
+            <strong>Ana Sayfa</strong>
+        </a>
+
         @if (Model.Status == 2)
         {
             <a href="/Invoices/Print/@Model.Id" target="_blank" class="action-btn light">

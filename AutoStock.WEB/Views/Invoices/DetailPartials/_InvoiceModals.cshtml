@@ -3,84 +3,136 @@
 <div class="invoice-modal-backdrop" id="invoiceModalBackdrop" hidden></div>
 
 <div class="invoice-modal" id="customerModal" hidden>
-    <div class="modal-card invoice-party-modal">
+    <div class="modal-card invoice-party-modal invoice-professional-modal invoice-scroll-modal">
 
-        <div class="modal-header">
+        <div class="modal-header invoice-modal-titlebar">
             <div>
                 <h3>Alıcı Bilgilerini Düzenle</h3>
-                <p>Bu değişiklik fatura üzerindeki alıcı bilgilerini günceller.</p>
+                <p>Faturadaki alıcı bilgilerini güncelle. Gerekirse ana müşteri kartına da işle.</p>
             </div>
 
-            <button type="button" onclick="closeAllInvoiceModals()">×</button>
+            <button type="button" onclick="closeAllInvoiceModals()" aria-label="Kapat">×</button>
         </div>
 
-        <div class="customer-type-switch-modal">
-            <button type="button"
-                    data-customer-type="individual"
-                    onclick="setInvoiceCustomerType('individual')">
-                Bireysel
-            </button>
+        <div class="invoice-modal-scroll-body">
+            <div class="invoice-edit-type-grid customer-type-switch-modal">
+                <button type="button"
+                        class="invoice-edit-type-card"
+                        data-customer-type="individual"
+                        onclick="setInvoiceCustomerType('individual')">
+                    <span class="invoice-edit-type-check">✓</span>
+                    <span class="invoice-edit-type-icon">♙</span>
+                    <strong>Bireysel</strong>
+                    <small>TC kimlik bilgili kişi</small>
+                </button>
 
-            <button type="button"
-                    data-customer-type="sole"
-                    onclick="setInvoiceCustomerType('sole')">
-                Şahıs
-            </button>
+                <button type="button"
+                        class="invoice-edit-type-card sole"
+                        data-customer-type="sole"
+                        onclick="setInvoiceCustomerType('sole')">
+                    <span class="invoice-edit-type-check">✓</span>
+                    <span class="invoice-edit-type-icon">▣</span>
+                    <strong>Şahıs Firması</strong>
+                    <small>VKN / vergi dairesi</small>
+                </button>
 
-            <button type="button"
-                    data-customer-type="corporate"
-                    onclick="setInvoiceCustomerType('corporate')">
-                Kurumsal
-            </button>
+                <button type="button"
+                        class="invoice-edit-type-card"
+                        data-customer-type="corporate"
+                        onclick="setInvoiceCustomerType('corporate')">
+                    <span class="invoice-edit-type-check">✓</span>
+                    <span class="invoice-edit-type-icon">▤</span>
+                    <strong>Kurumsal</strong>
+                    <small>Firma resmi ünvanı</small>
+                </button>
+            </div>
+
+            <div class="invoice-edit-section-title">
+                <span>▧</span>
+                <h4>Kimlik ve Firma Bilgileri</h4>
+            </div>
+
+            <div class="modal-grid invoice-edit-grid">
+
+                <label class="full">
+                    <span id="customerTitleInputLabel">Ad Soyad / Ünvan</span>
+                    <input type="text"
+                           id="customerTitleInput"
+                           autocomplete="off" />
+                </label>
+
+                <label class="customer-individual-field invoice-half-field">
+                    <span>TC Kimlik Numarası</span>
+                    <input type="text"
+                           id="customerTcknInput"
+                           inputmode="numeric"
+                           maxlength="11"
+                           autocomplete="off" />
+                </label>
+
+                <label class="customer-tax-field invoice-half-field">
+                    <span>Vergi Kimlik Numarası</span>
+                    <input type="text"
+                           id="customerTaxNumberInput"
+                           inputmode="numeric"
+                           maxlength="10"
+                           autocomplete="off" />
+                </label>
+
+                <label class="customer-tax-field invoice-half-field">
+                    <span>Vergi Dairesi İli</span>
+                    <select id="customerTaxOfficeCityInput">
+                        <option value="">İl seçiniz</option>
+                    </select>
+                </label>
+
+                <label class="customer-tax-field invoice-half-field">
+                    <span>Vergi Dairesi</span>
+                    <select id="customerTaxOfficeInput">
+                        <option value="">Önce il seçiniz</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="invoice-edit-section-title with-space">
+                <span>☎</span>
+                <h4>İletişim ve Adres Bilgileri</h4>
+            </div>
+
+            <div class="modal-grid invoice-edit-grid">
+                <label>
+                    <span>İl</span>
+                    <select id="customerAddressCityInput">
+                        <option value="">İl seçiniz</option>
+                    </select>
+                </label>
+
+                <label>
+                    <span>İlçe</span>
+                    <select id="customerAddressDistrictInput">
+                        <option value="">Önce il seçiniz</option>
+                    </select>
+                </label>
+
+                <label class="full">
+                    <span>Açık Adres</span>
+                    <textarea id="customerAddressLineInput"
+                              rows="4"
+                              placeholder="Mahalle, sokak, bina ve kapı no detaylarını giriniz..."></textarea>
+                </label>
+            </div>
+
+            <label class="invoice-sync-check-card">
+                <input type="checkbox" id="updateCustomerCardInput" />
+                <span class="invoice-sync-check-box">✓</span>
+                <span>
+                    <strong>Ana müşteri kartını da güncelle</strong>
+                    <small>İşaretlenirse bu bilgiler müşteri kartına da kaydedilir. İşaretlenmezse sadece fatura üzerindeki alıcı bilgisi değişir.</small>
+                </span>
+            </label>
         </div>
 
-        <div class="modal-grid">
-
-            <label class="full">
-                <span id="customerTitleInputLabel">Ad Soyad / Ünvan</span>
-                <input type="text"
-                       id="customerTitleInput"
-                       autocomplete="off" />
-            </label>
-
-            <label class="customer-individual-field">
-                <span>TC Kimlik No</span>
-                <input type="text"
-                       id="customerTcknInput"
-                       inputmode="numeric"
-                       maxlength="11"
-                       autocomplete="off" />
-            </label>
-
-            <label class="customer-tax-field">
-                <span>Vergi Dairesi</span>
-                <input type="text"
-                       id="customerTaxOfficeInput"
-                       autocomplete="off" />
-            </label>
-
-            <label class="customer-tax-field">
-                <span>Vergi No</span>
-                <input type="text"
-                       id="customerTaxNumberInput"
-                       inputmode="numeric"
-                       maxlength="10"
-                       autocomplete="off" />
-            </label>
-
-            <label class="full">
-                <span>Adres</span>
-                <textarea id="customerAddressInput"
-                          rows="3"></textarea>
-            </label>
-
-        </div>
-
-        <div class="modal-info-strip">
-            Ana müşteri kartı şu an güncellenmez. Bu bilgiler faturanın üzerindeki alıcı bilgisi olarak kaydedilir.
-        </div>
-
-        <div class="modal-actions">
+        <div class="modal-actions invoice-edit-actions invoice-sticky-actions">
             <button type="button"
                     class="modal-secondary-btn"
                     onclick="closeAllInvoiceModals()">
@@ -98,50 +150,86 @@
 </div>
 
 <div class="invoice-modal" id="vehicleModal" hidden>
-    <div class="modal-card invoice-party-modal">
+    <div class="modal-card invoice-party-modal invoice-professional-modal invoice-scroll-modal vehicle-edit-modal">
 
-        <div class="modal-header">
+        <div class="modal-header invoice-modal-titlebar">
             <div>
                 <h3>Araç Bilgilerini Düzenle</h3>
-                <p>Bu değişiklik fatura üzerindeki araç bilgisini günceller.</p>
+                <p>Faturadaki araç bilgisini güncelle. Gerekirse ana araç kartına da işle.</p>
             </div>
 
-            <button type="button" onclick="closeAllInvoiceModals()">×</button>
+            <button type="button" onclick="closeAllInvoiceModals()" aria-label="Kapat">×</button>
         </div>
 
-        <div class="modal-grid">
+        <div class="invoice-modal-scroll-body">
+            <div class="invoice-edit-section-title">
+                <span>▣</span>
+                <h4>Araç Bilgileri</h4>
+            </div>
 
-            <label>
-                <span>Plaka</span>
-                <input type="text"
-                       id="plateInput"
-                       maxlength="12"
-                       autocomplete="off" />
+            <div class="modal-grid invoice-edit-grid">
+
+                <label>
+                    <span>Plaka</span>
+                    <input type="text"
+                           id="plateInput"
+                           maxlength="12"
+                           autocomplete="off" />
+                </label>
+
+                <label>
+                    <span>Şasi No</span>
+                    <input type="text"
+                           id="chassisNumberInput"
+                           maxlength="17"
+                           autocomplete="off" />
+                </label>
+
+                <label>
+                    <span>Marka</span>
+                    <select id="vehicleBrandIdInput">
+                        <option value="">Marka seçiniz</option>
+                    </select>
+                </label>
+
+                <label>
+                    <span>Model</span>
+                    <select id="vehicleModelIdInput">
+                        <option value="">Önce marka seçiniz</option>
+                    </select>
+                </label>
+
+                <label>
+                    <span>Model Yılı</span>
+                    <input type="number"
+                           id="vehicleModelYearInput"
+                           min="1950"
+                           max="2100"
+                           step="1"
+                           placeholder="Örn: 2020" />
+                </label>
+
+                <label>
+                    <span>Kilometre</span>
+                    <input type="number"
+                           id="mileageInput"
+                           min="0"
+                           step="1" />
+                </label>
+
+            </div>
+
+            <label class="invoice-sync-check-card">
+                <input type="checkbox" id="updateVehicleCardInput" />
+                <span class="invoice-sync-check-box">✓</span>
+                <span>
+                    <strong>Ana araç kartını da güncelle</strong>
+                    <small>İşaretlenirse plaka, marka, model, model yılı ve şasi bilgisi araç kartına da kaydedilir. Kilometre fatura/servis bilgisi olarak kalır.</small>
+                </span>
             </label>
-
-            <label>
-                <span>Şasi No</span>
-                <input type="text"
-                       id="chassisNumberInput"
-                       maxlength="17"
-                       autocomplete="off" />
-            </label>
-
-            <label>
-                <span>Kilometre</span>
-                <input type="number"
-                       id="mileageInput"
-                       min="0"
-                       step="1" />
-            </label>
-
         </div>
 
-        <div class="modal-info-strip">
-            Ana araç kartı şu an güncellenmez. Bu bilgiler faturanın üzerindeki araç bilgisi olarak kaydedilir.
-        </div>
-
-        <div class="modal-actions">
+        <div class="modal-actions invoice-edit-actions invoice-sticky-actions">
             <button type="button"
                     class="modal-secondary-btn"
                     onclick="closeAllInvoiceModals()">

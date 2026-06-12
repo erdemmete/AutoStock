@@ -67,13 +67,40 @@
 
         <h3 id="plateView">@(Model.Plate ?? "-")</h3>
 
-        <div class="vehicle-grid">
+        <div class="vehicle-subtitle-line" id="vehicleBrandModelView">
+            @{
+                var vehicleName = string.Join(" ", new[]
+                {
+                    Model.VehicleBrandName,
+                    Model.VehicleModelName,
+                    Model.VehicleModelYear?.ToString()
+                }.Where(x => !string.IsNullOrWhiteSpace(x)));
+            }
+            @(string.IsNullOrWhiteSpace(vehicleName) ? "Marka / model belirtilmemiş" : vehicleName)
+        </div>
+
+        <div class="vehicle-grid vehicle-grid-extended">
+            <div>
+                <label>Marka</label>
+                <strong id="vehicleBrandNameView">@(Model.VehicleBrandName ?? "-")</strong>
+            </div>
+
+            <div>
+                <label>Model</label>
+                <strong id="vehicleModelNameView">@(Model.VehicleModelName ?? "-")</strong>
+            </div>
+
+            <div>
+                <label>Model Yılı</label>
+                <strong id="vehicleModelYearView">@(Model.VehicleModelYear?.ToString() ?? "-")</strong>
+            </div>
+
             <div>
                 <label>Kilometre</label>
                 <strong id="mileageView">@((Model.Mileage ?? 0).ToString("N0")) km</strong>
             </div>
 
-            <div>
+            <div class="full">
                 <label>Şasi Numarası</label>
                 <strong id="chassisNumberView">@(Model.ChassisNumber ?? "-")</strong>
             </div>

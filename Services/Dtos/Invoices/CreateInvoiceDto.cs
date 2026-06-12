@@ -16,6 +16,11 @@ public class CreateInvoiceDto
     public string? Plate { get; set; }
     public string? ChassisNumber { get; set; }
     public int? Mileage { get; set; }
+    public string? VehicleBrandName { get; set; }
+
+    public string? VehicleModelName { get; set; }
+
+    public int? VehicleModelYear { get; set; }
 
     public List<CreateInvoiceItemDto> Items { get; set; } = new();
 }

@@ -44,6 +44,11 @@ public class InvoiceDetailDto
 
     public string? Notes { get; set; }
     public decimal CustomerBalance { get; set; }
+    public string? VehicleBrandName { get; set; }
+
+    public string? VehicleModelName { get; set; }
+
+    public int? VehicleModelYear { get; set; }
 
     public List<InvoiceDetailItemDto> Items { get; set; } = new();
 }

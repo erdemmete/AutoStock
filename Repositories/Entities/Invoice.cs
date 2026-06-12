@@ -51,6 +51,11 @@ namespace AutoStock.Repositories.Entities
         public string? ExternalInvoiceNumber { get; set; }
 
         public string? ExternalUuid { get; set; }
+        public string? VehicleBrandName { get; set; }
+
+        public string? VehicleModelName { get; set; }
+
+        public int? VehicleModelYear { get; set; }
 
         public DateTime CreatedAt { get; set; } 
 

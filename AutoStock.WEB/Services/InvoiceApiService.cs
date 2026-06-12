@@ -1,4 +1,5 @@
 ﻿using AutoStock.Services.Dtos.Invoices;
+using AutoStock.Services.Dtos.Vehicles;
 using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.Invoices;
 
@@ -110,6 +111,27 @@ namespace AutoStock.WEB.Services
             return await GetAsync<InvoiceNavigationViewModel>(
                 $"/api/Invoices/active/by-service-record/{serviceRecordId}",
                 "Aktif fatura bilgisi alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<List<VehicleBrandDto>>> GetVehicleBrandsAsync()
+        {
+            return await GetAsync<List<VehicleBrandDto>>(
+                "/api/Invoices/vehicle-brands",
+                "Araç markaları alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<List<VehicleModelDto>>> GetVehicleModelsAsync(int brandId)
+        {
+            var url = BuildUrlWithQuery(
+                "/api/Invoices/vehicle-models",
+                new Dictionary<string, string?>
+                {
+                    ["brandId"] = brandId.ToString()
+                });
+
+            return await GetAsync<List<VehicleModelDto>>(
+                url,
+                "Araç modelleri alınırken hata oluştu.");
         }
     }
 }

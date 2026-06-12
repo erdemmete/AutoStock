@@ -13,10 +13,21 @@
         customerTaxOffice: @Json.Serialize(Model.CustomerTaxOffice),
         customerTaxNumber: @Json.Serialize(Model.CustomerTaxNumber),
         customerTckn: @Json.Serialize(Model.CustomerTckn),
+
         customerAddress: @Json.Serialize(Model.CustomerAddress),
+        customerAddressLine: @Json.Serialize(Model.CustomerAddressLine),
+        customerAddressCity: @Json.Serialize(Model.CustomerAddressCity),
+        customerAddressDistrict: @Json.Serialize(Model.CustomerAddressDistrict),
 
         plate: @Json.Serialize(Model.Plate),
         chassisNumber: @Json.Serialize(Model.ChassisNumber),
+
+        vehicleBrandId: @(Model.VehicleBrandId.HasValue ? Model.VehicleBrandId.Value.ToString() : "null"),
+        vehicleModelId: @(Model.VehicleModelId.HasValue ? Model.VehicleModelId.Value.ToString() : "null"),
+        vehicleBrandName: @Json.Serialize(Model.VehicleBrandName),
+        vehicleModelName: @Json.Serialize(Model.VehicleModelName),
+        vehicleModelYear: @(Model.VehicleModelYear.HasValue ? Model.VehicleModelYear.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null"),
+
         mileage: @(Model.Mileage.HasValue ? Model.Mileage.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null"),
 
         notes: @Json.Serialize(Model.Notes),
@@ -36,8 +47,17 @@
                             stockItemId: @(item.StockItemId.HasValue ? item.StockItemId.Value.ToString() : "null")
                         },</text>
                 }
-            ]
+            ],
+
+            updateCustomerCard: false,
+            updateVehicleCard: false
         };
+
+        let invoiceCustomerType = getInitialInvoiceCustomerType();
+
+        let invoiceTurkeyLocations = [];
+        let invoiceTaxOffices = [];
+        let invoiceVehicleBrands = [];
 
         function toNumber(value) {
             if (value === null || value === undefined || value === "") return 0;
@@ -69,6 +89,426 @@
                 .replaceAll("'", "&#039;");
         }
 
+        function normalizeTr(text) {
+            return (text || "")
+                .toLocaleLowerCase("tr-TR")
+                .trim();
+        }
+
+        function toTitleCase(text) {
+            return (text || "")
+                .toLocaleLowerCase("tr-TR")
+                .replace(/(^|\s)\S/g, x => x.toLocaleUpperCase("tr-TR"));
+        }
+
+        function getSelectText(selectId) {
+            const select = document.getElementById(selectId);
+
+            if (!select || !select.value) return "";
+
+            return select.options[select.selectedIndex]?.text?.trim() || "";
+        }
+
+        function onlyDigits(value, maxLength) {
+            return String(value || "")
+                .replace(/\D/g, "")
+                .slice(0, maxLength);
+        }
+
+        function normalizeText(value, maxLength = 80) {
+            return String(value || "")
+                .trim()
+                .slice(0, maxLength);
+        }
+
+        function normalizePlate(value) {
+            return String(value || "")
+                .toLocaleUpperCase("tr-TR")
+                .replace(/[^A-Z0-9]/g, "")
+                .slice(0, 12);
+        }
+
+        function normalizeChassis(value) {
+            return String(value || "")
+                .toLocaleUpperCase("tr-TR")
+                .replace(/[^A-Z0-9]/g, "")
+                .slice(0, 17);
+        }
+
+        function setTextById(id, value, fallback = "-") {
+            const element = document.getElementById(id);
+
+            if (!element) return;
+
+            element.textContent =
+                value !== null &&
+                value !== undefined &&
+                String(value).trim()
+                    ? value
+                    : fallback;
+        }
+
+        function setHiddenById(id, hidden) {
+            const element = document.getElementById(id);
+
+            if (!element) return;
+
+            element.hidden = hidden;
+        }
+
+        function getJsonField(item, lowerName, upperName) {
+            if (!item) return null;
+
+            return item[lowerName] ?? item[upperName] ?? null;
+        }
+
+        function getCityName(city) {
+            return getJsonField(city, "name", "Name");
+        }
+
+        function getDistricts(city) {
+            return getJsonField(city, "districts", "Districts") || [];
+        }
+
+        function getTaxOfficeCity(item) {
+            return getJsonField(item, "city", "City");
+        }
+
+        function getTaxOfficeDistrict(item) {
+            return getJsonField(item, "district", "District");
+        }
+
+        function getTaxOfficeName(item) {
+            return getJsonField(item, "name", "Name");
+        }
+
+        function getVehicleBrandId(item) {
+            return getJsonField(item, "id", "Id");
+        }
+
+        function getVehicleBrandName(item) {
+            return getJsonField(item, "name", "Name");
+        }
+
+        function getVehicleModelId(item) {
+            return getJsonField(item, "id", "Id");
+        }
+
+        function getVehicleModelName(item) {
+            return getJsonField(item, "name", "Name");
+        }
+
+        function buildCustomerInvoiceAddress(line, city, district) {
+            const addressLine = normalizeText(line, 500);
+
+            const locationPart = [district, city]
+                .filter(x => x && String(x).trim())
+                .join(" / ");
+
+            return [addressLine, locationPart]
+                .filter(x => x && String(x).trim())
+                .join(" ");
+        }
+
+        function inferAddressPartsFromLegacyAddress() {
+            if (invoiceState.customerAddressLine || invoiceState.customerAddressCity || invoiceState.customerAddressDistrict) {
+                return;
+            }
+
+            const address = invoiceState.customerAddress || "";
+
+            if (!address.trim()) return;
+
+            const slashParts = address
+                .split("/")
+                .map(x => x.trim())
+                .filter(Boolean);
+
+            if (slashParts.length >= 2) {
+                const possibleCity = slashParts[slashParts.length - 1];
+                const beforeCity = slashParts.slice(0, slashParts.length - 1).join(" / ");
+
+                const knownCity = invoiceTurkeyLocations.find(x =>
+                    normalizeTr(getCityName(x)) === normalizeTr(possibleCity)
+                );
+
+                if (knownCity) {
+                    invoiceState.customerAddressCity = getCityName(knownCity);
+
+                    const districtList = getDistricts(knownCity);
+
+                    const districtMatch = districtList.find(x => {
+                        const districtName = getCityName(x);
+                        return beforeCity && normalizeTr(beforeCity).includes(normalizeTr(districtName));
+                    });
+
+                    if (districtMatch) {
+                        invoiceState.customerAddressDistrict = getCityName(districtMatch);
+
+                        const districtName = getCityName(districtMatch);
+                        invoiceState.customerAddressLine = beforeCity
+                            .replace(new RegExp(districtName, "i"), "")
+                            .trim();
+                    } else {
+                        invoiceState.customerAddressLine = beforeCity;
+                    }
+
+                    return;
+                }
+            }
+
+            invoiceState.customerAddressLine = address;
+        }
+
+        function getInitialInvoiceCustomerType() {
+            const hasTaxInfo =
+                Boolean(invoiceState.customerTaxOffice) ||
+                Boolean(invoiceState.customerTaxNumber);
+
+            const hasTckn = Boolean(invoiceState.customerTckn);
+
+            if (hasTaxInfo) return "sole";
+            if (hasTckn) return "individual";
+
+            return "individual";
+        }
+
+        async function loadInvoiceReferenceData() {
+            try {
+                const [locationsResponse, taxOfficesResponse, vehicleBrandsResponse] = await Promise.all([
+                    fetch("/data/turkey-locations.json", { credentials: "same-origin" }),
+                    fetch("/data/tax-offices.json", { credentials: "same-origin" }),
+                    fetch("/Invoices/VehicleBrands", { credentials: "same-origin" })
+                ]);
+
+                if (locationsResponse.ok) {
+                    invoiceTurkeyLocations = await locationsResponse.json();
+                }
+
+                if (taxOfficesResponse.ok) {
+                    invoiceTaxOffices = await taxOfficesResponse.json();
+                }
+
+                if (vehicleBrandsResponse.ok) {
+                    invoiceVehicleBrands = await vehicleBrandsResponse.json();
+                }
+
+                inferAddressPartsFromLegacyAddress();
+
+                fillInvoiceCitySelect("customerAddressCityInput");
+                fillInvoiceCitySelect("customerTaxOfficeCityInput");
+                fillInvoiceVehicleBrandSelect();
+            }
+            catch {
+                console.warn("Fatura referans verileri yüklenemedi.");
+            }
+        }
+
+        function fillInvoiceCitySelect(selectId) {
+            const select = document.getElementById(selectId);
+
+            if (!select) return;
+
+            const currentValue = select.value;
+
+            select.innerHTML = `<option value="">İl seçiniz</option>`;
+
+            invoiceTurkeyLocations
+                .slice()
+                .sort((a, b) => String(getCityName(a)).localeCompare(String(getCityName(b)), "tr"))
+                .forEach(city => {
+                    const cityName = getCityName(city);
+
+                    if (!cityName) return;
+
+                    select.innerHTML += `
+                        <option value="${escapeHtml(cityName)}">
+                            ${escapeHtml(toTitleCase(cityName))}
+                        </option>`;
+                });
+
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        function fillInvoiceDistrictSelect(citySelectId, districtSelectId, selectedDistrict = null) {
+            const city = document.getElementById(citySelectId)?.value;
+            const districtSelect = document.getElementById(districtSelectId);
+
+            if (!districtSelect) return;
+
+            const currentValue = selectedDistrict || districtSelect.value;
+
+            districtSelect.innerHTML = `<option value="">İlçe seçiniz</option>`;
+
+            const location = invoiceTurkeyLocations.find(x =>
+                normalizeTr(getCityName(x)) === normalizeTr(city)
+            );
+
+            if (!location) return;
+
+            getDistricts(location)
+                .slice()
+                .sort((a, b) => String(getCityName(a)).localeCompare(String(getCityName(b)), "tr"))
+                .forEach(district => {
+                    const districtName = getCityName(district);
+
+                    if (!districtName) return;
+
+                    districtSelect.innerHTML += `
+                        <option value="${escapeHtml(districtName)}">
+                            ${escapeHtml(toTitleCase(districtName))}
+                        </option>`;
+                });
+
+            if (currentValue) {
+                districtSelect.value = currentValue;
+            }
+        }
+
+        function fillInvoiceTaxOfficeSelect(citySelectId, taxOfficeSelectId, selectedTaxOffice = null) {
+            const city = document.getElementById(citySelectId)?.value;
+            const taxOfficeSelect = document.getElementById(taxOfficeSelectId);
+
+            if (!taxOfficeSelect) return;
+
+            const currentValue = selectedTaxOffice || taxOfficeSelect.value;
+
+            taxOfficeSelect.innerHTML = city
+                ? `<option value="">Vergi dairesi seçiniz</option>`
+                : `<option value="">Önce il seçiniz</option>`;
+
+            if (!city) return;
+
+            invoiceTaxOffices
+                .filter(x => normalizeTr(getTaxOfficeCity(x)) === normalizeTr(city))
+                .sort((a, b) => {
+                    const districtCompare = String(getTaxOfficeDistrict(a) || "")
+                        .localeCompare(String(getTaxOfficeDistrict(b) || ""), "tr");
+
+                    if (districtCompare !== 0) return districtCompare;
+
+                    return String(getTaxOfficeName(a) || "")
+                        .localeCompare(String(getTaxOfficeName(b) || ""), "tr");
+                })
+                .forEach(item => {
+                    const name = getTaxOfficeName(item);
+                    const district = getTaxOfficeDistrict(item);
+                    const itemCity = getTaxOfficeCity(item);
+
+                    if (!name) return;
+
+                    taxOfficeSelect.innerHTML += `
+                        <option value="${escapeHtml(name)}">
+                            ${escapeHtml(name)}${district ? ` - ${escapeHtml(district)}` : ""}${itemCity ? ` / ${escapeHtml(itemCity)}` : ""}
+                        </option>`;
+                });
+
+            if (currentValue) {
+                taxOfficeSelect.value = currentValue;
+            }
+        }
+
+        function findTaxOfficeByName(name) {
+            if (!name) return null;
+
+            return invoiceTaxOffices.find(x =>
+                normalizeTr(getTaxOfficeName(x)) === normalizeTr(name)
+            ) || null;
+        }
+
+        function fillInvoiceVehicleBrandSelect() {
+            const select = document.getElementById("vehicleBrandIdInput");
+
+            if (!select) return;
+
+            const currentValue = select.value;
+
+            select.innerHTML = `<option value="">Marka seçiniz</option>`;
+
+            invoiceVehicleBrands.forEach(brand => {
+                const id = getVehicleBrandId(brand);
+                const name = getVehicleBrandName(brand);
+
+                if (!id || !name) return;
+
+                select.innerHTML += `
+                    <option value="${id}">
+                        ${escapeHtml(name)}
+                    </option>`;
+            });
+
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        function findBrandIdByName(name) {
+            if (!name) return null;
+
+            const brand = invoiceVehicleBrands.find(x =>
+                normalizeTr(getVehicleBrandName(x)) === normalizeTr(name)
+            );
+
+            return brand ? Number(getVehicleBrandId(brand)) : null;
+        }
+
+        async function loadInvoiceVehicleModels(brandId, selectedModelId = null, selectedModelName = null) {
+            const modelSelect = document.getElementById("vehicleModelIdInput");
+
+            if (!modelSelect) return;
+
+            modelSelect.innerHTML = `<option value="">Model yükleniyor...</option>`;
+
+            if (!brandId) {
+                modelSelect.innerHTML = `<option value="">Önce marka seçiniz</option>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/Invoices/VehicleModels?brandId=${brandId}`, {
+                    credentials: "same-origin"
+                });
+
+                if (!response.ok) {
+                    modelSelect.innerHTML = `<option value="">Model alınamadı</option>`;
+                    return;
+                }
+
+                const models = await response.json();
+
+                modelSelect.innerHTML = `<option value="">Model seçiniz</option>`;
+
+                models.forEach(model => {
+                    const id = getVehicleModelId(model);
+                    const name = getVehicleModelName(model);
+
+                    if (!id || !name) return;
+
+                    modelSelect.innerHTML += `
+                        <option value="${id}">
+                            ${escapeHtml(name)}
+                        </option>`;
+                });
+
+                if (selectedModelId) {
+                    modelSelect.value = selectedModelId;
+                } else if (selectedModelName) {
+                    const match = models.find(x =>
+                        normalizeTr(getVehicleModelName(x)) === normalizeTr(selectedModelName)
+                    );
+
+                    if (match) {
+                        modelSelect.value = getVehicleModelId(match);
+                    }
+                }
+            }
+            catch {
+                modelSelect.innerHTML = `<option value="">Model alınamadı</option>`;
+            }
+        }
+
         function getItemTypeText(type) {
             type = Number(type);
 
@@ -92,8 +532,8 @@
         function mapInvoiceItemTypeToOperationType(itemType) {
             itemType = Number(itemType);
 
-            if (itemType === 2) return 1; // Invoice Parça -> Operation Part
-            if (itemType === 1) return 2; // Invoice İşçilik -> Operation Labor
+            if (itemType === 2) return 1;
+            if (itemType === 1) return 2;
 
             return 2;
         }
@@ -207,7 +647,7 @@
             }
         }
 
-                  function showInvoiceElement(id) {
+        function showInvoiceElement(id) {
             const element = document.getElementById(id);
 
             if (!element) return;
@@ -235,41 +675,6 @@
             hideInvoiceElement(document.getElementById("invoiceModalBackdrop"));
 
             closeStockSearchResults();
-        }
-
-                let invoiceCustomerType = getInitialInvoiceCustomerType();
-
-        function getInitialInvoiceCustomerType() {
-            const hasTaxInfo =
-                Boolean(invoiceState.customerTaxOffice) ||
-                Boolean(invoiceState.customerTaxNumber);
-
-            const hasTckn = Boolean(invoiceState.customerTckn);
-
-            if (hasTaxInfo) return "corporate";
-            if (hasTckn) return "individual";
-
-            return "individual";
-        }
-
-        function onlyDigits(value, maxLength) {
-            return String(value || "")
-                .replace(/\D/g, "")
-                .slice(0, maxLength);
-        }
-
-        function normalizePlate(value) {
-            return String(value || "")
-                .toUpperCase()
-                .replace(/[^A-Z0-9]/g, "")
-                .slice(0, 12);
-        }
-
-        function normalizeChassis(value) {
-            return String(value || "")
-                .toUpperCase()
-                .replace(/[^A-Z0-9]/g, "")
-                .slice(0, 17);
         }
 
         function setInvoiceCustomerType(type) {
@@ -302,36 +707,20 @@
                         ? "Şahıs / Cari Ünvanı"
                         : "Firma Ünvanı";
             }
-
-            if (isIndividual) {
-                document.getElementById("customerTaxOfficeInput").value = "";
-                document.getElementById("customerTaxNumberInput").value = "";
-            } else {
-                document.getElementById("customerTcknInput").value = "";
-            }
         }
 
         function refreshCustomerCard() {
             const isIndividual = invoiceCustomerType === "individual";
 
-            document.getElementById("customerTitleView").textContent =
-                invoiceState.customerTitle || "-";
+            setTextById("customerTitleView", invoiceState.customerTitle);
+            setTextById("customerTcknView", invoiceState.customerTckn);
+            setTextById("customerTaxNumberView", invoiceState.customerTaxNumber);
+            setTextById("customerTaxOfficeView", invoiceState.customerTaxOffice);
+            setTextById("customerAddressView", invoiceState.customerAddress);
 
-            document.getElementById("customerTcknView").textContent =
-                invoiceState.customerTckn || "-";
-
-            document.getElementById("customerTaxNumberView").textContent =
-                invoiceState.customerTaxNumber || "-";
-
-            document.getElementById("customerTaxOfficeView").textContent =
-                invoiceState.customerTaxOffice || "-";
-
-            document.getElementById("customerAddressView").textContent =
-                invoiceState.customerAddress || "-";
-
-            document.getElementById("customerTcknLine").hidden = !isIndividual;
-            document.getElementById("customerTaxNumberLine").hidden = isIndividual;
-            document.getElementById("customerTaxOfficeLine").hidden = isIndividual;
+            setHiddenById("customerTcknLine", !isIndividual);
+            setHiddenById("customerTaxNumberLine", isIndividual);
+            setHiddenById("customerTaxOfficeLine", isIndividual);
         }
 
         function openCustomerModal() {
@@ -340,15 +729,59 @@
             invoiceCustomerType = getInitialInvoiceCustomerType();
 
             document.getElementById("customerTitleInput").value = invoiceState.customerTitle || "";
-            document.getElementById("customerTaxOfficeInput").value = invoiceState.customerTaxOffice || "";
-            document.getElementById("customerTaxNumberInput").value = invoiceState.customerTaxNumber || "";
             document.getElementById("customerTcknInput").value = invoiceState.customerTckn || "";
-            document.getElementById("customerAddressInput").value = invoiceState.customerAddress || "";
+            document.getElementById("customerTaxNumberInput").value = invoiceState.customerTaxNumber || "";
+
+            document.getElementById("customerAddressLineInput").value =
+                invoiceState.customerAddressLine || invoiceState.customerAddress || "";
+
+            const addressCityInput = document.getElementById("customerAddressCityInput");
+            const addressDistrictInput = document.getElementById("customerAddressDistrictInput");
+
+            if (addressCityInput) {
+                addressCityInput.value = invoiceState.customerAddressCity || "";
+            }
+
+            fillInvoiceDistrictSelect(
+                "customerAddressCityInput",
+                "customerAddressDistrictInput",
+                invoiceState.customerAddressDistrict || ""
+            );
+
+            if (addressDistrictInput) {
+                addressDistrictInput.value = invoiceState.customerAddressDistrict || "";
+            }
+
+            const taxOfficeCityInput = document.getElementById("customerTaxOfficeCityInput");
+            const taxOfficeInput = document.getElementById("customerTaxOfficeInput");
+            const taxOfficeMatch = findTaxOfficeByName(invoiceState.customerTaxOffice);
+
+            if (taxOfficeCityInput) {
+                taxOfficeCityInput.value = taxOfficeMatch
+                    ? getTaxOfficeCity(taxOfficeMatch)
+                    : "";
+            }
+
+            fillInvoiceTaxOfficeSelect(
+                "customerTaxOfficeCityInput",
+                "customerTaxOfficeInput",
+                invoiceState.customerTaxOffice || ""
+            );
+
+            if (taxOfficeInput) {
+                taxOfficeInput.value = invoiceState.customerTaxOffice || "";
+            }
+
+            const updateCustomerCardInput = document.getElementById("updateCustomerCardInput");
+
+            if (updateCustomerCardInput) {
+                updateCustomerCardInput.checked = false;
+            }
 
             setInvoiceCustomerType(invoiceCustomerType);
 
-                    openBackdrop();
-        showInvoiceElement("customerModal");
+            openBackdrop();
+            showInvoiceElement("customerModal");
 
             setTimeout(() => {
                 document.getElementById("customerTitleInput")?.focus();
@@ -360,13 +793,23 @@
             const tcknInput = document.getElementById("customerTcknInput");
             const taxOfficeInput = document.getElementById("customerTaxOfficeInput");
             const taxNumberInput = document.getElementById("customerTaxNumberInput");
-            const addressInput = document.getElementById("customerAddressInput");
+            const addressLineInput = document.getElementById("customerAddressLineInput");
+            const addressCityInput = document.getElementById("customerAddressCityInput");
+            const addressDistrictInput = document.getElementById("customerAddressDistrictInput");
 
-            const title = titleInput.value.trim();
+            const title = normalizeText(titleInput.value, 150);
             const tckn = onlyDigits(tcknInput.value, 11);
             const taxNumber = onlyDigits(taxNumberInput.value, 10);
-            const taxOffice = taxOfficeInput.value.trim();
-            const address = addressInput.value.trim();
+            const taxOffice = taxOfficeInput.value;
+            const addressLine = normalizeText(addressLineInput.value, 500);
+            const addressCity = addressCityInput.value;
+            const addressDistrict = addressDistrictInput.value;
+
+            const address = buildCustomerInvoiceAddress(
+                addressLine,
+                addressCity,
+                addressDistrict
+            );
 
             if (!title) {
                 alert("Alıcı adı / ünvan zorunludur.");
@@ -387,6 +830,10 @@
             }
 
             invoiceState.customerTitle = title;
+            invoiceState.customerAddressLine = addressLine || null;
+            invoiceState.customerAddressCity = addressCity || null;
+            invoiceState.customerAddressDistrict = addressDistrict || null;
+            invoiceState.customerAddress = address || null;
 
             if (invoiceCustomerType === "individual") {
                 invoiceState.customerTckn = tckn || null;
@@ -398,26 +845,55 @@
                 invoiceState.customerTaxNumber = taxNumber || null;
             }
 
-            invoiceState.customerAddress = address || null;
+            invoiceState.updateCustomerCard = Boolean(
+                document.getElementById("updateCustomerCardInput")?.checked
+            );
 
             try {
                 await persistInvoice();
+                invoiceState.updateCustomerCard = false;
                 refreshCustomerCard();
                 closeAllInvoiceModals();
             } catch {
-                // persistInvoice zaten alert basıyor
+                invoiceState.updateCustomerCard = false;
             }
         }
 
-        function openVehicleModal() {
+        async function openVehicleModal() {
             if (invoiceStatus !== 1) return;
 
             document.getElementById("plateInput").value = invoiceState.plate || "";
             document.getElementById("chassisNumberInput").value = invoiceState.chassisNumber || "";
+            document.getElementById("vehicleModelYearInput").value = invoiceState.vehicleModelYear || "";
             document.getElementById("mileageInput").value = invoiceState.mileage || "";
 
-                          openBackdrop();
-        showInvoiceElement("vehicleModal");
+            const brandSelect = document.getElementById("vehicleBrandIdInput");
+
+            let brandId = invoiceState.vehicleBrandId;
+
+            if (!brandId && invoiceState.vehicleBrandName) {
+                brandId = findBrandIdByName(invoiceState.vehicleBrandName);
+                invoiceState.vehicleBrandId = brandId;
+            }
+
+            if (brandSelect) {
+                brandSelect.value = brandId || "";
+            }
+
+            await loadInvoiceVehicleModels(
+                brandId,
+                invoiceState.vehicleModelId,
+                invoiceState.vehicleModelName
+            );
+
+            const updateVehicleCardInput = document.getElementById("updateVehicleCardInput");
+
+            if (updateVehicleCardInput) {
+                updateVehicleCardInput.checked = false;
+            }
+
+            openBackdrop();
+            showInvoiceElement("vehicleModal");
 
             setTimeout(() => {
                 document.getElementById("plateInput")?.focus();
@@ -427,10 +903,29 @@
         async function saveVehicleModal() {
             const plateInput = document.getElementById("plateInput");
             const chassisInput = document.getElementById("chassisNumberInput");
+            const brandSelect = document.getElementById("vehicleBrandIdInput");
+            const modelSelect = document.getElementById("vehicleModelIdInput");
+            const modelYearInput = document.getElementById("vehicleModelYearInput");
             const mileageInput = document.getElementById("mileageInput");
 
             const plate = normalizePlate(plateInput.value);
             const chassisNumber = normalizeChassis(chassisInput.value);
+
+            const vehicleBrandId = brandSelect.value
+                ? Number(brandSelect.value)
+                : null;
+
+            const vehicleModelId = modelSelect.value
+                ? Number(modelSelect.value)
+                : null;
+
+            const vehicleBrandName = getSelectText("vehicleBrandIdInput");
+            const vehicleModelName = getSelectText("vehicleModelIdInput");
+
+            const vehicleModelYear = modelYearInput.value
+                ? Number(String(modelYearInput.value).replace(/\D/g, ""))
+                : null;
+
             const mileage = mileageInput.value
                 ? Number(String(mileageInput.value).replace(/\D/g, ""))
                 : null;
@@ -447,18 +942,30 @@
                 return;
             }
 
+            if (vehicleModelYear && (vehicleModelYear < 1950 || vehicleModelYear > 2100)) {
+                alert("Model yılı 1950 ile 2100 arasında olmalıdır.");
+                modelYearInput.focus();
+                return;
+            }
+
             invoiceState.plate = plate;
             invoiceState.chassisNumber = chassisNumber || null;
+            invoiceState.vehicleBrandId = vehicleBrandId;
+            invoiceState.vehicleModelId = vehicleModelId;
+            invoiceState.vehicleBrandName = vehicleBrandName || null;
+            invoiceState.vehicleModelName = vehicleModelName || null;
+            invoiceState.vehicleModelYear = vehicleModelYear;
             invoiceState.mileage = mileage;
+
+            invoiceState.updateVehicleCard = Boolean(
+                document.getElementById("updateVehicleCardInput")?.checked
+            );
 
             try {
                 await persistInvoice();
+                invoiceState.updateVehicleCard = false;
 
-                document.getElementById("plateView").textContent = invoiceState.plate || "-";
-                document.getElementById("chassisNumberView").textContent = invoiceState.chassisNumber || "-";
-                document.getElementById("mileageView").textContent = invoiceState.mileage
-                    ? Number(invoiceState.mileage).toLocaleString("tr-TR") + " km"
-                    : "-";
+                refreshVehicleCard();
 
                 const plateBox = document.querySelector(".plate-box strong");
 
@@ -468,7 +975,40 @@
 
                 closeAllInvoiceModals();
             } catch {
-                // persistInvoice zaten alert basıyor
+                invoiceState.updateVehicleCard = false;
+            }
+        }
+
+        function refreshVehicleCard() {
+            setTextById("plateView", invoiceState.plate);
+            setTextById("chassisNumberView", invoiceState.chassisNumber);
+            setTextById("vehicleBrandNameView", invoiceState.vehicleBrandName);
+            setTextById("vehicleModelNameView", invoiceState.vehicleModelName);
+            setTextById("vehicleModelYearView", invoiceState.vehicleModelYear);
+
+            setTextById(
+                "mileageView",
+                invoiceState.mileage
+                    ? Number(invoiceState.mileage).toLocaleString("tr-TR") + " km"
+                    : "-"
+            );
+
+            const vehicleTitle = [
+                invoiceState.vehicleBrandName,
+                invoiceState.vehicleModelName,
+                invoiceState.vehicleModelYear
+            ]
+                .filter(x => x !== null && x !== undefined && String(x).trim())
+                .join(" ");
+
+            setTextById("vehicleBrandModelView", vehicleTitle, "Marka / model belirtilmemiş");
+
+            const headVehicleName = document.getElementById("invoiceHeadVehicleName");
+
+            if (headVehicleName) {
+                headVehicleName.textContent = vehicleTitle
+                    ? `🚘 ${vehicleTitle}`
+                    : "";
             }
         }
 
@@ -509,8 +1049,8 @@
 
             updateItemModalMode();
 
-                    openBackdrop();
-        showInvoiceElement("itemModal");
+            openBackdrop();
+            showInvoiceElement("itemModal");
 
             setTimeout(() => {
                 document.getElementById("itemDescriptionInput")?.focus();
@@ -756,8 +1296,7 @@
                 if (index >= 0) {
                     alert(
                         "Servis kaydından gelen parça/işçilik kalemleri servis operasyonudur.\n\n" +
-                        "Bu kalemi düzenlemek için servis kaydı üzerinden düzenleme yapılmalıdır. " +
-                        "Mevcut kalemleri aynı ekrandan düzenlemek için sonraki adımda ServiceOperation bağlantısını kuracağız."
+                        "Bu kalemi düzenlemek için servis kaydı üzerinden düzenleme yapılmalıdır."
                     );
 
                     return;
@@ -886,11 +1425,26 @@
                 customerTaxOffice: invoiceState.customerTaxOffice || null,
                 customerTaxNumber: invoiceState.customerTaxNumber || null,
                 customerTckn: invoiceState.customerTckn || null,
+
                 customerAddress: invoiceState.customerAddress || null,
+                customerAddressLine: invoiceState.customerAddressLine || null,
+                customerAddressCity: invoiceState.customerAddressCity || null,
+                customerAddressDistrict: invoiceState.customerAddressDistrict || null,
+                customerType: invoiceCustomerType,
 
                 plate: invoiceState.plate || null,
                 chassisNumber: invoiceState.chassisNumber || null,
+
+                vehicleBrandId: invoiceState.vehicleBrandId || null,
+                vehicleModelId: invoiceState.vehicleModelId || null,
+                vehicleBrandName: invoiceState.vehicleBrandName || null,
+                vehicleModelName: invoiceState.vehicleModelName || null,
+                vehicleModelYear: invoiceState.vehicleModelYear,
+
                 mileage: invoiceState.mileage,
+
+                updateCustomerCard: Boolean(invoiceState.updateCustomerCard),
+                updateVehicleCard: Boolean(invoiceState.updateVehicleCard),
 
                 notes: invoiceState.notes || null,
 
@@ -997,7 +1551,63 @@
             }
         }
 
-                window.openCustomerModal = openCustomerModal;
+        function bindInvoicePartyModalInputGuards() {
+            const tcknInput = document.getElementById("customerTcknInput");
+            const taxNumberInput = document.getElementById("customerTaxNumberInput");
+            const plateInput = document.getElementById("plateInput");
+            const chassisInput = document.getElementById("chassisNumberInput");
+            const modelYearInput = document.getElementById("vehicleModelYearInput");
+            const mileageInput = document.getElementById("mileageInput");
+
+            tcknInput?.addEventListener("input", function () {
+                this.value = onlyDigits(this.value, 11);
+            });
+
+            taxNumberInput?.addEventListener("input", function () {
+                this.value = onlyDigits(this.value, 10);
+            });
+
+            plateInput?.addEventListener("input", function () {
+                this.value = normalizePlate(this.value);
+            });
+
+            chassisInput?.addEventListener("input", function () {
+                this.value = normalizeChassis(this.value);
+            });
+
+            modelYearInput?.addEventListener("input", function () {
+                this.value = onlyDigits(this.value, 4);
+            });
+
+            mileageInput?.addEventListener("input", function () {
+                this.value = onlyDigits(this.value, 9);
+            });
+        }
+
+        function bindInvoiceReferenceEvents() {
+            document.getElementById("customerAddressCityInput")?.addEventListener("change", function () {
+                fillInvoiceDistrictSelect(
+                    "customerAddressCityInput",
+                    "customerAddressDistrictInput"
+                );
+            });
+
+            document.getElementById("customerTaxOfficeCityInput")?.addEventListener("change", function () {
+                fillInvoiceTaxOfficeSelect(
+                    "customerTaxOfficeCityInput",
+                    "customerTaxOfficeInput"
+                );
+            });
+
+            document.getElementById("vehicleBrandIdInput")?.addEventListener("change", async function () {
+                invoiceState.vehicleBrandId = this.value ? Number(this.value) : null;
+                invoiceState.vehicleModelId = null;
+
+                await loadInvoiceVehicleModels(this.value);
+            });
+        }
+
+        window.openCustomerModal = openCustomerModal;
         window.openVehicleModal = openVehicleModal;
         window.openItemModal = openItemModal;
         window.closeAllInvoiceModals = closeAllInvoiceModals;
@@ -1011,10 +1621,16 @@
         window.cancelInvoice = cancelInvoice;
         window.setInvoiceCustomerType = setInvoiceCustomerType;
 
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", async function () {
+            await loadInvoiceReferenceData();
+
             renderItems();
-                refreshCustomerCard();
+            refreshCustomerCard();
+            refreshVehicleCard();
+
             bindInvoiceItemModalEvents();
+            bindInvoicePartyModalInputGuards();
+            bindInvoiceReferenceEvents();
 
             const backdrop = document.getElementById("invoiceModalBackdrop");
 

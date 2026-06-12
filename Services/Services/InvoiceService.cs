@@ -70,6 +70,9 @@ namespace AutoStock.Services.Services
 
                 Plate = serviceRecord.VehiclePlateSnapshot,
                 ChassisNumber = serviceRecord.Vehicle?.ChassisNumber,
+                VehicleBrandName = serviceRecord.VehicleBrandNameSnapshot,
+                VehicleModelName = serviceRecord.VehicleModelNameSnapshot,
+                VehicleModelYear = serviceRecord.Vehicle?.ModelYear,
                 Mileage = serviceRecord.MileageSnapshot
             };
 
@@ -165,6 +168,9 @@ namespace AutoStock.Services.Services
 
                 Plate = request.Plate,
                 ChassisNumber = request.ChassisNumber,
+                VehicleBrandName = request.VehicleBrandName,
+                VehicleModelName = request.VehicleModelName,
+                VehicleModelYear = request.VehicleModelYear,
                 Mileage = request.Mileage,
 
                 CreatedAt = _dateTimeProvider.Now
@@ -280,6 +286,9 @@ namespace AutoStock.Services.Services
                 Plate = invoice.Plate,
                 ChassisNumber = invoice.ChassisNumber,
                 Mileage = invoice.Mileage,
+                VehicleBrandName = invoice.VehicleBrandName,
+                VehicleModelName = invoice.VehicleModelName,
+                VehicleModelYear = invoice.VehicleModelYear,
 
                 Subtotal = invoice.Subtotal,
                 DiscountTotal = invoice.DiscountTotal,
@@ -812,9 +821,34 @@ namespace AutoStock.Services.Services
 
             invoice.Plate = request.Plate;
             invoice.ChassisNumber = request.ChassisNumber;
+            invoice.VehicleBrandName = request.VehicleBrandName;
+            invoice.VehicleModelName = request.VehicleModelName;
+            invoice.VehicleModelYear = request.VehicleModelYear;
             invoice.Mileage = request.Mileage;
 
             invoice.Notes = request.Notes;
+
+            var customerCardUpdateResult = await UpdateCustomerCardIfRequestedAsync(
+                invoice,
+                request,
+                workshopId);
+
+            if (customerCardUpdateResult.IsFailure)
+            {
+                return ServiceResult<InvoiceDetailDto>.Fail(
+                    customerCardUpdateResult.ErrorMessage ?? "Ana müşteri kartı güncellenemedi.");
+            }
+
+            var vehicleCardUpdateResult = await UpdateVehicleCardIfRequestedAsync(
+                invoice,
+                request,
+                workshopId);
+
+            if (vehicleCardUpdateResult.IsFailure)
+            {
+                return ServiceResult<InvoiceDetailDto>.Fail(
+                    vehicleCardUpdateResult.ErrorMessage ?? "Ana araç kartı güncellenemedi.");
+            }
 
             _context.InvoiceItems.RemoveRange(invoice.Items);
 
@@ -941,6 +975,9 @@ namespace AutoStock.Services.Services
                 Plate = draft.Plate,
                 ChassisNumber = draft.ChassisNumber,
                 Mileage = draft.Mileage,
+                VehicleBrandName = draft.VehicleBrandName,
+                VehicleModelName = draft.VehicleModelName,
+                VehicleModelYear = draft.VehicleModelYear,
 
                 Items = draft.Items.Select(x => new CreateInvoiceItemDto
                 {
@@ -995,6 +1032,153 @@ namespace AutoStock.Services.Services
                 invoice.GrandTotal,
                 ItemCount = invoice.Items?.Count ?? 0
             };
+        }
+        private async Task<ServiceResult<bool>> UpdateCustomerCardIfRequestedAsync(
+    Invoice invoice,
+    UpdateInvoiceDto request,
+    int workshopId)
+        {
+            if (!request.UpdateCustomerCard)
+                return ServiceResult<bool>.Success(true);
+
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(x =>
+                    x.Id == invoice.CustomerId &&
+                    x.WorkshopId == workshopId);
+
+            if (customer is null)
+                return ServiceResult<bool>.Fail("Ana müşteri kartı bulunamadı.");
+
+            var customerType = ResolveInvoiceCustomerType(
+                request.CustomerType,
+                request);
+
+            if (customerType is null)
+                return ServiceResult<bool>.Fail("Müşteri tipi hatalı.");
+
+            var customerTitle = NormalizeNullable(request.CustomerTitle);
+
+            if (!string.IsNullOrWhiteSpace(customerTitle))
+                customer.FullName = customerTitle;
+
+            customer.Address = NormalizeNullable(request.CustomerAddress);
+            customer.Type = customerType.Value;
+
+            if (customerType.Value == CustomerType.Individual)
+            {
+                customer.CompanyName = null;
+                customer.NationalIdentityNumber = NormalizeNullable(request.CustomerTckn);
+                customer.TaxOffice = null;
+                customer.TaxNumber = null;
+            }
+            else if (customerType.Value == CustomerType.SoleProprietorship)
+            {
+                customer.TaxOffice = NormalizeNullable(request.CustomerTaxOffice);
+                customer.TaxNumber = NormalizeNullable(request.CustomerTaxNumber);
+                customer.NationalIdentityNumber = null;
+            }
+            else if (customerType.Value == CustomerType.Corporate)
+            {
+                customer.TaxOffice = NormalizeNullable(request.CustomerTaxOffice);
+                customer.TaxNumber = NormalizeNullable(request.CustomerTaxNumber);
+                customer.NationalIdentityNumber = null;
+            }
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        private async Task<ServiceResult<bool>> UpdateVehicleCardIfRequestedAsync(
+            Invoice invoice,
+            UpdateInvoiceDto request,
+            int workshopId)
+        {
+            if (!request.UpdateVehicleCard)
+                return ServiceResult<bool>.Success(true);
+
+            if (!invoice.ServiceRecordId.HasValue)
+            {
+                return ServiceResult<bool>.Fail(
+                    "Ana araç kartını güncellemek için faturanın servis kaydıyla bağlantılı olması gerekir.");
+            }
+
+            var serviceRecord = await _context.ServiceRecords
+                .FirstOrDefaultAsync(x =>
+                    x.Id == invoice.ServiceRecordId.Value &&
+                    x.WorkshopId == workshopId);
+
+            if (serviceRecord is null)
+                return ServiceResult<bool>.Fail("Servis kaydı bulunamadı.");
+
+            var vehicle = await _context.Vehicles
+                .FirstOrDefaultAsync(x =>
+                    x.Id == serviceRecord.VehicleId &&
+                    x.WorkshopId == workshopId);
+
+            if (vehicle is null)
+                return ServiceResult<bool>.Fail("Ana araç kartı bulunamadı.");
+
+            var plate = NormalizePlate(request.Plate);
+
+            if (!string.IsNullOrWhiteSpace(plate))
+            {
+                vehicle.Plate = plate;
+                serviceRecord.VehiclePlateSnapshot = plate;
+            }
+
+            vehicle.ChassisNumber = NormalizeNullable(request.ChassisNumber);
+
+            serviceRecord.MileageSnapshot = request.Mileage;
+            invoice.Mileage = request.Mileage;
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        private static CustomerType? ResolveInvoiceCustomerType(
+            string? customerType,
+            UpdateInvoiceDto request)
+        {
+            var normalized = customerType?.Trim().ToLowerInvariant();
+
+            return normalized switch
+            {
+                "individual" => CustomerType.Individual,
+                "bireysel" => CustomerType.Individual,
+
+                "sole" => CustomerType.SoleProprietorship,
+                "soleproprietorship" => CustomerType.SoleProprietorship,
+                "sahis" => CustomerType.SoleProprietorship,
+                "şahıs" => CustomerType.SoleProprietorship,
+
+                "corporate" => CustomerType.Corporate,
+                "kurumsal" => CustomerType.Corporate,
+
+                _ when !string.IsNullOrWhiteSpace(request.CustomerTckn)
+                    => CustomerType.Individual,
+
+                _ when !string.IsNullOrWhiteSpace(request.CustomerTaxNumber) ||
+                       !string.IsNullOrWhiteSpace(request.CustomerTaxOffice)
+                    => CustomerType.SoleProprietorship,
+
+                _ => CustomerType.Individual
+            };
+        }
+
+        private static string? NormalizeNullable(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? null
+                : value.Trim();
+        }
+
+        private static string? NormalizePlate(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            return value
+                .Trim()
+                .Replace(" ", "")
+                .ToUpperInvariant();
         }
     }
 }

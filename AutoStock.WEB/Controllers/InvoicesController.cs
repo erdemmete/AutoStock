@@ -1,4 +1,5 @@
 ﻿using AutoStock.Services.Dtos.Invoices;
+using AutoStock.Services.Dtos.Vehicles;
 using AutoStock.WEB.Models.Invoices;
 using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -158,5 +159,27 @@ public class InvoicesController : BaseController
             return BadRequest(result);
 
         return Ok(result);
+    }
+
+    [HttpGet("Invoices/VehicleBrands")]
+    public async Task<IActionResult> GetVehicleBrands()
+    {
+        var result = await _invoiceApiService.GetVehicleBrandsAsync();
+
+        if (result.IsFailure)
+            return BadRequest(result);
+
+        return Ok(result.Data ?? new List<VehicleBrandDto>());
+    }
+
+    [HttpGet("Invoices/VehicleModels")]
+    public async Task<IActionResult> GetVehicleModels([FromQuery] int brandId)
+    {
+        var result = await _invoiceApiService.GetVehicleModelsAsync(brandId);
+
+        if (result.IsFailure)
+            return BadRequest(result);
+
+        return Ok(result.Data ?? new List<VehicleModelDto>());
     }
 }

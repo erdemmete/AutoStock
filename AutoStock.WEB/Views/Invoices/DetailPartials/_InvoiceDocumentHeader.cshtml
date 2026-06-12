@@ -11,6 +11,20 @@
             {
                 <span>🔧 Servis Kaydı: #@Model.ServiceRecordId</span>
             }
+
+            @{
+                var documentVehicleName = string.Join(" ", new[]
+                {
+                    Model.VehicleBrandName,
+                    Model.VehicleModelName,
+                    Model.VehicleModelYear?.ToString()
+                }.Where(x => !string.IsNullOrWhiteSpace(x)));
+            }
+
+            @if (!string.IsNullOrWhiteSpace(documentVehicleName))
+            {
+                <span id="invoiceHeadVehicleName">🚘 @documentVehicleName</span>
+            }
         </div>
     </div>
 

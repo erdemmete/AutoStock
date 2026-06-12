@@ -30,6 +30,16 @@ public class InvoiceDetailViewModel
 
     public string? ChassisNumber { get; set; }
 
+    public string? CustomerAddressLine { get; set; }
+    public string? CustomerAddressCity { get; set; }
+    public string? CustomerAddressDistrict { get; set; }
+
+    public int? VehicleBrandId { get; set; }
+    public int? VehicleModelId { get; set; }
+    public string? VehicleBrandName { get; set; }
+    public string? VehicleModelName { get; set; }
+    public int? VehicleModelYear { get; set; }
+
     public int? Mileage { get; set; }
 
     public decimal Subtotal { get; set; }
@@ -70,6 +80,17 @@ public class InvoiceDetailItemViewModel
 
     public decimal LineTotal { get; set; }
     public int? StockItemId { get; set; }
+    public string? Plate { get; set; }
+
+    public string? ChassisNumber { get; set; }
+
+    public string? VehicleBrandName { get; set; }
+
+    public string? VehicleModelName { get; set; }
+
+    public int? VehicleModelYear { get; set; }
+
+    public int? Mileage { get; set; }
 
     public List<InvoiceServiceRequestItemOptionViewModel> ServiceRequestItems { get; set; } = new();
 }
