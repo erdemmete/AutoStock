@@ -1,4 +1,5 @@
-﻿using AutoStock.Repositories;
+using AutoStock.Repositories;
+using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Enums;
 using AutoStock.Repositories.Interfaces;
 using AutoStock.Services.Dtos.AuditLogs;
@@ -6,14 +7,13 @@ using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Customers;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Net;
 
 namespace AutoStock.Services.Services
 {
     public class CustomerService(
-    ICustomerRepository customerRepository,
-    AppDbContext context,
-    IAuditLogService auditLogService) : ICustomerService
+        ICustomerRepository customerRepository,
+        AppDbContext context,
+        IAuditLogService auditLogService) : ICustomerService
     {
         public async Task<List<CustomerSearchDto>> SearchAsync(string query, int workshopId)
         {
@@ -91,8 +91,8 @@ namespace AutoStock.Services.Services
             query.Normalize();
 
             var customersQuery = context.Customers
-                    .AsNoTracking()
-                    .Where(x => x.WorkshopId == workshopId && x.IsActive);
+                .AsNoTracking()
+                .Where(x => x.WorkshopId == workshopId && x.IsActive);
 
             if (query.Type.HasValue)
             {
@@ -146,6 +146,7 @@ namespace AutoStock.Services.Services
 
             return ServiceResult<PagedResult<CustomerListItemDto>>.Success(result);
         }
+
         public async Task<ServiceResult<int>> CreateAsync(CreateCustomerDto request, int workshopId)
         {
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -199,19 +200,155 @@ namespace AutoStock.Services.Services
             var customer = await context.Customers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x =>
-                         x.Id == id &&
-                         x.WorkshopId == workshopId &&
-                         x.IsActive);
+                    x.Id == id &&
+                    x.WorkshopId == workshopId &&
+                    x.IsActive);
 
             if (customer == null)
                 return ServiceResult<CustomerDetailDto>.Fail("Müşteri bulunamadı.");
+
+            var displayName = GetCustomerDisplayName(customer);
+
+            var balance = await context.CurrentAccountTransactions
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == id)
+                .Select(x => (decimal?)(x.Debit - x.Credit))
+                .SumAsync() ?? 0m;
+
+            var vehicleCount = await context.Vehicles
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == id &&
+                    x.IsActive);
+
+            var serviceRecordCount = await context.ServiceRecords
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == id);
+
+            var invoiceCount = await context.Invoices
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == id);
+
+            var lastServiceDate = await context.ServiceRecords
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == id)
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(x => (DateTime?)x.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            var vehicles = await context.Vehicles
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == id &&
+                    x.IsActive)
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new CustomerVehicleSummaryDto
+                {
+                    Id = x.Id,
+                    Plate = x.Plate,
+                    BrandName = x.VehicleBrand != null ? x.VehicleBrand.Name : null,
+                    ModelName = x.VehicleModel != null ? x.VehicleModel.Name : null,
+                    ModelYear = x.ModelYear,
+                    Mileage = x.Mileage,
+                    ChassisNumber = x.ChassisNumber,
+                    IsActive = x.IsActive,
+                    ServiceRecordCount = context.ServiceRecords.Count(sr =>
+                        sr.WorkshopId == workshopId &&
+                        sr.VehicleId == x.Id),
+                    LastServiceDate = context.ServiceRecords
+                        .Where(sr =>
+                            sr.WorkshopId == workshopId &&
+                            sr.VehicleId == x.Id)
+                        .OrderByDescending(sr => sr.CreatedAt)
+                        .Select(sr => (DateTime?)sr.CreatedAt)
+                        .FirstOrDefault()
+                })
+                .Take(8)
+                .ToListAsync();
+
+            var recentServiceRecords = await context.ServiceRecords
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == id)
+                .OrderByDescending(x => x.CreatedAt)
+                .ThenByDescending(x => x.Id)
+                .Select(x => new CustomerServiceRecordSummaryDto
+                {
+                    Id = x.Id,
+                    RecordNumber = x.RecordNumber,
+                    StatusText = x.Status.ToString(),
+                    VehiclePlate = x.VehiclePlateSnapshot,
+                    VehicleBrandName = x.VehicleBrandNameSnapshot,
+                    VehicleModelName = x.VehicleModelNameSnapshot,
+                    ComplaintTitle = !string.IsNullOrWhiteSpace(x.CustomerComplaint)
+                        ? x.CustomerComplaint
+                        : x.RequestItems
+                            .OrderBy(ri => ri.Id)
+                            .Select(ri => ri.Title)
+                            .FirstOrDefault(),
+                    TotalAmount = x.TotalAmount,
+                    CreatedAt = x.CreatedAt,
+                    CompletedAt = x.CompletedAt
+                })
+                .Take(6)
+                .ToListAsync();
+
+            var recentInvoices = await context.Invoices
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == id)
+                .OrderByDescending(x => x.InvoiceDate)
+                .ThenByDescending(x => x.Id)
+                .Select(x => new CustomerInvoiceSummaryDto
+                {
+                    Id = x.Id,
+                    InvoiceNumber = x.InvoiceNumber,
+                    StatusText = x.Status.ToString(),
+                    Plate = x.Plate,
+                    GrandTotal = x.GrandTotal,
+                    InvoiceDate = x.InvoiceDate
+                })
+                .Take(6)
+                .ToListAsync();
+
+            var recentCurrentAccountMovements = await context.CurrentAccountTransactions
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == id)
+                .OrderByDescending(x => x.TransactionDate)
+                .ThenByDescending(x => x.Id)
+                .Select(x => new CustomerCurrentAccountSummaryDto
+                {
+                    Id = x.Id,
+                    TypeText = x.Type.ToString(),
+                    Debit = x.Debit,
+                    Credit = x.Credit,
+                    TransactionDate = x.TransactionDate,
+                    Description = x.Description,
+                    DocumentNumber = x.DocumentNumber
+                })
+                .Take(6)
+                .ToListAsync();
 
             var dto = new CustomerDetailDto
             {
                 Id = customer.Id,
                 WorkshopId = customer.WorkshopId,
-
                 Type = customer.Type,
+                DisplayName = displayName,
 
                 PhoneNumber = customer.PhoneNumber,
 
@@ -229,22 +366,35 @@ namespace AutoStock.Services.Services
                 AddressCity = customer.AddressCity,
                 AddressDistrict = customer.AddressDistrict,
 
-                IsActive = customer.IsActive
+                IsActive = customer.IsActive,
+                CreatedAt = customer.CreatedAt,
+
+                Balance = balance,
+                VehicleCount = vehicleCount,
+                ServiceRecordCount = serviceRecordCount,
+                InvoiceCount = invoiceCount,
+                LastServiceDate = lastServiceDate,
+
+                Vehicles = vehicles,
+                RecentServiceRecords = recentServiceRecords,
+                RecentInvoices = recentInvoices,
+                RecentCurrentAccountMovements = recentCurrentAccountMovements
             };
 
             return ServiceResult<CustomerDetailDto>.Success(dto);
         }
+
         public async Task<ServiceResult<int>> UpdateAsync(UpdateCustomerDto request, int workshopId)
         {
             var customer = await context.Customers
                 .FirstOrDefaultAsync(x =>
-                x.Id == request.Id &&
-                x.WorkshopId == workshopId &&
-                x.IsActive);
+                    x.Id == request.Id &&
+                    x.WorkshopId == workshopId &&
+                    x.IsActive);
 
             if (customer == null)
                 return ServiceResult<int>.Fail("Müşteri bulunamadı.");
-            
+
             var oldValues = new
             {
                 customer.Type,
