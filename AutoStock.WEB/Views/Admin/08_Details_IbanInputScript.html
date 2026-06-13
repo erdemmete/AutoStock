@@ -1,0 +1,12 @@
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".iban-input").forEach(input => {
+            input.addEventListener("input", function () {
+                this.value = this.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 34);
+            });
+        });
+    });
+</script>

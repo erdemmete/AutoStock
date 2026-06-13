@@ -1,8 +1,10 @@
-﻿namespace AutoStock.WEB.Models.Invoices;
+namespace AutoStock.WEB.Models.Invoices;
 
 public class InvoiceDetailViewModel
 {
     public int Id { get; set; }
+
+    public int WorkshopId { get; set; }
 
     public int CustomerId { get; set; }
 
@@ -16,6 +18,22 @@ public class InvoiceDetailViewModel
 
     public DateTime InvoiceDate { get; set; }
 
+    public string? WorkshopDisplayName { get; set; }
+    public string? WorkshopLegalTitle { get; set; }
+    public string? WorkshopTaxOffice { get; set; }
+    public string? WorkshopTaxNumber { get; set; }
+    public string? WorkshopTradeRegistryNumber { get; set; }
+    public string? WorkshopMersisNumber { get; set; }
+    public string? WorkshopEmail { get; set; }
+    public string? WorkshopPhoneNumber { get; set; }
+    public string? WorkshopFaxNumber { get; set; }
+    public string? WorkshopWebsite { get; set; }
+    public string? WorkshopAddressLine { get; set; }
+    public string? WorkshopCity { get; set; }
+    public string? WorkshopDistrict { get; set; }
+    public string? WorkshopPostalCode { get; set; }
+    public string? WorkshopCountry { get; set; }
+
     public string CustomerTitle { get; set; } = null!;
 
     public string? CustomerTaxOffice { get; set; }
@@ -25,22 +43,25 @@ public class InvoiceDetailViewModel
     public string? CustomerTckn { get; set; }
 
     public string? CustomerAddress { get; set; }
+    public string? CustomerAddressLine { get; set; }
+    public string? CustomerAddressCity { get; set; }
+    public string? CustomerAddressDistrict { get; set; }
 
     public string? Plate { get; set; }
 
     public string? ChassisNumber { get; set; }
 
-    public string? CustomerAddressLine { get; set; }
-    public string? CustomerAddressCity { get; set; }
-    public string? CustomerAddressDistrict { get; set; }
+    public int? Mileage { get; set; }
 
     public int? VehicleBrandId { get; set; }
-    public int? VehicleModelId { get; set; }
-    public string? VehicleBrandName { get; set; }
-    public string? VehicleModelName { get; set; }
-    public int? VehicleModelYear { get; set; }
 
-    public int? Mileage { get; set; }
+    public int? VehicleModelId { get; set; }
+
+    public string? VehicleBrandName { get; set; }
+
+    public string? VehicleModelName { get; set; }
+
+    public int? VehicleModelYear { get; set; }
 
     public decimal Subtotal { get; set; }
 
@@ -52,9 +73,20 @@ public class InvoiceDetailViewModel
 
     public string? Notes { get; set; }
 
+    public decimal CustomerBalance { get; set; }
+
     public List<InvoiceDetailItemViewModel> Items { get; set; } = new();
     public List<InvoiceServiceRequestItemOptionViewModel> ServiceRequestItems { get; set; } = new();
+    public List<InvoiceBankAccountViewModel> BankAccounts { get; set; } = new();
 }
+
+public class InvoiceServiceRequestItemOptionViewModel
+{
+    public int Id { get; set; }
+
+    public string Title { get; set; } = string.Empty;
+}
+
 
 public class InvoiceDetailItemViewModel
 {
@@ -79,25 +111,6 @@ public class InvoiceDetailItemViewModel
     public decimal VatAmount { get; set; }
 
     public decimal LineTotal { get; set; }
+
     public int? StockItemId { get; set; }
-    public string? Plate { get; set; }
-
-    public string? ChassisNumber { get; set; }
-
-    public string? VehicleBrandName { get; set; }
-
-    public string? VehicleModelName { get; set; }
-
-    public int? VehicleModelYear { get; set; }
-
-    public int? Mileage { get; set; }
-
-    public List<InvoiceServiceRequestItemOptionViewModel> ServiceRequestItems { get; set; } = new();
-}
-
-public class InvoiceServiceRequestItemOptionViewModel
-{
-    public int Id { get; set; }
-
-    public string Title { get; set; } = null!;
 }

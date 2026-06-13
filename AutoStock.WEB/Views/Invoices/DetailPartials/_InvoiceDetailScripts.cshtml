@@ -576,6 +576,177 @@
             };
         }
 
+                function calculateUndiscountedGrandTotal() {
+            let total = 0;
+
+            invoiceState.items.forEach(item => {
+                const quantity = toNumber(item.quantity);
+                const unitPrice = toNumber(item.unitPrice);
+                const vatRate = toNumber(item.vatRate);
+
+                const gross = quantity * unitPrice;
+                const vat = gross * vatRate / 100;
+
+                total += gross + vat;
+            });
+
+            return total;
+        }
+
+        function calculateTargetDiscountRate(targetTotal, undiscountedGrandTotal) {
+            if (undiscountedGrandTotal <= 0) {
+                return null;
+            }
+
+            if (targetTotal <= 0) {
+                return null;
+            }
+
+            if (targetTotal >= undiscountedGrandTotal) {
+                return null;
+            }
+
+            const discountRate = (1 - (targetTotal / undiscountedGrandTotal)) * 100;
+
+            return Math.min(
+                100,
+                Math.max(0, Number(discountRate.toFixed(6)))
+            );
+        }
+
+        function updateTargetTotalPreview() {
+            const input = document.getElementById("targetTotalInput");
+            const discountText = document.getElementById("targetDiscountRateText");
+            const help = document.getElementById("targetTotalHelp");
+
+            if (!input || !discountText || !help) return;
+
+            const targetTotal = toNumber(input.value);
+            const undiscountedGrandTotal = calculateUndiscountedGrandTotal();
+            const discountRate = calculateTargetDiscountRate(
+                targetTotal,
+                undiscountedGrandTotal
+            );
+
+            if (!targetTotal) {
+                discountText.textContent = "-";
+                help.textContent = "Bu işlem servis kaydındaki işlem tutarlarını değiştirmez. Sadece fatura kalemlerine iskonto uygular.";
+                return;
+            }
+
+            if (discountRate === null) {
+                discountText.textContent = "-";
+                help.textContent = "Hedef tutar, iskontosuz genel toplamdan düşük olmalıdır.";
+                return;
+            }
+
+            discountText.textContent = `%${discountRate.toLocaleString("tr-TR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+
+            help.textContent =
+                `Bu işlem tüm fatura kalemlerine yaklaşık %${discountRate.toLocaleString("tr-TR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })} iskonto uygular.`;
+        }
+
+        function openTargetTotalModal() {
+            if (invoiceStatus !== 1) return;
+
+            const totals = calculateTotals();
+            const undiscountedGrandTotal = calculateUndiscountedGrandTotal();
+
+            const undiscountedText = document.getElementById("targetUndiscountedTotalText");
+            const currentText = document.getElementById("targetCurrentTotalText");
+            const discountText = document.getElementById("targetDiscountRateText");
+            const input = document.getElementById("targetTotalInput");
+            const help = document.getElementById("targetTotalHelp");
+
+            if (undiscountedText) {
+                undiscountedText.textContent = formatMoney(undiscountedGrandTotal);
+            }
+
+            if (currentText) {
+                currentText.textContent = formatMoney(totals.grandTotal);
+            }
+
+            if (discountText) {
+                discountText.textContent = "-";
+            }
+
+            if (input) {
+                input.value = "";
+            }
+
+            if (help) {
+                help.textContent = "Bu işlem servis kaydındaki işlem tutarlarını değiştirmez. Sadece fatura kalemlerine iskonto uygular.";
+            }
+
+            openBackdrop();
+            showInvoiceElement("targetTotalModal");
+
+            setTimeout(() => {
+                input?.focus();
+            }, 50);
+        }
+
+        async function applyTargetTotalToInvoice() {
+            const input = document.getElementById("targetTotalInput");
+
+            if (!input) return;
+
+            const targetTotal = toNumber(input.value);
+            const undiscountedGrandTotal = calculateUndiscountedGrandTotal();
+
+            if (targetTotal <= 0) {
+                alert("Geçerli bir hedef tutar girin.");
+                input.focus();
+                return;
+            }
+
+            if (undiscountedGrandTotal <= 0) {
+                alert("Fatura toplamı hesaplanamadı.");
+                return;
+            }
+
+            if (targetTotal >= undiscountedGrandTotal) {
+                alert("Hedef tutar, iskontosuz genel toplamdan düşük olmalıdır.");
+                input.focus();
+                return;
+            }
+
+            const discountRate = calculateTargetDiscountRate(
+                targetTotal,
+                undiscountedGrandTotal
+            );
+
+            if (discountRate === null) {
+                alert("İskonto oranı hesaplanamadı.");
+                return;
+            }
+
+            const confirmed = confirm(
+                `Fatura kalemlerine yaklaşık %${discountRate.toLocaleString("tr-TR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })} iskonto uygulanacak.\n\nDevam etmek istiyor musun?`
+            );
+
+            if (!confirmed) return;
+
+            invoiceState.items = invoiceState.items.map(item => ({
+                ...item,
+                discountRate: discountRate
+            }));
+
+            await persistInvoice();
+
+            renderItems();
+            closeAllInvoiceModals();
+        }
+
         function renderItems() {
             const body = document.getElementById("invoiceItemsBody");
 
@@ -1616,6 +1787,8 @@
         window.saveVehicleModal = saveVehicleModal;
         window.saveItemModal = saveItemModal;
         window.deleteCurrentItem = deleteCurrentItem;
+                window.openTargetTotalModal = openTargetTotalModal;
+        window.applyTargetTotalToInvoice = applyTargetTotalToInvoice;
 
         window.issueInvoice = issueInvoice;
         window.cancelInvoice = cancelInvoice;
@@ -1644,6 +1817,7 @@
                 }
             });
 
+                document.getElementById("targetTotalInput")?.addEventListener("input", updateTargetTotalPreview);
             document.addEventListener("click", function (event) {
                 const itemModal = document.getElementById("itemModal");
                 const results = document.getElementById("itemStockSearchResults");

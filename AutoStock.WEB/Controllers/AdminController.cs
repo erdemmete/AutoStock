@@ -1,4 +1,4 @@
-﻿using AutoStock.WEB.Models.Admin.Workshops;
+using AutoStock.WEB.Models.Admin.Workshops;
 using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -361,6 +361,78 @@ namespace AutoStock.WEB.Controllers
             return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
         }
 
+
+        [HttpPost("Admin/Workshops/AddBankAccount")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddWorkshopBankAccount(CreateAdminWorkshopBankAccountViewModel model)
+        {
+            if (!IsAdmin())
+                return RedirectToLogin();
+
+            if (model.WorkshopId <= 0)
+            {
+                ShowError("Geçersiz servis bilgisi.");
+                return RedirectToAction(nameof(Workshops));
+            }
+
+            var result = await _adminWorkshopApiService.CreateBankAccountAsync(model);
+
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId }),
+                onFailure: () => RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId }),
+                defaultErrorMessage: "Banka hesabı eklenirken hata oluştu.",
+                successMessage: "Banka hesabı eklendi.");
+        }
+
+        [HttpPost("Admin/Workshops/UpdateBankAccount")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateWorkshopBankAccount(UpdateAdminWorkshopBankAccountViewModel model)
+        {
+            if (!IsAdmin())
+                return RedirectToLogin();
+
+            if (model.WorkshopId <= 0 || model.BankAccountId <= 0)
+            {
+                ShowError("Geçersiz banka hesabı bilgisi.");
+                return RedirectToAction(nameof(Workshops));
+            }
+
+            var result = await _adminWorkshopApiService.UpdateBankAccountAsync(model);
+
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId }),
+                onFailure: () => RedirectToAction(nameof(WorkshopDetails), new { id = model.WorkshopId }),
+                defaultErrorMessage: "Banka hesabı güncellenirken hata oluştu.",
+                successMessage: "Banka hesabı güncellendi.");
+        }
+
+        [HttpPost("Admin/Workshops/DeleteBankAccount")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteWorkshopBankAccount(int workshopId, int bankAccountId)
+        {
+            if (!IsAdmin())
+                return RedirectToLogin();
+
+            if (workshopId <= 0 || bankAccountId <= 0)
+            {
+                ShowError("Geçersiz banka hesabı bilgisi.");
+                return RedirectToAction(nameof(Workshops));
+            }
+
+            var result = await _adminWorkshopApiService.DeleteBankAccountAsync(
+                workshopId,
+                bankAccountId);
+
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(WorkshopDetails), new { id = workshopId }),
+                onFailure: () => RedirectToAction(nameof(WorkshopDetails), new { id = workshopId }),
+                defaultErrorMessage: "Banka hesabı silinirken hata oluştu.",
+                successMessage: "Banka hesabı silindi.");
+        }
+
         [HttpGet("Admin/Workshops/{workshopId:int}/Users/SuggestCredentials")]
         public async Task<IActionResult> SuggestWorkshopUserCredentials(int workshopId, string fullName)
         {
@@ -393,6 +465,9 @@ namespace AutoStock.WEB.Controllers
                 password = result.Data.Password
             });
         }
+
+        
+
 
         private bool IsAdmin()
         {

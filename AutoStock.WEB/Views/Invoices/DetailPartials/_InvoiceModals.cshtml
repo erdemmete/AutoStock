@@ -11,10 +11,15 @@
                 <p>Faturadaki alıcı bilgilerini güncelle. Gerekirse ana müşteri kartına da işle.</p>
             </div>
 
-            <button type="button" onclick="closeAllInvoiceModals()" aria-label="Kapat">×</button>
+            <button type="button"
+                    onclick="closeAllInvoiceModals()"
+                    aria-label="Kapat">
+                ×
+            </button>
         </div>
 
         <div class="invoice-modal-scroll-body">
+
             <div class="invoice-edit-type-grid customer-type-switch-modal">
                 <button type="button"
                         class="invoice-edit-type-card"
@@ -92,6 +97,7 @@
                         <option value="">Önce il seçiniz</option>
                     </select>
                 </label>
+
             </div>
 
             <div class="invoice-edit-section-title with-space">
@@ -100,6 +106,7 @@
             </div>
 
             <div class="modal-grid invoice-edit-grid">
+
                 <label>
                     <span>İl</span>
                     <select id="customerAddressCityInput">
@@ -120,16 +127,23 @@
                               rows="4"
                               placeholder="Mahalle, sokak, bina ve kapı no detaylarını giriniz..."></textarea>
                 </label>
+
             </div>
 
             <label class="invoice-sync-check-card">
                 <input type="checkbox" id="updateCustomerCardInput" />
+
                 <span class="invoice-sync-check-box">✓</span>
+
                 <span>
                     <strong>Ana müşteri kartını da güncelle</strong>
-                    <small>İşaretlenirse bu bilgiler müşteri kartına da kaydedilir. İşaretlenmezse sadece fatura üzerindeki alıcı bilgisi değişir.</small>
+                    <small>
+                        İşaretlenirse bu bilgiler müşteri kartına da kaydedilir.
+                        İşaretlenmezse sadece fatura üzerindeki alıcı bilgisi değişir.
+                    </small>
                 </span>
             </label>
+
         </div>
 
         <div class="modal-actions invoice-edit-actions invoice-sticky-actions">
@@ -158,10 +172,15 @@
                 <p>Faturadaki araç bilgisini güncelle. Gerekirse ana araç kartına da işle.</p>
             </div>
 
-            <button type="button" onclick="closeAllInvoiceModals()" aria-label="Kapat">×</button>
+            <button type="button"
+                    onclick="closeAllInvoiceModals()"
+                    aria-label="Kapat">
+                ×
+            </button>
         </div>
 
         <div class="invoice-modal-scroll-body">
+
             <div class="invoice-edit-section-title">
                 <span>▣</span>
                 <h4>Araç Bilgileri</h4>
@@ -221,12 +240,18 @@
 
             <label class="invoice-sync-check-card">
                 <input type="checkbox" id="updateVehicleCardInput" />
+
                 <span class="invoice-sync-check-box">✓</span>
+
                 <span>
                     <strong>Ana araç kartını da güncelle</strong>
-                    <small>İşaretlenirse plaka, marka, model, model yılı ve şasi bilgisi araç kartına da kaydedilir. Kilometre fatura/servis bilgisi olarak kalır.</small>
+                    <small>
+                        İşaretlenirse plaka, marka, model, model yılı ve şasi bilgisi araç kartına da kaydedilir.
+                        Kilometre fatura / servis bilgisi olarak kalır.
+                    </small>
                 </span>
             </label>
+
         </div>
 
         <div class="modal-actions invoice-edit-actions invoice-sticky-actions">
@@ -247,15 +272,24 @@
 </div>
 
 <div class="invoice-modal" id="itemModal" hidden>
-    <div class="modal-card">
-        <div class="modal-header">
-            <h3 id="itemModalTitle">Fatura Kalemi</h3>
-            <button type="button" onclick="closeAllInvoiceModals()">×</button>
+    <div class="modal-card invoice-item-edit-modal">
+
+        <div class="modal-header invoice-modal-titlebar">
+            <div>
+                <h3 id="itemModalTitle">Fatura Kalemi</h3>
+                <p>Fatura kalemini düzenle veya yeni kalem ekle.</p>
+            </div>
+
+            <button type="button"
+                    onclick="closeAllInvoiceModals()"
+                    aria-label="Kapat">
+                ×
+            </button>
         </div>
 
         <input type="hidden" id="itemEditIndex" value="-1" />
 
-        <div class="modal-grid">
+        <div class="modal-grid invoice-edit-grid">
 
             <label>
                 <span>Tür</span>
@@ -276,7 +310,8 @@
 
                     <input type="hidden" id="itemStockItemIdInput" />
 
-                    <div class="invoice-stock-search-results" id="itemStockSearchResults"></div>
+                    <div class="invoice-stock-search-results"
+                         id="itemStockSearchResults"></div>
                 </div>
 
                 <small class="modal-help" id="itemStockHelp" hidden>
@@ -301,34 +336,48 @@
                     </select>
 
                     <small class="modal-help">
-                        Parça ve işçilik kalemleri servis kaydına işlem olarak eklenecek, SKF’de görünecek ve faturaya otomatik yansıyacak.
+                        Parça ve işçilik kalemleri servis kaydına işlem olarak eklenecek,
+                        SKF’de görünecek ve faturaya otomatik yansıyacak.
                     </small>
                 </label>
             }
 
             <label>
                 <span>Miktar</span>
-                <input type="number" id="itemQuantityInput" min="0" step="0.01" />
+                <input type="number"
+                       id="itemQuantityInput"
+                       min="0"
+                       step="0.01" />
             </label>
 
             <label>
                 <span>Birim</span>
-                <input type="text" id="itemUnitInput" />
+                <input type="text"
+                       id="itemUnitInput" />
             </label>
 
             <label>
                 <span>Birim Fiyat</span>
-                <input type="number" id="itemUnitPriceInput" min="0" step="0.01" />
+                <input type="number"
+                       id="itemUnitPriceInput"
+                       min="0"
+                       step="0.01" />
             </label>
 
             <label>
                 <span>İskonto %</span>
-                <input type="number" id="itemDiscountRateInput" min="0" step="0.01" />
+                <input type="number"
+                       id="itemDiscountRateInput"
+                       min="0"
+                       step="0.01" />
             </label>
 
             <label>
                 <span>KDV %</span>
-                <input type="number" id="itemVatRateInput" min="0" step="0.01" />
+                <input type="number"
+                       id="itemVatRateInput"
+                       min="0"
+                       step="0.01" />
             </label>
 
         </div>
@@ -356,5 +405,83 @@
                 </button>
             </div>
         </div>
+
+    </div>
+</div>
+
+<div class="invoice-modal" id="targetTotalModal" hidden>
+    <div class="modal-card invoice-target-modal-v2">
+
+        <button type="button"
+                class="invoice-target-close"
+                onclick="closeAllInvoiceModals()"
+                aria-label="Kapat">
+            ×
+        </button>
+
+        <div class="invoice-target-hero">
+            <div class="invoice-target-icon">↘</div>
+
+            <div>
+                <h3>Hedef Tutara Uyarla</h3>
+                <p>Genel toplamı hedef tutara indirmek için fatura kalemlerine otomatik iskonto uygular.</p>
+            </div>
+        </div>
+
+        <div class="invoice-target-alert">
+            <strong>Servis kaydı değişmez.</strong>
+            <span>Sadece bu faturadaki iskonto oranları güncellenir.</span>
+        </div>
+
+        <div class="invoice-target-stats">
+            <div class="invoice-target-stat">
+                <span>İskontosuz Toplam</span>
+                <strong id="targetUndiscountedTotalText">0,00 ₺</strong>
+            </div>
+
+            <div class="invoice-target-stat">
+                <span>Mevcut Toplam</span>
+                <strong id="targetCurrentTotalText">0,00 ₺</strong>
+            </div>
+
+            <div class="invoice-target-stat discount">
+                <span>Uygulanacak İskonto</span>
+                <strong id="targetDiscountRateText">-</strong>
+            </div>
+        </div>
+
+        <label class="invoice-target-input-card">
+            <span>Hedef Genel Toplam</span>
+
+            <div class="invoice-target-input-wrap">
+                <input id="targetTotalInput"
+                       type="number"
+                       step="0.01"
+                       min="0"
+                       placeholder="Örn: 12000"
+                       autocomplete="off" />
+
+                <b>₺</b>
+            </div>
+        </label>
+
+        <div class="invoice-target-result" id="targetTotalHelp">
+            Hedef tutarı girince uygulanacak iskonto oranı burada gösterilir.
+        </div>
+
+        <div class="invoice-target-actions">
+            <button type="button"
+                    class="invoice-target-cancel"
+                    onclick="closeAllInvoiceModals()">
+                Vazgeç
+            </button>
+
+            <button type="button"
+                    class="invoice-target-apply"
+                    onclick="applyTargetTotalToInvoice()">
+                Uygula ve Kaydet
+            </button>
+        </div>
+
     </div>
 </div>

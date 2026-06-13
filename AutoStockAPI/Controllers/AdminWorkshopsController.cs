@@ -143,5 +143,50 @@ namespace AutoStock.API.Controllers
 
             return StatusCode((int)result.StatusCode, result);
         }
+
+        [HttpGet("{workshopId:int}/bank-accounts")]
+        public async Task<IActionResult> GetBankAccounts(int workshopId)
+        {
+            var result = await _adminWorkshopService.GetBankAccountsAsync(workshopId);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
+        [HttpPost("{workshopId:int}/bank-accounts")]
+        public async Task<IActionResult> CreateBankAccount(
+            int workshopId,
+            CreateAdminWorkshopBankAccountRequestDto request)
+        {
+            var result = await _adminWorkshopService.CreateBankAccountAsync(
+                workshopId,
+                request);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
+        [HttpPut("{workshopId:int}/bank-accounts/{bankAccountId:int}")]
+        public async Task<IActionResult> UpdateBankAccount(
+            int workshopId,
+            int bankAccountId,
+            UpdateAdminWorkshopBankAccountRequestDto request)
+        {
+            var result = await _adminWorkshopService.UpdateBankAccountAsync(
+                workshopId,
+                bankAccountId,
+                request);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
+        [HttpDelete("{workshopId:int}/bank-accounts/{bankAccountId:int}")]
+        public async Task<IActionResult> DeleteBankAccount(int workshopId, int bankAccountId)
+        {
+            var result = await _adminWorkshopService.DeleteBankAccountAsync(
+                workshopId,
+                bankAccountId);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
     }
 }

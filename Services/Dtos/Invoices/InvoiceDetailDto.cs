@@ -1,4 +1,4 @@
-﻿namespace AutoStock.Services.Dtos.Invoices;
+namespace AutoStock.Services.Dtos.Invoices;
 
 public class InvoiceDetailDto
 {
@@ -18,6 +18,22 @@ public class InvoiceDetailDto
 
     public DateTime InvoiceDate { get; set; }
 
+    public string? WorkshopDisplayName { get; set; }
+    public string? WorkshopLegalTitle { get; set; }
+    public string? WorkshopTaxOffice { get; set; }
+    public string? WorkshopTaxNumber { get; set; }
+    public string? WorkshopTradeRegistryNumber { get; set; }
+    public string? WorkshopMersisNumber { get; set; }
+    public string? WorkshopEmail { get; set; }
+    public string? WorkshopPhoneNumber { get; set; }
+    public string? WorkshopFaxNumber { get; set; }
+    public string? WorkshopWebsite { get; set; }
+    public string? WorkshopAddressLine { get; set; }
+    public string? WorkshopCity { get; set; }
+    public string? WorkshopDistrict { get; set; }
+    public string? WorkshopPostalCode { get; set; }
+    public string? WorkshopCountry { get; set; }
+
     public string CustomerTitle { get; set; } = null!;
 
     public string? CustomerTaxOffice { get; set; }
@@ -27,12 +43,25 @@ public class InvoiceDetailDto
     public string? CustomerTckn { get; set; }
 
     public string? CustomerAddress { get; set; }
+    public string? CustomerAddressLine { get; set; }
+    public string? CustomerAddressCity { get; set; }
+    public string? CustomerAddressDistrict { get; set; }
 
     public string? Plate { get; set; }
 
     public string? ChassisNumber { get; set; }
 
     public int? Mileage { get; set; }
+
+    public int? VehicleBrandId { get; set; }
+
+    public int? VehicleModelId { get; set; }
+
+    public string? VehicleBrandName { get; set; }
+
+    public string? VehicleModelName { get; set; }
+
+    public int? VehicleModelYear { get; set; }
 
     public decimal Subtotal { get; set; }
 
@@ -43,14 +72,12 @@ public class InvoiceDetailDto
     public decimal GrandTotal { get; set; }
 
     public string? Notes { get; set; }
+
     public decimal CustomerBalance { get; set; }
-    public string? VehicleBrandName { get; set; }
-
-    public string? VehicleModelName { get; set; }
-
-    public int? VehicleModelYear { get; set; }
 
     public List<InvoiceDetailItemDto> Items { get; set; } = new();
+
+    public List<InvoiceBankAccountDto> BankAccounts { get; set; } = new();
 }
 
 public class InvoiceDetailItemDto

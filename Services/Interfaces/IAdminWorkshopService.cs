@@ -27,6 +27,21 @@ namespace AutoStock.Services.Interfaces
 
         Task<ServiceResult<SuggestedAdminWorkshopCredentialsDto>> SuggestUserCredentialsAsync(int workshopId, string fullName);
         Task<ServiceResult<PagedResult<AdminWorkshopListItemDto>>> GetPagedAsync(AdminWorkshopListQueryDto query);
+        Task<ServiceResult<List<AdminWorkshopBankAccountDto>>> GetBankAccountsAsync(int workshopId);
+
+        Task<ServiceResult<int>> CreateBankAccountAsync(
+            int workshopId,
+            CreateAdminWorkshopBankAccountRequestDto request);
+
+        Task<ServiceResult<bool>> UpdateBankAccountAsync(
+            int workshopId,
+            int bankAccountId,
+            UpdateAdminWorkshopBankAccountRequestDto request);
+
+        Task<ServiceResult<bool>> DeleteBankAccountAsync(
+            int workshopId,
+            int bankAccountId);
+
 
     }
 }

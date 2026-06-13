@@ -144,6 +144,34 @@ namespace AutoStock.Services.Services
                 return ServiceResult<AdminWorkshopDetailDto>.Fail(
                     "Servis bulunamadı.");
 
+            workshop.BankAccounts = await _context.WorkshopBankAccounts
+    .AsNoTracking()
+    .Where(x =>
+        x.WorkshopId == id &&
+        x.IsActive)
+    .OrderByDescending(x => x.IsDefault)
+    .ThenBy(x => x.SortOrder)
+    .ThenBy(x => x.BankName)
+    .Select(x => new AdminWorkshopBankAccountDto
+    {
+        Id = x.Id,
+        WorkshopId = x.WorkshopId,
+        BankName = x.BankName,
+        AccountHolder = x.AccountHolder,
+        Iban = x.Iban,
+        CurrencyCode = x.CurrencyCode,
+        BranchName = x.BranchName,
+        AccountNumber = x.AccountNumber,
+        Description = x.Description,
+        IsDefault = x.IsDefault,
+        ShowOnInvoices = x.ShowOnInvoices,
+        ShowOnServiceForms = x.ShowOnServiceForms,
+        IsActive = x.IsActive,
+        SortOrder = x.SortOrder
+    })
+    .ToListAsync();
+
+
             return ServiceResult<AdminWorkshopDetailDto>.Success(workshop);
         }
 
@@ -974,6 +1002,327 @@ namespace AutoStock.Services.Services
 
             return ServiceResult<PagedResult<AdminWorkshopListItemDto>>.Success(pagedResult);
         }
+
+        public async Task<ServiceResult<List<AdminWorkshopBankAccountDto>>> GetBankAccountsAsync(int workshopId)
+        {
+            var workshopExists = await _context.Workshops
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == workshopId);
+
+            if (!workshopExists)
+                return ServiceResult<List<AdminWorkshopBankAccountDto>>.Fail("Servis bulunamadı.");
+
+            var accounts = await _context.WorkshopBankAccounts
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.IsActive)
+                .OrderByDescending(x => x.IsDefault)
+                .ThenBy(x => x.SortOrder)
+                .ThenBy(x => x.BankName)
+                .Select(x => new AdminWorkshopBankAccountDto
+                {
+                    Id = x.Id,
+                    WorkshopId = x.WorkshopId,
+                    BankName = x.BankName,
+                    AccountHolder = x.AccountHolder,
+                    Iban = x.Iban,
+                    CurrencyCode = x.CurrencyCode,
+                    BranchName = x.BranchName,
+                    AccountNumber = x.AccountNumber,
+                    Description = x.Description,
+                    IsDefault = x.IsDefault,
+                    ShowOnInvoices = x.ShowOnInvoices,
+                    ShowOnServiceForms = x.ShowOnServiceForms,
+                    IsActive = x.IsActive,
+                    SortOrder = x.SortOrder
+                })
+                .ToListAsync();
+
+            return ServiceResult<List<AdminWorkshopBankAccountDto>>.Success(accounts);
+        }
+
+        public async Task<ServiceResult<int>> CreateBankAccountAsync(
+            int workshopId,
+            CreateAdminWorkshopBankAccountRequestDto request)
+        {
+            var workshopExists = await _context.Workshops
+                .AnyAsync(x => x.Id == workshopId);
+
+            if (!workshopExists)
+                return ServiceResult<int>.Fail("Servis bulunamadı.");
+
+            var validationResult = ValidateBankAccountRequest(
+                request.BankName,
+                request.AccountHolder,
+                request.Iban,
+                request.CurrencyCode);
+
+            if (validationResult.IsFailure)
+                return ServiceResult<int>.Fail(validationResult.ErrorMessages);
+
+            var normalizedIban = NormalizeIban(request.Iban);
+            var currencyCode = NormalizeCurrencyCode(request.CurrencyCode);
+
+            var duplicateExists = await _context.WorkshopBankAccounts
+                .AnyAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.IsActive &&
+                    x.Iban == normalizedIban);
+
+            if (duplicateExists)
+                return ServiceResult<int>.Fail("Bu IBAN zaten eklenmiş.");
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            if (request.IsDefault)
+            {
+                await ClearDefaultBankAccountsAsync(workshopId);
+            }
+
+            var account = new WorkshopBankAccount
+            {
+                WorkshopId = workshopId,
+                BankName = request.BankName.Trim(),
+                AccountHolder = request.AccountHolder.Trim(),
+                Iban = normalizedIban,
+                CurrencyCode = currencyCode,
+                BranchName = NormalizeNullable(request.BranchName),
+                AccountNumber = NormalizeNullable(request.AccountNumber),
+                Description = NormalizeNullable(request.Description),
+                IsDefault = request.IsDefault,
+                ShowOnInvoices = request.ShowOnInvoices,
+                ShowOnServiceForms = request.ShowOnServiceForms,
+                IsActive = true,
+                SortOrder = request.SortOrder,
+                CreatedAt = _dateTimeProvider.Now
+            };
+
+            _context.WorkshopBankAccounts.Add(account);
+
+            await _context.SaveChangesAsync();
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Create,
+                EntityType = AuditEntityType.Workshop,
+                EntityId = workshopId,
+                Description = $"Banka hesabı eklendi: {account.BankName} / {account.Iban}",
+                NewValues = GetBankAccountAuditValues(account)
+            });
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return ServiceResult<int>.Success(account.Id);
+        }
+
+        public async Task<ServiceResult<bool>> UpdateBankAccountAsync(
+            int workshopId,
+            int bankAccountId,
+            UpdateAdminWorkshopBankAccountRequestDto request)
+        {
+            var account = await _context.WorkshopBankAccounts
+                .FirstOrDefaultAsync(x =>
+                    x.Id == bankAccountId &&
+                    x.WorkshopId == workshopId &&
+                    x.IsActive);
+
+            if (account is null)
+                return ServiceResult<bool>.Fail("Banka hesabı bulunamadı.");
+
+            var validationResult = ValidateBankAccountRequest(
+                request.BankName,
+                request.AccountHolder,
+                request.Iban,
+                request.CurrencyCode);
+
+            if (validationResult.IsFailure)
+                return ServiceResult<bool>.Fail(validationResult.ErrorMessages);
+
+            var normalizedIban = NormalizeIban(request.Iban);
+            var currencyCode = NormalizeCurrencyCode(request.CurrencyCode);
+
+            var duplicateExists = await _context.WorkshopBankAccounts
+                .AnyAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.Id != bankAccountId &&
+                    x.IsActive &&
+                    x.Iban == normalizedIban);
+
+            if (duplicateExists)
+                return ServiceResult<bool>.Fail("Bu IBAN başka bir banka hesabında kullanılıyor.");
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            var oldValues = GetBankAccountAuditValues(account);
+
+            if (request.IsDefault)
+            {
+                await ClearDefaultBankAccountsAsync(workshopId, bankAccountId);
+            }
+
+            account.BankName = request.BankName.Trim();
+            account.AccountHolder = request.AccountHolder.Trim();
+            account.Iban = normalizedIban;
+            account.CurrencyCode = currencyCode;
+            account.BranchName = NormalizeNullable(request.BranchName);
+            account.AccountNumber = NormalizeNullable(request.AccountNumber);
+            account.Description = NormalizeNullable(request.Description);
+            account.IsDefault = request.IsDefault;
+            account.ShowOnInvoices = request.ShowOnInvoices;
+            account.ShowOnServiceForms = request.ShowOnServiceForms;
+            account.IsActive = request.IsActive;
+            account.SortOrder = request.SortOrder;
+            account.UpdatedAt = _dateTimeProvider.Now;
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Update,
+                EntityType = AuditEntityType.Workshop,
+                EntityId = workshopId,
+                Description = $"Banka hesabı güncellendi: {account.BankName} / {account.Iban}",
+                OldValues = oldValues,
+                NewValues = GetBankAccountAuditValues(account)
+            });
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<bool>> DeleteBankAccountAsync(
+            int workshopId,
+            int bankAccountId)
+        {
+            var account = await _context.WorkshopBankAccounts
+                .FirstOrDefaultAsync(x =>
+                    x.Id == bankAccountId &&
+                    x.WorkshopId == workshopId &&
+                    x.IsActive);
+
+            if (account is null)
+                return ServiceResult<bool>.Fail("Banka hesabı bulunamadı.");
+
+            var oldValues = GetBankAccountAuditValues(account);
+
+            account.IsActive = false;
+            account.IsDefault = false;
+            account.UpdatedAt = _dateTimeProvider.Now;
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Remove,
+                EntityType = AuditEntityType.Workshop,
+                EntityId = workshopId,
+                Description = $"Banka hesabı pasife alındı: {account.BankName} / {account.Iban}",
+                OldValues = oldValues,
+                NewValues = GetBankAccountAuditValues(account)
+            });
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        private async Task ClearDefaultBankAccountsAsync(
+            int workshopId,
+            int? exceptBankAccountId = null)
+        {
+            var currentDefaults = await _context.WorkshopBankAccounts
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.IsActive &&
+                    x.IsDefault &&
+                    (!exceptBankAccountId.HasValue || x.Id != exceptBankAccountId.Value))
+                .ToListAsync();
+
+            foreach (var currentDefault in currentDefaults)
+            {
+                currentDefault.IsDefault = false;
+                currentDefault.UpdatedAt = _dateTimeProvider.Now;
+            }
+        }
+
+        private static ServiceResult<bool> ValidateBankAccountRequest(
+            string? bankName,
+            string? accountHolder,
+            string? iban,
+            string? currencyCode)
+        {
+            var errors = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(bankName))
+                errors.Add("Banka adı zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(accountHolder))
+                errors.Add("Alıcı ünvanı zorunludur.");
+
+            var normalizedIban = NormalizeIban(iban);
+
+            if (string.IsNullOrWhiteSpace(normalizedIban))
+                errors.Add("IBAN zorunludur.");
+            else if (!normalizedIban.StartsWith("TR") || normalizedIban.Length != 26)
+                errors.Add("IBAN TR ile başlamalı ve 26 karakter olmalıdır.");
+
+            var normalizedCurrencyCode = NormalizeCurrencyCode(currencyCode);
+
+            if (normalizedCurrencyCode.Length != 3)
+                errors.Add("Para birimi 3 karakter olmalıdır.");
+
+            if (errors.Any())
+                return ServiceResult<bool>.Fail(errors);
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        private static string NormalizeIban(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? string.Empty
+                : Regex.Replace(value.Trim().ToUpperInvariant(), "[^A-Z0-9]", "");
+        }
+
+        private static string NormalizeCurrencyCode(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? "TRY"
+                : value.Trim().ToUpperInvariant();
+        }
+
+        private static string? NormalizeNullable(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? null
+                : value.Trim();
+        }
+
+        private static object GetBankAccountAuditValues(WorkshopBankAccount account)
+        {
+            return new
+            {
+                account.Id,
+                account.WorkshopId,
+                account.BankName,
+                account.AccountHolder,
+                account.Iban,
+                account.CurrencyCode,
+                account.BranchName,
+                account.AccountNumber,
+                account.Description,
+                account.IsDefault,
+                account.ShowOnInvoices,
+                account.ShowOnServiceForms,
+                account.IsActive,
+                account.SortOrder
+            };
+        }
+
+
 
         private async Task<string> GetAvailableShortUserNameAsync(string baseUserName, string fullName)
         {

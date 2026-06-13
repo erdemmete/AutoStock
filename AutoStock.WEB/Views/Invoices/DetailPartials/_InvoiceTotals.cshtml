@@ -36,5 +36,21 @@
             <span>Genel Toplam</span>
             <strong>@Model.GrandTotal.ToString("N2") ₺</strong>
         </div>
+
+        @if (Model.Status == 1)
+        {
+            <div class="invoice-target-total-action">
+                <button type="button"
+                        class="invoice-target-total-btn"
+                        onclick="openTargetTotalModal()">
+                    <span>↘</span>
+                    Hedef Tutara Uyarla
+                </button>
+
+                <small>
+                    Genel toplamı hedef tutara indirmek için iskonto oranını kalemlere oransal dağıtır.
+                </small>
+            </div>
+        }
     </div>
 </section>

@@ -25,5 +25,6 @@ namespace AutoStock.Services.Dtos.Admin.Workshops
         public List<AdminWorkshopUserDto> Users { get; set; } = new();
         public AdminWorkshopProfileDto? Profile { get; set; }
         public List<AdminWorkshopPartnerDto> Partners { get; set; } = new();
+        public List<AdminWorkshopBankAccountDto> BankAccounts { get; set; } = new();
     }
 }

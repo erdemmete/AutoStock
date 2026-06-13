@@ -1,18 +1,7 @@
-﻿@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
 
 @{
     Layout = null;
-
-    string GetTypeText(int type)
-    {
-        return type switch
-        {
-            1 => "Matbu Fatura",
-            2 => "e-Arşiv",
-            3 => "e-Fatura",
-            _ => "Fatura"
-        };
-    }
 
     string GetStatusText(int status)
     {
@@ -35,6 +24,100 @@
             _ => "Diğer"
         };
     }
+
+    string ValueOrDash(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
+    }
+
+    string JoinText(params string?[] values)
+    {
+        var parts = values
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x!.Trim());
+
+        return string.Join(" / ", parts);
+    }
+
+    string FormatMoney(decimal value)
+    {
+        return value.ToString("N2") + " TL";
+    }
+
+    string FormatPercent(decimal value)
+    {
+        return "%" + value.ToString("N2");
+    }
+
+    string FormatIban(string? iban)
+    {
+        if (string.IsNullOrWhiteSpace(iban))
+            return "-";
+
+        var clean = new string(iban.Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
+
+        if (string.IsNullOrWhiteSpace(clean))
+            return "-";
+
+        var groups = Enumerable.Range(0, (clean.Length + 3) / 4)
+            .Select(i => clean.Substring(i * 4, Math.Min(4, clean.Length - i * 4)));
+
+        return string.Join(" ", groups);
+    }
+
+    var workshopTitle =
+        !string.IsNullOrWhiteSpace(Model.WorkshopLegalTitle)
+            ? Model.WorkshopLegalTitle
+            : !string.IsNullOrWhiteSpace(Model.WorkshopDisplayName)
+                ? Model.WorkshopDisplayName
+                : "Servis İşletmesi";
+
+    var workshopAddress = JoinText(
+        Model.WorkshopAddressLine,
+        Model.WorkshopDistrict,
+        Model.WorkshopCity,
+        Model.WorkshopPostalCode,
+        Model.WorkshopCountry);
+
+    var workshopContactLine = JoinText(
+        string.IsNullOrWhiteSpace(Model.WorkshopPhoneNumber) ? null : $"Tel: {Model.WorkshopPhoneNumber}",
+        string.IsNullOrWhiteSpace(Model.WorkshopFaxNumber) ? null : $"Fax: {Model.WorkshopFaxNumber}");
+
+    var workshopDigitalLine = JoinText(
+        string.IsNullOrWhiteSpace(Model.WorkshopWebsite) ? null : $"Web: {Model.WorkshopWebsite}",
+        string.IsNullOrWhiteSpace(Model.WorkshopEmail) ? null : $"E-Posta: {Model.WorkshopEmail}");
+
+    var workshopTaxLine = JoinText(
+        string.IsNullOrWhiteSpace(Model.WorkshopTaxOffice) ? null : $"Vergi Dairesi: {Model.WorkshopTaxOffice}",
+        string.IsNullOrWhiteSpace(Model.WorkshopTaxNumber) ? null : $"VKN/TCKN: {Model.WorkshopTaxNumber}");
+
+    var workshopRegistryLine = JoinText(
+        string.IsNullOrWhiteSpace(Model.WorkshopTradeRegistryNumber) ? null : $"Ticaret Sicil No: {Model.WorkshopTradeRegistryNumber}",
+        string.IsNullOrWhiteSpace(Model.WorkshopMersisNumber) ? null : $"MERSİS No: {Model.WorkshopMersisNumber}");
+
+    var vehicleText = JoinText(
+        Model.Plate,
+        Model.VehicleBrandName,
+        Model.VehicleModelName,
+        Model.VehicleModelYear?.ToString());
+
+    var customerTaxLine = JoinText(
+        string.IsNullOrWhiteSpace(Model.CustomerTckn) ? null : $"TCKN: {Model.CustomerTckn}",
+        string.IsNullOrWhiteSpace(Model.CustomerTaxNumber) ? null : $"VKN: {Model.CustomerTaxNumber}",
+        string.IsNullOrWhiteSpace(Model.CustomerTaxOffice) ? null : $"Vergi Dairesi: {Model.CustomerTaxOffice}");
+
+    var noteText = !string.IsNullOrWhiteSpace(Model.Notes)
+        ? Model.Notes.Trim()
+        : "";
+
+    var bankAccounts = Model.BankAccounts?
+        .Where(x => x.ShowOnInvoices && !string.IsNullOrWhiteSpace(x.Iban))
+        .OrderByDescending(x => x.IsDefault)
+        .ThenBy(x => x.SortOrder)
+        .ThenBy(x => x.BankName)
+        .ToList() ?? new List<AutoStock.WEB.Models.Invoices.InvoiceBankAccountViewModel>();
+
+    var itemCount = Model.Items?.Count ?? 0;
 }
 
 <!DOCTYPE html>
@@ -44,642 +127,751 @@
     <title>@Model.InvoiceNumber</title>
 
     <style>
-            * {
-                box-sizing: border-box;
-            }
+        * {
+            box-sizing: border-box;
+        }
 
-            :root {
-                --ink: #111827;
-                --muted: #64748b;
-                --line: #d7dee8;
-                --soft: #f8fafc;
-                --soft-blue: #eff6ff;
-                --blue: #1d4ed8;
-                --green: #15803d;
-            }
+        :root {
+            --ink: #111827;
+            --muted: #475569;
+            --line: #111827;
+            --soft-line: #cbd5e1;
+            --soft: #f8fafc;
+            --soft-2: #f1f5f9;
+        }
 
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background: #e5e7eb;
+            color: var(--ink);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .print-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(255, 255, 255, .96);
+            border-bottom: 1px solid #d1d5db;
+        }
+
+        .toolbar-btn {
+            height: 40px;
+            padding: 0 18px;
+            border: none;
+            border-radius: 10px;
+            background: #1d4ed8;
+            color: white;
+            font-size: 13px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .toolbar-btn.secondary {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 14px auto;
+            background: white;
+            padding: 8mm;
+            box-shadow: 0 18px 60px rgba(15, 23, 42, .16);
+        }
+
+        .document {
+            min-height: calc(297mm - 16mm);
+            display: flex;
+            flex-direction: column;
+            border: 1.4px solid var(--line);
+            padding: 4mm;
+            background: white;
+        }
+
+        .top-line {
+            height: 2px;
+            background: var(--line);
+            margin-bottom: 3mm;
+        }
+
+        .header {
+            display: grid;
+            grid-template-columns: 1.12fr .88fr;
+            gap: 6mm;
+            align-items: start;
+            padding-bottom: 3mm;
+            border-bottom: 1.4px solid var(--line);
+        }
+
+        .issuer-title {
+            margin: 0 0 2mm;
+            font-size: 14px;
+            line-height: 1.12;
+            letter-spacing: .2px;
+            font-weight: 950;
+            text-transform: uppercase;
+        }
+
+        .issuer-lines {
+            display: grid;
+            gap: 1.1mm;
+            color: #111827;
+            font-size: 9.6px;
+            line-height: 1.25;
+            font-weight: 700;
+        }
+
+        .document-title {
+            margin-bottom: 3mm;
+            text-align: right;
+        }
+
+        .document-title h1 {
+            margin: 0;
+            font-size: 18px;
+            line-height: 1.05;
+            font-weight: 950;
+            letter-spacing: -.2px;
+            text-transform: uppercase;
+        }
+
+        .document-title p {
+            margin: 1mm 0 0;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .meta-table th,
+        .meta-table td {
+            border: 1px solid var(--line);
+            padding: 2.1mm 2.4mm;
+            font-size: 9.7px;
+            line-height: 1.15;
+            vertical-align: middle;
+        }
+
+        .meta-table th {
+            width: 34mm;
+            background: var(--soft-2);
+            text-align: left;
+            color: #334155;
+            font-weight: 950;
+        }
+
+        .meta-table td {
+            text-align: right;
+            font-weight: 900;
+            word-break: break-word;
+        }
+
+        .party-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6mm;
+            padding: 3mm 0;
+            border-bottom: 1.4px solid var(--line);
+        }
+
+        .section-caption {
+            margin: 0 0 1.5mm;
+            padding-bottom: 1.1mm;
+            border-bottom: 1.3px solid var(--line);
+            font-size: 10px;
+            font-weight: 950;
+            letter-spacing: .4px;
+            text-transform: uppercase;
+        }
+
+        .customer-name {
+            margin: 0 0 1mm;
+            font-size: 11.2px;
+            line-height: 1.2;
+            font-weight: 950;
+            text-transform: uppercase;
+        }
+
+        .customer-detail {
+            margin: 0;
+            color: #111827;
+            font-size: 9.8px;
+            line-height: 1.38;
+            font-weight: 700;
+        }
+
+        .vehicle-grid {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .vehicle-grid th,
+        .vehicle-grid td {
+            border: 1px solid var(--line);
+            padding: 1.8mm 2.2mm;
+            font-size: 9.6px;
+            line-height: 1.15;
+        }
+
+        .vehicle-grid th {
+            width: 24mm;
+            text-align: left;
+            background: var(--soft-2);
+            color: #334155;
+            font-weight: 950;
+        }
+
+        .vehicle-grid td {
+            text-align: right;
+            font-weight: 900;
+            word-break: break-word;
+        }
+
+        .reference-line {
+            padding: 2.5mm 0 1.2mm;
+            color: #334155;
+            font-size: 9.3px;
+            line-height: 1.2;
+            font-weight: 800;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .items-table th,
+        .items-table td {
+            border: 1px solid var(--line);
+            vertical-align: top;
+        }
+
+        .items-table th {
+            padding: 1.8mm 1.7mm;
+            background: var(--soft-2);
+            color: #111827;
+            font-size: 9px;
+            line-height: 1.1;
+            font-weight: 950;
+            text-align: center;
+        }
+
+        .items-table td {
+            padding: 1.8mm 1.7mm;
+            color: #111827;
+            font-size: 9.2px;
+            line-height: 1.22;
+            font-weight: 750;
+        }
+
+        .col-no { width: 8mm; text-align: center; }
+        .col-type { width: 15mm; text-align: center; }
+        .col-desc { width: auto; }
+        .col-qty { width: 17mm; text-align: right; }
+        .col-price { width: 22mm; text-align: right; }
+        .col-discount { width: 19mm; text-align: right; }
+        .col-vat { width: 19mm; text-align: right; }
+        .col-total { width: 26mm; text-align: right; }
+
+        .item-desc {
+            font-weight: 850;
+            word-break: break-word;
+        }
+
+        .small-sub {
+            display: block;
+            margin-top: .7mm;
+            color: #475569;
+            font-size: 8.2px;
+            font-weight: 700;
+        }
+
+        .after-table {
+            display: grid;
+            grid-template-columns: 1fr 56mm;
+            gap: 6mm;
+            margin-top: 3mm;
+            align-items: start;
+        }
+
+        .note-box {
+            min-height: 20mm;
+            border: 1px solid var(--line);
+            padding: 2.3mm;
+            font-size: 9.2px;
+            line-height: 1.35;
+            font-weight: 700;
+        }
+
+        .note-box strong {
+            display: block;
+            margin-bottom: 1.2mm;
+            font-size: 9.6px;
+            font-weight: 950;
+        }
+
+        .totals-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .totals-table th,
+        .totals-table td {
+            border: 1px solid var(--line);
+            padding: 1.9mm 2mm;
+            font-size: 9.4px;
+            line-height: 1.1;
+        }
+
+        .totals-table th {
+            background: var(--soft-2);
+            text-align: right;
+            font-weight: 950;
+        }
+
+        .totals-table td {
+            width: 25mm;
+            text-align: right;
+            font-weight: 950;
+        }
+
+        .totals-table .grand th,
+        .totals-table .grand td {
+            background: #f8fafc;
+            font-size: 10.3px;
+            font-weight: 950;
+        }
+
+        .payment-section {
+            margin-top: 3mm;
+            border: 1px solid var(--line);
+            page-break-inside: avoid;
+        }
+
+        .payment-title {
+            padding: 1.9mm 2.2mm;
+            background: var(--soft-2);
+            border-bottom: 1px solid var(--line);
+            font-size: 9.8px;
+            line-height: 1.1;
+            font-weight: 950;
+            letter-spacing: .3px;
+            text-transform: uppercase;
+        }
+
+        
+
+        
+
+        .pay-bank { width: 31mm; }
+        .pay-holder { width: 40mm; }
+        .pay-iban { width: auto; }
+        .pay-currency { width: 16mm; text-align: center; }
+        .pay-note { width: 38mm; }
+
+        .default-badge {
+            display: inline-block;
+            margin-left: 1mm;
+            padding: .5mm 1.3mm;
+            border: 1px solid #111827;
+            border-radius: 999px;
+            font-size: 7.2px;
+            font-weight: 950;
+            vertical-align: middle;
+        }
+
+        .bottom-push {
+            flex: 1;
+            min-height: 8mm;
+        }
+
+        .signature-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24mm;
+            padding-top: 6mm;
+            margin-top: auto;
+        }
+
+        .signature {
+            text-align: center;
+        }
+
+        .signature-line {
+            height: 1.3px;
+            background: var(--line);
+            margin-bottom: 2mm;
+        }
+
+        .signature span {
+            color: #334155;
+            font-size: 9.5px;
+            font-weight: 900;
+        }
+
+        .legal-note {
+            margin-top: 5mm;
+            padding-top: 2.5mm;
+            border-top: 1px solid var(--line);
+            color: #334155;
+            font-size: 8.8px;
+            line-height: 1.35;
+            font-weight: 700;
+        }
+
+        @@media print {
+            html,
             body {
-                margin: 0;
-                background: #e8edf5;
-                color: var(--ink);
-                font-family: Arial, Helvetica, sans-serif;
-                font-size: 12px;
+                background: white;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .print-toolbar {
-                position: sticky;
-                top: 0;
-                z-index: 20;
-                display: flex;
-                justify-content: center;
-                gap: 10px;
-                padding: 12px;
-                background: rgba(255,255,255,.94);
-                border-bottom: 1px solid var(--line);
+                display: none;
             }
-
-            .toolbar-btn {
-                height: 40px;
-                padding: 0 18px;
-                border: none;
-                border-radius: 10px;
-                background: var(--blue);
-                color: white;
-                font-size: 13px;
-                font-weight: 800;
-                cursor: pointer;
-            }
-
-                .toolbar-btn.secondary {
-                    background: #e5e7eb;
-                    color: var(--ink);
-                }
 
             .page {
-                width: 210mm;
-                min-height: 297mm;
-                margin: 14px auto;
-                background: white;
-                padding: 10mm;
-                box-shadow: 0 20px 70px rgba(15,23,42,.14);
-            }
-
-            .invoice-shell {
-                border: 1px solid var(--line);
-                border-radius: 12px;
-                overflow: hidden;
-            }
-
-            .top-strip {
-                height: 4px;
-                background: linear-gradient(90deg, #0f172a, #1d4ed8);
-            }
-
-            .header {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) 58mm;
-                gap: 5mm;
-                padding: 5mm 6mm 4mm;
-                border-bottom: 1px solid var(--line);
-            }
-
-            .brand h1 {
+                width: auto;
+                min-height: auto;
                 margin: 0;
-                font-size: 19px;
-                line-height: 1;
-                font-weight: 900;
-                letter-spacing: -.7px;
+                padding: 0;
+                box-shadow: none;
             }
 
-            .brand .tagline {
-                margin-top: 2px;
-                color: var(--muted);
-                font-size: 9.5px;
-                font-weight: 700;
-            }
-
-            .brand .company-info {
-                margin-top: 6px;
-                color: #334155;
-                font-size: 9.5px;
-                line-height: 1.4;
-            }
-
-            .invoice-summary {
-                border: 1px solid var(--line);
-                border-radius: 10px;
-                overflow: hidden;
-            }
-
-            .invoice-summary-title {
-                padding: 6px 8px;
-                background: var(--soft-blue);
-                border-bottom: 1px solid var(--line);
-            }
-
-                .invoice-summary-title strong {
-                    display: block;
-                    color: var(--blue);
-                    font-size: 14px;
-                    font-weight: 900;
-                    line-height: 1.2;
-                }
-
-                .invoice-summary-title span {
-                    display: block;
-                    margin-top: 3px;
-                    color: var(--muted);
-                    font-size: 10px;
-                    font-weight: 800;
-                }
-
-            .summary-lines {
-                padding: 6px 8px;
-                display: grid;
-                gap: 6px;
-            }
-
-            .summary-line {
-                display: flex;
-                justify-content: space-between;
-                gap: 10px;
-                font-size: 11px;
-            }
-
-                .summary-line span {
-                    color: var(--muted);
-                    font-weight: 800;
-                }
-
-                .summary-line strong {
-                    text-align: right;
-                    font-weight: 900;
-                }
-
-            .content {
-                padding: 6mm 8mm 8mm;
-            }
-
-            .two-col {
-                display: grid;
-                grid-template-columns: minmax(0, 1.35fr) minmax(0, .9fr);
-                gap: 5mm;
-            }
-
-            .box {
-                border: 1px solid var(--line);
-                border-radius: 10px;
-                overflow: hidden;
-                background: white;
-            }
-
-            .box-title {
-                padding: 8px 10px;
-                background: var(--soft);
-                border-bottom: 1px solid var(--line);
-                font-size: 12px;
-                font-weight: 900;
-                color: #1e293b;
-            }
-
-            .box-body {
-                padding: 9px 10px;
-            }
-
-            .compact-grid {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 8px 12px;
-            }
-
-            .field.full {
-                grid-column: 1 / -1;
-            }
-
-            .field label {
-                display: block;
-                margin-bottom: 3px;
-                color: var(--muted);
-                font-size: 9.5px;
-                font-weight: 900;
-                text-transform: uppercase;
-                letter-spacing: .2px;
-            }
-
-            .field strong {
-                display: block;
-                min-height: 15px;
-                font-size: 11.5px;
-                font-weight: 900;
-                line-height: 1.35;
-                word-break: break-word;
-            }
-
-            .items-section {
-                margin-top: 5mm;
+            .document {
+                min-height: calc(297mm - 16mm);
+                border: none;
+                padding: 0;
             }
 
             .items-table {
-                width: 100%;
-                border-collapse: collapse;
-                table-layout: fixed;
-                border: 1px solid var(--line);
-                border-radius: 10px;
-                overflow: hidden;
+                page-break-inside: auto;
             }
 
-                .items-table th {
-                    padding: 7px 6px;
-                    background: #f1f5f9;
-                    border: 1px solid var(--line);
-                    color: #334155;
-                    font-size: 9.5px;
-                    font-weight: 900;
-                    text-align: left;
-                    white-space: nowrap;
-                }
-
-                .items-table td {
-                    padding: 7px 6px;
-                    border: 1px solid var(--line);
-                    font-size: 10.5px;
-                    vertical-align: top;
-                    line-height: 1.35;
-                }
-
-                .items-table .col-type {
-                    width: 17mm;
-                }
-
-                .items-table .col-desc {
-                    width: auto;
-                }
-
-                .items-table .col-qty {
-                    width: 17mm;
-                }
-
-                .items-table .col-unit {
-                    width: 16mm;
-                }
-
-                .items-table .col-price {
-                    width: 25mm;
-                }
-
-                .items-table .col-rate {
-                    width: 16mm;
-                }
-
-                .items-table .col-total {
-                    width: 28mm;
-                }
-
-            .align-right {
-                text-align: right !important;
+            .items-table tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
             }
 
-            .badge {
-                display: inline-flex;
-                padding: 3px 6px;
-                border-radius: 999px;
-                background: #eef2ff;
-                color: #3730a3;
-                font-size: 9.5px;
-                font-weight: 900;
-                white-space: nowrap;
+            .items-table thead {
+                display: table-header-group;
             }
 
-            .bottom-area {
-                margin-top: 5mm;
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) 68mm;
-                gap: 5mm;
-                align-items: start;
-            }
-
-            .notes {
-                min-height: 34mm;
-                border: 1px dashed #cbd5e1;
-                border-radius: 10px;
-                padding: 9px 10px;
-                color: #475569;
-                font-size: 10.5px;
-                line-height: 1.5;
-            }
-
-                .notes strong {
-                    display: block;
-                    margin-bottom: 5px;
-                    color: var(--ink);
-                    font-size: 9.5px;
-                }
-
-            .totals {
-                border: 1px solid var(--line);
-                border-radius: 10px;
-                overflow: hidden;
-            }
-
-            .total-line {
-                display: flex;
-                justify-content: space-between;
-                gap: 10px;
-                padding: 8px 10px;
-                border-bottom: 1px solid var(--line);
-                font-size: 11.5px;
-            }
-
-                .total-line:last-child {
-                    border-bottom: none;
-                }
-
-                .total-line span {
-                    color: var(--muted);
-                    font-weight: 900;
-                }
-
-                .total-line strong {
-                    font-weight: 900;
-                    text-align: right;
-                }
-
-                .total-line.grand {
-                    background: #f0fdf4;
-                    color: var(--green);
-                    font-size: 15px;
-                }
-
-                    .total-line.grand span,
-                    .total-line.grand strong {
-                        color: var(--green);
-                    }
-
-            .signature-area {
-                margin-top: 7mm;
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 20mm;
-                padding: 0 8mm 8mm;
-            }
-
-            .signature {
-                text-align: center;
-                padding-top: 10mm;
-            }
-
-            .signature-line {
-                height: 1px;
-                background: #94a3b8;
-                margin-bottom: 6px;
-            }
-
-            .signature span {
-                color: var(--muted);
-                font-size: 10px;
-                font-weight: 800;
-            }
-
+            .payment-section,
+            .after-table,
+            .signature-area,
             .legal-note {
-                padding: 6px 8mm 8mm;
-                color: var(--muted);
-                font-size: 9.5px;
-                line-height: 1.45;
-                border-top: 1px solid var(--line);
+                page-break-inside: avoid;
             }
 
-            @@media print {
-                body {
-                    background: white;
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-
-                .print-toolbar {
-                    display: none;
-                }
-
-                .page {
-                    width: auto;
-                    min-height: auto;
-                    margin: 0;
-                    padding: 0;
-                    box-shadow: none;
-                }
-
-                .invoice-shell {
-                    border-radius: 0;
-                }
-
-                @@page {
-                    size: A4;
-                    margin: 8mm;
-                }
+            @@page {
+                size: A4;
+                margin: 8mm;
             }
+        }
+
+            .payment-note-box {
+                margin-top: 3mm;
+                border: 1px solid var(--line);
+                padding: 2mm 2.4mm;
+                page-break-inside: avoid;
+            }
+
+            .payment-note-title {
+                margin-bottom: 1.2mm;
+                color: #111827;
+                font-size: 9.4px;
+                line-height: 1.1;
+                font-weight: 950;
+            }
+
+            .payment-note-lines {
+                display: grid;
+                gap: .8mm;
+            }
+
+            .payment-note-line {
+                color: #111827;
+                font-size: 8.8px;
+                line-height: 1.25;
+                font-weight: 700;
+            }
+
+                .payment-note-line strong {
+                    font-weight: 950;
+                }
+
+                .payment-note-line b {
+                    font-weight: 900;
+                }
+
+                .payment-note-line em {
+                    margin-left: 1.5mm;
+                    color: #475569;
+                    font-style: normal;
+                    font-weight: 900;
+                }
+
+                .payment-note-line small {
+                    margin-left: 1.8mm;
+                    color: #475569;
+                    font-size: 8.2px;
+                    font-weight: 700;
+                }
     </style>
 </head>
 
 <body>
-
     <div class="print-toolbar">
         <button class="toolbar-btn" onclick="window.print()">Yazdır</button>
         <button class="toolbar-btn secondary" onclick="window.close()">Kapat</button>
     </div>
 
     <main class="page">
-
-        <section class="invoice-shell">
-
-            <div class="top-strip"></div>
+        <section class="document">
+            <div class="top-line"></div>
 
             <header class="header">
+                <section>
+                    <h2 class="issuer-title">@workshopTitle</h2>
 
-                <div class="brand">
-                    <h1>Sente360</h1>
-                    <div class="tagline">Araç Servis & Operasyon Yönetimi</div>
+                    <div class="issuer-lines">
+                        @if (!string.IsNullOrWhiteSpace(workshopAddress))
+                        {
+                            <div>@workshopAddress</div>
+                        }
 
-                    <div class="company-info">
-                        İstanbul / Türkiye<br />
-                        Telefon: - &nbsp; | &nbsp; E-posta: -<br />
-                        www.sente360.com
+                        @if (!string.IsNullOrWhiteSpace(workshopContactLine))
+                        {
+                            <div>@workshopContactLine</div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(workshopDigitalLine))
+                        {
+                            <div>@workshopDigitalLine</div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(workshopTaxLine))
+                        {
+                            <div>@workshopTaxLine</div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(workshopRegistryLine))
+                        {
+                            <div>@workshopRegistryLine</div>
+                        }
                     </div>
-                </div>
-
-                <div class="invoice-summary">
-
-                    <div class="invoice-summary-title">
-                        <strong>@Model.InvoiceNumber</strong>
-                        <span>@GetTypeText(Model.Type)</span>
-                    </div>
-
-                    <div class="summary-lines">
-                        <div class="summary-line">
-                            <span>Tarih</span>
-                            <strong>@Model.InvoiceDate.ToString("dd MMMM yyyy")</strong>
-                        </div>
-
-                        <div class="summary-line">
-                            <span>Durum</span>
-                            <strong>@GetStatusText(Model.Status)</strong>
-                        </div>
-
-                        <div class="summary-line">
-                            <span>Plaka</span>
-                            <strong>@(Model.Plate ?? "-")</strong>
-                        </div>
-
-                        <div class="summary-line">
-                            <span>Şasi</span>
-                            <strong>@(Model.ChassisNumber ?? "-")</strong>
-                        </div>
-                    </div>
-
-                </div>
-
-            </header>
-
-            <div class="content">
-
-                <div class="two-col">
-
-                    <section class="box">
-                        <div class="box-title">Cari / Müşteri Bilgileri</div>
-
-                        <div class="box-body compact-grid">
-                            <div class="field full">
-                                <label>Ünvan / Ad Soyad</label>
-                                <strong>@Model.CustomerTitle</strong>
-                            </div>
-
-                            <div class="field">
-                                <label>Vergi Dairesi</label>
-                                <strong>@(Model.CustomerTaxOffice ?? "-")</strong>
-                            </div>
-
-                            <div class="field">
-                                <label>Vergi No</label>
-                                <strong>@(Model.CustomerTaxNumber ?? "-")</strong>
-                            </div>
-
-                            <div class="field">
-                                <label>TC Kimlik No</label>
-                                <strong>@(Model.CustomerTckn ?? "-")</strong>
-                            </div>
-
-                            <div class="field">
-                                <label>Kilometre</label>
-                                <strong>@((Model.Mileage ?? 0).ToString("N0")) km</strong>
-                            </div>
-
-                            <div class="field full">
-                                <label>Adres</label>
-                                <strong>@(Model.CustomerAddress ?? "-")</strong>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="box">
-                        <div class="box-title">Belge Özeti</div>
-
-                        <div class="box-body compact-grid">
-                            <div class="field">
-                                <label>Fatura Tipi</label>
-                                <strong>@GetTypeText(Model.Type)</strong>
-                            </div>
-
-                            <div class="field">
-                                <label>Durum</label>
-                                <strong>@GetStatusText(Model.Status)</strong>
-                            </div>
-
-                            <div class="field">
-                                <label>Plaka</label>
-                                <strong>@(Model.Plate ?? "-")</strong>
-                            </div>
-
-                            <div class="field">
-                                <label>Servis Kaydı</label>
-                                <strong>@(Model.ServiceRecordId?.ToString() ?? "-")</strong>
-                            </div>
-                        </div>
-                    </section>
-
-                </div>
-
-                <section class="items-section">
-
-                    <table class="items-table">
-                        <thead>
-                            <tr>
-                                <th class="col-type">Tür</th>
-                                <th class="col-desc">Açıklama</th>
-                                <th class="col-qty align-right">Miktar</th>
-                                <th class="col-unit">Birim</th>
-                                <th class="col-price align-right">Birim Fiyat</th>
-                                <th class="col-rate align-right">İsk.</th>
-                                <th class="col-rate align-right">KDV</th>
-                                <th class="col-total align-right">Toplam</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @foreach (var item in Model.Items)
-                            {
-                                <tr>
-                                    <td>
-                                        <span class="badge">@GetItemTypeText(item.ItemType)</span>
-                                    </td>
-
-                                    <td>@item.Description</td>
-
-                                    <td class="align-right">@item.Quantity.ToString("N2")</td>
-
-                                    <td>@item.Unit</td>
-
-                                    <td class="align-right">@item.UnitPrice.ToString("N2") ₺</td>
-
-                                    <td class="align-right">
-                                        @item.DiscountAmount.ToString("N2") ₺
-                                        <br />
-                                        <small>%@item.DiscountRate.ToString("N0")</small>
-                                    </td>
-
-                                    <td class="align-right">
-                                        @item.VatAmount.ToString("N2") ₺
-                                        <br />
-                                        <small>%@item.VatRate.ToString("N0")</small>
-                                    </td>
-
-                                    <td class="align-right">
-                                        <strong>@item.LineTotal.ToString("N2") ₺</strong>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-
                 </section>
 
-                <section class="bottom-area">
+                <section>
+                    <div class="document-title">
+                        <h1>Servis Hesap Özeti</h1>
+                        <p>Matbu belge / ön muhasebe kaydı</p>
+                    </div>
 
-                    <div class="notes">
-                        <strong>Açıklamalar</strong>
+                    <table class="meta-table">
+                        <tbody>
+                            <tr><th>Belge No</th><td>@Model.InvoiceNumber</td></tr>
+                            <tr><th>Tarih</th><td>@Model.InvoiceDate.ToString("dd.MM.yyyy HH:mm")</td></tr>
+                            <tr><th>Durum</th><td>@GetStatusText(Model.Status)</td></tr>
+                            <tr><th>Servis Kaydı</th><td>@(Model.ServiceRecordId?.ToString() ?? "-")</td></tr>
+                            <tr><th>Plaka</th><td>@ValueOrDash(Model.Plate)</td></tr>
+                            <tr><th>Şasi</th><td>@ValueOrDash(Model.ChassisNumber)</td></tr>
+                            <tr><th>KM</th><td>@((Model.Mileage ?? 0).ToString("N0"))</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+            </header>
 
-                        @if (!string.IsNullOrWhiteSpace(Model.Notes))
+            <section class="party-area">
+                <section>
+                    <h3 class="section-caption">Sayın</h3>
+                    <h4 class="customer-name">@ValueOrDash(Model.CustomerTitle)</h4>
+
+                    <p class="customer-detail">
+                        @ValueOrDash(Model.CustomerAddress)
+
+                        @if (!string.IsNullOrWhiteSpace(customerTaxLine))
                         {
-                            @Model.Notes
+                            <br />
+                            @customerTaxLine
+                        }
+                    </p>
+                </section>
+
+                <section>
+                    <h3 class="section-caption">Araç / Belge Bilgileri</h3>
+
+                    <table class="vehicle-grid">
+                        <tbody>
+                            <tr>
+                                <th>Plaka</th>
+                                <td>@ValueOrDash(Model.Plate)</td>
+                            </tr>
+                            <tr>
+                                <th>Şasi</th>
+                                <td>@ValueOrDash(Model.ChassisNumber)</td>
+                            </tr>
+                            <tr>
+                                <th>Marka / Model</th>
+                                <td>@ValueOrDash(JoinText(Model.VehicleBrandName, Model.VehicleModelName))</td>
+                            </tr>
+                            <tr>
+                                <th>Yıl / KM</th>
+                                <td>@JoinText(Model.VehicleModelYear?.ToString(), (Model.Mileage ?? 0).ToString("N0"))</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </section>
+
+            <div class="reference-line">
+                Belge referansı: @Model.InvoiceNumber
+                @if (!string.IsNullOrWhiteSpace(vehicleText))
+                {
+                    <span> | Araç: @vehicleText</span>
+                }
+                <span> | Kalem sayısı: @itemCount</span>
+            </div>
+
+            <section>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th class="col-no">Sıra</th>
+                            <th class="col-type">Tür</th>
+                            <th class="col-desc">Mal / Hizmet</th>
+                            <th class="col-qty">Miktar</th>
+                            <th class="col-price">Birim Fiyat</th>
+                            <th class="col-discount">İsk.</th>
+                            <th class="col-vat">KDV</th>
+                            <th class="col-total">Tutar</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (Model.Items == null || !Model.Items.Any())
+                        {
+                            <tr>
+                                <td colspan="8" style="text-align:center; padding: 6mm; font-weight:900;">
+                                    Fatura kalemi bulunmuyor.
+                                </td>
+                            </tr>
                         }
                         else
                         {
-                            <span>Bu belge Sente360 üzerinden oluşturulmuştur.</span>
+                            var index = 1;
+
+                            foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td class="col-no">@index</td>
+                                    <td class="col-type">@GetItemTypeText(item.ItemType)</td>
+                                    <td class="col-desc"><div class="item-desc">@item.Description</div></td>
+                                    <td class="col-qty">@item.Quantity.ToString("N2")<span class="small-sub">@item.Unit</span></td>
+                                    <td class="col-price">@FormatMoney(item.UnitPrice)</td>
+                                    <td class="col-discount">
+                                        @if (item.DiscountAmount > 0)
+                                        {
+                                            @FormatMoney(item.DiscountAmount)
+                                            <span class="small-sub">@FormatPercent(item.DiscountRate)</span>
+                                        }
+                                        else
+                                        {
+                                            <span>-</span>
+                                        }
+                                    </td>
+                                    <td class="col-vat">@FormatMoney(item.VatAmount)<span class="small-sub">@FormatPercent(item.VatRate)</span></td>
+                                    <td class="col-total"><strong>@FormatMoney(item.LineTotal)</strong></td>
+                                </tr>
+
+                                index++;
+                            }
+                        }
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="after-table">
+                <div class="note-box">
+                    <strong>Not:</strong>
+                    @if (!string.IsNullOrWhiteSpace(noteText))
+                    {
+                        @noteText
+                    }
+                    else
+                    {
+                        <span>-</span>
+                    }
+                </div>
+
+                <table class="totals-table">
+                    <tbody>
+                        <tr><th>Mal Hizmet Toplam Tutarı</th><td>@FormatMoney(Model.Subtotal)</td></tr>
+                        <tr><th>Toplam İskonto</th><td>@FormatMoney(Model.DiscountTotal)</td></tr>
+                        <tr><th>Hesaplanan KDV</th><td>@FormatMoney(Model.VatTotal)</td></tr>
+                        <tr><th>Vergiler Dahil Toplam Tutar</th><td>@FormatMoney(Model.GrandTotal)</td></tr>
+                        <tr class="grand"><th>Ödenecek Tutar</th><td>@FormatMoney(Model.GrandTotal)</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            @if (Model.BankAccounts != null && Model.BankAccounts.Any())
+            {
+                <section class="payment-note-box">
+                    <div class="payment-note-title">Ödeme Bilgileri</div>
+
+                    <div class="payment-note-lines">
+                        @foreach (var bankAccount in Model.BankAccounts
+                                .OrderByDescending(x => x.IsDefault)
+                                .ThenBy(x => x.SortOrder)
+                                .ThenBy(x => x.BankName))
+                        {
+                            <div class="payment-note-line">
+                                <strong>@bankAccount.BankName</strong>
+                                <span>-</span>
+                                <b>@bankAccount.Iban</b>
+
+                                @if (!string.IsNullOrWhiteSpace(bankAccount.CurrencyCode))
+                                {
+                                    <em>@bankAccount.CurrencyCode</em>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(bankAccount.AccountHolder))
+                                {
+                                    <small>Alıcı: @bankAccount.AccountHolder</small>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(bankAccount.Description))
+                                {
+                                    <small>@bankAccount.Description</small>
+                                }
+                            </div>
                         }
                     </div>
-
-                    <div class="totals">
-                        <div class="total-line">
-                            <span>Ara Toplam</span>
-                            <strong>@Model.Subtotal.ToString("N2") ₺</strong>
-                        </div>
-
-                        <div class="total-line">
-                            <span>İskonto</span>
-                            <strong>@Model.DiscountTotal.ToString("N2") ₺</strong>
-                        </div>
-
-                        <div class="total-line">
-                            <span>KDV</span>
-                            <strong>@Model.VatTotal.ToString("N2") ₺</strong>
-                        </div>
-
-                        <div class="total-line grand">
-                            <span>Genel Toplam</span>
-                            <strong>@Model.GrandTotal.ToString("N2") ₺</strong>
-                        </div>
-                    </div>
-
                 </section>
+            }
 
-            </div>
+            <div class="bottom-push"></div>
 
             <section class="signature-area">
                 <div class="signature">
@@ -693,14 +885,11 @@
                 </div>
             </section>
 
-            <div class="legal-note">
-                Bu belge matbu fatura / servis ödeme takibi amacıyla hazırlanmış ön muhasebe çıktısıdır.
-                e-Arşiv veya e-Fatura entegrasyonu aktif edildiğinde resmi belge numarası ve entegrasyon bilgileri bu alanda gösterilecektir.
-            </div>
-
+            <footer class="legal-note">
+                Bu belge, servis ödeme takibi ve ön muhasebe amacıyla hazırlanmış bilgilendirme çıktısıdır; e-Arşiv/e-Fatura veya resmi mali belge yerine geçmez.
+                Belge içeriği ilgili servis işletmesine aittir. Sente360 yalnızca yazılım altyapısı sağlar.
+            </footer>
         </section>
-
     </main>
-
 </body>
 </html>

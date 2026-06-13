@@ -255,6 +255,36 @@ namespace AutoStock.Services.Services
                     x.Id == invoiceId &&
                     x.WorkshopId == workshopId);
 
+            var workshopProfile = await _context.Set<WorkshopProfile>()
+    .AsNoTracking()
+    .FirstOrDefaultAsync(x => x.WorkshopId == workshopId);
+
+            var bankAccounts = await _context.Set<WorkshopBankAccount>()
+    .AsNoTracking()
+    .Where(x =>
+        x.WorkshopId == workshopId &&
+        x.IsActive &&
+        x.ShowOnInvoices)
+    .OrderByDescending(x => x.IsDefault)
+    .ThenBy(x => x.SortOrder)
+    .ThenBy(x => x.BankName)
+    .Select(x => new InvoiceBankAccountDto
+    {
+        Id = x.Id,
+        BankName = x.BankName,
+        AccountHolder = x.AccountHolder,
+        Iban = x.Iban,
+        CurrencyCode = x.CurrencyCode,
+        BranchName = x.BranchName,
+        AccountNumber = x.AccountNumber,
+        Description = x.Description,
+        IsDefault = x.IsDefault,
+        ShowOnInvoices = x.ShowOnInvoices,
+        SortOrder = x.SortOrder
+    })
+    .ToListAsync();
+
+
             if (invoice is null)
                 return ServiceResult<InvoiceDetailDto>.Fail("Fatura bulunamadı.");
 
@@ -289,13 +319,28 @@ namespace AutoStock.Services.Services
                 VehicleBrandName = invoice.VehicleBrandName,
                 VehicleModelName = invoice.VehicleModelName,
                 VehicleModelYear = invoice.VehicleModelYear,
-
+                WorkshopDisplayName = workshopProfile?.DisplayName,
+                WorkshopLegalTitle = workshopProfile?.LegalTitle,
+                WorkshopTaxOffice = workshopProfile?.TaxOffice,
+                WorkshopTaxNumber = workshopProfile?.TaxNumber,
+                WorkshopTradeRegistryNumber = workshopProfile?.TradeRegistryNumber,
+                WorkshopMersisNumber = workshopProfile?.MersisNumber,
+                WorkshopEmail = workshopProfile?.Email,
+                WorkshopPhoneNumber = workshopProfile?.PhoneNumber,
+                WorkshopFaxNumber = workshopProfile?.FaxNumber,
+                WorkshopWebsite = workshopProfile?.Website,
+                WorkshopAddressLine = workshopProfile?.AddressLine,
+                WorkshopCity = workshopProfile?.City,
+                WorkshopDistrict = workshopProfile?.District,
+                WorkshopPostalCode = workshopProfile?.PostalCode,
+                WorkshopCountry = workshopProfile?.Country,
                 Subtotal = invoice.Subtotal,
                 DiscountTotal = invoice.DiscountTotal,
                 VatTotal = invoice.VatTotal,
                 GrandTotal = invoice.GrandTotal,
                 CustomerBalance = customerBalance,
-                Notes = invoice.Notes
+                Notes = invoice.Notes,
+                BankAccounts = bankAccounts
             };
 
             foreach (var item in invoice.Items)

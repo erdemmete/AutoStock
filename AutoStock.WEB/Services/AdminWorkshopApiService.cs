@@ -172,5 +172,67 @@ namespace AutoStock.WEB.Services
                 url,
                 "Servis listesi alınırken hata oluştu.");
         }
+
+        public async Task<ApiResponse<List<AdminWorkshopBankAccountViewModel>>> GetBankAccountsAsync(int workshopId)
+        {
+            return await GetAsync<List<AdminWorkshopBankAccountViewModel>>(
+                $"/api/admin/workshops/{workshopId}/bank-accounts",
+                "Banka hesapları alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<object>> CreateBankAccountAsync(CreateAdminWorkshopBankAccountViewModel model)
+        {
+            var requestBody = new
+            {
+                bankName = model.BankName,
+                accountHolder = model.AccountHolder,
+                iban = model.Iban,
+                currencyCode = model.CurrencyCode,
+                branchName = model.BranchName,
+                accountNumber = model.AccountNumber,
+                description = model.Description,
+                isDefault = model.IsDefault,
+                showOnInvoices = model.ShowOnInvoices,
+                showOnServiceForms = model.ShowOnServiceForms,
+                sortOrder = model.SortOrder
+            };
+
+            return await PostJsonAsync<object, object>(
+                $"/api/admin/workshops/{model.WorkshopId}/bank-accounts",
+                requestBody,
+                "Banka hesabı oluşturulurken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<object>> UpdateBankAccountAsync(UpdateAdminWorkshopBankAccountViewModel model)
+        {
+            var requestBody = new
+            {
+                bankName = model.BankName,
+                accountHolder = model.AccountHolder,
+                iban = model.Iban,
+                currencyCode = model.CurrencyCode,
+                branchName = model.BranchName,
+                accountNumber = model.AccountNumber,
+                description = model.Description,
+                isDefault = model.IsDefault,
+                showOnInvoices = model.ShowOnInvoices,
+                showOnServiceForms = model.ShowOnServiceForms,
+                isActive = model.IsActive,
+                sortOrder = model.SortOrder
+            };
+
+            return await PutJsonAsync<object, object>(
+                $"/api/admin/workshops/{model.WorkshopId}/bank-accounts/{model.BankAccountId}",
+                requestBody,
+                "Banka hesabı güncellenirken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<object>> DeleteBankAccountAsync(int workshopId, int bankAccountId)
+        {
+            return await DeleteAsync<object>(
+                $"/api/admin/workshops/{workshopId}/bank-accounts/{bankAccountId}",
+                "Banka hesabı silinirken hata oluştu.");
+        }
+
     }
 }

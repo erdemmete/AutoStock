@@ -24,5 +24,6 @@
 
         public List<AdminWorkshopUserViewModel> Users { get; set; } = new();
         public List<AdminWorkshopPartnerViewModel> Partners { get; set; } = new();
+        public List<AdminWorkshopBankAccountViewModel> BankAccounts { get; set; } = new();
     }
 }

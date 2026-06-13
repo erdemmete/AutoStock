@@ -1,4 +1,4 @@
-﻿@model AutoStock.WEB.Models.Admin.Workshops.AdminWorkshopDetailViewModel
+@model AutoStock.WEB.Models.Admin.Workshops.AdminWorkshopDetailViewModel
 
 @{
     ViewData["Title"] = "Servis Detayı";
@@ -9,6 +9,8 @@
         DisplayName = Model.Name,
         Country = "Türkiye"
     };
+
+    var bankAccounts = Model.BankAccounts ?? new List<AutoStock.WEB.Models.Admin.Workshops.AdminWorkshopBankAccountViewModel>();
 
     var subscriptionStatusOptions = new List<(int Value, string Text)>
     {
@@ -543,6 +545,289 @@ Bu bağlantı tek kullanımlıktır.";
         </div>
     </form>
 </div>
+
+
+<div class="admin-card bank-accounts-card">
+    <div class="card-header-row">
+        <div>
+            <h2>Banka Hesapları / IBAN</h2>
+            <p>Fatura ve ileride servis formlarında gösterilecek ödeme hesapları.</p>
+        </div>
+    </div>
+
+    <form asp-action="AddWorkshopBankAccount" asp-controller="Admin" method="post" class="bank-account-form">
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" name="WorkshopId" value="@Model.Id" />
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Banka Adı</label>
+                <input name="BankName"
+                       class="form-control-custom"
+                       placeholder="Örn: Garanti Bankası" />
+            </div>
+
+            <div class="form-group">
+                <label>Alıcı Ünvanı</label>
+                <input name="AccountHolder"
+                       class="form-control-custom"
+                       value="@(profile.LegalTitle ?? profile.DisplayName ?? Model.Name)"
+                       placeholder="Örn: Mete Otomotiv Ltd. Şti." />
+            </div>
+
+            <div class="form-group full">
+                <label>IBAN</label>
+                <input name="Iban"
+                       class="form-control-custom iban-input"
+                       maxlength="34"
+                       placeholder="TR00 0000 0000 0000 0000 0000 00" />
+            </div>
+
+            <div class="form-group">
+                <label>Para Birimi</label>
+                <select name="CurrencyCode" class="form-control-custom">
+                    <option value="TRY" selected>TRY</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Sıra</label>
+                <input name="SortOrder"
+                       type="number"
+                       value="@((bankAccounts.Count + 1))"
+                       class="form-control-custom"
+                       min="0" />
+            </div>
+
+            <div class="form-group">
+                <label>Şube</label>
+                <input name="BranchName"
+                       class="form-control-custom"
+                       placeholder="Opsiyonel" />
+            </div>
+
+            <div class="form-group">
+                <label>Hesap No</label>
+                <input name="AccountNumber"
+                       class="form-control-custom"
+                       placeholder="Opsiyonel" />
+            </div>
+
+            <div class="form-group full">
+                <label>Açıklama</label>
+                <input name="Description"
+                       class="form-control-custom"
+                       placeholder="Örn: Servis ödeme hesabı" />
+            </div>
+
+            <div class="form-group full bank-checkbox-grid">
+                <label>
+                    <input type="checkbox" name="IsDefault" value="true" />
+                    Varsayılan hesap
+                </label>
+
+                <label>
+                    <input type="checkbox" name="ShowOnInvoices" value="true" checked />
+                    Faturalarda göster
+                </label>
+
+                <label>
+                    <input type="checkbox" name="ShowOnServiceForms" value="true" />
+                    Servis formlarında göster
+                </label>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary-custom">
+                IBAN Ekle
+            </button>
+        </div>
+    </form>
+
+    @if (!bankAccounts.Any())
+    {
+        <div class="empty-state">
+            Henüz banka hesabı eklenmemiş.
+        </div>
+    }
+    else
+    {
+        <div class="bank-account-list">
+            @foreach (var bankAccount in bankAccounts)
+            {
+                <div class="bank-account-item">
+                    <div class="bank-account-main">
+                        <div>
+                            <strong>@bankAccount.BankName</strong>
+
+                            @if (bankAccount.IsDefault)
+                            {
+                                <span class="status-badge success">Varsayılan</span>
+                            }
+
+                            @if (bankAccount.ShowOnInvoices)
+                            {
+                                <span class="status-badge secondary">Faturada görünür</span>
+                            }
+
+                            @if (bankAccount.ShowOnServiceForms)
+                            {
+                                <span class="status-badge secondary">SKF’de görünür</span>
+                            }
+                        </div>
+
+                        <div class="bank-iban">@bankAccount.Iban</div>
+
+                        <div class="text-muted">
+                            @bankAccount.AccountHolder
+                            @if (!string.IsNullOrWhiteSpace(bankAccount.CurrencyCode))
+                            {
+                                <span> • @bankAccount.CurrencyCode</span>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(bankAccount.Description))
+                            {
+                                <span> • @bankAccount.Description</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="bank-account-actions">
+                        <details>
+                            <summary class="btn-secondary-custom btn-small-custom">
+                                Düzenle
+                            </summary>
+
+                            <form asp-action="UpdateWorkshopBankAccount"
+                                  asp-controller="Admin"
+                                  method="post"
+                                  class="bank-account-edit-form">
+                                @Html.AntiForgeryToken()
+
+                                <input type="hidden" name="WorkshopId" value="@Model.Id" />
+                                <input type="hidden" name="BankAccountId" value="@bankAccount.Id" />
+                                <input type="hidden" name="IsActive" value="true" />
+
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label>Banka Adı</label>
+                                        <input name="BankName"
+                                               value="@bankAccount.BankName"
+                                               class="form-control-custom" />
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Alıcı Ünvanı</label>
+                                        <input name="AccountHolder"
+                                               value="@bankAccount.AccountHolder"
+                                               class="form-control-custom" />
+                                    </div>
+
+                                    <div class="form-group full">
+                                        <label>IBAN</label>
+                                        <input name="Iban"
+                                               value="@bankAccount.Iban"
+                                               class="form-control-custom iban-input"
+                                               maxlength="34" />
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Para Birimi</label>
+                                        <select name="CurrencyCode" class="form-control-custom">
+                                            @foreach (var currency in new[] { "TRY", "USD", "EUR" })
+                                            {
+                                                if (bankAccount.CurrencyCode == currency)
+                                                {
+                                                    <option value="@currency" selected>@currency</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@currency">@currency</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Sıra</label>
+                                        <input name="SortOrder"
+                                               type="number"
+                                               value="@bankAccount.SortOrder"
+                                               class="form-control-custom"
+                                               min="0" />
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Şube</label>
+                                        <input name="BranchName"
+                                               value="@bankAccount.BranchName"
+                                               class="form-control-custom" />
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Hesap No</label>
+                                        <input name="AccountNumber"
+                                               value="@bankAccount.AccountNumber"
+                                               class="form-control-custom" />
+                                    </div>
+
+                                    <div class="form-group full">
+                                        <label>Açıklama</label>
+                                        <input name="Description"
+                                               value="@bankAccount.Description"
+                                               class="form-control-custom" />
+                                    </div>
+
+                                    <div class="form-group full bank-checkbox-grid">
+                                        <label>
+                                            <input type="checkbox" name="IsDefault" value="true" checked="@bankAccount.IsDefault" />
+                                            Varsayılan hesap
+                                        </label>
+
+                                        <label>
+                                            <input type="checkbox" name="ShowOnInvoices" value="true" checked="@bankAccount.ShowOnInvoices" />
+                                            Faturalarda göster
+                                        </label>
+
+                                        <label>
+                                            <input type="checkbox" name="ShowOnServiceForms" value="true" checked="@bankAccount.ShowOnServiceForms" />
+                                            Servis formlarında göster
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-primary-custom">
+                                        Hesabı Güncelle
+                                    </button>
+                                </div>
+                            </form>
+                        </details>
+
+                        <form asp-action="DeleteWorkshopBankAccount"
+                              asp-controller="Admin"
+                              method="post"
+                              onsubmit="return confirm('Bu banka hesabını pasife almak istiyor musun?');">
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden" name="workshopId" value="@Model.Id" />
+                            <input type="hidden" name="bankAccountId" value="@bankAccount.Id" />
+
+                            <button type="submit" class="btn-danger-custom">
+                                Sil
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
 
 <div class="admin-card partners-card">
     <div class="card-header-row">
@@ -1355,6 +1640,129 @@ Bu bağlantı tek kullanımlıktır.";
         .password-reset-card p {
             color: #475569;
         }
+
+.-accounts-card {
+    margin-top: 20px;
+}
+
+.bank-account-form {
+    padding-bottom: 18px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.bank-checkbox-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+}
+
+.bank-checkbox-grid label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-weight: 700;
+    color: #374151;
+}
+
+.bank-account-list {
+    display: grid;
+    gap: 12px;
+}
+
+.bank-account-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: #f9fafb;
+}
+
+.bank-account-main {
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.bank-account-main > div:first-child {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.bank-account-main strong {
+    font-size: 15px;
+}
+
+.bank-iban {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 14px;
+    font-weight: 800;
+    color: #111827;
+    word-break: break-word;
+}
+
+.bank-account-actions {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.bank-account-actions details {
+    position: relative;
+}
+
+.bank-account-actions summary {
+    list-style: none;
+    cursor: pointer;
+}
+
+.bank-account-actions summary::-webkit-details-marker {
+    display: none;
+}
+
+.bank-account-edit-form {
+    position: absolute;
+    right: 0;
+    top: 48px;
+    z-index: 5;
+    width: min(760px, calc(100vw - 48px));
+    padding: 18px;
+    border: 1px solid #dbe3ef;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .18);
+}
+
+.btn-small-custom {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+@@media (max-width: 900px) {
+    .bank-account-item {
+        grid-template-columns: 1fr;
+    }
+
+    .bank-account-actions {
+        justify-content: flex-start;
+    }
+
+    .bank-account-edit-form {
+        position: static;
+        width: 100%;
+        margin-top: 12px;
+        box-shadow: none;
+    }
+}
+
 </style>
 
 <script>
@@ -1529,4 +1937,15 @@ Bu bağlantı tek kullanımlıktır.";
             });
         });
     }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".iban-input").forEach(input => {
+            input.addEventListener("input", function () {
+                this.value = this.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 34);
+            });
+        });
+    });
 </script>
