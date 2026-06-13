@@ -182,4 +182,21 @@ public class InvoicesController : BaseController
 
         return Ok(result.Data ?? new List<VehicleModelDto>());
     }
+    [HttpPost("Invoices/{id:int}/SendEmail")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SendEmail(int id, string? toEmail, string? message)
+    {
+        var result = await _invoiceApiService.SendEmailAsync(id, new SendInvoiceEmailRequestDto
+        {
+            ToEmail = toEmail,
+            Message = message
+        });
+
+        return HandleCommandResult(
+            result,
+            onSuccess: () => RedirectToAction(nameof(Detail), new { id }),
+            onFailure: () => RedirectToAction(nameof(Detail), new { id }),
+            defaultErrorMessage: "Fatura e-postası gönderilirken hata oluştu.",
+            successMessage: "Fatura e-postası gönderildi.");
+    }
 }

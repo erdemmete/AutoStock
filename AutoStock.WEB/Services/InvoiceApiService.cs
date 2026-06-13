@@ -133,5 +133,15 @@ namespace AutoStock.WEB.Services
                 url,
                 "Araç modelleri alınırken hata oluştu.");
         }
+
+        public async Task<ApiResponse<SendInvoiceEmailResponseDto>> SendEmailAsync(
+    int invoiceId,
+    SendInvoiceEmailRequestDto model)
+        {
+            return await PostJsonAsync<SendInvoiceEmailRequestDto, SendInvoiceEmailResponseDto>(
+                $"/api/Invoices/{invoiceId}/send-email",
+                model,
+                "Fatura e-postası gönderilirken hata oluştu.");
+        }
     }
 }

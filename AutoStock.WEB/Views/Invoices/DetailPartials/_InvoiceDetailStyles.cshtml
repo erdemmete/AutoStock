@@ -1466,4 +1466,111 @@
             grid-template-columns: 1fr;
         }
     }
+
+    .invoice-footer-actions {
+        margin-top: 38px;
+        padding-top: 28px;
+        border-top: 1px solid #e5eaf3;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+    }
+
+    .invoice-footer-left,
+    .invoice-footer-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .invoice-footer-link,
+    .invoice-footer-list-btn,
+    .invoice-email-btn {
+        min-height: 46px;
+        border-radius: 14px;
+        padding: 0 20px;
+        font-weight: 900;
+        font-size: 15px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: .18s ease;
+    }
+
+    .invoice-footer-link {
+        color: #315cf6;
+        background: #f5f7ff;
+        border: 1px solid #dce5ff;
+    }
+
+        .invoice-footer-link:hover {
+            background: #eef3ff;
+            color: #244bd6;
+            transform: translateY(-1px);
+        }
+
+    .invoice-footer-list-btn {
+        color: #315cf6;
+        background: #ffffff;
+        border: 1px solid #dbe4f0;
+    }
+
+        .invoice-footer-list-btn:hover {
+            background: #f8fafc;
+            color: #244bd6;
+            transform: translateY(-1px);
+        }
+
+    .invoice-email-form {
+        margin: 0;
+    }
+
+    .invoice-email-btn {
+        border: none;
+        cursor: pointer;
+        color: #ffffff;
+        background: linear-gradient(135deg, #4f35e8, #315cf6);
+        box-shadow: 0 12px 24px rgba(79, 53, 232, .24);
+    }
+
+        .invoice-email-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 30px rgba(79, 53, 232, .30);
+        }
+
+    .invoice-email-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .18);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+    }
+
+    @@media (max-width: 760px) {
+        .invoice-footer-actions {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .invoice-footer-left,
+        .invoice-footer-right {
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .invoice-footer-link,
+        .invoice-footer-list-btn,
+        .invoice-email-btn,
+        .invoice-email-form {
+            width: 100%;
+        }
+    }
 </style>

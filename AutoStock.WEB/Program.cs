@@ -23,7 +23,7 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddSession();
 
-builder.Services.AddWebServices();
+builder.Services.AddWebServices(builder.Configuration);
 
 var app = builder.Build();
 

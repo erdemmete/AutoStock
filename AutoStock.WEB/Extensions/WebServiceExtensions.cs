@@ -1,13 +1,18 @@
-﻿using AutoStock.WEB.Services;
+﻿using AutoStock.Services.Interfaces;
+using AutoStock.Services.Options;
+using AutoStock.Services.Services;
+using AutoStock.WEB.Services;
 
 namespace AutoStock.WEB.Extensions
 {
     public static class WebServiceExtensions
     {
         public static IServiceCollection AddWebServices(
-            this IServiceCollection services)
+            this IServiceCollection services,
+            IConfiguration configuration)
         {
-            services.AddHttpContextAccessor();        
+            services.AddHttpContextAccessor();
+
             services.AddScoped<StockItemApiService>();
             services.AddScoped<AdminWorkshopApiService>();
             services.AddScoped<StockItemPageService>();
@@ -24,6 +29,12 @@ namespace AutoStock.WEB.Extensions
             services.AddScoped<AuthApiService>();
             services.AddScoped<DashboardApiService>();
             services.AddScoped<VehicleQrCodesApiService>();
+
+            services.Configure<EmailSettings>(
+                configuration.GetSection("EmailSettings"));
+
+            services.AddScoped<IEmailSender, SmtpEmailSender>();
+            services.AddScoped<AdminWorkshopInviteEmailService>();
 
             return services;
         }

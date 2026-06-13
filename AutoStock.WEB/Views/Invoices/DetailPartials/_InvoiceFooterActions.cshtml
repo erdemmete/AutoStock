@@ -1,14 +1,41 @@
 @model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
 
-<section class="footer-actions">
-    @if (Model.ServiceRecordId.HasValue)
-    {
-        <a href="/ServiceRecords/Detail/@Model.ServiceRecordId" class="footer-link">
-            ← Servis Kaydına Git
-        </a>
-    }
+<footer class="invoice-footer-actions">
+    <div class="invoice-footer-left">
+        @if (Model.ServiceRecordId.HasValue)
+        {
+            <a class="invoice-footer-link"
+               asp-controller="ServiceRecords"
+               asp-action="Detail"
+               asp-route-id="@Model.ServiceRecordId">
+                <span>←</span>
+                Servis Kaydına Git
+            </a>
+        }
+    </div>
 
-    <a href="/Invoices" class="footer-link">
-        Fatura Listesine Dön
-    </a>
-</section>
+    <div class="invoice-footer-right">
+        @if (Model.Status != 3)
+        {
+            <form asp-controller="Invoices"
+                  asp-action="SendEmail"
+                  asp-route-id="@Model.Id"
+                  method="post"
+                  class="invoice-email-form"
+                  onsubmit="return confirm('Bu faturayı müşteriye e-posta olarak göndermek istiyor musun?');">
+                @Html.AntiForgeryToken()
+
+                <button type="submit" class="invoice-email-btn">
+                    <span class="invoice-email-icon">✉</span>
+                    <span>E-posta Gönder</span>
+                </button>
+            </form>
+        }
+
+        <a class="invoice-footer-list-btn"
+           asp-controller="Invoices"
+           asp-action="Index">
+            Fatura Listesine Dön
+        </a>
+    </div>
+</footer>

@@ -8,13 +8,16 @@ namespace AutoStock.WEB.Controllers
     {
         private readonly AdminWorkshopApiService _adminWorkshopApiService;
         private readonly AdminWorkshopPageService _adminWorkshopPageService;
+        private readonly AdminWorkshopInviteEmailService _adminWorkshopInviteEmailService;
 
         public AdminController(
             AdminWorkshopApiService adminWorkshopApiService,
-            AdminWorkshopPageService adminWorkshopPageService)
+            AdminWorkshopPageService adminWorkshopPageService,
+            AdminWorkshopInviteEmailService adminWorkshopInviteEmailService)
         {
             _adminWorkshopApiService = adminWorkshopApiService;
             _adminWorkshopPageService = adminWorkshopPageService;
+            _adminWorkshopInviteEmailService = adminWorkshopInviteEmailService;
         }
         [HttpGet("Admin")]
         [HttpGet("Admin/Dashboard")]
@@ -86,6 +89,25 @@ namespace AutoStock.WEB.Controllers
             }
 
             StoreCreatedUserInviteTempData(result.Data);
+
+            var setupUrl = Url.Action(
+    "PasswordSetup",
+    "Auth",
+    new { token = result.Data.PasswordSetupToken },
+    Request.Scheme) ?? string.Empty;
+
+            var inviteMailResult = await _adminWorkshopInviteEmailService.SendCreatedUserInviteAsync(
+                result.Data,
+                setupUrl);
+
+            if (!inviteMailResult.IsSuccess)
+            {
+                ShowError(inviteMailResult.ErrorMessage ?? "Davet e-postası gönderilemedi. Bağlantı ekranda gösterilecek.");
+            }
+            else if (!string.IsNullOrWhiteSpace(result.Data.Email))
+            {
+                ShowSuccess("Davet e-postası kullanıcıya gönderildi.");
+            }
 
             ShowSuccess("Servis başarıyla oluşturuldu. İlk kullanıcı için davet bağlantısı oluşturuldu.");
 
@@ -252,6 +274,25 @@ namespace AutoStock.WEB.Controllers
             }
 
             StoreCreatedUserInviteTempData(result.Data);
+
+            var setupUrl = Url.Action(
+   "PasswordSetup",
+   "Auth",
+   new { token = result.Data.PasswordSetupToken },
+   Request.Scheme) ?? string.Empty;
+
+            var inviteMailResult = await _adminWorkshopInviteEmailService.SendCreatedUserInviteAsync(
+                result.Data,
+                setupUrl);
+
+            if (!inviteMailResult.IsSuccess)
+            {
+                ShowError(inviteMailResult.ErrorMessage ?? "Davet e-postası gönderilemedi. Bağlantı ekranda gösterilecek.");
+            }
+            else if (!string.IsNullOrWhiteSpace(result.Data.Email))
+            {
+                ShowSuccess("Davet e-postası kullanıcıya gönderildi.");
+            }
 
             ShowSuccess("Kullanıcı başarıyla oluşturuldu. Davet bağlantısı oluşturuldu.");
 

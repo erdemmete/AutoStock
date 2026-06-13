@@ -1,4 +1,5 @@
 ﻿using AutoStock.Services.Interfaces;
+using AutoStock.Services.Options;
 using AutoStock.Services.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,11 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<IUserSecurityTokenService, UserSecurityTokenService>();
             services.AddScoped<IVehicleService, VehicleService>();
             services.AddScoped<IServiceRecordImageService, ServiceRecordImageService>();
+            services.Configure<EmailSettings>(
+    configuration.GetSection("EmailSettings"));
+
+            services.AddScoped<IEmailSender, SmtpEmailSender>();
+            services.AddScoped<IInvoiceEmailService, InvoiceEmailService>();
 
             return services;
 

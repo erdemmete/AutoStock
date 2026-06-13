@@ -15,11 +15,13 @@ namespace AutoStock.API.Controllers
     {
         private readonly IInvoiceService _invoiceService;
         private readonly IVehicleCatalogService _vehicleCatalogService;
+        private readonly IInvoiceEmailService _invoiceEmailService;
 
-        public InvoicesController(IInvoiceService invoiceService, IVehicleCatalogService vehicleCatalogService)
+        public InvoicesController(IInvoiceService invoiceService, IVehicleCatalogService vehicleCatalogService, IInvoiceEmailService invoiceEmailService)
         {
             _invoiceService = invoiceService;
             _vehicleCatalogService = vehicleCatalogService;
+            _invoiceEmailService = invoiceEmailService;
         }
 
         [HttpGet("draft/from-service-record/{serviceRecordId:int}")]
@@ -203,6 +205,22 @@ namespace AutoStock.API.Controllers
             var models = await _vehicleCatalogService.GetModelsByBrandIdAsync(brandId);
 
             return ToActionResult(ServiceResult<List<VehicleModelDto>>.Success(models));
+        }
+
+        [HttpPost("{id:int}/send-email")]
+        public async Task<IActionResult> SendEmail(int id, SendInvoiceEmailRequestDto request)
+        {
+            var workshopIdResult = GetCurrentWorkshopId();
+
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
+
+            var result = await _invoiceEmailService.SendInvoiceAsync(
+                id,
+                workshopIdResult.Data,
+                request ?? new SendInvoiceEmailRequestDto());
+
+            return ToActionResult(result);
         }
     }
 }
