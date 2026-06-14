@@ -1,4 +1,4 @@
-﻿using AutoStock.Services.Constants;
+using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.CurrentAccounts;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -28,6 +28,24 @@ namespace AutoStock.API.Controllers
 
             var result = await _currentAccountService.CreatePaymentAsync(
                 request,
+                workshopIdResult.Data);
+
+            return ToActionResult(result);
+        }
+
+        [HttpPost("payments/{transactionId:int}/cancel")]
+        public async Task<IActionResult> CancelPayment(
+            int transactionId,
+            CancelPaymentRequestDto request)
+        {
+            var workshopIdResult = GetCurrentWorkshopId();
+
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
+
+            var result = await _currentAccountService.CancelPaymentAsync(
+                transactionId,
+                request ?? new CancelPaymentRequestDto(),
                 workshopIdResult.Data);
 
             return ToActionResult(result);

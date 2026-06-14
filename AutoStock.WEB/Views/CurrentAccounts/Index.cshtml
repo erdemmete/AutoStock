@@ -334,6 +334,7 @@
 
             <div class="modal-body cur-modal-body">
                 <input type="hidden" id="paymentCustomerId" />
+                <input type="hidden" id="paymentInvoiceId" />
 
                 <div class="cur-modal-field">
                     <label>Müşteri</label>
@@ -342,12 +343,29 @@
 
                 <div class="cur-modal-field">
                     <label>Tutar</label>
-                    <input type="number" id="paymentAmount" step="0.01" placeholder="0,00" />
+                    <input type="number" id="paymentAmount" step="0.01" min="0.01" placeholder="0,00" />
+                </div>
+
+                <div class="cur-modal-field cur-modal-field-two">
+                    <div>
+                        <label>Tarih</label>
+                        <input type="datetime-local" id="paymentDate" />
+                    </div>
+
+                    <div>
+                        <label>Ödeme Yöntemi</label>
+                        <select id="paymentMethod">
+                            <option value="Nakit">Nakit</option>
+                            <option value="Kredi Kartı">Kredi Kartı</option>
+                            <option value="Havale/EFT">Havale/EFT</option>
+                            <option value="Diğer">Diğer</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="cur-modal-field">
                     <label>Açıklama</label>
-                    <textarea id="paymentDescription" rows="3" placeholder="Örn: Nakit tahsilat"></textarea>
+                    <textarea id="paymentDescription" rows="3" maxlength="500" placeholder="Örn: Nakit tahsilat"></textarea>
                 </div>
             </div>
 
@@ -387,11 +405,14 @@
         });
     });
 
-    function openPaymentModal(customerId, customerName) {
+    function openPaymentModal(customerId, customerName, invoiceId, amount, description) {
         document.getElementById("paymentCustomerId").value = customerId;
+        document.getElementById("paymentInvoiceId").value = invoiceId || "";
         document.getElementById("paymentCustomerName").value = customerName;
-        document.getElementById("paymentAmount").value = "";
-        document.getElementById("paymentDescription").value = "";
+        document.getElementById("paymentAmount").value = amount || "";
+        document.getElementById("paymentDate").value = "";
+        document.getElementById("paymentMethod").value = "Nakit";
+        document.getElementById("paymentDescription").value = description || "Tahsilat";
 
         const modalElement = document.getElementById("paymentModal");
 
@@ -406,7 +427,10 @@
 
     async function submitPayment() {
         const customerId = parseInt(document.getElementById("paymentCustomerId").value);
+        const invoiceIdValue = document.getElementById("paymentInvoiceId").value;
         const amount = parseFloat(document.getElementById("paymentAmount").value);
+        const paymentDate = document.getElementById("paymentDate").value;
+        const paymentMethod = document.getElementById("paymentMethod").value;
         const description = document.getElementById("paymentDescription").value;
 
         if (!amount || amount <= 0) {
@@ -421,8 +445,11 @@
             },
             body: JSON.stringify({
                 customerId: customerId,
+                invoiceId: invoiceIdValue ? parseInt(invoiceIdValue) : null,
                 amount: amount,
-                description: description
+                paymentDate: paymentDate || null,
+                paymentMethod: paymentMethod || null,
+                description: description || null
             })
         });
 
@@ -433,8 +460,12 @@
 
         const result = await response.json();
 
-        if (!result.isSuccess) {
-            alert(result.errorMessage || "Tahsilat kaydedilemedi.");
+        if (result.isFailure || result.isSuccess === false) {
+            const message = result.errorMessage
+                || (Array.isArray(result.errorMessages) ? result.errorMessages.join("\n") : null)
+                || "Tahsilat kaydedilemedi.";
+
+            alert(message);
             return;
         }
 
@@ -1100,6 +1131,7 @@
         }
 
         .cur-modal-field input,
+        .cur-modal-field select,
         .cur-modal-field textarea {
             width: 100%;
             border: 1px solid #d4deeb;
@@ -1112,7 +1144,8 @@
             box-sizing: border-box;
         }
 
-        .cur-modal-field input {
+        .cur-modal-field input,
+        .cur-modal-field select {
             height: 50px;
             padding: 0 14px;
         }
@@ -1121,6 +1154,16 @@
             padding: 12px 14px;
             resize: vertical;
         }
+
+    .cur-modal-field-two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .cur-modal-field-two > div {
+        display: grid;
+        gap: 7px;
+    }
 
     .cur-modal-footer {
         padding: 18px 22px 22px;
@@ -1310,6 +1353,10 @@
     }
 
     @@media (max-width: 460px) {
+        .cur-modal-field-two {
+            grid-template-columns: 1fr;
+        }
+
         .cur-page {
             width: min(100% - 18px, 1280px);
             padding-top: 12px;

@@ -1,317 +1,1264 @@
-﻿@model AutoStock.WEB.Models.CurrentAccounts.CustomerCurrentAccountViewModel
+@model AutoStock.WEB.Models.CurrentAccounts.CustomerCurrentAccountViewModel
+@using System.Globalization
 
 @{
     ViewData["Title"] = "Cari Hesap";
+
+    var canReceivePayment = true; // WEB tarafında auth Session token ile çalıştığı için User.IsInRole burada güvenilir değil. API zaten Owner kontrolü yapıyor.
+    var transactions = Model.Transactions
+        .OrderByDescending(x => x.TransactionDate)
+        .ThenByDescending(x => x.Id)
+        .ToList();
+
+    string Money(decimal value) => value.ToString("N2") + " TL";
+
+    string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "?";
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 1)
+            return parts[0].Substring(0, 1).ToUpper();
+
+        return $"{parts[0][0]}{parts[^1][0]}".ToUpper();
+    }
+
+    string BalanceText(decimal balance)
+    {
+        if (balance > 0) return "Servisin alacağı var";
+        if (balance < 0) return "Müşteri alacaklı";
+        return "Bakiye kapalı";
+    }
+
+    string BalanceClass(decimal balance)
+    {
+        if (balance > 0) return "positive";
+        if (balance < 0) return "negative";
+        return "zero";
+    }
+
+    string TransactionClass(decimal debit, decimal credit)
+    {
+        if (credit > 0) return "credit";
+        if (debit > 0) return "debit";
+        return "neutral";
+    }
 }
 
-<div class="ca-detail-page">
+<div class="ca-customer-page">
+    <section class="ca-customer-hero">
+        <div class="ca-customer-title-wrap">
+            <a asp-controller="CurrentAccounts"
+               asp-action="Index"
+               class="ca-customer-back"
+               title="Cari listesine dön">
+                ←
+            </a>
 
-    <div class="ca-detail-header">
-        <div>
-            <h1>@Model.CustomerName</h1>
-            <p>Cari hesap hareketleri ve müşteri ekstresi</p>
+            <div class="ca-customer-avatar">@GetInitials(Model.CustomerName)</div>
+
+            <div>
+                <span class="ca-customer-eyebrow">Cari Ekstre</span>
+                <h1>@Model.CustomerName</h1>
+                <p>Faturalar, tahsilatlar ve açık bakiye tek ekranda.</p>
+            </div>
         </div>
 
-        <div class="ca-balance-box">
+        @if (canReceivePayment)
+        {
+            <button type="button"
+                    class="ca-customer-primary-btn"
+                    data-open-payment-modal
+                    data-customer-id="@Model.CustomerId"
+                    data-customer-name="@Model.CustomerName"
+                    data-invoice-id=""
+                    data-invoice-number=""
+                    data-amount=""
+                    data-description="Tahsilat">
+                Tahsilat Ekle
+            </button>
+        }
+    </section>
+
+    <section class="ca-customer-summary-grid">
+        <article class="ca-customer-summary-card main @BalanceClass(Model.Balance)">
             <span>Güncel Bakiye</span>
+            <strong>@Money(Model.Balance)</strong>
+            <small>@BalanceText(Model.Balance)</small>
+        </article>
 
-            <strong class="@(Model.Balance >= 0 ? "positive" : "negative")">
-                @Model.Balance.ToString("N2") TL
-            </strong>
+        <article class="ca-customer-summary-card">
+            <span>Toplam Fatura</span>
+            <strong>@Money(Model.InvoiceTotal)</strong>
+            <small>Kesilmiş borç kayıtları</small>
+        </article>
+
+        <article class="ca-customer-summary-card">
+            <span>Toplam Tahsilat</span>
+            <strong>@Money(Model.PaymentTotal)</strong>
+            <small>@(Model.LastPaymentDate.HasValue ? $"Son: {Model.LastPaymentDate.Value:dd.MM.yyyy}" : "Henüz tahsilat yok")</small>
+        </article>
+
+        <article class="ca-customer-summary-card warning">
+            <span>Açık Fatura</span>
+            <strong>@Money(Model.OpenInvoiceTotal)</strong>
+            <small>@Model.OpenInvoiceCount açık fatura</small>
+        </article>
+    </section>
+
+    <section class="ca-customer-section">
+        <div class="ca-customer-section-head">
+            <div>
+                <h2>Açık Faturalar</h2>
+                <p>Kalan tahsilatı bulunan kesilmiş faturalar.</p>
+            </div>
         </div>
-    </div>
 
-    <div class="ca-detail-card">
+        @if (!Model.OpenInvoices.Any())
+        {
+            <div class="ca-customer-empty">
+                <strong>Açık fatura yok</strong>
+                <span>Bu müşterinin tahsil edilmemiş faturası bulunmuyor.</span>
+            </div>
+        }
+        else
+        {
+            <div class="ca-customer-table-wrap">
+                <table class="ca-customer-table">
+                    <thead>
+                        <tr>
+                            <th>Fatura</th>
+                            <th>Tarih</th>
+                            <th>Araç</th>
+                            <th class="text-end">Tutar</th>
+                            <th class="text-end">Tahsil</th>
+                            <th class="text-end">Kalan</th>
+                            <th></th>
+                        </tr>
+                    </thead>
 
-        <div class="ca-toolbar">
-            <div class="ca-search">
-                <span>⌕</span>
-                <input type="text"
-                       placeholder="Açıklama veya evrak ara..." />
+                    <tbody>
+                        @foreach (var invoice in Model.OpenInvoices)
+                        {
+                            <tr>
+                                <td>
+                                    <a class="ca-customer-link"
+                                       asp-controller="Invoices"
+                                       asp-action="Detail"
+                                       asp-route-invoiceId="@invoice.InvoiceId">
+                                        @invoice.InvoiceNumber
+                                    </a>
+                                </td>
+
+                                <td>@invoice.InvoiceDate.ToString("dd.MM.yyyy")</td>
+                                <td>@(string.IsNullOrWhiteSpace(invoice.Plate) ? "-" : invoice.Plate)</td>
+                                <td class="text-end">@Money(invoice.GrandTotal)</td>
+                                <td class="text-end">@Money(invoice.PaidTotal)</td>
+                                <td class="text-end ca-customer-strong">@Money(invoice.RemainingAmount)</td>
+
+                                <td class="text-end">
+                                    @if (canReceivePayment)
+                                    {
+                                        <button type="button"
+                                                class="ca-customer-mini-btn"
+                                                data-open-payment-modal
+                                                data-customer-id="@Model.CustomerId"
+                                                data-customer-name="@Model.CustomerName"
+                                                data-invoice-id="@invoice.InvoiceId"
+                                                data-invoice-number="@invoice.InvoiceNumber"
+                                                data-amount="@invoice.RemainingAmount.ToString(CultureInfo.InvariantCulture)"
+                                                data-description="@invoice.InvoiceNumber kalan tahsilatı">
+                                            Tahsil Et
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="ca-customer-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section class="ca-customer-section">
+        <div class="ca-customer-section-head ledger">
+            <div>
+                <h2>Hesap Hareketleri</h2>
+                <p>Fatura, iptal ve tahsilat hareketleri.</p>
             </div>
 
-            <button class="ca-btn ca-btn-success"
-                    type="button"
-                    onclick="history.back()">
-                Geri Dön
-            </button>
+            <div class="ca-customer-ledger-search">
+                <span>⌕</span>
+                <input type="text"
+                       id="caLedgerSearchInput"
+                       placeholder="Açıklama, belge veya tür ara..." />
+            </div>
         </div>
 
-        <table class="ca-table">
+        @if (!transactions.Any())
+        {
+            <div class="ca-customer-empty">
+                <strong>Hareket yok</strong>
+                <span>Bu müşteri için henüz cari hareket oluşmamış.</span>
+            </div>
+        }
+        else
+        {
+            <div class="ca-customer-table-wrap">
+                <table class="ca-customer-table ca-customer-ledger-table" id="caLedgerTable">
+                    <thead>
+                        <tr>
+                            <th>Tarih</th>
+                            <th>Tür</th>
+                            <th>Belge</th>
+                            <th>Açıklama</th>
+                            <th class="text-end">Borç</th>
+                            <th class="text-end">Alacak</th>
+                            <th class="text-end">Bakiye</th>
+                            <th></th>
+                        </tr>
+                    </thead>
 
-            <thead>
-                <tr>
-                    <th>Tarih</th>
-                    <th>Evrak</th>
-                    <th>Açıklama</th>
-                    <th class="text-end">Borç</th>
-                    <th class="text-end">Alacak</th>
-                    <th class="text-end">Bakiye</th>
-                </tr>
-            </thead>
+                    <tbody>
+                        @foreach (var item in transactions)
+                        {
+                            var transactionClass = TransactionClass(item.Debit, item.Credit);
+                            var documentText = !string.IsNullOrWhiteSpace(item.InvoiceNumber)
+                                ? item.InvoiceNumber
+                                : !string.IsNullOrWhiteSpace(item.DocumentNumber)
+                                    ? item.DocumentNumber
+                                    : "-";
 
-            <tbody>
+                            <tr data-ledger-row
+                                data-search="@($"{item.TransactionDate:dd.MM.yyyy} {item.TypeText} {documentText} {item.Description}".ToLowerInvariant())">
+                                <td>
+                                    <div class="ca-customer-date-main">@item.TransactionDate.ToString("dd.MM.yyyy")</div>
+                                    <small>@item.TransactionDate.ToString("HH:mm")</small>
+                                </td>
 
-                @foreach (var item in Model.Transactions)
-                {
-                    var rowClass =
-                        item.Debit > 0
-                        ? "debit"
-                        : "credit";
-
-                    <tr>
-
-                        <td>
-                            @item.TransactionDate.ToString("dd.MM.yyyy")
-                            <br />
-                            <small>
-                                @item.TransactionDate.ToString("HH:mm")
-                            </small>
-                        </td>
-
-                        <td>
-                            @(
-                                string.IsNullOrWhiteSpace(item.DocumentNumber)
-                                ? "-"
-                                : item.DocumentNumber
-                                )
-                        </td>
-
-                        <td>
-                            <div class="ca-description">
-                                @item.Description
-
-                                @if (item.IsSystemGenerated)
-                                {
-                                    <span class="ca-badge">
-                                        Sistem
+                                <td>
+                                    <span class="ca-customer-pill @transactionClass">
+                                        @item.TypeText
                                     </span>
-                                }
-                            </div>
-                        </td>
+                                </td>
 
-                        <td class="text-end debit-text">
-                            @(item.Debit > 0
-                                ? item.Debit.ToString("N2")
-                                : "-")
-                        </td>
+                                <td>
+                                    @if (item.InvoiceId.HasValue)
+                                    {
+                                        <a class="ca-customer-link"
+                                           asp-controller="Invoices"
+                                           asp-action="Detail"
+                                           asp-route-invoiceId="@item.InvoiceId.Value">
+                                            @documentText
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        @documentText
+                                    }
+                                </td>
 
-                        <td class="text-end credit-text">
-                            @(item.Credit > 0
-                                ? item.Credit.ToString("N2")
-                                : "-")
-                        </td>
+                                <td>
+                                    <div class="ca-customer-description">
+                                        <span>@item.Description</span>
 
-                        <td class="text-end">
-                            <strong class="@(item.Balance >= 0 ? "positive" : "negative")">
-                                @item.Balance.ToString("N2")
-                            </strong>
-                        </td>
+                                        @if (item.IsSystemGenerated)
+                                        {
+                                            <em>Sistem</em>
+                                        }
 
-                    </tr>
-                }
+                                        @if (item.IsPaymentCancelled)
+                                        {
+                                            <em class="danger">İptal edildi</em>
+                                        }
 
-            </tbody>
+                                        @if (item.IsPaymentCancellation)
+                                        {
+                                            <em class="danger">Ters kayıt</em>
+                                        }
+                                    </div>
+                                </td>
 
-        </table>
+                                <td class="text-end ca-customer-debit">
+                                    @(item.Debit > 0 ? Money(item.Debit) : "-")
+                                </td>
 
-    </div>
+                                <td class="text-end ca-customer-credit">
+                                    @(item.Credit > 0 ? Money(item.Credit) : "-")
+                                </td>
 
+                                <td class="text-end ca-customer-strong">
+                                    @Money(item.Balance)
+                                </td>
+
+                                <td class="text-end">
+                                    @if (item.CanCancelPayment)
+                                    {
+                                        <button type="button"
+                                                class="ca-customer-mini-btn danger"
+                                                data-open-cancel-payment-modal
+                                                data-transaction-id="@item.Id"
+                                                data-transaction-info="@($"{item.TransactionDate:dd.MM.yyyy} / {Money(item.Credit)}")">
+                                            İptal Et
+                                        </button>
+                                    }
+                                    else if (item.IsPaymentCancelled)
+                                    {
+                                        <span class="ca-customer-muted">İptal edildi</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ca-customer-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 </div>
 
+@if (canReceivePayment)
+{
+    <div class="ca-customer-modal-backdrop" id="paymentModalBackdrop" hidden>
+        <div class="ca-customer-modal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+            <div class="ca-customer-modal-head">
+                <div>
+                    <span>Cari İşlem</span>
+                    <h3 id="paymentModalTitle">Tahsilat Ekle</h3>
+                    <p id="paymentModalSubtitle">Müşteri tahsilatı</p>
+                </div>
+
+                <button type="button"
+                        class="ca-customer-modal-close"
+                        data-close-payment-modal
+                        aria-label="Kapat">
+                    ×
+                </button>
+            </div>
+
+            <form id="paymentForm">
+                <input type="hidden" id="paymentCustomerId" value="@Model.CustomerId" />
+                <input type="hidden" id="paymentInvoiceId" />
+
+                <div class="ca-customer-form-grid">
+                    <label>
+                        <span>Tutar</span>
+                        <input type="number" min="0.01" step="0.01" id="paymentAmount" required />
+                    </label>
+
+                    <label>
+                        <span>Tarih</span>
+                        <input type="datetime-local" id="paymentDate" />
+                    </label>
+
+                    <label>
+                        <span>Ödeme Yöntemi</span>
+                        <select id="paymentMethod">
+                            <option value="Nakit">Nakit</option>
+                            <option value="Kredi Kartı">Kredi Kartı</option>
+                            <option value="Havale/EFT">Havale/EFT</option>
+                            <option value="Diğer">Diğer</option>
+                        </select>
+                    </label>
+
+                    <label class="full">
+                        <span>Açıklama</span>
+                        <textarea id="paymentDescription" rows="3" maxlength="500"></textarea>
+                    </label>
+                </div>
+
+                <div class="ca-customer-error" id="paymentError" hidden></div>
+
+                <div class="ca-customer-modal-actions">
+                    <button type="button"
+                            class="ca-customer-modal-btn soft"
+                            data-close-payment-modal>
+                        Vazgeç
+                    </button>
+
+                    <button type="submit" class="ca-customer-modal-btn primary">
+                        Tahsilat Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="ca-customer-modal-backdrop" id="cancelPaymentModalBackdrop" hidden>
+        <div class="ca-customer-modal" role="dialog" aria-modal="true" aria-labelledby="cancelPaymentModalTitle">
+            <div class="ca-customer-modal-head danger">
+                <div>
+                    <span>Cari İşlem</span>
+                    <h3 id="cancelPaymentModalTitle">Tahsilatı İptal Et</h3>
+                    <p id="cancelPaymentModalSubtitle">Bu işlem tahsilatı silmez, ters cari hareket oluşturur.</p>
+                </div>
+
+                <button type="button"
+                        class="ca-customer-modal-close"
+                        data-close-cancel-payment-modal
+                        aria-label="Kapat">
+                    ×
+                </button>
+            </div>
+
+            <form id="cancelPaymentForm">
+                <input type="hidden" id="cancelPaymentTransactionId" />
+
+                <div class="ca-customer-cancel-warning">
+                    <strong>Güvenli iptal mantığı</strong>
+                    <span>Orijinal tahsilat kaydı korunur. Aynı tutarda borç yönlü ters hareket oluşturularak bakiye düzeltilir.</span>
+                </div>
+
+                <div class="ca-customer-form-grid">
+                    <label class="full">
+                        <span>İptal Açıklaması</span>
+                        <textarea id="cancelPaymentReason"
+                                  rows="3"
+                                  maxlength="500"
+                                  placeholder="Örn. Yanlış tutar girildi, farklı müşteriye işlendi..."></textarea>
+                    </label>
+                </div>
+
+                <div class="ca-customer-error" id="cancelPaymentError" hidden></div>
+
+                <div class="ca-customer-modal-actions">
+                    <button type="button"
+                            class="ca-customer-modal-btn soft"
+                            data-close-cancel-payment-modal>
+                        Vazgeç
+                    </button>
+
+                    <button type="submit" class="ca-customer-modal-btn danger">
+                        Tahsilatı İptal Et
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ledgerSearchInput = document.getElementById("caLedgerSearchInput");
+
+        ledgerSearchInput?.addEventListener("input", function () {
+            const search = (ledgerSearchInput.value || "").trim().toLowerCase();
+
+            document.querySelectorAll("[data-ledger-row]").forEach(function (row) {
+                const text = row.dataset.search || "";
+                row.hidden = search.length > 0 && !text.includes(search);
+            });
+        });
+
+        const modal = document.getElementById("paymentModalBackdrop");
+        const form = document.getElementById("paymentForm");
+
+        if (!modal || !form) {
+            return;
+        }
+
+        const customerInput = document.getElementById("paymentCustomerId");
+        const invoiceInput = document.getElementById("paymentInvoiceId");
+        const amountInput = document.getElementById("paymentAmount");
+        const dateInput = document.getElementById("paymentDate");
+        const methodInput = document.getElementById("paymentMethod");
+        const descriptionInput = document.getElementById("paymentDescription");
+        const subtitle = document.getElementById("paymentModalSubtitle");
+        const errorBox = document.getElementById("paymentError");
+
+        const cancelModal = document.getElementById("cancelPaymentModalBackdrop");
+        const cancelForm = document.getElementById("cancelPaymentForm");
+        const cancelTransactionInput = document.getElementById("cancelPaymentTransactionId");
+        const cancelReasonInput = document.getElementById("cancelPaymentReason");
+        const cancelSubtitle = document.getElementById("cancelPaymentModalSubtitle");
+        const cancelErrorBox = document.getElementById("cancelPaymentError");
+
+        function openPaymentModal(button) {
+            const invoiceId = button.dataset.invoiceId || "";
+            const invoiceNumber = button.dataset.invoiceNumber || "";
+            const amount = button.dataset.amount || "";
+            const description = button.dataset.description || "Tahsilat";
+
+            customerInput.value = button.dataset.customerId || "@Model.CustomerId";
+            invoiceInput.value = invoiceId;
+            amountInput.value = amount;
+            dateInput.value = "";
+            methodInput.value = "Nakit";
+            descriptionInput.value = description;
+            subtitle.textContent = invoiceNumber
+                ? invoiceNumber + " numaralı fatura tahsilatı"
+                : "Müşteri tahsilatı";
+            errorBox.hidden = true;
+            errorBox.textContent = "";
+
+            modal.hidden = false;
+            setTimeout(function () {
+                amountInput.focus();
+            }, 50);
+        }
+
+        function closePaymentModal() {
+            modal.hidden = true;
+        }
+
+        function openCancelPaymentModal(button) {
+            if (!cancelModal || !cancelForm) {
+                return;
+            }
+
+            cancelTransactionInput.value = button.dataset.transactionId || "";
+            cancelReasonInput.value = "";
+            cancelSubtitle.textContent = (button.dataset.transactionInfo || "Tahsilat") + " hareketi için ters kayıt oluşturulacak.";
+            cancelErrorBox.hidden = true;
+            cancelErrorBox.textContent = "";
+
+            cancelModal.hidden = false;
+            setTimeout(function () {
+                cancelReasonInput.focus();
+            }, 50);
+        }
+
+        function closeCancelPaymentModal() {
+            if (cancelModal) {
+                cancelModal.hidden = true;
+            }
+        }
+
+        document.querySelectorAll("[data-open-payment-modal]").forEach(function (button) {
+            button.addEventListener("click", function () {
+                openPaymentModal(button);
+            });
+        });
+
+        document.querySelectorAll("[data-close-payment-modal]").forEach(function (button) {
+            button.addEventListener("click", closePaymentModal);
+        });
+
+        document.querySelectorAll("[data-open-cancel-payment-modal]").forEach(function (button) {
+            button.addEventListener("click", function () {
+                openCancelPaymentModal(button);
+            });
+        });
+
+        document.querySelectorAll("[data-close-cancel-payment-modal]").forEach(function (button) {
+            button.addEventListener("click", closeCancelPaymentModal);
+        });
+
+        modal.addEventListener("click", function (event) {
+            if (event.target === modal) {
+                closePaymentModal();
+            }
+        });
+
+        cancelModal?.addEventListener("click", function (event) {
+            if (event.target === cancelModal) {
+                closeCancelPaymentModal();
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && !modal.hidden) {
+                closePaymentModal();
+            }
+
+            if (event.key === "Escape" && cancelModal && !cancelModal.hidden) {
+                closeCancelPaymentModal();
+            }
+        });
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const amount = Number(amountInput.value);
+
+            if (!amount || amount <= 0) {
+                errorBox.textContent = "Geçerli bir tahsilat tutarı giriniz.";
+                errorBox.hidden = false;
+                return;
+            }
+
+            try {
+                const response = await fetch("/CurrentAccounts/CreatePayment", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        customerId: parseInt(customerInput.value),
+                        invoiceId: invoiceInput.value ? parseInt(invoiceInput.value) : null,
+                        amount: amount,
+                        paymentDate: dateInput.value || null,
+                        paymentMethod: methodInput.value || null,
+                        description: descriptionInput.value || null
+                    })
+                });
+
+                const result = await response.json().catch(function () { return null; });
+
+                if (!response.ok || !result || result.isFailure || result.isSuccess === false) {
+                    const message = result?.errorMessage
+                        || (Array.isArray(result?.errorMessages) ? result.errorMessages.join("\n") : null)
+                        || "Tahsilat kaydedilemedi.";
+
+                    errorBox.textContent = message;
+                    errorBox.hidden = false;
+                    return;
+                }
+
+                window.location.reload();
+            }
+            catch {
+                errorBox.textContent = "Tahsilat kaydedilirken beklenmeyen bir hata oluştu.";
+                errorBox.hidden = false;
+            }
+        });
+
+        cancelForm?.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const transactionId = parseInt(cancelTransactionInput.value || "0");
+
+            if (!transactionId || transactionId <= 0) {
+                cancelErrorBox.textContent = "Geçerli bir tahsilat hareketi seçiniz.";
+                cancelErrorBox.hidden = false;
+                return;
+            }
+
+            try {
+                const response = await fetch("/CurrentAccounts/CancelPayment", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        transactionId: transactionId,
+                        reason: cancelReasonInput.value || null
+                    })
+                });
+
+                const result = await response.json().catch(function () { return null; });
+
+                if (!response.ok || !result || result.isFailure || result.isSuccess === false) {
+                    const message = result?.errorMessage
+                        || (Array.isArray(result?.errorMessages) ? result.errorMessages.join("\n") : null)
+                        || "Tahsilat iptal edilemedi.";
+
+                    cancelErrorBox.textContent = message;
+                    cancelErrorBox.hidden = false;
+                    return;
+                }
+
+                window.location.reload();
+            }
+            catch {
+                cancelErrorBox.textContent = "Tahsilat iptal edilirken beklenmeyen bir hata oluştu.";
+                cancelErrorBox.hidden = false;
+            }
+        });
+    });
+</script>
+
 <style>
-
-    .ca-detail-page {
-        max-width: 1320px;
+    .ca-customer-page {
+        width: min(1280px, calc(100% - 56px));
         margin: 0 auto;
-        padding: 32px 24px;
-        color: #001632;
+        padding: 30px 0 64px;
+        color: #061936;
     }
 
-    .ca-detail-header {
+    .ca-customer-hero {
+        margin-bottom: 22px;
+        padding: 24px 28px;
+        border-radius: 30px;
+        background: radial-gradient(circle at 78% 40%, rgba(255,255,255,.16), transparent 30%), linear-gradient(135deg, #07111f 0%, #111827 48%, #4f46e5 100%);
+        color: white;
+        box-shadow: 0 26px 70px rgba(15, 23, 42, .20);
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-bottom: 28px;
-        gap: 20px;
-    }
-
-        .ca-detail-header h1 {
-            font-size: 30px;
-            font-weight: 800;
-            margin: 0;
-        }
-
-        .ca-detail-header p {
-            margin-top: 8px;
-            color: #536b8a;
-        }
-
-    .ca-balance-box {
-        background: #fff;
-        border: 1px solid #dbe4f0;
-        border-radius: 16px;
-        padding: 18px 24px;
-        min-width: 260px;
-        text-align: right;
-        box-shadow: 0 2px 6px rgba(15, 23, 42, .06);
-    }
-
-        .ca-balance-box span {
-            display: block;
-            color: #536b8a;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .ca-balance-box strong {
-            font-size: 30px;
-            font-weight: 800;
-        }
-
-    .positive {
-        color: #009966;
-    }
-
-    .negative {
-        color: #e60046;
-    }
-
-    .ca-detail-card {
-        background: #fff;
-        border-radius: 18px;
-        border: 1px solid #dbe4f0;
+        justify-content: space-between;
+        gap: 22px;
         overflow: hidden;
-        box-shadow: 0 2px 6px rgba(15, 23, 42, .06);
     }
 
-    .ca-toolbar {
-        padding: 24px;
+    .ca-customer-title-wrap {
+        min-width: 0;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid #e5edf7;
+        gap: 15px;
+    }
+
+    .ca-customer-back,
+    .ca-customer-avatar {
+        width: 52px;
+        height: 52px;
+        flex: 0 0 52px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        text-decoration: none;
+        font-weight: 950;
+    }
+
+    .ca-customer-back {
+        background: rgba(255,255,255,.12);
+        border: 1px solid rgba(255,255,255,.18);
+        color: white;
+        font-size: 23px;
+    }
+
+    .ca-customer-avatar {
+        background: linear-gradient(135deg, #2563eb, #16a34a);
+        color: white;
+        box-shadow: 0 18px 36px rgba(37, 99, 235, .25);
+    }
+
+    .ca-customer-eyebrow {
+        display: inline-flex;
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.18);
+        color: rgba(255,255,255,.82);
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .ca-customer-hero h1 {
+        margin: 0;
+        font-size: clamp(29px, 4vw, 42px);
+        line-height: 1;
+        letter-spacing: -1.5px;
+    }
+
+    .ca-customer-hero p {
+        margin: 10px 0 0;
+        color: rgba(255,255,255,.72);
+        font-size: 15px;
+        line-height: 1.45;
+    }
+
+    .ca-customer-primary-btn {
+        height: 52px;
+        padding: 0 20px;
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,.20);
+        background: #059669;
+        color: white;
+        font-weight: 950;
+        box-shadow: 0 16px 34px rgba(5, 150, 105, .28);
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .ca-customer-summary-grid {
+        margin-bottom: 22px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 16px;
     }
 
-    .ca-search {
-        width: 420px;
-        height: 48px;
-        border: 1px solid #cbd8ea;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        padding: 0 16px;
-        gap: 10px;
+    .ca-customer-summary-card {
+        min-width: 0;
+        padding: 21px;
+        border-radius: 24px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
     }
 
-        .ca-search input {
-            border: none;
-            outline: none;
-            width: 100%;
-            font-size: 15px;
-        }
+    .ca-customer-summary-card.main.positive {
+        background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+        border-color: #bbf7d0;
+    }
 
-            .ca-search input::placeholder {
-                color: #8ca0bd;
-            }
+    .ca-customer-summary-card.main.negative {
+        background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
+        border-color: #fecdd3;
+    }
 
-    .ca-table {
+    .ca-customer-summary-card.warning {
+        background: linear-gradient(135deg, #ffffff 0%, #fff7ed 100%);
+    }
+
+    .ca-customer-summary-card span {
+        display: block;
+        margin-bottom: 8px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .ca-customer-summary-card strong {
+        display: block;
+        color: #0f172a;
+        font-size: 22px;
+        line-height: 1.1;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .ca-customer-summary-card small {
+        display: block;
+        margin-top: 8px;
+        color: #8aa0bd;
+        font-size: 12px;
+        font-weight: 850;
+    }
+
+    .ca-customer-section {
+        margin-top: 18px;
+        padding: 18px;
+        border-radius: 26px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
+    }
+
+    .ca-customer-section-head {
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .ca-customer-section-head h2 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 22px;
+        font-weight: 950;
+        letter-spacing: -.5px;
+    }
+
+    .ca-customer-section-head p {
+        margin: 6px 0 0;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .ca-customer-ledger-search {
+        width: min(390px, 100%);
+        height: 46px;
+        border: 1px solid #d4deeb;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 14px;
+        background: #f8fafc;
+        color: #8aa0bd;
+    }
+
+    .ca-customer-ledger-search input {
         width: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 750;
+    }
+
+    .ca-customer-table-wrap {
+        overflow-x: auto;
+        border-radius: 20px;
+        border: 1px solid #e5edf7;
+    }
+
+    .ca-customer-table {
+        width: 100%;
+        min-width: 920px;
         border-collapse: collapse;
     }
 
-        .ca-table thead {
-            background: #f6f9fd;
-        }
+    .ca-customer-table thead {
+        background: #f8fafc;
+    }
 
-        .ca-table th {
-            padding: 18px 24px;
-            text-align: left;
-            font-size: 14px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: #536b8a;
-            letter-spacing: .05em;
-        }
+    .ca-customer-table th {
+        padding: 15px 16px;
+        color: #64748b;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
 
-        .ca-table td {
-            padding: 20px 24px;
-            border-top: 1px solid #edf2f7;
-            vertical-align: middle;
-        }
+    .ca-customer-table td {
+        padding: 16px;
+        border-top: 1px solid #edf2f7;
+        color: #334155;
+        font-size: 14px;
+        vertical-align: middle;
+    }
 
-    .ca-description {
+    .ca-customer-table tbody tr:hover {
+        background: #fbfdff;
+    }
+
+    .ca-customer-link {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 950;
+    }
+
+    .ca-customer-strong {
+        color: #0f172a;
+        font-weight: 950;
+    }
+
+    .ca-customer-muted {
+        color: #94a3b8;
+    }
+
+    .ca-customer-mini-btn {
+        height: 38px;
+        padding: 0 13px;
+        border-radius: 13px;
+        border: none;
+        background: #059669;
+        color: white;
+        font-size: 12px;
+        font-weight: 950;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .ca-customer-mini-btn.danger {
+        background: #e11d48;
+        box-shadow: 0 10px 20px rgba(225, 29, 72, .14);
+    }
+
+    .ca-customer-date-main {
+        color: #0f172a;
+        font-weight: 900;
+    }
+
+    .ca-customer-table small {
+        color: #94a3b8;
+        font-weight: 800;
+    }
+
+    .ca-customer-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .ca-customer-pill.debit {
+        background: #fff7ed;
+        color: #c2410c;
+    }
+
+    .ca-customer-pill.credit {
+        background: #f0fdf4;
+        color: #15803d;
+    }
+
+    .ca-customer-pill.neutral {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .ca-customer-description {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
     }
 
-    .ca-badge {
+    .ca-customer-description em {
+        display: inline-flex;
+        padding: 4px 8px;
+        border-radius: 999px;
         background: #eef2ff;
         color: #4f46e5;
-        padding: 4px 10px;
-        border-radius: 999px;
+        font-style: normal;
+        font-size: 11px;
+        font-weight: 950;
+    }
+
+    .ca-customer-description em.danger {
+        background: #fff1f2;
+        color: #be123c;
+    }
+
+    .ca-customer-debit {
+        color: #e11d48 !important;
+        font-weight: 900;
+    }
+
+    .ca-customer-credit {
+        color: #059669 !important;
+        font-weight: 900;
+    }
+
+    .ca-customer-empty {
+        padding: 36px 18px;
+        border-radius: 22px;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        display: grid;
+        justify-items: center;
+        gap: 6px;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .ca-customer-empty strong {
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 950;
+    }
+
+    .ca-customer-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(15, 23, 42, .58);
+        backdrop-filter: blur(5px);
+    }
+
+    .ca-customer-modal {
+        width: min(560px, 100%);
+        max-height: calc(100vh - 36px);
+        overflow: auto;
+        border-radius: 26px;
+        background: white;
+        box-shadow: 0 32px 90px rgba(15, 23, 42, .35);
+    }
+
+    .ca-customer-modal-head {
+        padding: 22px 22px 18px;
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        border-bottom: 1px solid #e5edf7;
+    }
+
+    .ca-customer-modal-head.danger span {
+        color: #e11d48;
+    }
+
+    .ca-customer-modal-head span {
+        color: #4f46e5;
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: .08em;
     }
 
-    .debit-text {
-        color: #e60046;
-        font-weight: 700;
+    .ca-customer-modal-head h3 {
+        margin: 5px 0 5px;
+        color: #0f172a;
+        font-size: 23px;
+        font-weight: 950;
     }
 
-    .credit-text {
-        color: #009966;
-        font-weight: 700;
+    .ca-customer-modal-head p {
+        margin: 0;
+        color: #64748b;
+        font-size: 14px;
     }
 
-    .ca-btn {
-        min-height: 42px;
-        padding: 0 18px;
-        border-radius: 10px;
-        border: none;
-        font-weight: 700;
+    .ca-customer-modal-close {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        border-radius: 14px;
+        border: 1px solid #d8e2ef;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 24px;
+        line-height: 1;
         cursor: pointer;
     }
 
-    .ca-btn-success {
+    .ca-customer-form-grid {
+        padding: 22px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .ca-customer-form-grid label {
+        display: grid;
+        gap: 7px;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .ca-customer-form-grid label.full {
+        grid-column: 1 / -1;
+    }
+
+    .ca-customer-form-grid input,
+    .ca-customer-form-grid select,
+    .ca-customer-form-grid textarea {
+        width: 100%;
+        border: 1px solid #d8e2ef;
+        border-radius: 16px;
+        background: #f8fafc;
+        color: #0f172a;
+        font: inherit;
+        font-weight: 750;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    .ca-customer-form-grid input,
+    .ca-customer-form-grid select {
+        height: 50px;
+        padding: 0 13px;
+    }
+
+    .ca-customer-form-grid textarea {
+        padding: 12px 13px;
+        resize: vertical;
+    }
+
+    .ca-customer-cancel-warning {
+        margin: 18px 22px 0;
+        padding: 13px 14px;
+        border-radius: 16px;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: #9a3412;
+        display: grid;
+        gap: 4px;
+        font-size: 13px;
+    }
+
+    .ca-customer-cancel-warning strong {
+        color: #7c2d12;
+        font-weight: 950;
+    }
+
+    .ca-customer-cancel-warning span {
+        line-height: 1.45;
+        font-weight: 750;
+    }
+
+    .ca-customer-error {
+        margin: 0 22px 16px;
+        padding: 12px 14px;
+        border-radius: 15px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+    .ca-customer-modal-actions {
+        padding: 18px 22px 22px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        border-top: 1px solid #e5edf7;
+    }
+
+    .ca-customer-modal-btn {
+        height: 48px;
+        border-radius: 16px;
+        border: none;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+    .ca-customer-modal-btn.soft {
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #d4deeb;
+    }
+
+    .ca-customer-modal-btn.primary {
         background: #059669;
-        color: #fff;
+        color: white;
+    }
+
+    .ca-customer-modal-btn.danger {
+        background: #e11d48;
+        color: white;
     }
 
     .text-end {
         text-align: right !important;
     }
 
-    @@media (max-width: 900px) {
-
-        .ca-detail-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .ca-balance-box {
-            width: 100%;
-            text-align: left;
-        }
-
-        .ca-toolbar {
-            flex-direction: column;
-        }
-
-        .ca-search {
-            width: 100%;
-        }
-
-        .ca-detail-card {
-            overflow-x: auto;
-        }
-
-        .ca-table {
-            min-width: 900px;
+    @@media (max-width: 1120px) {
+        .ca-customer-summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 
+    @@media (max-width: 920px) {
+        .ca-customer-page {
+            width: min(100% - 24px, 1280px);
+            padding: 18px 0 44px;
+        }
+
+        .ca-customer-hero {
+            padding: 18px;
+            border-radius: 26px;
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .ca-customer-title-wrap {
+            align-items: flex-start;
+        }
+
+        .ca-customer-primary-btn {
+            width: 100%;
+        }
+
+        .ca-customer-section-head.ledger {
+            flex-direction: column;
+        }
+
+        .ca-customer-ledger-search {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 620px) {
+        .ca-customer-summary-grid,
+        .ca-customer-form-grid,
+        .ca-customer-modal-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .ca-customer-avatar {
+            display: none;
+        }
+
+        .ca-customer-back {
+            width: 44px;
+            height: 44px;
+            flex-basis: 44px;
+            border-radius: 15px;
+        }
+    }
 </style>

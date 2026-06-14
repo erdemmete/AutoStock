@@ -1,4 +1,4 @@
-﻿using AutoStock.Mobile.Models.CurrentAccounts;
+using AutoStock.Mobile.Models.CurrentAccounts;
 using AutoStock.WEB.Models.CurrentAccounts;
 using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -58,6 +58,29 @@ namespace AutoStock.WEB.Controllers
             }
 
             var result = await _currentAccountApiService.CreatePaymentAsync(model);
+
+            if (result.IsFailure)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        [HttpPost("CurrentAccounts/CancelPayment")]
+        public async Task<IActionResult> CancelPayment([FromBody] CancelPaymentViewModel model)
+        {
+            if (model.TransactionId <= 0)
+            {
+                return BadRequest(new
+                {
+                    isSuccess = false,
+                    errorMessages = new[]
+                    {
+                        "Geçerli bir tahsilat hareketi seçiniz."
+                    }
+                });
+            }
+
+            var result = await _currentAccountApiService.CancelPaymentAsync(model);
 
             if (result.IsFailure)
                 return BadRequest(result);

@@ -1,4 +1,4 @@
-﻿using AutoStock.Services.Dtos.CurrentAccounts;
+using AutoStock.Services.Dtos.CurrentAccounts;
 using AutoStock.Services.Interfaces;
 using FluentValidation;
 
@@ -6,18 +6,16 @@ namespace AutoStock.Services.Validators.CurrentAccounts;
 
 public class CreatePaymentRequestDtoValidator : AbstractValidator<CreatePaymentRequestDto>
 {
-    private readonly IDateTimeProvider _dateTimeProvider;
-
     public CreatePaymentRequestDtoValidator(IDateTimeProvider dateTimeProvider)
-    {
-        _dateTimeProvider = dateTimeProvider;
-        
-    }
-    public CreatePaymentRequestDtoValidator()
     {
         RuleFor(x => x.CustomerId)
             .GreaterThan(0)
             .WithMessage("Geçerli bir müşteri seçiniz.");
+
+        RuleFor(x => x.InvoiceId)
+            .GreaterThan(0)
+            .When(x => x.InvoiceId.HasValue)
+            .WithMessage("Geçerli bir fatura seçiniz.");
 
         RuleFor(x => x.Amount)
             .GreaterThan(0)
@@ -26,9 +24,14 @@ public class CreatePaymentRequestDtoValidator : AbstractValidator<CreatePaymentR
             .WithMessage("Tahsilat tutarı geçerli aralıkta olmalıdır.");
 
         RuleFor(x => x.PaymentDate)
-            .LessThanOrEqualTo(_dateTimeProvider.Now.AddDays(1))
+            .LessThanOrEqualTo(dateTimeProvider.Now.AddDays(1))
             .WithMessage("Tahsilat tarihi ileri bir tarih olamaz.")
             .When(x => x.PaymentDate.HasValue);
+
+        RuleFor(x => x.PaymentMethod)
+            .MaximumLength(50)
+            .WithMessage("Ödeme yöntemi en fazla 50 karakter olabilir.")
+            .When(x => !string.IsNullOrWhiteSpace(x.PaymentMethod));
 
         RuleFor(x => x.Description)
             .MaximumLength(500)

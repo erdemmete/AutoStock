@@ -18,6 +18,8 @@
 
         @await Html.PartialAsync("~/Views/Invoices/DetailPartials/_InvoiceTotals.cshtml", Model)
 
+        @await Html.PartialAsync("~/Views/Invoices/DetailPartials/_InvoiceCurrentAccountActions.cshtml", Model)
+
         @await Html.PartialAsync("~/Views/Invoices/DetailPartials/_InvoiceFooterActions.cshtml", Model)
 
         @if (Model.Status == 1)

@@ -255,44 +255,71 @@ namespace AutoStock.Services.Services
                     x.Id == invoiceId &&
                     x.WorkshopId == workshopId);
 
-            var workshopProfile = await _context.Set<WorkshopProfile>()
-    .AsNoTracking()
-    .FirstOrDefaultAsync(x => x.WorkshopId == workshopId);
-
-            var bankAccounts = await _context.Set<WorkshopBankAccount>()
-    .AsNoTracking()
-    .Where(x =>
-        x.WorkshopId == workshopId &&
-        x.IsActive &&
-        x.ShowOnInvoices)
-    .OrderByDescending(x => x.IsDefault)
-    .ThenBy(x => x.SortOrder)
-    .ThenBy(x => x.BankName)
-    .Select(x => new InvoiceBankAccountDto
-    {
-        Id = x.Id,
-        BankName = x.BankName,
-        AccountHolder = x.AccountHolder,
-        Iban = x.Iban,
-        CurrencyCode = x.CurrencyCode,
-        BranchName = x.BranchName,
-        AccountNumber = x.AccountNumber,
-        Description = x.Description,
-        IsDefault = x.IsDefault,
-        ShowOnInvoices = x.ShowOnInvoices,
-        SortOrder = x.SortOrder
-    })
-    .ToListAsync();
-
-
             if (invoice is null)
                 return ServiceResult<InvoiceDetailDto>.Fail("Fatura bulunamadı.");
 
+            var workshopProfile = await _context.Set<WorkshopProfile>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.WorkshopId == workshopId);
+
+            var bankAccounts = await _context.Set<WorkshopBankAccount>()
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.IsActive &&
+                    x.ShowOnInvoices)
+                .OrderByDescending(x => x.IsDefault)
+                .ThenBy(x => x.SortOrder)
+                .ThenBy(x => x.BankName)
+                .Select(x => new InvoiceBankAccountDto
+                {
+                    Id = x.Id,
+                    BankName = x.BankName,
+                    AccountHolder = x.AccountHolder,
+                    Iban = x.Iban,
+                    CurrencyCode = x.CurrencyCode,
+                    BranchName = x.BranchName,
+                    AccountNumber = x.AccountNumber,
+                    Description = x.Description,
+                    IsDefault = x.IsDefault,
+                    ShowOnInvoices = x.ShowOnInvoices,
+                    SortOrder = x.SortOrder
+                })
+                .ToListAsync();
+
             var customerBalance = await _context.CurrentAccountTransactions
-    .Where(x =>
-        x.WorkshopId == workshopId &&
-        x.CustomerId == invoice.CustomerId)
-    .SumAsync(x => x.Debit - x.Credit);
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == invoice.CustomerId)
+                .SumAsync(x => x.Debit - x.Credit);
+
+            var invoicePaymentTotal = await _context.CurrentAccountTransactions
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == invoice.CustomerId &&
+                    x.InvoiceId == invoice.Id &&
+                    x.Type == CurrentAccountTransactionType.Payment)
+                .SumAsync(x => x.Credit);
+
+            var invoicePaymentCancelTotal = await _context.CurrentAccountTransactions
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.CustomerId == invoice.CustomerId &&
+                    x.InvoiceId == invoice.Id &&
+                    x.Type == CurrentAccountTransactionType.Cancel &&
+                    x.Debit > 0 &&
+                    x.DocumentNumber != null &&
+                    x.DocumentNumber.StartsWith("PAY-CANCEL-"))
+                .SumAsync(x => x.Debit);
+
+            var invoicePaidTotal = Math.Max(0m, invoicePaymentTotal - invoicePaymentCancelTotal);
+
+            var invoiceRemainingAmount = invoice.Status == InvoiceStatus.Issued
+                ? Math.Max(0m, invoice.GrandTotal - invoicePaidTotal)
+                : 0;
 
             var dto = new InvoiceDetailDto
             {
@@ -339,6 +366,8 @@ namespace AutoStock.Services.Services
                 VatTotal = invoice.VatTotal,
                 GrandTotal = invoice.GrandTotal,
                 CustomerBalance = customerBalance,
+                InvoicePaidTotal = invoicePaidTotal,
+                InvoiceRemainingAmount = invoiceRemainingAmount,
                 Notes = invoice.Notes,
                 BankAccounts = bankAccounts
             };
@@ -371,6 +400,7 @@ namespace AutoStock.Services.Services
 
             return ServiceResult<InvoiceDetailDto>.Success(dto);
         }
+
 
         public async Task<ServiceResult<IssueInvoiceResponseDto>> IssueAsync(int invoiceId, int workshopId)
         {

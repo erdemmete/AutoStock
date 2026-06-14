@@ -19,19 +19,33 @@ public class InvoiceDetailDto
     public DateTime InvoiceDate { get; set; }
 
     public string? WorkshopDisplayName { get; set; }
+
     public string? WorkshopLegalTitle { get; set; }
+
     public string? WorkshopTaxOffice { get; set; }
+
     public string? WorkshopTaxNumber { get; set; }
+
     public string? WorkshopTradeRegistryNumber { get; set; }
+
     public string? WorkshopMersisNumber { get; set; }
+
     public string? WorkshopEmail { get; set; }
+
     public string? WorkshopPhoneNumber { get; set; }
+
     public string? WorkshopFaxNumber { get; set; }
+
     public string? WorkshopWebsite { get; set; }
+
     public string? WorkshopAddressLine { get; set; }
+
     public string? WorkshopCity { get; set; }
+
     public string? WorkshopDistrict { get; set; }
+
     public string? WorkshopPostalCode { get; set; }
+
     public string? WorkshopCountry { get; set; }
 
     public string CustomerTitle { get; set; } = null!;
@@ -43,8 +57,11 @@ public class InvoiceDetailDto
     public string? CustomerTckn { get; set; }
 
     public string? CustomerAddress { get; set; }
+
     public string? CustomerAddressLine { get; set; }
+
     public string? CustomerAddressCity { get; set; }
+
     public string? CustomerAddressDistrict { get; set; }
 
     public string? Plate { get; set; }
@@ -74,6 +91,10 @@ public class InvoiceDetailDto
     public string? Notes { get; set; }
 
     public decimal CustomerBalance { get; set; }
+
+    public decimal InvoicePaidTotal { get; set; }
+
+    public decimal InvoiceRemainingAmount { get; set; }
 
     public List<InvoiceDetailItemDto> Items { get; set; } = new();
 

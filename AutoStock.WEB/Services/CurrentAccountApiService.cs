@@ -1,4 +1,4 @@
-﻿using AutoStock.Mobile.Models.CurrentAccounts;
+using AutoStock.Mobile.Models.CurrentAccounts;
 using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.CurrentAccounts;
 
@@ -28,6 +28,14 @@ namespace AutoStock.WEB.Services
                 "/api/current-accounts/payments",
                 model,
                 "Tahsilat kaydedilirken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<object>> CancelPaymentAsync(CancelPaymentViewModel model)
+        {
+            return await PostJsonAsync<CancelPaymentViewModel, object>(
+                $"/api/current-accounts/payments/{model.TransactionId}/cancel",
+                model,
+                "Tahsilat iptal edilirken hata oluştu.");
         }
 
         public async Task<ApiResponse<CurrentAccountPagedSummaryViewModel>> GetSummaryAsync(

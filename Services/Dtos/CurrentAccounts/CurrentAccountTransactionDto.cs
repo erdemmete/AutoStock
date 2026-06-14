@@ -1,4 +1,4 @@
-﻿namespace AutoStock.Services.Dtos.CurrentAccounts
+namespace AutoStock.Services.Dtos.CurrentAccounts
 {
     public class CurrentAccountTransactionDto
     {
@@ -14,6 +14,10 @@
 
         public string? DocumentNumber { get; set; }
 
+        public int? InvoiceId { get; set; }
+
+        public string? InvoiceNumber { get; set; }
+
         public decimal Debit { get; set; }
 
         public decimal Credit { get; set; }
@@ -21,5 +25,11 @@
         public decimal Balance { get; set; }
 
         public bool IsSystemGenerated { get; set; }
+
+        public bool CanCancelPayment { get; set; }
+
+        public bool IsPaymentCancelled { get; set; }
+
+        public bool IsPaymentCancellation { get; set; }
     }
 }

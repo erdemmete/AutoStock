@@ -1,0 +1,609 @@
+﻿@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+@using System.Globalization
+
+@{
+    var isIssued = Model.Status == 2;
+    var isCancelled = Model.Status == 3;
+    var canReceivePayment = true; // WEB tarafında auth Session token ile çalıştığı için User.IsInRole burada güvenilir değil. API zaten Owner kontrolü yapıyor.
+
+    var paidTotal = Model.InvoicePaidTotal < 0 ? 0 : Model.InvoicePaidTotal;
+    var remainingAmount = Model.InvoiceRemainingAmount < 0 ? 0 : Model.InvoiceRemainingAmount;
+
+    string Money(decimal value) => value.ToString("N2") + " TL";
+
+    string BalanceText(decimal balance)
+    {
+        if (balance > 0) return "Servisin alacağı var";
+        if (balance < 0) return "Müşteri alacaklı";
+        return "Bakiye kapalı";
+    }
+
+    string BalanceClass(decimal balance)
+    {
+        if (balance > 0) return "positive";
+        if (balance < 0) return "negative";
+        return "zero";
+    }
+}
+
+<section class="invoice-current-panel" aria-label="Cari tahsilat özeti">
+    <div class="invoice-current-header">
+        <div>
+            <span class="invoice-current-eyebrow">Cari Hesap</span>
+
+            @if (isIssued)
+            {
+                <h3>Fatura Tahsilatı</h3>
+                <p>Bu faturaya bağlı tahsilatları ve müşterinin güncel cari bakiyesini takip edin.</p>
+            }
+            else if (isCancelled)
+            {
+                <h3>İptal Edilmiş Fatura</h3>
+                <p>İptal edilmiş faturada yeni tahsilat alınmaz. Cari hareketler ekstre üzerinden izlenebilir.</p>
+            }
+            else
+            {
+                <h3>Tahsilat için fatura kesilmeli</h3>
+                <p>Taslak faturalar cari borç oluşturmaz. Faturayı kestikten sonra tahsilat girebilirsiniz.</p>
+            }
+        </div>
+
+        <a class="invoice-current-link"
+           asp-controller="CurrentAccounts"
+           asp-action="Customer"
+           asp-route-customerId="@Model.CustomerId">
+            Cari Ekstre
+        </a>
+    </div>
+
+    <div class="invoice-current-metrics">
+        <article class="invoice-current-metric">
+            <span>Fatura Tutarı</span>
+            <strong>@Money(Model.GrandTotal)</strong>
+        </article>
+
+        <article class="invoice-current-metric">
+            <span>Bu Faturadan Tahsil</span>
+            <strong>@Money(paidTotal)</strong>
+        </article>
+
+        <article class="invoice-current-metric emphasis">
+            <span>Kalan Tahsilat</span>
+            <strong>@Money(remainingAmount)</strong>
+        </article>
+
+        <article class="invoice-current-metric @BalanceClass(Model.CustomerBalance)">
+            <span>Müşteri Bakiyesi</span>
+            <strong>@Money(Model.CustomerBalance)</strong>
+            <small>@BalanceText(Model.CustomerBalance)</small>
+        </article>
+    </div>
+
+    @if (isIssued && remainingAmount > 0 && canReceivePayment)
+    {
+        <div class="invoice-current-actions">
+            <button type="button"
+                    class="invoice-current-btn soft"
+                    data-invoice-payment-open
+                    data-amount=""
+                    data-description="@Model.InvoiceNumber kısmi tahsilatı">
+                Kısmi Tahsilat
+            </button>
+
+            <button type="button"
+                    class="invoice-current-btn primary"
+                    data-invoice-payment-open
+                    data-amount="@remainingAmount.ToString(CultureInfo.InvariantCulture)"
+                    data-description="@Model.InvoiceNumber kalan tahsilatı">
+                Tamamını Tahsil Et
+            </button>
+        </div>
+    }
+    else if (isIssued && remainingAmount <= 0)
+    {
+        <div class="invoice-current-note success">
+            Bu faturanın kalan tahsilat tutarı bulunmuyor.
+        </div>
+    }
+    else if (isIssued && !canReceivePayment)
+    {
+        <div class="invoice-current-note">
+            Tahsilat girişi yalnızca Owner rolüyle yapılır.
+        </div>
+    }
+</section>
+
+@if (isIssued && canReceivePayment)
+{
+    <div class="invoice-current-modal-backdrop" id="invoiceCurrentPaymentModal" hidden>
+        <div class="invoice-current-modal" role="dialog" aria-modal="true" aria-labelledby="invoiceCurrentPaymentTitle">
+            <div class="invoice-current-modal-head">
+                <div>
+                    <span>Tahsilat</span>
+                    <h3 id="invoiceCurrentPaymentTitle">Fatura Tahsilatı Ekle</h3>
+                    <p>@Model.CustomerTitle / @Model.InvoiceNumber</p>
+                </div>
+
+                <button type="button"
+                        class="invoice-current-modal-close"
+                        data-invoice-payment-close
+                        aria-label="Kapat">
+                    ×
+                </button>
+            </div>
+
+            <form id="invoiceCurrentPaymentForm">
+                <div class="invoice-current-form-grid">
+                    <label>
+                        <span>Tutar</span>
+                        <input type="number"
+                               min="0.01"
+                               max="@remainingAmount.ToString(CultureInfo.InvariantCulture)"
+                               step="0.01"
+                               id="invoiceCurrentPaymentAmount"
+                               required />
+                    </label>
+
+                    <label>
+                        <span>Tarih</span>
+                        <input type="datetime-local" id="invoiceCurrentPaymentDate" />
+                    </label>
+
+                    <label>
+                        <span>Ödeme Yöntemi</span>
+                        <select id="invoiceCurrentPaymentMethod">
+                            <option value="Nakit">Nakit</option>
+                            <option value="Kredi Kartı">Kredi Kartı</option>
+                            <option value="Havale/EFT">Havale/EFT</option>
+                            <option value="Diğer">Diğer</option>
+                        </select>
+                    </label>
+
+                    <label class="full">
+                        <span>Açıklama</span>
+                        <textarea id="invoiceCurrentPaymentDescription"
+                                  rows="3"
+                                  maxlength="500"></textarea>
+                    </label>
+                </div>
+
+                <div class="invoice-current-error" id="invoiceCurrentPaymentError" hidden></div>
+
+                <div class="invoice-current-modal-actions">
+                    <button type="button"
+                            class="invoice-current-btn soft"
+                            data-invoice-payment-close>
+                        Vazgeç
+                    </button>
+
+                    <button type="submit" class="invoice-current-btn primary">
+                        Tahsilat Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+<style>
+    .invoice-current-panel {
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 22px;
+        border: 1px solid #dfe7f2;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 14px 34px rgba(15, 23, 42, .06);
+    }
+
+    .invoice-current-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 16px;
+    }
+
+    .invoice-current-eyebrow {
+        display: inline-flex;
+        margin-bottom: 7px;
+        color: #2563eb;
+        font-size: 12px;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+    }
+
+    .invoice-current-header h3 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 22px;
+        font-weight: 950;
+        letter-spacing: -.5px;
+    }
+
+    .invoice-current-header p {
+        margin: 7px 0 0;
+        color: #64748b;
+        font-size: 14px;
+        line-height: 1.45;
+    }
+
+    .invoice-current-link {
+        min-height: 42px;
+        padding: 0 15px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        text-decoration: none;
+        color: #0f172a;
+        background: #ffffff;
+        border: 1px solid #d8e2ef;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .invoice-current-metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .invoice-current-metric {
+        min-width: 0;
+        padding: 15px;
+        border-radius: 18px;
+        background: #ffffff;
+        border: 1px solid #e5edf7;
+    }
+
+    .invoice-current-metric.emphasis {
+        background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+        border-color: #fed7aa;
+    }
+
+    .invoice-current-metric.positive {
+        background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+        border-color: #bbf7d0;
+    }
+
+    .invoice-current-metric.negative {
+        background: linear-gradient(135deg, #fff1f2 0%, #ffffff 100%);
+        border-color: #fecdd3;
+    }
+
+    .invoice-current-metric span {
+        display: block;
+        margin-bottom: 7px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .invoice-current-metric strong {
+        display: block;
+        color: #0f172a;
+        font-size: 19px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .invoice-current-metric small {
+        display: block;
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .invoice-current-actions {
+        margin-top: 15px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .invoice-current-btn {
+        min-height: 44px;
+        padding: 0 16px;
+        border-radius: 14px;
+        border: none;
+        font-size: 13px;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+    .invoice-current-btn.primary {
+        background: #059669;
+        color: #ffffff;
+        box-shadow: 0 14px 26px rgba(5, 150, 105, .18);
+    }
+
+    .invoice-current-btn.soft {
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid #d8e2ef;
+    }
+
+    .invoice-current-note {
+        margin-top: 15px;
+        padding: 13px 14px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e5edf7;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+    .invoice-current-note.success {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+        color: #166534;
+    }
+
+    .invoice-current-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(15, 23, 42, .58);
+        backdrop-filter: blur(5px);
+    }
+
+    .invoice-current-modal {
+        width: min(560px, 100%);
+        max-height: calc(100vh - 36px);
+        overflow: auto;
+        border-radius: 26px;
+        background: #ffffff;
+        box-shadow: 0 32px 90px rgba(15, 23, 42, .35);
+    }
+
+    .invoice-current-modal-head {
+        padding: 22px 22px 18px;
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        border-bottom: 1px solid #e5edf7;
+    }
+
+    .invoice-current-modal-head span {
+        color: #2563eb;
+        font-size: 12px;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+    }
+
+    .invoice-current-modal-head h3 {
+        margin: 5px 0 5px;
+        color: #0f172a;
+        font-size: 23px;
+        font-weight: 950;
+    }
+
+    .invoice-current-modal-head p {
+        margin: 0;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .invoice-current-modal-close {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        border-radius: 14px;
+        border: 1px solid #d8e2ef;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .invoice-current-form-grid {
+        padding: 22px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .invoice-current-form-grid label {
+        display: grid;
+        gap: 7px;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .invoice-current-form-grid label.full {
+        grid-column: 1 / -1;
+    }
+
+    .invoice-current-form-grid input,
+    .invoice-current-form-grid select,
+    .invoice-current-form-grid textarea {
+        width: 100%;
+        border: 1px solid #d8e2ef;
+        border-radius: 16px;
+        background: #f8fafc;
+        color: #0f172a;
+        font: inherit;
+        font-weight: 750;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    .invoice-current-form-grid input,
+    .invoice-current-form-grid select {
+        height: 50px;
+        padding: 0 13px;
+    }
+
+    .invoice-current-form-grid textarea {
+        padding: 12px 13px;
+        resize: vertical;
+    }
+
+    .invoice-current-error {
+        margin: 0 22px 16px;
+        padding: 12px 14px;
+        border-radius: 15px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+    .invoice-current-modal-actions {
+        padding: 18px 22px 22px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        border-top: 1px solid #e5edf7;
+    }
+
+    @@media (max-width: 980px) {
+        .invoice-current-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 620px) {
+        .invoice-current-panel {
+            padding: 16px;
+            border-radius: 20px;
+        }
+
+        .invoice-current-header {
+            flex-direction: column;
+        }
+
+        .invoice-current-link,
+        .invoice-current-btn {
+            width: 100%;
+        }
+
+        .invoice-current-metrics,
+        .invoice-current-form-grid,
+        .invoice-current-modal-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@if (isIssued && canReceivePayment)
+{
+    <script>
+        (function () {
+            const modal = document.getElementById("invoiceCurrentPaymentModal");
+            const form = document.getElementById("invoiceCurrentPaymentForm");
+            const amountInput = document.getElementById("invoiceCurrentPaymentAmount");
+            const dateInput = document.getElementById("invoiceCurrentPaymentDate");
+            const methodInput = document.getElementById("invoiceCurrentPaymentMethod");
+            const descriptionInput = document.getElementById("invoiceCurrentPaymentDescription");
+            const errorBox = document.getElementById("invoiceCurrentPaymentError");
+
+            if (!modal || !form) {
+                return;
+            }
+
+            function openModal(button) {
+                const amount = button?.dataset?.amount || "";
+                const description = button?.dataset?.description || "";
+
+                amountInput.value = amount;
+                dateInput.value = "";
+                methodInput.value = "Nakit";
+                descriptionInput.value = description;
+                errorBox.hidden = true;
+                errorBox.textContent = "";
+
+                modal.hidden = false;
+                setTimeout(function () {
+                    amountInput.focus();
+                }, 50);
+            }
+
+            function closeModal() {
+                modal.hidden = true;
+            }
+
+            document.querySelectorAll("[data-invoice-payment-open]").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    openModal(button);
+                });
+            });
+
+            document.querySelectorAll("[data-invoice-payment-close]").forEach(function (button) {
+                button.addEventListener("click", closeModal);
+            });
+
+            modal.addEventListener("click", function (event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "Escape" && !modal.hidden) {
+                    closeModal();
+                }
+            });
+
+            form.addEventListener("submit", async function (event) {
+                event.preventDefault();
+
+                const amount = Number(amountInput.value);
+
+                if (!amount || amount <= 0) {
+                    errorBox.textContent = "Geçerli bir tahsilat tutarı giriniz.";
+                    errorBox.hidden = false;
+                    return;
+                }
+
+                try {
+                    const response = await fetch("/CurrentAccounts/CreatePayment", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            customerId: @Model.CustomerId,
+                            invoiceId: @Model.Id,
+                            amount: amount,
+                            paymentDate: dateInput.value || null,
+                            paymentMethod: methodInput.value || null,
+                            description: descriptionInput.value || null
+                        })
+                    });
+
+                    const result = await response.json().catch(function () { return null; });
+
+                    if (!response.ok || !result || result.isFailure || result.isSuccess === false) {
+                        const message = result?.errorMessage
+                            || (Array.isArray(result?.errorMessages) ? result.errorMessages.join("\n") : null)
+                            || "Tahsilat kaydedilemedi.";
+
+                        errorBox.textContent = message;
+                        errorBox.hidden = false;
+                        return;
+                    }
+
+                    window.location.reload();
+                }
+                catch {
+                    errorBox.textContent = "Tahsilat kaydedilirken beklenmeyen bir hata oluştu.";
+                    errorBox.hidden = false;
+                }
+            });
+        })();
+    </script>
+}
