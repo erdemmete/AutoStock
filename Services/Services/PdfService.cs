@@ -186,11 +186,19 @@ public class PdfService : IPdfService
     }
 
     private static void BuildServiceContent(
-        IContainer container,
-        CreateServicePdfRequest request,
-        List<CompactRequestPdfRow> requestRows)
+    IContainer container,
+    CreateServicePdfRequest request,
+    List<CompactRequestPdfRow> requestRows)
     {
         var brandModel = JoinParts(request.Brand, request.Model);
+        var engineSummary = BuildEngineSummary(
+            request.EngineCapacityCc,
+            request.EnginePowerHp,
+            request.EngineCode);
+
+        var fuelText = !string.IsNullOrWhiteSpace(request.FuelType)
+            ? request.FuelType
+            : request.FuelLevelText;
 
         container.Column(column =>
         {
@@ -198,19 +206,46 @@ public class PdfService : IPdfService
 
             column.Item().Element(c =>
                 BuildCompactInfoBand(
-                        c,
-                        new[]
+                    c,
+                    new[]
+                    {
+                    ("Müşteri", request.CustomerName),
+                    ("Tel", request.CustomerPhone)
+                    },
+                    new[]
+                    {
+                    ("Araç", request.Plate),
+                    ("Marka/Model", brandModel),
+                    ("Versiyon", request.VehicleVariantName),
+                    ("Yıl", request.ModelYear),
+                    ("Yakıt", fuelText),
+                    ("Şanzıman", request.TransmissionType),
+                    ("Motor", engineSummary)
+                    }));
+
+            if (!string.IsNullOrWhiteSpace(request.BodyType))
+            {
+                column.Item().Element(c =>
+                {
+                    c.Border(1)
+                        .BorderColor(Colors.Grey.Lighten2)
+                        .Background(Colors.Grey.Lighten5)
+                        .PaddingVertical(5)
+                        .PaddingHorizontal(7)
+                        .Text(text =>
                         {
-                            ("Müşteri", request.CustomerName),
-                            ("Tel", request.CustomerPhone)
-                        },
-                        new[]
-                        {
-                            ("Araç", request.Plate),
-                            ("Marka/Model", brandModel),
-                            ("Yıl", request.ModelYear),
-                            ("Yakıt", request.FuelLevelText)
-                        }));
+                            text.Span("Araç Detayı: ")
+                                .FontSize(8)
+                                .Bold()
+                                .FontColor(Colors.Grey.Darken1);
+
+                            text.Span(request.BodyType.Trim())
+                                .FontSize(8)
+                                .Bold()
+                                .FontColor(Colors.Grey.Darken3);
+                        });
+                });
+            }
 
             if (!string.IsNullOrWhiteSpace(request.Note))
             {
@@ -241,6 +276,7 @@ public class PdfService : IPdfService
                 BuildCompactRequestTable(c, requestRows));
         });
     }
+
 
     private static void BuildQuickOfferContent(
         IContainer container,
@@ -641,6 +677,28 @@ public class PdfService : IPdfService
     {
         return $"{value:N2} TL";
     }
+
+    private static string? BuildEngineSummary(
+    int? engineCapacityCc,
+    int? enginePowerHp,
+    string? engineCode)
+    {
+        var parts = new List<string>();
+
+        if (engineCapacityCc.HasValue && engineCapacityCc.Value > 0)
+            parts.Add($"{engineCapacityCc.Value:N0} cc");
+
+        if (enginePowerHp.HasValue && enginePowerHp.Value > 0)
+            parts.Add($"{enginePowerHp.Value} hp");
+
+        if (!string.IsNullOrWhiteSpace(engineCode))
+            parts.Add(engineCode.Trim());
+
+        return parts.Count > 0
+            ? string.Join(" / ", parts)
+            : null;
+    }
+
 
     private sealed class CompactRequestPdfRow
     {

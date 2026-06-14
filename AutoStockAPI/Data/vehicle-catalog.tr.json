@@ -1,0 +1,4211 @@
+{
+  "version": "2026.06-tr-demo-v1",
+  "description": "Sente360 Türkiye odaklı araç katalog datası. Marka/model geniş; versiyon detayı ilk aşamada popüler servis araçlarında yoğunlaştırıldı. Kaynaklar referans amaçlıdır; birebir scrape değildir.",
+  "brands": [
+    {
+      "name": "Abarth",
+      "sortOrder": 1,
+      "models": [
+        {
+          "name": "500",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "595",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "695",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "124 Spider",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Alfa Romeo",
+      "sortOrder": 2,
+      "models": [
+        {
+          "name": "145",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "146",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "147",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "156",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "159",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Giulietta",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Giulia",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Mito",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Stelvio",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "Tonale",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Anadol",
+      "sortOrder": 3,
+      "models": [
+        {
+          "name": "A1",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "A2",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "A4",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "A8",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Audi",
+      "sortOrder": 4,
+      "models": [
+        {
+          "name": "A1",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "A3",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": [
+            {
+              "name": "A3 1.0 TFSI",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 999,
+              "enginePowerHp": 116,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "A3 1.5 TFSI S tronic",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1498,
+              "enginePowerHp": 150,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "A3 1.6 TDI S tronic",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 116,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "A4",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "A5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "A6",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "A7",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "A8",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Q2",
+          "vehicleType": "SUV",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Q3",
+          "vehicleType": "SUV",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "Q5",
+          "vehicleType": "SUV",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "Q7",
+          "vehicleType": "SUV",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "Q8",
+          "vehicleType": "SUV",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "TT",
+          "vehicleType": "Otomobil",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "E-Tron",
+          "vehicleType": "Otomobil",
+          "sortOrder": 14,
+          "variants": []
+        },
+        {
+          "name": "Q4 E-Tron",
+          "vehicleType": "Otomobil",
+          "sortOrder": 15,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "BMW",
+      "sortOrder": 5,
+      "models": [
+        {
+          "name": "1 Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "2 Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "3 Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": [
+            {
+              "name": "316i",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 136,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "320i",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 170,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "320d",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1995,
+              "enginePowerHp": 190,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "4 Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "5 Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "6 Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "7 Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "X1",
+          "vehicleType": "SUV",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "X2",
+          "vehicleType": "SUV",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "X3",
+          "vehicleType": "SUV",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "X4",
+          "vehicleType": "SUV",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "X5",
+          "vehicleType": "SUV",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "X6",
+          "vehicleType": "SUV",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "X7",
+          "vehicleType": "SUV",
+          "sortOrder": 14,
+          "variants": []
+        },
+        {
+          "name": "i3",
+          "vehicleType": "Otomobil",
+          "sortOrder": 15,
+          "variants": []
+        },
+        {
+          "name": "i4",
+          "vehicleType": "Otomobil",
+          "sortOrder": 16,
+          "variants": []
+        },
+        {
+          "name": "i5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 17,
+          "variants": []
+        },
+        {
+          "name": "iX",
+          "vehicleType": "Otomobil",
+          "sortOrder": 18,
+          "variants": []
+        },
+        {
+          "name": "Z4",
+          "vehicleType": "Otomobil",
+          "sortOrder": 19,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "BYD",
+      "sortOrder": 6,
+      "models": [
+        {
+          "name": "Atto 3",
+          "vehicleType": "SUV",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Dolphin",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Seal",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Seal U",
+          "vehicleType": "SUV",
+          "sortOrder": 4,
+          "variants": [
+            {
+              "name": "Seal U DM-i",
+              "fuelType": "Hibrit",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1498,
+              "enginePowerHp": null,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Seal U EV",
+              "fuelType": "Elektrik",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": null,
+              "enginePowerHp": null,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "Han",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Tang",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Chery",
+      "sortOrder": 7,
+      "models": [
+        {
+          "name": "Omoda 5",
+          "vehicleType": "SUV",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Tiggo 4 Pro",
+          "vehicleType": "SUV",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Tiggo 7 Pro",
+          "vehicleType": "SUV",
+          "sortOrder": 3,
+          "variants": [
+            {
+              "name": "Tiggo 7 Pro 1.6 TGDI DCT",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 183,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            }
+          ]
+        },
+        {
+          "name": "Tiggo 8 Pro",
+          "vehicleType": "SUV",
+          "sortOrder": 4,
+          "variants": [
+            {
+              "name": "Tiggo 8 Pro 1.6 TGDI DCT",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 183,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            }
+          ]
+        },
+        {
+          "name": "Arrizo 8",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Chevrolet",
+      "sortOrder": 8,
+      "models": [
+        {
+          "name": "Aveo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Captiva",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Cruze",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Epica",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Kalos",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Lacetti",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Spark",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Trax",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Citroen",
+      "sortOrder": 9,
+      "models": [
+        {
+          "name": "C1",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "C2",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "C3",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "C3 Aircross",
+          "vehicleType": "SUV",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "C4",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "C4 X",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "C5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "C5 Aircross",
+          "vehicleType": "SUV",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Berlingo",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 9,
+          "variants": [
+            {
+              "name": "Berlingo 1.5 BlueHDi",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Hafif Ticari",
+              "engineCapacityCc": 1499,
+              "enginePowerHp": 100,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Berlingo 1.5 BlueHDi EAT8",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hafif Ticari",
+              "engineCapacityCc": 1499,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "Jumpy",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "Jumper",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "Saxo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "Xsara",
+          "vehicleType": "Otomobil",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "Xantia",
+          "vehicleType": "Otomobil",
+          "sortOrder": 14,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Cupra",
+      "sortOrder": 10,
+      "models": [
+        {
+          "name": "Born",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Formentor",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Leon",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Ateca",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "DFSK",
+      "sortOrder": 11,
+      "models": [
+        {
+          "name": "E5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Fengon 500",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Fengon 580",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "DS Automobiles",
+      "sortOrder": 12,
+      "models": [
+        {
+          "name": "DS 3",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "DS 4",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "DS 5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "DS 7",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "DS 9",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Dacia",
+      "sortOrder": 13,
+      "models": [
+        {
+          "name": "Sandero",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Sandero Stepway",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Logan",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Logan MCV",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Duster",
+          "vehicleType": "SUV",
+          "sortOrder": 5,
+          "variants": [
+            {
+              "name": "Duster 1.0 TCe ECO-G",
+              "fuelType": "Benzin/LPG",
+              "transmissionType": "Manuel",
+              "bodyType": "SUV",
+              "engineCapacityCc": 999,
+              "enginePowerHp": 100,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Duster 1.3 TCe EDC",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1332,
+              "enginePowerHp": 150,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Duster 1.5 Blue dCi 4x4",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1461,
+              "enginePowerHp": 115,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Jogger",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Lodgy",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Dokker",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Spring",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Daewoo",
+      "sortOrder": 14,
+      "models": [
+        {
+          "name": "Espero",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Lanos",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Leganza",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Matiz",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Nexia",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Nubira",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Daihatsu",
+      "sortOrder": 15,
+      "models": [
+        {
+          "name": "Applause",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Cuore",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Feroza",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Sirion",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Terios",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "YRV",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Dodge",
+      "sortOrder": 16,
+      "models": [
+        {
+          "name": "Caliber",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Journey",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Nitro",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Ram",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Fiat",
+      "sortOrder": 17,
+      "models": [
+        {
+          "name": "500",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "500L",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "500X",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Albea",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Bravo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Brava",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Ducato",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Doblo",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 8,
+          "variants": [
+            {
+              "name": "Doblo 1.3 Multijet",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Hafif Ticari",
+              "engineCapacityCc": 1248,
+              "enginePowerHp": 90,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Doblo 1.6 Multijet",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Hafif Ticari",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 105,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Doblo 1.6 Multijet Maxi",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Hafif Ticari",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 120,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Egea Sedan",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": [
+            {
+              "name": "Egea Sedan 1.4 Fire",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1368,
+              "enginePowerHp": 95,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Egea Sedan 1.3 Multijet",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1248,
+              "enginePowerHp": 95,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Egea Sedan 1.6 Multijet DCT",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            },
+            {
+              "name": "Egea Sedan 1.5 T4 Hybrid",
+              "fuelType": "Hibrit",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1469,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 4
+            }
+          ]
+        },
+        {
+          "name": "Egea Hatchback",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "Egea Cross",
+          "vehicleType": "Otomobil",
+          "sortOrder": 11,
+          "variants": [
+            {
+              "name": "Egea Cross 1.4 Fire",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Crossover",
+              "engineCapacityCc": 1368,
+              "enginePowerHp": 95,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Egea Cross 1.6 Multijet DCT",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Crossover",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Egea Cross 1.5 T4 Hybrid",
+              "fuelType": "Hibrit",
+              "transmissionType": "Otomatik",
+              "bodyType": "Crossover",
+              "engineCapacityCc": 1469,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Egea Station Wagon",
+          "vehicleType": "Otomobil",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "Fiorino",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "Freemont",
+          "vehicleType": "Otomobil",
+          "sortOrder": 14,
+          "variants": []
+        },
+        {
+          "name": "Grande Punto",
+          "vehicleType": "Otomobil",
+          "sortOrder": 15,
+          "variants": []
+        },
+        {
+          "name": "Linea",
+          "vehicleType": "Otomobil",
+          "sortOrder": 16,
+          "variants": []
+        },
+        {
+          "name": "Marea",
+          "vehicleType": "Otomobil",
+          "sortOrder": 17,
+          "variants": []
+        },
+        {
+          "name": "Palio",
+          "vehicleType": "Otomobil",
+          "sortOrder": 18,
+          "variants": []
+        },
+        {
+          "name": "Panda",
+          "vehicleType": "Otomobil",
+          "sortOrder": 19,
+          "variants": []
+        },
+        {
+          "name": "Punto",
+          "vehicleType": "Otomobil",
+          "sortOrder": 20,
+          "variants": []
+        },
+        {
+          "name": "Punto Evo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 21,
+          "variants": []
+        },
+        {
+          "name": "Scudo",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 22,
+          "variants": []
+        },
+        {
+          "name": "Sedici",
+          "vehicleType": "Otomobil",
+          "sortOrder": 23,
+          "variants": []
+        },
+        {
+          "name": "Tipo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 24,
+          "variants": []
+        },
+        {
+          "name": "Uno",
+          "vehicleType": "Otomobil",
+          "sortOrder": 25,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Ford",
+      "sortOrder": 18,
+      "models": [
+        {
+          "name": "B-Max",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "C-Max",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Courier",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Ecosport",
+          "vehicleType": "SUV",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Escort",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Fiesta",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Focus",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": [
+            {
+              "name": "Focus 1.0 EcoBoost",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 999,
+              "enginePowerHp": 125,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Focus 1.5 TDCi",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1499,
+              "enginePowerHp": 120,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Focus 1.5 EcoBlue",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1499,
+              "enginePowerHp": 120,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Fusion",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Galaxy",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "Kuga",
+          "vehicleType": "SUV",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "Mondeo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "Mustang",
+          "vehicleType": "Otomobil",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "Puma",
+          "vehicleType": "SUV",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "Ranger",
+          "vehicleType": "Pick-up",
+          "sortOrder": 14,
+          "variants": []
+        },
+        {
+          "name": "S-Max",
+          "vehicleType": "Otomobil",
+          "sortOrder": 15,
+          "variants": []
+        },
+        {
+          "name": "Tourneo Courier",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 16,
+          "variants": []
+        },
+        {
+          "name": "Tourneo Connect",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 17,
+          "variants": []
+        },
+        {
+          "name": "Tourneo Custom",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 18,
+          "variants": []
+        },
+        {
+          "name": "Transit Courier",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 19,
+          "variants": []
+        },
+        {
+          "name": "Transit Connect",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 20,
+          "variants": []
+        },
+        {
+          "name": "Transit Custom",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 21,
+          "variants": [
+            {
+              "name": "Transit Custom 2.0 EcoBlue",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Hafif Ticari",
+              "engineCapacityCc": 1996,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Transit Custom 2.0 EcoBlue AT",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hafif Ticari",
+              "engineCapacityCc": 1996,
+              "enginePowerHp": 170,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "Transit",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 22,
+          "variants": []
+        },
+        {
+          "name": "Ka",
+          "vehicleType": "Otomobil",
+          "sortOrder": 23,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Geely",
+      "sortOrder": 19,
+      "models": [
+        {
+          "name": "Emgrand",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Echo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "CK",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Honda",
+      "sortOrder": 20,
+      "models": [
+        {
+          "name": "Accord",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "City",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Civic",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": [
+            {
+              "name": "Civic 1.6 i-VTEC",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1597,
+              "enginePowerHp": 125,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Civic 1.5 VTEC Turbo CVT",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1498,
+              "enginePowerHp": 182,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Civic 1.6 i-DTEC",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1597,
+              "enginePowerHp": 120,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "CR-V",
+          "vehicleType": "SUV",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "CR-Z",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "HR-V",
+          "vehicleType": "SUV",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Jazz",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Legend",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Prelude",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Hyundai",
+      "sortOrder": 21,
+      "models": [
+        {
+          "name": "Accent",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Accent Blue",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Accent Era",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Atos",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Bayon",
+          "vehicleType": "SUV",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Elantra",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Getz",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "i10",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "i20",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": [
+            {
+              "name": "i20 1.2 MPI",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1197,
+              "enginePowerHp": 84,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "i20 1.0 T-GDI DCT",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 998,
+              "enginePowerHp": 100,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "i20 1.4 MPI AT",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1368,
+              "enginePowerHp": 100,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "i30",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "ix20",
+          "vehicleType": "SUV",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "ix35",
+          "vehicleType": "SUV",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "Kona",
+          "vehicleType": "SUV",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "Santa Fe",
+          "vehicleType": "Otomobil",
+          "sortOrder": 14,
+          "variants": []
+        },
+        {
+          "name": "Sonata",
+          "vehicleType": "Otomobil",
+          "sortOrder": 15,
+          "variants": []
+        },
+        {
+          "name": "Staria",
+          "vehicleType": "Otomobil",
+          "sortOrder": 16,
+          "variants": []
+        },
+        {
+          "name": "Tucson",
+          "vehicleType": "SUV",
+          "sortOrder": 17,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Isuzu",
+      "sortOrder": 22,
+      "models": [
+        {
+          "name": "D-Max",
+          "vehicleType": "Pick-up",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "NPR",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "NQR",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Turkuaz",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Iveco",
+      "sortOrder": 23,
+      "models": [
+        {
+          "name": "Daily",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 1,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Jaguar",
+      "sortOrder": 24,
+      "models": [
+        {
+          "name": "E-Pace",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "F-Pace",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "XE",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "XF",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "XJ",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Jeep",
+      "sortOrder": 25,
+      "models": [
+        {
+          "name": "Avenger",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Cherokee",
+          "vehicleType": "SUV",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Compass",
+          "vehicleType": "SUV",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Grand Cherokee",
+          "vehicleType": "SUV",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Renegade",
+          "vehicleType": "SUV",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Wrangler",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Kia",
+      "sortOrder": 26,
+      "models": [
+        {
+          "name": "Carens",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Ceed",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Cerato",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Niro",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Optima",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Picanto",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Rio",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Sorento",
+          "vehicleType": "SUV",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Soul",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "Sportage",
+          "vehicleType": "SUV",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "Stonic",
+          "vehicleType": "SUV",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "XCeed",
+          "vehicleType": "Otomobil",
+          "sortOrder": 12,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Lada",
+      "sortOrder": 27,
+      "models": [
+        {
+          "name": "Niva",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Samara",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Vega",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Land Rover",
+      "sortOrder": 28,
+      "models": [
+        {
+          "name": "Defender",
+          "vehicleType": "SUV",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Discovery",
+          "vehicleType": "SUV",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Discovery Sport",
+          "vehicleType": "SUV",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Freelander",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Range Rover",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Range Rover Evoque",
+          "vehicleType": "SUV",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Range Rover Sport",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Range Rover Velar",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Leapmotor",
+      "sortOrder": 29,
+      "models": [
+        {
+          "name": "T03",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "C10",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Lexus",
+      "sortOrder": 30,
+      "models": [
+        {
+          "name": "CT",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "ES",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "IS",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "NX",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "RX",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "UX",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "MG",
+      "sortOrder": 31,
+      "models": [
+        {
+          "name": "ZS",
+          "vehicleType": "SUV",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "HS",
+          "vehicleType": "SUV",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "MG3",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "MG4",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "MG5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Marvel R",
+          "vehicleType": "SUV",
+          "sortOrder": 6,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Mazda",
+      "sortOrder": 32,
+      "models": [
+        {
+          "name": "2",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "3",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "6",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "CX-3",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "CX-30",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "CX-5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "CX-7",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "MX-5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Mercedes-Benz",
+      "sortOrder": 33,
+      "models": [
+        {
+          "name": "A Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "B Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "C Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": [
+            {
+              "name": "C 180",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1496,
+              "enginePowerHp": 156,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "C 200 d",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 136,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "C 220 d",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1950,
+              "enginePowerHp": 194,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "CLA",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "CLS",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "E Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "G Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "GLA",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "GLB",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "GLC",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "GLE",
+          "vehicleType": "Otomobil",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "GLK",
+          "vehicleType": "Otomobil",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "S Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "SLK",
+          "vehicleType": "Otomobil",
+          "sortOrder": 14,
+          "variants": []
+        },
+        {
+          "name": "Sprinter",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 15,
+          "variants": []
+        },
+        {
+          "name": "V Serisi",
+          "vehicleType": "Otomobil",
+          "sortOrder": 16,
+          "variants": []
+        },
+        {
+          "name": "Vito",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 17,
+          "variants": []
+        },
+        {
+          "name": "Citan",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 18,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Mini",
+      "sortOrder": 34,
+      "models": [
+        {
+          "name": "Cooper",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Clubman",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Countryman",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Paceman",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Mitsubishi",
+      "sortOrder": 35,
+      "models": [
+        {
+          "name": "ASX",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Carisma",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Colt",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Eclipse Cross",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "L200",
+          "vehicleType": "Pick-up",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Lancer",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Outlander",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Pajero",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Space Star",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Nissan",
+      "sortOrder": 36,
+      "models": [
+        {
+          "name": "Almera",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Juke",
+          "vehicleType": "SUV",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Micra",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Navara",
+          "vehicleType": "Pick-up",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Note",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Pathfinder",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Primera",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Qashqai",
+          "vehicleType": "SUV",
+          "sortOrder": 8,
+          "variants": [
+            {
+              "name": "Qashqai 1.3 DIG-T",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1332,
+              "enginePowerHp": 140,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Qashqai 1.3 DIG-T X-Tronic",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1332,
+              "enginePowerHp": 158,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Qashqai e-Power",
+              "fuelType": "Hibrit",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1497,
+              "enginePowerHp": 190,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Qashqai+2",
+          "vehicleType": "SUV",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "Tiida",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "X-Trail",
+          "vehicleType": "SUV",
+          "sortOrder": 11,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Opel",
+      "sortOrder": 37,
+      "models": [
+        {
+          "name": "Adam",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Agila",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Antara",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Astra",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": [
+            {
+              "name": "Astra 1.2 Turbo",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1199,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Astra 1.2 Turbo AT8",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1199,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Astra 1.5 Diesel AT8",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1499,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Combo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Corsa",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Crossland",
+          "vehicleType": "SUV",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Frontera",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Grandland",
+          "vehicleType": "SUV",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "Insignia",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "Meriva",
+          "vehicleType": "Otomobil",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "Mokka",
+          "vehicleType": "SUV",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "Omega",
+          "vehicleType": "Otomobil",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "Signum",
+          "vehicleType": "Otomobil",
+          "sortOrder": 14,
+          "variants": []
+        },
+        {
+          "name": "Vectra",
+          "vehicleType": "Otomobil",
+          "sortOrder": 15,
+          "variants": []
+        },
+        {
+          "name": "Vivaro",
+          "vehicleType": "Otomobil",
+          "sortOrder": 16,
+          "variants": []
+        },
+        {
+          "name": "Zafira",
+          "vehicleType": "Otomobil",
+          "sortOrder": 17,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Peugeot",
+      "sortOrder": 38,
+      "models": [
+        {
+          "name": "106",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "107",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "108",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "206",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "207",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "208",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "301",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "306",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "307",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "308",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "406",
+          "vehicleType": "Otomobil",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "407",
+          "vehicleType": "Otomobil",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "408",
+          "vehicleType": "Otomobil",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "508",
+          "vehicleType": "Otomobil",
+          "sortOrder": 14,
+          "variants": []
+        },
+        {
+          "name": "2008",
+          "vehicleType": "SUV",
+          "sortOrder": 15,
+          "variants": [
+            {
+              "name": "2008 1.2 PureTech",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1199,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "2008 1.5 BlueHDi EAT8",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1499,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "e-2008",
+              "fuelType": "Elektrik",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": null,
+              "enginePowerHp": 156,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "3008",
+          "vehicleType": "SUV",
+          "sortOrder": 16,
+          "variants": [
+            {
+              "name": "3008 1.2 PureTech",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1199,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "3008 1.5 BlueHDi EAT8",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1499,
+              "enginePowerHp": 130,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "3008 1.2 Hybrid eDCS6",
+              "fuelType": "Hibrit",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1199,
+              "enginePowerHp": 145,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "5008",
+          "vehicleType": "SUV",
+          "sortOrder": 17,
+          "variants": []
+        },
+        {
+          "name": "Bipper",
+          "vehicleType": "Otomobil",
+          "sortOrder": 18,
+          "variants": []
+        },
+        {
+          "name": "Boxer",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 19,
+          "variants": []
+        },
+        {
+          "name": "Expert",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 20,
+          "variants": []
+        },
+        {
+          "name": "Partner",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 21,
+          "variants": []
+        },
+        {
+          "name": "Rifter",
+          "vehicleType": "Otomobil",
+          "sortOrder": 22,
+          "variants": []
+        },
+        {
+          "name": "Traveller",
+          "vehicleType": "Otomobil",
+          "sortOrder": 23,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Porsche",
+      "sortOrder": 39,
+      "models": [
+        {
+          "name": "911",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Boxster",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Cayenne",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Cayman",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Macan",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Panamera",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Taycan",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Renault",
+      "sortOrder": 40,
+      "models": [
+        {
+          "name": "Boreal",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": [
+            {
+              "name": "Boreal Evolution Turbo TCe EDC 145",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1332,
+              "enginePowerHp": 145,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Boreal Iconic Turbo TCe EDC 145",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1332,
+              "enginePowerHp": 145,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Boreal Iconic F.Hybrid E-Tech 160",
+              "fuelType": "Hibrit",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": 1600,
+              "enginePowerHp": 160,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Captur",
+          "vehicleType": "SUV",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Clio",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": [
+            {
+              "name": "Clio 1.0 SCe",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 999,
+              "enginePowerHp": 65,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Clio 1.0 TCe",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 999,
+              "enginePowerHp": 90,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Clio 1.0 TCe X-Tronic",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 999,
+              "enginePowerHp": 90,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            },
+            {
+              "name": "Clio 1.2 TCe EDC",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1197,
+              "enginePowerHp": 115,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 4
+            },
+            {
+              "name": "Clio 1.5 dCi",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1461,
+              "enginePowerHp": 90,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 5
+            },
+            {
+              "name": "Clio 1.5 Blue dCi",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1461,
+              "enginePowerHp": 115,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 6
+            }
+          ]
+        },
+        {
+          "name": "Espace",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Fluence",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Kadjar",
+          "vehicleType": "SUV",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Kangoo",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Koleos",
+          "vehicleType": "SUV",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Laguna",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "Latitude",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "Master",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "Megane",
+          "vehicleType": "Otomobil",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "Megane Sedan",
+          "vehicleType": "Otomobil",
+          "sortOrder": 13,
+          "variants": [
+            {
+              "name": "Megane Sedan 1.3 TCe",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1332,
+              "enginePowerHp": 140,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Megane Sedan 1.3 TCe EDC",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1332,
+              "enginePowerHp": 140,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Megane Sedan 1.5 Blue dCi EDC",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1461,
+              "enginePowerHp": 115,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Modus",
+          "vehicleType": "Otomobil",
+          "sortOrder": 14,
+          "variants": []
+        },
+        {
+          "name": "Scenic",
+          "vehicleType": "Otomobil",
+          "sortOrder": 15,
+          "variants": []
+        },
+        {
+          "name": "Symbol",
+          "vehicleType": "Otomobil",
+          "sortOrder": 16,
+          "variants": []
+        },
+        {
+          "name": "Taliant",
+          "vehicleType": "Otomobil",
+          "sortOrder": 17,
+          "variants": []
+        },
+        {
+          "name": "Trafic",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 18,
+          "variants": []
+        },
+        {
+          "name": "Twizy",
+          "vehicleType": "Otomobil",
+          "sortOrder": 19,
+          "variants": []
+        },
+        {
+          "name": "Zoe",
+          "vehicleType": "Otomobil",
+          "sortOrder": 20,
+          "variants": []
+        },
+        {
+          "name": "Austral",
+          "vehicleType": "SUV",
+          "sortOrder": 21,
+          "variants": []
+        },
+        {
+          "name": "Duster",
+          "vehicleType": "SUV",
+          "sortOrder": 22,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Seat",
+      "sortOrder": 41,
+      "models": [
+        {
+          "name": "Alhambra",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Altea",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Arona",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Ateca",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Cordoba",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Ibiza",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Leon",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Toledo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Seres",
+      "sortOrder": 42,
+      "models": [
+        {
+          "name": "3",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Skoda",
+      "sortOrder": 43,
+      "models": [
+        {
+          "name": "Fabia",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Felicia",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Kamiq",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Karoq",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Kodiaq",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Octavia",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": [
+            {
+              "name": "Octavia 1.0 TSI",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 999,
+              "enginePowerHp": 110,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Octavia 1.5 TSI DSG",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1498,
+              "enginePowerHp": 150,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Octavia 2.0 TDI DSG",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1968,
+              "enginePowerHp": 150,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Rapid",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "Scala",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Superb",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "Yeti",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Skywell",
+      "sortOrder": 44,
+      "models": [
+        {
+          "name": "ET5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Smart",
+      "sortOrder": 45,
+      "models": [
+        {
+          "name": "Forfour",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Fortwo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "SsangYong",
+      "sortOrder": 46,
+      "models": [
+        {
+          "name": "Actyon",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Korando",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Kyron",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Musso",
+          "vehicleType": "Pick-up",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Rexton",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Tivoli",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Torres",
+          "vehicleType": "SUV",
+          "sortOrder": 7,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Subaru",
+      "sortOrder": 47,
+      "models": [
+        {
+          "name": "Forester",
+          "vehicleType": "SUV",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Impreza",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Legacy",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Outback",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "XV",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "BRZ",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Suzuki",
+      "sortOrder": 48,
+      "models": [
+        {
+          "name": "Alto",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Baleno",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Grand Vitara",
+          "vehicleType": "SUV",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Jimny",
+          "vehicleType": "SUV",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "S-Cross",
+          "vehicleType": "SUV",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Splash",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Swift",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "SX4",
+          "vehicleType": "SUV",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Vitara",
+          "vehicleType": "SUV",
+          "sortOrder": 9,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Tesla",
+      "sortOrder": 49,
+      "models": [
+        {
+          "name": "Model 3",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Model S",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Model X",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Model Y",
+          "vehicleType": "SUV",
+          "sortOrder": 4,
+          "variants": [
+            {
+              "name": "Model Y RWD",
+              "fuelType": "Elektrik",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": null,
+              "enginePowerHp": null,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Model Y Long Range AWD",
+              "fuelType": "Elektrik",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": null,
+              "enginePowerHp": null,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Model Y Performance",
+              "fuelType": "Elektrik",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": null,
+              "enginePowerHp": null,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tofaş",
+      "sortOrder": 50,
+      "models": [
+        {
+          "name": "Doğan",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Kartal",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Şahin",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Serçe",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Togg",
+      "sortOrder": 51,
+      "models": [
+        {
+          "name": "T10X",
+          "vehicleType": "SUV",
+          "sortOrder": 1,
+          "variants": [
+            {
+              "name": "T10X V1 RWD Standard Range",
+              "fuelType": "Elektrik",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": null,
+              "enginePowerHp": 218,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "T10X V2 RWD Long Range",
+              "fuelType": "Elektrik",
+              "transmissionType": "Otomatik",
+              "bodyType": "SUV",
+              "engineCapacityCc": null,
+              "enginePowerHp": 218,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "T10F",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Toyota",
+      "sortOrder": 52,
+      "models": [
+        {
+          "name": "Auris",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Avensis",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "C-HR",
+          "vehicleType": "SUV",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Camry",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Corolla",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": [
+            {
+              "name": "Corolla 1.6 Valvematic",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 132,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Corolla 1.6 Multidrive S",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 132,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Corolla 1.8 Hybrid e-CVT",
+              "fuelType": "Hibrit",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1798,
+              "enginePowerHp": 122,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Corolla Cross",
+          "vehicleType": "SUV",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Hilux",
+          "vehicleType": "Pick-up",
+          "sortOrder": 7,
+          "variants": [
+            {
+              "name": "Hilux 2.4 D-4D",
+              "fuelType": "Dizel",
+              "transmissionType": "Manuel",
+              "bodyType": "Pick-up",
+              "engineCapacityCc": 2393,
+              "enginePowerHp": 150,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Hilux 2.4 D-4D AT",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Pick-up",
+              "engineCapacityCc": 2393,
+              "enginePowerHp": 150,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            }
+          ]
+        },
+        {
+          "name": "Land Cruiser",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Prius",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "Proace City",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "RAV4",
+          "vehicleType": "SUV",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "Verso",
+          "vehicleType": "Otomobil",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "Yaris",
+          "vehicleType": "Otomobil",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "Yaris Cross",
+          "vehicleType": "SUV",
+          "sortOrder": 14,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Volkswagen",
+      "sortOrder": 53,
+      "models": [
+        {
+          "name": "Amarok",
+          "vehicleType": "Pick-up",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "Arteon",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "Bora",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "Caddy",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "Caravelle",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "Crafter",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "Golf",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": [
+            {
+              "name": "Golf 1.0 TSI",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 999,
+              "enginePowerHp": 110,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Golf 1.5 TSI DSG",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1498,
+              "enginePowerHp": 150,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Golf 1.6 TDI DSG",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Hatchback",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 115,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Jetta",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "Multivan",
+          "vehicleType": "Otomobil",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "Passat",
+          "vehicleType": "Otomobil",
+          "sortOrder": 10,
+          "variants": [
+            {
+              "name": "Passat 1.4 TSI",
+              "fuelType": "Benzin",
+              "transmissionType": "Manuel",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1395,
+              "enginePowerHp": 125,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 1
+            },
+            {
+              "name": "Passat 1.5 TSI DSG",
+              "fuelType": "Benzin",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1498,
+              "enginePowerHp": 150,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 2
+            },
+            {
+              "name": "Passat 1.6 TDI DSG",
+              "fuelType": "Dizel",
+              "transmissionType": "Otomatik",
+              "bodyType": "Sedan",
+              "engineCapacityCc": 1598,
+              "enginePowerHp": 120,
+              "engineCode": null,
+              "modelYearFrom": null,
+              "modelYearTo": null,
+              "sortOrder": 3
+            }
+          ]
+        },
+        {
+          "name": "Polo",
+          "vehicleType": "Otomobil",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "Scirocco",
+          "vehicleType": "Otomobil",
+          "sortOrder": 12,
+          "variants": []
+        },
+        {
+          "name": "Sharan",
+          "vehicleType": "Otomobil",
+          "sortOrder": 13,
+          "variants": []
+        },
+        {
+          "name": "T-Cross",
+          "vehicleType": "SUV",
+          "sortOrder": 14,
+          "variants": []
+        },
+        {
+          "name": "T-Roc",
+          "vehicleType": "SUV",
+          "sortOrder": 15,
+          "variants": []
+        },
+        {
+          "name": "Taigo",
+          "vehicleType": "SUV",
+          "sortOrder": 16,
+          "variants": []
+        },
+        {
+          "name": "Tiguan",
+          "vehicleType": "SUV",
+          "sortOrder": 17,
+          "variants": []
+        },
+        {
+          "name": "Touareg",
+          "vehicleType": "SUV",
+          "sortOrder": 18,
+          "variants": []
+        },
+        {
+          "name": "Touran",
+          "vehicleType": "Otomobil",
+          "sortOrder": 19,
+          "variants": []
+        },
+        {
+          "name": "Transporter",
+          "vehicleType": "Hafif Ticari",
+          "sortOrder": 20,
+          "variants": []
+        },
+        {
+          "name": "ID.3",
+          "vehicleType": "Otomobil",
+          "sortOrder": 21,
+          "variants": []
+        },
+        {
+          "name": "ID.4",
+          "vehicleType": "Otomobil",
+          "sortOrder": 22,
+          "variants": []
+        },
+        {
+          "name": "ID.5",
+          "vehicleType": "Otomobil",
+          "sortOrder": 23,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Volvo",
+      "sortOrder": 54,
+      "models": [
+        {
+          "name": "C30",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        },
+        {
+          "name": "S40",
+          "vehicleType": "Otomobil",
+          "sortOrder": 2,
+          "variants": []
+        },
+        {
+          "name": "S60",
+          "vehicleType": "Otomobil",
+          "sortOrder": 3,
+          "variants": []
+        },
+        {
+          "name": "S80",
+          "vehicleType": "Otomobil",
+          "sortOrder": 4,
+          "variants": []
+        },
+        {
+          "name": "S90",
+          "vehicleType": "Otomobil",
+          "sortOrder": 5,
+          "variants": []
+        },
+        {
+          "name": "V40",
+          "vehicleType": "Otomobil",
+          "sortOrder": 6,
+          "variants": []
+        },
+        {
+          "name": "V60",
+          "vehicleType": "Otomobil",
+          "sortOrder": 7,
+          "variants": []
+        },
+        {
+          "name": "V90",
+          "vehicleType": "Otomobil",
+          "sortOrder": 8,
+          "variants": []
+        },
+        {
+          "name": "XC40",
+          "vehicleType": "SUV",
+          "sortOrder": 9,
+          "variants": []
+        },
+        {
+          "name": "XC60",
+          "vehicleType": "SUV",
+          "sortOrder": 10,
+          "variants": []
+        },
+        {
+          "name": "XC70",
+          "vehicleType": "Otomobil",
+          "sortOrder": 11,
+          "variants": []
+        },
+        {
+          "name": "XC90",
+          "vehicleType": "SUV",
+          "sortOrder": 12,
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Voyah",
+      "sortOrder": 55,
+      "models": [
+        {
+          "name": "Free",
+          "vehicleType": "Otomobil",
+          "sortOrder": 1,
+          "variants": []
+        }
+      ]
+    }
+  ]
+}

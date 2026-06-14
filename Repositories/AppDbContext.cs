@@ -37,6 +37,7 @@ namespace AutoStock.Repositories
         public DbSet<SupportRequest> SupportRequests { get; set; }
         public DbSet<UserSecurityToken> UserSecurityTokens { get; set; }
         public DbSet<WorkshopBankAccount> WorkshopBankAccounts { get; set; }
+        public DbSet<VehicleVariant> VehicleVariants { get; set; } = null!;
 
 
         protected override void OnModelCreating(ModelBuilder builder)

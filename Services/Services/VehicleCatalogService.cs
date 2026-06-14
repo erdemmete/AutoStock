@@ -1,4 +1,5 @@
 ﻿using AutoStock.Repositories;
+using AutoStock.Repositories.Entities;
 using AutoStock.Services.Dtos.Vehicles;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -40,5 +41,33 @@ namespace AutoStock.Services.Services
                 })
                 .ToListAsync();
         }
+
+        public async Task<List<VehicleVariantDto>> GetVariantsByModelIdAsync(int modelId)
+        {
+            return await _context.Set<VehicleVariant>()
+                .AsNoTracking()
+                .Where(x =>
+                    x.VehicleModelId == modelId &&
+                    x.IsActive)
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.Name)
+                .Select(x => new VehicleVariantDto
+                {
+                    Id = x.Id,
+                    VehicleBrandId = x.VehicleBrandId,
+                    VehicleModelId = x.VehicleModelId,
+                    Name = x.Name,
+                    FuelType = x.FuelType,
+                    TransmissionType = x.TransmissionType,
+                    BodyType = x.BodyType,
+                    EngineCapacityCc = x.EngineCapacityCc,
+                    EnginePowerHp = x.EnginePowerHp,
+                    EngineCode = x.EngineCode,
+                    ModelYearFrom = x.ModelYearFrom,
+                    ModelYearTo = x.ModelYearTo
+                })
+                .ToListAsync();
+        }
+
     }
 }

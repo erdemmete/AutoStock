@@ -555,26 +555,29 @@
                     </div>
                 </section>
 
-                <section class="card service-step" data-step="2">
+                
+                <section class="card service-step service-vehicle-step" data-step="2">
                     <div class="section-title">
                         <div class="section-icon vehicle">▣</div>
                         <div>
                             <h3>Araç Bilgileri</h3>
-                            <p>Plaka, araç detayları, kilometre ve yakıt bilgisini girin.</p>
+                            <p>Plaka, marka, model ve varsa versiyon/motor bilgisini girin.</p>
                         </div>
                     </div>
 
-                    <div class="vehicle-grid">
-
-                        <div class="form-field vehicle-search-wrapper">
+                    <div class="vehicle-create-grid">
+                        <div class="form-field vehicle-plate-field">
                             <input asp-for="Plate"
                                    id="Plate"
                                    placeholder=" "
-                                   autocomplete="off" />
-                            <label>Plaka <span class="required">*</span></label>
+                                   autocomplete="off"
+                                   maxlength="12" />
+                            <label asp-for="Plate">Plaka <span class="required">*</span></label>
                             <span asp-validation-for="Plate" class="field-error"></span>
 
-                            
+                            <div id="vehicleSearchResults"
+                                 class="vehicle-search-results">
+                            </div>
                         </div>
 
                         <div class="form-field">
@@ -585,36 +588,53 @@
                                     <option value="@brand.Id">@brand.Name</option>
                                 }
                             </select>
-                            <label>Marka</label>
+                            <label asp-for="VehicleBrandId">Marka</label>
+                            <span asp-validation-for="VehicleBrandId" class="field-error"></span>
                         </div>
 
                         <div class="form-field">
                             <select asp-for="VehicleModelId" id="modelSelect">
                                 <option value="">Önce marka seçiniz</option>
                             </select>
-                            <label>Model</label>
+                            <label asp-for="VehicleModelId">Model</label>
+                            <span asp-validation-for="VehicleModelId" class="field-error"></span>
+                        </div>
+
+                        <div class="form-field vehicle-variant-field">
+                            <select asp-for="VehicleVariantId" id="VehicleVariantId">
+                                <option value="">Versiyon seçmek zorunlu değil</option>
+                            </select>
+                            <label for="VehicleVariantId">Versiyon / Motor</label>
+                            <button type="button"
+                                    class="vehicle-help-trigger"
+                                    onclick="openMissingVehicleHelpModal()"
+                                    aria-label="Aracı listede bulamadım">
+                                ?
+                            </button>
+                            <span asp-validation-for="VehicleVariantId" class="field-error"></span>
                         </div>
 
                         <div class="form-field">
                             <input asp-for="ModelYear"
                                    id="ModelYear"
                                    placeholder=" "
-                                   autocomplete="off"
-                                   inputmode="numeric" />
-                            <label>Model Yılı</label>
+                                   inputmode="numeric"
+                                   maxlength="4" />
+                            <label asp-for="ModelYear">Model Yılı</label>
+                            <span asp-validation-for="ModelYear" class="field-error"></span>
                         </div>
 
                         <div class="form-field">
                             <input asp-for="Mileage"
                                    id="Mileage"
                                    placeholder=" "
-                                   autocomplete="off"
                                    inputmode="numeric" />
-                            <label>Kilometre</label>
+                            <label asp-for="Mileage">Kilometre</label>
+                            <span asp-validation-for="Mileage" class="field-error"></span>
                         </div>
 
                         <div class="form-field">
-                            <select id="FuelLevel" name="FuelLevel">
+                            <select asp-for="FuelLevel" id="FuelLevel">
                                 <option value="">Yakıt seçiniz</option>
                                 <option value="Empty">Boş</option>
                                 <option value="Quarter">1/4</option>
@@ -622,29 +642,117 @@
                                 <option value="ThreeQuarters">3/4</option>
                                 <option value="Full">Dolu</option>
                             </select>
-                            <label>Yakıt Durumu</label>
+                            <label asp-for="FuelLevel">Yakıt Durumu</label>
+                            <span asp-validation-for="FuelLevel" class="field-error"></span>
                         </div>
 
-                        <div class="form-field chassis-field">
+                        <div class="form-field">
                             <input asp-for="ChassisNumber"
                                    id="ChassisNumber"
                                    placeholder=" "
-                                   autocomplete="off"
-                                   maxlength="17" />
-                            <label>Şasi No</label>
+                                   maxlength="17"
+                                   autocomplete="off" />
+                            <label asp-for="ChassisNumber">Şasi No</label>
+                            <span asp-validation-for="ChassisNumber" class="field-error"></span>
+                        </div>
+                    </div>
+
+                    <div id="vehicleTechnicalPreview"
+                         class="vehicle-technical-preview"
+                         hidden>
+                        <div>
+                            <span>Yakıt</span>
+                            <strong id="vehiclePreviewFuelType">-</strong>
+                        </div>
+                        <div>
+                            <span>Şanzıman</span>
+                            <strong id="vehiclePreviewTransmissionType">-</strong>
+                        </div>
+                        <div>
+                            <span>Motor</span>
+                            <strong id="vehiclePreviewEngine">-</strong>
+                        </div>
+                        <div>
+                            <span>Kasa</span>
+                            <strong id="vehiclePreviewBodyType">-</strong>
+                        </div>
+                    </div>
+
+                    <div id="selectedVehicleCard" class="selected-card">
+                        <div>
+                            <strong id="selectedVehiclePlateText">Seçili araç</strong>
+                            <span id="selectedVehicleInfoText">-</span>
                         </div>
 
-                        <div id="selectedVehicleCard" class="selected-card">
-                            <div>
-                                <strong id="selectedVehiclePlateText">Seçili araç</strong>
-                                <span id="selectedVehicleInfoText">-</span>
+                        <button type="button" onclick="clearSelectedVehicle()">
+                            Değiştir
+                        </button>
+                    </div>
+
+                    <input type="hidden" asp-for="FuelType" id="FuelType" />
+                    <input type="hidden" asp-for="TransmissionType" id="TransmissionType" />
+                    <input type="hidden" asp-for="BodyType" id="BodyType" />
+                    <input type="hidden" asp-for="EngineCapacityCc" id="EngineCapacityCc" />
+                    <input type="hidden" asp-for="EnginePowerHp" id="EnginePowerHp" />
+                    <input type="hidden" asp-for="EngineCode" id="EngineCode" />
+
+                    <div id="missingVehicleHelpModal"
+                         class="vehicle-help-modal-backdrop"
+                         hidden
+                         aria-hidden="true">
+                        <div class="vehicle-help-modal"
+                             role="dialog"
+                             aria-modal="true"
+                             aria-labelledby="missingVehicleHelpTitle">
+
+                            <button type="button"
+                                    class="vehicle-help-close"
+                                    onclick="closeMissingVehicleHelpModal()"
+                                    aria-label="Kapat">
+                                ×
+                            </button>
+
+                            <div class="vehicle-help-modal-visual">
+                                <div class="vehicle-help-icon">?</div>
+                                <span>ARAÇ KATALOĞU</span>
                             </div>
 
-                            <button type="button" onclick="clearSelectedVehicle()">
-                                Değiştir
-                            </button>
-                        </div>
+                            <div class="vehicle-help-content">
+                                <h2 id="missingVehicleHelpTitle">Aracı listede bulamadınız mı?</h2>
 
+                                <p>
+                                    Eklenmesini istediğiniz marka, model veya versiyon bilgisini yazın.
+                                    Servis kaydını bekletmemek için en yakın marka/model seçimiyle devam edebilirsiniz.
+                                </p>
+
+                                <label class="vehicle-help-note-label" for="MissingVehicleNote">
+                                    Eklenmesini istediğiniz araç bilgisi
+                                </label>
+
+                                <textarea id="MissingVehicleNote"
+                                          name="MissingVehicleNote"
+                                          rows="4"
+                                          placeholder="Örn: Renault Boreal Iconic E-Tech 160"></textarea>
+
+                                <div class="vehicle-help-info">
+                                    Bu not servis kaydıyla birlikte saklanır. Destek talebi entegrasyonunu bir sonraki adımda ServiceRecordId ile bağlayacağız.
+                                </div>
+
+                                <div class="vehicle-help-actions">
+                                    <button type="button"
+                                            class="vehicle-help-secondary"
+                                            onclick="closeMissingVehicleHelpModal()">
+                                        Vazgeç
+                                    </button>
+
+                                    <button type="button"
+                                            class="vehicle-help-primary"
+                                            onclick="acceptMissingVehicleNote()">
+                                        Notu Kaydet
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="step-actions">
@@ -658,7 +766,7 @@
                     </div>
                 </section>
 
-                <section class="card service-step" data-step="3">
+<section class="card service-step" data-step="3">
                     <div class="section-title">
                         <div class="section-icon request">☷</div>
 

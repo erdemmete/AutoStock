@@ -31,5 +31,25 @@ public class VehicleConfiguration : IEntityTypeConfiguration<Vehicle>
             .WithMany()
             .HasForeignKey(x => x.VehicleModelId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.Property(x => x.FuelType)
+    .HasMaxLength(50);
+
+        builder.Property(x => x.TransmissionType)
+            .HasMaxLength(50);
+
+        builder.Property(x => x.BodyType)
+            .HasMaxLength(50);
+
+        builder.Property(x => x.EngineCode)
+            .HasMaxLength(80);
+
+        builder.HasOne(x => x.VehicleVariant)
+            .WithMany()
+            .HasForeignKey(x => x.VehicleVariantId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(x => x.VehicleVariantId);
+
+
     }
 }

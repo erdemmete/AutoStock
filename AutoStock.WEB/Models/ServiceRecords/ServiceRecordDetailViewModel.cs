@@ -79,6 +79,52 @@ namespace AutoStock.WEB.Models.ServiceRecords
         public int? ActiveInvoiceStatus { get; set; }
         public string? ActiveInvoiceNumber { get; set; }
 
+        public int? VehicleVariantId { get; set; }
+
+        public string? VehicleVariantName { get; set; }
+
+        public string? FuelType { get; set; }
+
+        public string? TransmissionType { get; set; }
+
+        public string? BodyType { get; set; }
+
+        public int? EngineCapacityCc { get; set; }
+
+        public int? EnginePowerHp { get; set; }
+
+        public string? EngineCode { get; set; }
+
+        public bool HasTechnicalVehicleInfo =>
+            !string.IsNullOrWhiteSpace(VehicleVariantName) ||
+            !string.IsNullOrWhiteSpace(FuelType) ||
+            !string.IsNullOrWhiteSpace(TransmissionType) ||
+            !string.IsNullOrWhiteSpace(BodyType) ||
+            EngineCapacityCc.HasValue ||
+            EnginePowerHp.HasValue ||
+            !string.IsNullOrWhiteSpace(EngineCode);
+
+        public string EngineSummaryText
+        {
+            get
+            {
+                var parts = new List<string>();
+
+                if (EngineCapacityCc.HasValue && EngineCapacityCc.Value > 0)
+                    parts.Add($"{EngineCapacityCc.Value:N0} cc");
+
+                if (EnginePowerHp.HasValue && EnginePowerHp.Value > 0)
+                    parts.Add($"{EnginePowerHp.Value} hp");
+
+                if (!string.IsNullOrWhiteSpace(EngineCode))
+                    parts.Add(EngineCode.Trim());
+
+                return parts.Count > 0
+                    ? string.Join(" / ", parts)
+                    : "-";
+            }
+        }
+
         public List<ServiceOperationViewModel> Operations { get; set; } = new();
 
         public List<ServiceRequestItemViewModel> RequestItems { get; set; } = new();

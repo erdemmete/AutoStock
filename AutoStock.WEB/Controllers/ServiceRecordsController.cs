@@ -326,12 +326,7 @@ public class ServiceRecordsController : BaseController
 
     [HttpPost("ServiceRecords/{serviceRecordId:int}/Photos")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UploadPhoto(
-    int serviceRecordId,
-    List<IFormFile>? files,
-    IFormFile? file,
-    ServiceImageType type,
-    string? description)
+    public async Task<IActionResult> UploadPhoto(int serviceRecordId, List<IFormFile>? files, IFormFile? file, ServiceImageType type, string? description)
     {
         var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 
@@ -454,6 +449,17 @@ public class ServiceRecordsController : BaseController
             success = true,
             message = "Fotoğraf silindi."
         });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetVariants(int modelId)
+    {
+        var result = await _serviceRecordApiService.GetVariantsAsync(modelId);
+
+        if (result.IsFailure || result.Data is null)
+            return Json(new List<VehicleVariantViewModel>());
+
+        return Json(result.Data);
     }
 
     private async Task<List<VehicleBrandViewModel>> GetBrandsAsync()

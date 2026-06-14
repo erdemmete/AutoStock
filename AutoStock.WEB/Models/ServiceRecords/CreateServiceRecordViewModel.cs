@@ -27,6 +27,19 @@ namespace AutoStock.WEB.Models.ServiceRecords
 
         public FuelLevelEnum? FuelLevel { get; set; }
         public string? ChassisNumber { get; set; }
+        public int? VehicleVariantId { get; set; }
+
+        public string? FuelType { get; set; }
+
+        public string? TransmissionType { get; set; }
+
+        public string? BodyType { get; set; }
+
+        public int? EngineCapacityCc { get; set; }
+
+        public int? EnginePowerHp { get; set; }
+
+        public string? EngineCode { get; set; }
 
         public string? CustomerComplaint { get; set; }
 

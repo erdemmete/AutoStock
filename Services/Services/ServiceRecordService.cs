@@ -112,6 +112,13 @@ public class ServiceRecordService : IServiceRecordService
                 VehicleModelId = request.VehicleModelId,
                 ModelYear = request.ModelYear,
                 Mileage = request.Mileage,
+                VehicleVariantId = request.VehicleVariantId,
+                FuelType = request.FuelType?.Trim(),
+                TransmissionType = request.TransmissionType?.Trim(),
+                BodyType = request.BodyType?.Trim(),
+                EngineCapacityCc = request.EngineCapacityCc,
+                EnginePowerHp = request.EnginePowerHp,
+                EngineCode = request.EngineCode?.Trim(),
                 ChassisNumber = request.ChassisNumber?.Trim()
             };
 
@@ -124,6 +131,13 @@ public class ServiceRecordService : IServiceRecordService
             vehicle.VehicleModelId = request.VehicleModelId ?? vehicle.VehicleModelId;
             vehicle.ModelYear = request.ModelYear ?? vehicle.ModelYear;
             vehicle.Mileage = request.Mileage ?? vehicle.Mileage;
+            vehicle.VehicleVariantId = request.VehicleVariantId ?? vehicle.VehicleVariantId;
+            vehicle.FuelType = request.FuelType?.Trim() ?? vehicle.FuelType;
+            vehicle.TransmissionType = request.TransmissionType?.Trim() ?? vehicle.TransmissionType;
+            vehicle.BodyType = request.BodyType?.Trim() ?? vehicle.BodyType;
+            vehicle.EngineCapacityCc = request.EngineCapacityCc ?? vehicle.EngineCapacityCc;
+            vehicle.EnginePowerHp = request.EnginePowerHp ?? vehicle.EnginePowerHp;
+            vehicle.EngineCode = request.EngineCode?.Trim() ?? vehicle.EngineCode;
 
             if (!string.IsNullOrWhiteSpace(request.ChassisNumber))
                 vehicle.ChassisNumber = request.ChassisNumber.Trim();
@@ -218,14 +232,15 @@ public class ServiceRecordService : IServiceRecordService
     public async Task<ServiceResult<ServiceRecordDetailDto>> GetDetailAsync(int serviceRecordId, int workshopId)
     {
         var serviceRecord = await _context.ServiceRecords
-    .Include(x => x.Customer)
-    .Include(x => x.Vehicle)
-    .Include(x => x.Operations)
-    .Include(x => x.RequestItems)
-    .Include(x => x.Images)
-            .FirstOrDefaultAsync(x =>
-                x.Id == serviceRecordId &&
-                x.WorkshopId == workshopId);
+     .Include(x => x.Customer)
+     .Include(x => x.Vehicle)
+         .ThenInclude(x => x.VehicleVariant)
+     .Include(x => x.Operations)
+     .Include(x => x.RequestItems)
+     .Include(x => x.Images)
+     .FirstOrDefaultAsync(x =>
+         x.Id == serviceRecordId &&
+         x.WorkshopId == workshopId);
 
         if (serviceRecord is null)
         {
@@ -257,6 +272,14 @@ public class ServiceRecordService : IServiceRecordService
             VehiclePlate = serviceRecord.VehiclePlateSnapshot,
             VehicleBrandName = serviceRecord.VehicleBrandNameSnapshot,
             VehicleModelName = serviceRecord.VehicleModelNameSnapshot,
+            VehicleVariantId = serviceRecord.Vehicle.VehicleVariantId,
+            VehicleVariantName = serviceRecord.Vehicle.VehicleVariant?.Name,
+            FuelType = serviceRecord.Vehicle.FuelType,
+            TransmissionType = serviceRecord.Vehicle.TransmissionType,
+            BodyType = serviceRecord.Vehicle.BodyType,
+            EngineCapacityCc = serviceRecord.Vehicle.EngineCapacityCc,
+            EnginePowerHp = serviceRecord.Vehicle.EnginePowerHp,
+            EngineCode = serviceRecord.Vehicle.EngineCode,
 
             Mileage = serviceRecord.MileageSnapshot,
             FuelLevel = serviceRecord.FuelLevelSnapshot,

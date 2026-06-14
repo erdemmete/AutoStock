@@ -56,6 +56,14 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public string? AddressDistrict { get; set; }
 
         public string? CustomerAddress { get; set; }
+        public int? VehicleVariantId { get; set; }
+        public string? VehicleVariantName { get; set; }
+        public string? FuelType { get; set; }
+        public string? TransmissionType { get; set; }
+        public string? BodyType { get; set; }
+        public int? EngineCapacityCc { get; set; }
+        public int? EnginePowerHp { get; set; }
+        public string? EngineCode { get; set; }
 
 
         public List<ServiceRequestItemDto> RequestItems { get; set; } = new();

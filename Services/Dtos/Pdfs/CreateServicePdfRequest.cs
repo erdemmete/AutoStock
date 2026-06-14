@@ -20,6 +20,19 @@
         public string? WorkshopPhone { get; set; }
         public string? RecordNumber { get; set; }
         public string? StatusText { get; set; }
+        public string? VehicleVariantName { get; set; }
+
+        public string? FuelType { get; set; }
+
+        public string? TransmissionType { get; set; }
+
+        public string? BodyType { get; set; }
+
+        public int? EngineCapacityCc { get; set; }
+
+        public int? EnginePowerHp { get; set; }
+
+        public string? EngineCode { get; set; }
 
         public List<ServicePdfRequestGroupDto> RequestGroups { get; set; } = new();
     }

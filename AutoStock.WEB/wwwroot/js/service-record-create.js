@@ -13,12 +13,171 @@ let suppressDraftSave = false;
 
 let turkeyLocations = [];
 let taxOffices = [];
-
+let vehicleVariants = [];
 
 const formatter = new Intl.NumberFormat("tr-TR", {
     style: "currency",
     currency: "TRY"
 });
+
+async function loadVehicleVariants(modelId) {
+    const select = get("VehicleVariantId");
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Versiyon seçmek zorunlu değil</option>';
+    vehicleVariants = [];
+    clearSelectedVariantTechnicalInfo();
+
+    if (!modelId) {
+        updateVehicleTechnicalPreview(null);
+        return;
+    }
+
+    try {
+        const response = await fetch(`/ServiceRecords/GetVariants?modelId=${encodeURIComponent(modelId)}`);
+
+        if (!response.ok) {
+            select.innerHTML = '<option value="">Versiyon bulunamadı</option>';
+            updateVehicleTechnicalPreview(null);
+            return;
+        }
+
+        const result = await response.json();
+        vehicleVariants = Array.isArray(result?.data)
+            ? result.data
+            : Array.isArray(result)
+                ? result
+                : [];
+
+        if (!vehicleVariants.length) {
+            select.innerHTML = '<option value="">Bu model için versiyon yok</option>';
+            updateVehicleTechnicalPreview(null);
+            return;
+        }
+
+        vehicleVariants.forEach(variant => {
+            const option = document.createElement("option");
+            option.value = variant.id;
+            option.textContent = buildVariantOptionText(variant);
+            select.appendChild(option);
+        });
+    } catch {
+        select.innerHTML = '<option value="">Versiyonlar yüklenemedi</option>';
+        vehicleVariants = [];
+        updateVehicleTechnicalPreview(null);
+    }
+}
+
+function buildVariantOptionText(variant) {
+    if (!variant) return "";
+
+    const details = [
+        variant.fuelType,
+        variant.transmissionType,
+        variant.enginePowerHp ? `${variant.enginePowerHp} hp` : "",
+        variant.modelYearFrom && variant.modelYearTo
+            ? `${variant.modelYearFrom}-${variant.modelYearTo}`
+            : variant.modelYearFrom
+                ? `${variant.modelYearFrom}+`
+                : ""
+    ].filter(Boolean);
+
+    return details.length
+        ? `${variant.name} · ${details.join(" / ")}`
+        : variant.name;
+}
+
+function clearSelectedVariantTechnicalInfo() {
+    ["FuelType", "TransmissionType", "BodyType", "EngineCapacityCc", "EnginePowerHp", "EngineCode"]
+        .forEach(id => setHidden(id, ""));
+
+    updateVehicleTechnicalPreview(null);
+}
+
+function applySelectedVariantTechnicalInfo() {
+    const variantId = Number(get("VehicleVariantId")?.value || 0);
+    const variant = vehicleVariants.find(x => Number(x.id) === variantId);
+
+    setHidden("FuelType", variant?.fuelType || "");
+    setHidden("TransmissionType", variant?.transmissionType || "");
+    setHidden("BodyType", variant?.bodyType || "");
+    setHidden("EngineCapacityCc", variant?.engineCapacityCc || "");
+    setHidden("EnginePowerHp", variant?.enginePowerHp || "");
+    setHidden("EngineCode", variant?.engineCode || "");
+
+    updateVehicleTechnicalPreview(variant);
+}
+
+function updateVehicleTechnicalPreview(variant) {
+    const preview = get("vehicleTechnicalPreview");
+
+    if (!preview) return;
+
+    if (!variant) {
+        preview.hidden = true;
+        return;
+    }
+
+    setPreviewText("vehiclePreviewFuelType", variant.fuelType, "-");
+    setPreviewText("vehiclePreviewTransmissionType", variant.transmissionType, "-");
+    setPreviewText(
+        "vehiclePreviewEngine",
+        [
+            variant.engineCapacityCc ? `${variant.engineCapacityCc} cc` : "",
+            variant.enginePowerHp ? `${variant.enginePowerHp} hp` : "",
+            variant.engineCode || ""
+        ].filter(Boolean).join(" / "),
+        "-"
+    );
+    setPreviewText("vehiclePreviewBodyType", variant.bodyType, "-");
+
+    preview.hidden = false;
+}
+
+function setHidden(id, value) {
+    const input = document.getElementById(id);
+    if (input) input.value = value || "";
+}
+
+
+
+function openMissingVehicleHelpModal() {
+    const modal = get("missingVehicleHelpModal");
+
+    if (!modal) return;
+
+    modal.hidden = false;
+    modal.setAttribute("aria-hidden", "false");
+
+    requestAnimationFrame(() => {
+        modal.classList.add("active");
+        get("MissingVehicleNote")?.focus();
+    });
+}
+
+function closeMissingVehicleHelpModal() {
+    const modal = get("missingVehicleHelpModal");
+
+    if (!modal) return;
+
+    modal.classList.remove("active");
+    modal.setAttribute("aria-hidden", "true");
+
+    setTimeout(() => {
+        modal.hidden = true;
+    }, 180);
+}
+
+function acceptMissingVehicleNote() {
+    const note = get("MissingVehicleNote")?.value?.trim();
+
+    closeMissingVehicleHelpModal();
+
+    if (note) {
+        showToast("Araç notu saklandı. En yakın modelle kayda devam edebilirsin.", "success");
+    }
+}
+
 
 function get(id) {
     return document.getElementById(id);
@@ -423,29 +582,34 @@ async function loadModelsByBrand(brandId) {
     if (!modelSelect) return;
 
     modelSelect.innerHTML = '<option value="">Model yükleniyor...</option>';
+    await loadVehicleVariants("");
 
     if (!brandId) {
         modelSelect.innerHTML = '<option value="">Önce marka seçiniz</option>';
         return;
     }
 
-    const response = await fetch(`/ServiceRecords/GetModels?brandId=${brandId}`);
+    try {
+        const response = await fetch(`/ServiceRecords/GetModels?brandId=${encodeURIComponent(brandId)}`);
 
-    if (!response.ok) {
-        modelSelect.innerHTML = '<option value="">Model bulunamadı</option>';
-        return;
+        if (!response.ok) {
+            modelSelect.innerHTML = '<option value="">Model bulunamadı</option>';
+            return;
+        }
+
+        const models = await response.json();
+
+        modelSelect.innerHTML = '<option value="">Model seçiniz</option>';
+
+        models.forEach(model => {
+            const option = document.createElement("option");
+            option.value = model.id;
+            option.textContent = model.name;
+            modelSelect.appendChild(option);
+        });
+    } catch {
+        modelSelect.innerHTML = '<option value="">Model yüklenemedi</option>';
     }
-
-    const models = await response.json();
-
-    modelSelect.innerHTML = '<option value="">Model seçiniz</option>';
-
-    models.forEach(model => {
-        const option = document.createElement("option");
-        option.value = model.id;
-        option.textContent = model.name;
-        modelSelect.appendChild(option);
-    });
 }
 
 function saveCreateFormDraft() {
@@ -587,6 +751,15 @@ async function restoreVehicleModelSelection(data) {
     await loadModelsByBrand(brandValue);
 
     modelSelect.value = modelValue;
+
+    await loadVehicleVariants(modelValue);
+
+    const variantValue = data.VehicleVariantId;
+
+    if (variantValue && get("VehicleVariantId")) {
+        get("VehicleVariantId").value = variantValue;
+        applySelectedVariantTechnicalInfo();
+    }
 }
 
 function restoreRequestItemsDraft() {
@@ -1363,18 +1536,34 @@ function initializeCustomerSearch() {
    
 }
 
-    document.addEventListener("click", function (e) {
-        if (!customerResults.contains(e.target) && e.target !== customerSearchInput) {
-            customerResults.style.display = "none";
-        }
-    });
 
-    document.addEventListener("keydown", function (e) {
-        if (e.ctrlKey && e.key.toLocaleLowerCase("tr-TR") === "k") {
-            e.preventDefault();
-            customerSearchInput.focus();
-        }
-    });
+document.addEventListener("click", function (e) {
+    const customerResults = get("customerSearchResults");
+    const customerSearchInput = get("MainCustomerName");
+
+    if (
+        customerResults &&
+        customerSearchInput &&
+        !customerResults.contains(e.target) &&
+        e.target !== customerSearchInput
+    ) {
+        customerResults.style.display = "none";
+    }
+});
+
+document.addEventListener("keydown", function (e) {
+    const customerSearchInput = get("MainCustomerName");
+
+    if (
+        customerSearchInput &&
+        e.ctrlKey &&
+        e.key.toLocaleLowerCase("tr-TR") === "k"
+    ) {
+        e.preventDefault();
+        customerSearchInput.focus();
+    }
+});
+
 
 
 function renderUnifiedSearchResults(customers, vehicles, container) {
@@ -1638,6 +1827,14 @@ async function selectVehicleFromSearch(vehicle) {
 
     if (modelId && get("modelSelect")) {
         get("modelSelect").value = modelId;
+        await loadVehicleVariants(modelId);
+
+        const variantId = vehicle.variantId ?? vehicle.vehicleVariantId ?? "";
+
+        if (variantId && get("VehicleVariantId")) {
+            get("VehicleVariantId").value = variantId;
+            applySelectedVariantTechnicalInfo();
+        }
     }
 
     if (vehicle.modelYear && get("ModelYear")) {
@@ -1793,14 +1990,26 @@ function createNewCustomerForVehicle() {
 
 function initializeVehicleBrandModel() {
     const brandSelect = get("brandSelect");
+    const modelSelect = get("modelSelect");
+    const variantSelect = get("VehicleVariantId");
 
     brandSelect?.addEventListener("change", async function () {
         await loadModelsByBrand(this.value);
+
         saveCreateFormDraft();
         updateServiceFormPreview();
     });
 
-    get("modelSelect")?.addEventListener("change", function () {
+    modelSelect?.addEventListener("change", async function () {
+        await loadVehicleVariants(this.value);
+
+        saveCreateFormDraft();
+        updateServiceFormPreview();
+    });
+
+    variantSelect?.addEventListener("change", function () {
+        applySelectedVariantTechnicalInfo();
+
         saveCreateFormDraft();
         updateServiceFormPreview();
     });
@@ -2002,8 +2211,6 @@ async function saveServiceRecord(action = "detail", clickedButton = null) {
 
         clearDrafts();
         lockCreatedForm();
-
-        showCreatedResult(action);
 
         showCreatedResult(action);
 

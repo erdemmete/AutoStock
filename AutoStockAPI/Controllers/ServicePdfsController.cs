@@ -41,6 +41,8 @@ namespace AutoStock.API.Controllers
                     .ThenInclude(x => x.VehicleBrand)
                 .Include(x => x.Vehicle)
                     .ThenInclude(x => x.VehicleModel)
+                    .Include(x => x.Vehicle)
+                    .ThenInclude(x => x.VehicleVariant)
                 .Include(x => x.RequestItems)
                 .Include(x => x.Operations)
                 .FirstOrDefaultAsync(x =>
@@ -94,6 +96,13 @@ namespace AutoStock.API.Controllers
                 Model = serviceRecord.Vehicle?.VehicleModel?.Name,
                 ModelYear = serviceRecord.Vehicle?.ModelYear?.ToString(),
                 FuelLevelText = ToFuelLevelText(serviceRecord.FuelLevelSnapshot),
+                VehicleVariantName = serviceRecord.Vehicle?.VehicleVariant?.Name,
+                FuelType = serviceRecord.Vehicle?.FuelType,
+                TransmissionType = serviceRecord.Vehicle?.TransmissionType,
+                BodyType = serviceRecord.Vehicle?.BodyType,
+                EngineCapacityCc = serviceRecord.Vehicle?.EngineCapacityCc,
+                EnginePowerHp = serviceRecord.Vehicle?.EnginePowerHp,
+                EngineCode = serviceRecord.Vehicle?.EngineCode,
 
                 Note = serviceRecord.ServiceReceptionNote,
                 RequestGroups = serviceRecord.RequestItems

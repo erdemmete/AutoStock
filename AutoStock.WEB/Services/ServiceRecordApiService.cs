@@ -310,5 +310,12 @@ namespace AutoStock.WEB.Services
                 client => client.DeleteAsync($"/api/service-record-images/{imageId}"),
                 "Fotoğraf silinirken hata oluştu.");
         }
+
+        public async Task<ApiResponse<List<VehicleVariantViewModel>>> GetVariantsAsync(int modelId)
+        {
+            return await GetAsync<List<VehicleVariantViewModel>>(
+                $"/api/VehicleCatalog/models/{modelId}/variants",
+                "Araç versiyonları alınırken hata oluştu.");
+        }
     }
 }
