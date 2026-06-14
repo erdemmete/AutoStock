@@ -2,6 +2,17 @@
 
 @{
     Layout = null;
+
+    var recordCount = Model.Records?.Count() ?? 0;
+    var plateText = MaskPlate(Model.Vehicle?.Plate);
+    var customerText = MaskName(
+        TryFirstString(Model, "CustomerName", "OwnerName", "VehicleOwnerName")
+        ?? TryFirstString(Model.Vehicle, "CustomerName", "OwnerName", "VehicleOwnerName"));
+
+    var workshopName = TryFirstString(Model, "WorkshopName", "WorkshopDisplayName", "ServiceName") ?? "Servis İşletmesi";
+    var workshopAddress = TryFirstString(Model, "WorkshopAddress", "WorkshopAddressText", "AddressText");
+    var workshopPhone = TryFirstString(Model, "WorkshopPhone", "WorkshopPhoneText", "PhoneText", "PhoneNumber");
+    var serviceContactLine = JoinText(workshopAddress, workshopPhone);
 }
 
 <!DOCTYPE html>
@@ -16,288 +27,498 @@
                 box-sizing: border-box;
             }
 
+            :root {
+                --ink: #0f172a;
+                --muted: #64748b;
+                --line: #e2e8f0;
+                --soft: #f8fafc;
+                --blue: #2563eb;
+                --blue-dark: #1e40af;
+                --green: #16a34a;
+                --card: rgba(255, 255, 255, .94);
+                --shadow: 0 24px 70px rgba(15, 23, 42, .10);
+            }
+
             body {
                 margin: 0;
-                background: #f3f6fb;
+                min-height: 100vh;
+                background: radial-gradient(circle at 9% 2%, rgba(37, 99, 235, .12), transparent 31rem), radial-gradient(circle at 94% 4%, rgba(22, 163, 74, .10), transparent 30rem), linear-gradient(180deg, #f6f9fd 0%, #eef3f9 100%);
+                color: var(--ink);
                 font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                color: #0f172a;
             }
 
             .page {
-                width: min(900px, calc(100% - 32px));
+                width: min(960px, calc(100% - 32px));
                 margin: 0 auto;
-                padding: 28px 0 50px;
+                padding: 30px 0 48px;
+            }
+
+            .shell {
+                overflow: hidden;
+                border: 1px solid rgba(226, 232, 240, .9);
+                border-radius: 34px;
+                background: var(--card);
+                box-shadow: var(--shadow);
+                backdrop-filter: blur(16px);
             }
 
             .hero {
-                padding: 28px;
-                border-radius: 28px;
-                background: linear-gradient(135deg, #0f172a, #1d4ed8);
+                position: relative;
+                padding: 34px;
                 color: white;
-                box-shadow: 0 22px 55px rgba(15, 23, 42, .18);
+                background: radial-gradient(circle at 88% 25%, rgba(255,255,255,.18), transparent 21rem), linear-gradient(135deg, #07111f 0%, #101827 48%, #2554d8 100%);
             }
 
-            .hero h1 {
-                margin: 0;
-                font-size: 30px;
-                letter-spacing: -.8px;
-            }
-
-            .hero p {
-                margin: 8px 0 0;
-                color: rgba(255,255,255,.72);
-                font-weight: 600;
-            }
-
-            .vehicle-card {
-                margin-top: 20px;
-                padding: 22px;
-                border-radius: 24px;
-                background: white;
-                border: 1px solid #e2e8f0;
-                box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
-            }
-
-            .vehicle-title {
-                display: flex;
-                justify-content: space-between;
-                gap: 16px;
-                align-items: flex-start;
-            }
-
-            .vehicle-title h2 {
-                margin: 0;
-                font-size: 24px;
-            }
-
-            .plate {
-                padding: 9px 13px;
-                border-radius: 14px;
-                background: #dbeafe;
-                color: #1d4ed8;
-                font-weight: 900;
-                white-space: nowrap;
-            }
-
-            .vehicle-meta {
-                margin-top: 14px;
+            .hero-inner {
+                position: relative;
+                z-index: 1;
                 display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 12px;
+                grid-template-columns: minmax(0, 1fr) auto;
+                gap: 22px;
+                align-items: center;
             }
 
-            .meta-box {
-                padding: 14px;
-                border-radius: 16px;
+            .service-head {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                min-width: 0;
+            }
+
+            .logo {
+                width: 58px;
+                height: 58px;
+                display: grid;
+                place-items: center;
+                flex-shrink: 0;
+                border-radius: 19px;
+                background: linear-gradient(135deg, #2563eb, #16a34a);
+                color: white;
+                font-size: 23px;
+                font-weight: 950;
+                box-shadow: 0 18px 42px rgba(37, 99, 235, .30);
+            }
+
+            .eyebrow {
+                display: inline-flex;
+                padding: 6px 11px;
+                border-radius: 999px;
+                background: rgba(255,255,255,.12);
+                border: 1px solid rgba(255,255,255,.16);
+                color: rgba(255,255,255,.82);
+                font-size: 12px;
+                font-weight: 900;
+                letter-spacing: .2px;
+            }
+
+            h1 {
+                margin: 10px 0 0;
+                font-size: clamp(31px, 5vw, 48px);
+                line-height: .98;
+                letter-spacing: -1.8px;
+            }
+
+            .service-name {
+                margin: 8px 0 0;
+                color: rgba(255,255,255,.82);
+                font-size: 15px;
+                font-weight: 800;
+            }
+
+            .service-contact {
+                margin: 5px 0 0;
+                color: rgba(255,255,255,.66);
+                font-size: 13px;
+                line-height: 1.45;
+                font-weight: 650;
+            }
+
+            .plate-card {
+                min-width: 175px;
+                padding: 17px 18px;
+                border-radius: 22px;
+                background: rgba(255,255,255,.13);
+                border: 1px solid rgba(255,255,255,.18);
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+            }
+
+                .plate-card span {
+                    display: block;
+                    color: rgba(255,255,255,.68);
+                    font-size: 12px;
+                    font-weight: 900;
+                }
+
+                .plate-card strong {
+                    display: block;
+                    margin-top: 6px;
+                    color: white;
+                    font-size: 23px;
+                    line-height: 1;
+                    letter-spacing: .5px;
+                    font-weight: 950;
+                }
+
+            .identity-strip {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 14px;
+                padding: 22px;
+                background: white;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .identity-box {
+                min-height: 82px;
+                padding: 17px;
+                border-radius: 22px;
                 background: #f8fafc;
                 border: 1px solid #e2e8f0;
             }
 
-            .meta-box label {
-                display: block;
-                color: #64748b;
-                font-size: 12px;
-                font-weight: 800;
+                .identity-box label {
+                    display: block;
+                    color: var(--muted);
+                    font-size: 12px;
+                    font-weight: 900;
+                }
+
+                .identity-box strong {
+                    display: block;
+                    margin-top: 8px;
+                    color: var(--ink);
+                    font-size: 18px;
+                    line-height: 1.15;
+                    font-weight: 950;
+                }
+
+            .content {
+                padding: 26px;
             }
 
-            .meta-box strong {
-                display: block;
-                margin-top: 5px;
-                font-size: 15px;
-                font-weight: 900;
+            .section-head {
+                display: flex;
+                align-items: end;
+                justify-content: space-between;
+                gap: 18px;
+                margin-bottom: 16px;
             }
 
-            .section-title {
-                margin: 28px 0 14px;
-                font-size: 22px;
+                .section-head h2 {
+                    margin: 0;
+                    font-size: 26px;
+                    line-height: 1;
+                    letter-spacing: -.8px;
+                }
+
+                .section-head p {
+                    margin: 7px 0 0;
+                    color: var(--muted);
+                    font-size: 14px;
+                    font-weight: 750;
+                }
+
+            .count-pill {
+                display: inline-flex;
+                align-items: center;
+                min-height: 38px;
+                padding: 0 14px;
+                border-radius: 999px;
+                background: #eff6ff;
+                color: #1d4ed8;
+                font-size: 13px;
                 font-weight: 950;
+                white-space: nowrap;
             }
 
             .record-list {
                 display: grid;
-                gap: 14px;
+                gap: 13px;
             }
 
             .record-card {
-                padding: 18px;
-                border-radius: 20px;
-                background: white;
-                border: 1px solid #e2e8f0;
-                box-shadow: 0 14px 35px rgba(15, 23, 42, .06);
                 display: grid;
-                grid-template-columns: minmax(0, 1fr) auto;
-                gap: 14px;
+                grid-template-columns: 54px minmax(0, 1fr) auto;
+                gap: 16px;
                 align-items: center;
-            }
-
-            .record-card strong {
-                display: block;
-                font-size: 16px;
-                font-weight: 900;
-            }
-
-            .record-card span {
-                display: block;
-                margin-top: 5px;
-                color: #64748b;
-                font-size: 13px;
-                font-weight: 700;
-            }
-
-            .status {
-                display: inline-flex;
-                padding: 8px 11px;
-                border-radius: 999px;
-                font-size: 12px;
-                font-weight: 900;
-            }
-
-            .status-1 {
-                background: #dbeafe;
-                color: #1d4ed8;
-            }
-
-            .status-2 {
-                background: #fef3c7;
-                color: #b45309;
-            }
-
-            .status-3 {
-                background: #dcfce7;
-                color: #15803d;
-            }
-
-            .status-4 {
-                background: #fee2e2;
-                color: #b91c1c;
-            }
-
-            .empty {
-                padding: 28px;
-                border-radius: 22px;
+                padding: 18px 20px;
+                border-radius: 24px;
                 background: white;
-                border: 1px dashed #cbd5e1;
-                color: #64748b;
-                text-align: center;
-                font-weight: 800;
-            }
-
-            .footer {
-                margin-top: 26px;
-                text-align: center;
-                color: #64748b;
-                font-size: 12px;
-                font-weight: 700;
-            }
-
-            @@media (max-width: 640px) {
-                .vehicle-title,
-                .record-card {
-                    grid-template-columns: 1fr;
-                    display: grid;
-                }
-
-                .vehicle-meta {
-                    grid-template-columns: 1fr;
-                }
-
-                .hero h1 {
-                    font-size: 25px;
-                }
-            }
-
-            .record-card {
-                text-decoration: none;
+                border: 1px solid var(--line);
+                box-shadow: 0 14px 36px rgba(15, 23, 42, .055);
                 color: inherit;
-                cursor: pointer;
-                transition: .18s ease;
+                text-decoration: none;
+                transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
             }
 
                 .record-card:hover {
                     transform: translateY(-2px);
                     border-color: #93c5fd;
-                    box-shadow: 0 18px 45px rgba(37, 99, 235, .12);
+                    box-shadow: 0 20px 48px rgba(37, 99, 235, .12);
                 }
+
+            .record-icon {
+                width: 54px;
+                height: 54px;
+                display: grid;
+                place-items: center;
+                border-radius: 18px;
+                background: #eef2ff;
+                color: var(--blue);
+                font-size: 13px;
+                font-weight: 950;
+            }
+
+            .record-main strong {
+                display: block;
+                color: var(--ink);
+                font-size: 17px;
+                line-height: 1.2;
+                font-weight: 950;
+                letter-spacing: -.25px;
+            }
+
+            .record-main span {
+                display: block;
+                margin-top: 6px;
+                color: var(--muted);
+                font-size: 13px;
+                font-weight: 750;
+            }
+
+            .record-action {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 42px;
+                padding: 0 15px;
+                border-radius: 999px;
+                background: #2563eb;
+                color: white;
+                font-size: 13px;
+                font-weight: 950;
+                white-space: nowrap;
+                box-shadow: 0 13px 28px rgba(37, 99, 235, .18);
+            }
+
+            .empty {
+                padding: 34px;
+                border-radius: 26px;
+                background: white;
+                border: 1px dashed #cbd5e1;
+                color: var(--muted);
+                text-align: center;
+                font-weight: 850;
+            }
+
+            .footer {
+                margin-top: 18px;
+                text-align: center;
+                color: var(--muted);
+                font-size: 12px;
+                font-weight: 750;
+            }
+
+            @@media (max-width: 720px) {
+                .page {
+                    width: min(100% - 20px, 960px);
+                    padding-top: 14px;
+                }
+
+                .shell {
+                    border-radius: 28px;
+                }
+
+                .hero {
+                    padding: 24px;
+                }
+
+                .hero-inner {
+                    grid-template-columns: 1fr;
+                }
+
+                .plate-card {
+                    width: 100%;
+                }
+
+                .identity-strip {
+                    grid-template-columns: 1fr;
+                    padding: 18px;
+                }
+
+                .content {
+                    padding: 20px;
+                }
+
+                .section-head {
+                    align-items: flex-start;
+                    flex-direction: column;
+                }
+
+                .record-card {
+                    grid-template-columns: 44px minmax(0, 1fr);
+                }
+
+                .record-icon {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: 15px;
+                }
+
+                .record-action {
+                    grid-column: 1 / -1;
+                    width: 100%;
+                }
+            }
     </style>
 </head>
 <body>
     <main class="page">
-        <section class="hero">
-            <h1>Servis Geçmişi</h1>
-            <p>Bu araç için kayıtlı servis hareketleri</p>
-        </section>
-
-        <section class="vehicle-card">
-            <div class="vehicle-title">
-                <div>
-                    <h2>@Model.Vehicle.Brand @Model.Vehicle.Model</h2>
-                    <p>@Model.Vehicle.ModelYear</p>
-                </div>
-
-                <div class="plate">
-                    @Model.Vehicle.Plate
-                </div>
-            </div>
-
-            <div class="vehicle-meta">
-                <div class="meta-box">
-                    <label>Marka</label>
-                    <strong>@Model.Vehicle.Brand</strong>
-                </div>
-
-                <div class="meta-box">
-                    <label>Model</label>
-                    <strong>@Model.Vehicle.Model</strong>
-                </div>
-
-                <div class="meta-box">
-                    <label>Model Yılı</label>
-                    <strong>@Model.Vehicle.ModelYear</strong>
-                </div>
-            </div>
-        </section>
-
-        <h3 class="section-title">Servis Kayıtları</h3>
-
-        @if (Model.Records.Any())
-        {
-            <div class="record-list">
-                @foreach (var record in Model.Records)
-                {
-                    <a class="record-card"
-                           href="/public/service-pdf/@Model.Code/@record.Id"
-                           target="_blank">
+        <section class="shell">
+            <header class="hero">
+                <div class="hero-inner">
+                    <div class="service-head">
+                        <div class="logo">S</div>
 
                         <div>
-                            <strong>@record.RecordNumber</strong>
-                            <span>@record.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
-                        </div>
+                            <span class="eyebrow">ARAÇ SERVİS DOSYASI</span>
+                            <h1>Servis Geçmişi</h1>
+                            <p class="service-name">@workshopName</p>
 
-                        <div class="status status-@record.Status">
-                            @(record.Status switch
+                            @if (!string.IsNullOrWhiteSpace(serviceContactLine))
                             {
-                                1 => "Açık Kayıt",
-                                2 => "İşlemde",
-                                3 => "Tamamlandı",
-                                4 => "İptal Edildi",
-                                _ => "Bilinmiyor"
-                            })
+                                <p class="service-contact">@serviceContactLine</p>
+                            }
                         </div>
+                    </div>
 
-                    </a>
+                    <div class="plate-card">
+                        <span>Plaka</span>
+                        <strong>@plateText</strong>
+                    </div>
+                </div>
+            </header>
+
+            <section class="identity-strip">
+                <div class="identity-box">
+                    <label>Araç sahibi</label>
+                    <strong>@customerText</strong>
+                </div>
+
+                <div class="identity-box">
+                    <label>Plaka</label>
+                    <strong>@plateText</strong>
+                </div>
+
+                <div class="identity-box">
+                    <label>Servis kaydı</label>
+                    <strong>@recordCount belge</strong>
+                </div>
+            </section>
+
+            <section class="content">
+                <div class="section-head">
+                    <div>
+                        <h2>Servis Kayıt Formları</h2>
+                        <p>Bu araç için oluşturulan servis kayıt belgeleri</p>
+                    </div>
+
+                    <span class="count-pill">@recordCount SKF</span>
+                </div>
+
+                @if (Model.Records != null && Model.Records.Any())
+                {
+                    <div class="record-list">
+                        @foreach (var record in Model.Records)
+                        {
+                            <a class="record-card"
+                               href="/public/service-pdf/@Model.Code/@record.Id"
+                               target="_blank"
+                               rel="noopener">
+
+                                <div class="record-icon">SKF</div>
+
+                                <div class="record-main">
+                                    <strong>@record.RecordNumber</strong>
+                                    <span>@record.CreatedAt.ToString("dd.MM.yyyy HH:mm") tarihinde oluşturuldu</span>
+                                </div>
+
+                                <span class="record-action">Belgeyi aç →</span>
+                            </a>
+                        }
+                    </div>
                 }
-            </div>
-        }
-        else
-        {
-            <div class="empty">
-                Bu araç için henüz servis kaydı bulunmuyor.
-            </div>
-        }
+                else
+                {
+                    <div class="empty">
+                        Bu araç için henüz servis kayıt formu bulunmuyor.
+                    </div>
+                }
+            </section>
+        </section>
 
         <div class="footer">
-            AutoStock servis takip sistemi
+            Sente360 araç servis geçmişi
         </div>
     </main>
 </body>
 </html>
+
+@functions {
+    private static string? TryFirstString(object? source, params string[] propertyNames)
+    {
+        if (source == null)
+            return null;
+
+        var type = source.GetType();
+
+        foreach (var propertyName in propertyNames)
+        {
+            var property = type.GetProperty(propertyName);
+
+            if (property == null)
+                continue;
+
+            var value = property.GetValue(source)?.ToString();
+
+            if (!string.IsNullOrWhiteSpace(value))
+                return value.Trim();
+        }
+
+        return null;
+    }
+
+    private static string JoinText(params string?[] values)
+    {
+        return string.Join(" • ", values.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!.Trim()));
+    }
+
+    private static string MaskName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "Kayıtlı müşteri";
+
+        var parts = value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        return string.Join(" ", parts.Select(part =>
+            part.Length <= 1
+                ? "*"
+                : part[0] + new string('*', Math.Min(5, part.Length - 1))));
+    }
+
+    private static string MaskPlate(string? plate)
+    {
+        if (string.IsNullOrWhiteSpace(plate))
+            return "Plaka bilgisi";
+
+        var clean = plate.Trim().ToUpperInvariant().Replace(" ", "");
+
+        if (clean.Contains('*'))
+            return clean;
+
+        if (clean.Length <= 4)
+            return clean[0] + "***";
+
+        return $"{clean[..Math.Min(4, clean.Length)]}***";
+    }
+}

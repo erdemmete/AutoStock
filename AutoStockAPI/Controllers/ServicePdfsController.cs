@@ -1,4 +1,5 @@
 ﻿using AutoStock.Repositories;
+using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Enums;
 using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Pdfs;
@@ -41,7 +42,7 @@ namespace AutoStock.API.Controllers
                     .ThenInclude(x => x.VehicleBrand)
                 .Include(x => x.Vehicle)
                     .ThenInclude(x => x.VehicleModel)
-                    .Include(x => x.Vehicle)
+                .Include(x => x.Vehicle)
                     .ThenInclude(x => x.VehicleVariant)
                 .Include(x => x.RequestItems)
                 .Include(x => x.Operations)
@@ -49,53 +50,59 @@ namespace AutoStock.API.Controllers
                     x.Id == serviceRecordId &&
                     x.WorkshopId == workshopId);
 
-            if (serviceRecord == null)
+            if (serviceRecord is null)
                 return NotFound("Servis kaydı bulunamadı.");
 
             var workshop = await _context.Workshops
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.Id == workshopId);
-                
-                            var workshopProfile = await _context.WorkshopProfiles
-                                .AsNoTracking()
-                                .FirstOrDefaultAsync(x => x.WorkshopId == workshopId);
-                
-                            var workshopName = !string.IsNullOrWhiteSpace(workshopProfile?.DisplayName)
-                                ? workshopProfile.DisplayName
-                                : workshop?.Name;
-                
-                            var workshopAddress = string.Join(" / ", new[]
-                            {
-                    workshopProfile?.AddressLine,
-                    workshopProfile?.District,
-                    workshopProfile?.City
-                }.Where(x => !string.IsNullOrWhiteSpace(x)));
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == workshopId);
+
+            var workshopProfile = await _context.WorkshopProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.WorkshopId == workshopId);
+
+            var workshopName = !string.IsNullOrWhiteSpace(workshopProfile?.DisplayName)
+                ? workshopProfile.DisplayName
+                : workshop?.Name;
+
+            var workshopAddress = BuildAddress(
+                workshopProfile?.AddressLine,
+                workshopProfile?.District,
+                workshopProfile?.City);
+
+            var bankAccounts = await GetServiceFormBankAccountsAsync(workshopId);
 
             var request = new CreateServicePdfRequest
             {
                 WorkshopName = workshopName ?? "Servis adı belirtilmedi",
-                WorkshopAddress = string.IsNullOrWhiteSpace(workshopAddress) ? null : workshopAddress,
+                WorkshopAddress = workshopAddress,
                 WorkshopPhone = workshopProfile?.PhoneNumber,
+
                 RecordNumber = serviceRecord.RecordNumber,
 
-                StatusText = serviceRecord.Status switch
-                {
-                    ServiceRecordStatus.Open => "Açık Kayıt",
-                    ServiceRecordStatus.InProgress => "İşlemde",
-                    ServiceRecordStatus.Completed => "Tamamlandı",
-                    ServiceRecordStatus.Cancelled => "İptal Edildi",
-                    _ => "Bilinmiyor"
-                },
+                StatusText = ToStatusText(serviceRecord.Status),
 
-                CustomerName = serviceRecord.Customer?.FullName,
-                CustomerPhone = serviceRecord.Customer?.PhoneNumber,
+                CustomerName = serviceRecord.CustomerNameSnapshot
+                    ?? serviceRecord.Customer?.FullName,
+
+                CustomerPhone = serviceRecord.CustomerPhoneSnapshot
+                    ?? serviceRecord.Customer?.PhoneNumber,
+
                 CustomerEmail = serviceRecord.Customer?.Email,
 
-                Plate = serviceRecord.Vehicle?.Plate,
-                Brand = serviceRecord.Vehicle?.VehicleBrand?.Name,
-                Model = serviceRecord.Vehicle?.VehicleModel?.Name,
+                Plate = serviceRecord.Vehicle?.Plate
+                    ?? serviceRecord.VehiclePlateSnapshot,
+
+                Brand = serviceRecord.Vehicle?.VehicleBrand?.Name
+                    ?? serviceRecord.VehicleBrandNameSnapshot,
+
+                Model = serviceRecord.Vehicle?.VehicleModel?.Name
+                    ?? serviceRecord.VehicleModelNameSnapshot,
+
                 ModelYear = serviceRecord.Vehicle?.ModelYear?.ToString(),
+
                 FuelLevelText = ToFuelLevelText(serviceRecord.FuelLevelSnapshot),
+
                 VehicleVariantName = serviceRecord.Vehicle?.VehicleVariant?.Name,
                 FuelType = serviceRecord.Vehicle?.FuelType,
                 TransmissionType = serviceRecord.Vehicle?.TransmissionType,
@@ -103,9 +110,19 @@ namespace AutoStock.API.Controllers
                 EngineCapacityCc = serviceRecord.Vehicle?.EngineCapacityCc,
                 EnginePowerHp = serviceRecord.Vehicle?.EnginePowerHp,
                 EngineCode = serviceRecord.Vehicle?.EngineCode,
+                ChassisNumber = serviceRecord.Vehicle?.ChassisNumber,
 
                 Note = serviceRecord.ServiceReceptionNote,
+
+                BankAccounts = bankAccounts,
+
+                // ÖNEMLİ:
+                // Servis panelinden oluşturulan belge tam SKF'dir.
+                // Müşteri adı, plaka ve tüm bilgiler açık gelir.
+                IsPublicMasked = false,
+
                 RequestGroups = serviceRecord.RequestItems
+                    .Where(x => !x.IsDeleted)
                     .OrderBy(x => x.Id)
                     .Select(item => new ServicePdfRequestGroupDto
                     {
@@ -113,12 +130,18 @@ namespace AutoStock.API.Controllers
                         Title = item.Title,
                         Note = item.Note,
                         EstimatedAmount = item.EstimatedAmount,
+
                         Operations = serviceRecord.Operations
-                            .Where(op => op.ServiceRequestItemId == item.Id)
+                            .Where(op =>
+                                !op.IsDeleted &&
+                                op.ServiceRequestItemId == item.Id)
                             .OrderBy(op => op.Id)
                             .Select(op => new ServicePdfItemDto
                             {
-                                TypeText = op.Type == OperationType.Part ? "Parça" : "İşçilik",
+                                TypeText = op.Type == OperationType.Part
+                                    ? "Parça"
+                                    : "İşçilik",
+
                                 Name = op.Description,
                                 Quantity = op.Quantity,
                                 UnitPrice = op.UnitPrice,
@@ -132,11 +155,65 @@ namespace AutoStock.API.Controllers
 
             var fileBytes = _pdfService.CreateServicePdf(request);
 
-            var plate = serviceRecord.Vehicle?.Plate ?? "servis";
+            var plate = serviceRecord.Vehicle?.Plate
+                ?? serviceRecord.VehiclePlateSnapshot
+                ?? "servis";
+
             var fileName = $"{plate}-{serviceRecord.RecordNumber}.pdf";
 
             return File(fileBytes, "application/pdf", fileName);
         }
+
+        private async Task<List<ServicePdfBankAccountDto>> GetServiceFormBankAccountsAsync(int workshopId)
+        {
+            return await _context.Set<WorkshopBankAccount>()
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.IsActive &&
+                    x.ShowOnServiceForms)
+                .OrderByDescending(x => x.IsDefault)
+                .ThenBy(x => x.SortOrder)
+                .ThenBy(x => x.BankName)
+                .Select(x => new ServicePdfBankAccountDto
+                {
+                    Id = x.Id,
+                    BankName = x.BankName,
+                    AccountHolder = x.AccountHolder,
+                    Iban = x.Iban,
+                    CurrencyCode = x.CurrencyCode,
+                    Description = x.Description,
+                    IsDefault = x.IsDefault,
+                    SortOrder = x.SortOrder
+                })
+                .ToListAsync();
+        }
+
+        private static string? BuildAddress(params string?[] parts)
+        {
+            var values = parts
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!.Trim());
+
+            var address = string.Join(" / ", values);
+
+            return string.IsNullOrWhiteSpace(address)
+                ? null
+                : address;
+        }
+
+        private static string ToStatusText(ServiceRecordStatus status)
+        {
+            return status switch
+            {
+                ServiceRecordStatus.Open => "Açık Kayıt",
+                ServiceRecordStatus.InProgress => "İşlemde",
+                ServiceRecordStatus.Completed => "Tamamlandı",
+                ServiceRecordStatus.Cancelled => "İptal Edildi",
+                _ => "Bilinmiyor"
+            };
+        }
+
         private static string ToFuelLevelText(FuelLevel? fuelLevel)
         {
             return fuelLevel switch
