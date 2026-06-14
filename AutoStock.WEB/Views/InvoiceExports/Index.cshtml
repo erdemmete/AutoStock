@@ -1,0 +1,805 @@
+@model AutoStock.WEB.Models.Invoices.InvoiceExportIndexViewModel
+@using AutoStock.Services.Dtos.Invoices
+
+@{
+    ViewData["Title"] = "Fatura Aktarımı";
+
+    var preview = Model.Preview;
+    var query = Model.Query;
+    var items = preview.Items ?? new List<InvoiceExportItemDto>();
+
+    string DateValue(DateTime? value) => value.HasValue ? value.Value.ToString("yyyy-MM-dd") : string.Empty;
+
+    string PresetClass(string preset)
+    {
+        return string.Equals(query.Preset, preset, StringComparison.OrdinalIgnoreCase)
+            ? "active"
+            : string.Empty;
+    }
+
+    string StatusClass(int status)
+    {
+        return status switch
+        {
+            2 => "issued",
+            3 => "cancelled",
+            _ => "draft"
+        };
+    }
+}
+
+<div class="invexp-page">
+    <section class="invexp-hero">
+        <div class="invexp-hero-left">
+            <a asp-controller="Invoices"
+               asp-action="Index"
+               class="invexp-back-btn"
+               title="Faturalara dön">
+                ‹
+            </a>
+
+            <div>
+                <span class="invexp-eyebrow">SENTE360</span>
+                <h1>Fatura Aktarımı</h1>
+                <p>Seçilen dönemdeki kesilmiş faturaları PDF ve CSV özetli muhasebe paketi olarak indirin veya e-posta ile gönderin.</p>
+            </div>
+        </div>
+
+        <div class="invexp-hero-actions">
+            <form method="get" asp-controller="InvoiceExports" asp-action="Download">
+                <input type="hidden" name="StartDate" value="@DateValue(query.StartDate)" />
+                <input type="hidden" name="EndDate" value="@DateValue(query.EndDate)" />
+                <input type="hidden" name="Preset" value="@query.Preset" />
+                <input type="hidden" name="IncludeCancelled" value="@query.IncludeCancelled.ToString().ToLowerInvariant()" />
+
+                <button type="submit" class="invexp-primary-action" @(items.Any() ? null : "disabled")>
+                    ZIP İndir
+                </button>
+            </form>
+
+            <button type="button"
+                    class="invexp-secondary-action"
+                    data-bs-toggle="modal"
+                    data-bs-target="#sendExportEmailModal"
+                    @(items.Any() ? null : "disabled")>
+                E-posta Gönder
+            </button>
+        </div>
+    </section>
+
+    <section class="invexp-filter-shell">
+        <div class="invexp-quick-presets">
+            <a class="@PresetClass("this-week")"
+               href="@Url.Action("Index", "InvoiceExports", new { Preset = "this-week", IncludeCancelled = query.IncludeCancelled })">
+                Bu Hafta
+            </a>
+
+            <a class="@PresetClass("this-month")"
+               href="@Url.Action("Index", "InvoiceExports", new { Preset = "this-month", IncludeCancelled = query.IncludeCancelled })">
+                Bu Ay
+            </a>
+
+            <a class="@PresetClass("last-month")"
+               href="@Url.Action("Index", "InvoiceExports", new { Preset = "last-month", IncludeCancelled = query.IncludeCancelled })">
+                Geçen Ay
+            </a>
+
+            <a class="@PresetClass("last-30-days")"
+               href="@Url.Action("Index", "InvoiceExports", new { Preset = "last-30-days", IncludeCancelled = query.IncludeCancelled })">
+                Son 30 Gün
+            </a>
+        </div>
+
+        <form method="get"
+              asp-controller="InvoiceExports"
+              asp-action="Index"
+              class="invexp-filter-form">
+            <input type="hidden" name="Preset" value="custom" />
+
+            <div class="invexp-date-field">
+                <label>Başlangıç</label>
+                <input type="date" name="StartDate" value="@DateValue(query.StartDate)" />
+            </div>
+
+            <div class="invexp-date-field">
+                <label>Bitiş</label>
+                <input type="date" name="EndDate" value="@DateValue(query.EndDate)" />
+            </div>
+
+            <label class="invexp-check-field">
+                <input type="checkbox"
+                       name="IncludeCancelled"
+                       value="true"
+                       checked="@(query.IncludeCancelled ? "checked" : null)" />
+                <span>İptal faturaları dahil et</span>
+            </label>
+
+            <button type="submit" class="invexp-filter-submit">
+                Önizle
+            </button>
+        </form>
+    </section>
+
+    <section class="invexp-stats">
+        <article class="invexp-stat-card">
+            <span>Dönem</span>
+            <strong>@preview.PeriodText</strong>
+            <small>@(query.IncludeCancelled ? "İptal faturalar dahil" : "Sadece kesilmiş faturalar")</small>
+        </article>
+
+        <article class="invexp-stat-card">
+            <span>Fatura Sayısı</span>
+            <strong>@preview.InvoiceCount</strong>
+            <small>@preview.IssuedInvoiceCount kesilmiş / @preview.CancelledInvoiceCount iptal</small>
+        </article>
+
+        <article class="invexp-stat-card highlight">
+            <span>Genel Toplam</span>
+            <strong>@preview.GrandTotal.ToString("N2") TL</strong>
+            <small>KDV: @preview.VatTotal.ToString("N2") TL</small>
+        </article>
+
+        <article class="invexp-stat-card">
+            <span>Tahsil / Kalan</span>
+            <strong>@preview.PaidTotal.ToString("N2") TL</strong>
+            <small>Kalan: @preview.RemainingTotal.ToString("N2") TL</small>
+        </article>
+    </section>
+
+    <section class="invexp-table-shell">
+        <div class="invexp-table-header">
+            <div>
+                <span>Aktarım Önizlemesi</span>
+                <strong>@preview.InvoiceCount fatura</strong>
+            </div>
+
+            <div class="invexp-table-note">
+                ZIP içinde PDF faturalar, <b>fatura-ozet.csv</b> ve aktarım bilgisi yer alır.
+            </div>
+        </div>
+
+        @if (!items.Any())
+        {
+            <div class="invexp-empty">
+                <div>⌕</div>
+                <strong>Aktarılacak fatura bulunamadı</strong>
+                <span>Tarih aralığını değiştirerek tekrar deneyebilirsin.</span>
+            </div>
+        }
+        else
+        {
+            <div class="invexp-table-wrap">
+                <table class="invexp-table">
+                    <thead>
+                        <tr>
+                            <th>Fatura</th>
+                            <th>Tarih</th>
+                            <th>Müşteri</th>
+                            <th>Plaka</th>
+                            <th>Durum</th>
+                            <th class="num">Toplam</th>
+                            <th class="num">Tahsil</th>
+                            <th class="num">Kalan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in items)
+                        {
+                            <tr>
+                                <td>
+                                    <a href="/Invoices/Detail/@item.InvoiceId" class="invexp-invoice-link">
+                                        @item.InvoiceNumber
+                                    </a>
+                                </td>
+                                <td>@item.InvoiceDate.ToString("dd.MM.yyyy")</td>
+                                <td>
+                                    <strong>@item.CustomerTitle</strong>
+                                    @if (!string.IsNullOrWhiteSpace(item.TaxNumber))
+                                    {
+                                        <small>@item.TaxNumber</small>
+                                    }
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(item.Plate) ? "-" : item.Plate)</td>
+                                <td>
+                                    <span class="invexp-status @StatusClass(item.Status)">
+                                        @item.StatusText
+                                    </span>
+                                </td>
+                                <td class="num">@item.GrandTotal.ToString("N2") TL</td>
+                                <td class="num">@item.PaidTotal.ToString("N2") TL</td>
+                                <td class="num strong">@item.RemainingAmount.ToString("N2") TL</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+<div class="modal fade" id="sendExportEmailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content invexp-modal">
+            <form method="post" asp-controller="InvoiceExports" asp-action="SendEmail">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" name="StartDate" value="@DateValue(query.StartDate)" />
+                <input type="hidden" name="EndDate" value="@DateValue(query.EndDate)" />
+                <input type="hidden" name="Preset" value="@query.Preset" />
+                <input type="hidden" name="IncludeCancelled" value="@query.IncludeCancelled.ToString().ToLowerInvariant()" />
+
+                <div class="modal-header invexp-modal-header">
+                    <div>
+                        <span>Fatura Aktarımı</span>
+                        <h5 class="modal-title">E-posta ile Gönder</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body invexp-modal-body">
+                    <div class="invexp-modal-info">
+                        <strong>@preview.PeriodText</strong>
+                        <span>@preview.InvoiceCount fatura / @preview.GrandTotal.ToString("N2") TL</span>
+                    </div>
+
+                    <div class="invexp-modal-field">
+                        <label>Muhasebeci E-posta</label>
+                        <input type="email" name="ToEmail" placeholder="muhasebe@firma.com" required />
+                    </div>
+
+                    <div class="invexp-modal-field">
+                        <label>Mesaj</label>
+                        <textarea name="Message" rows="4" placeholder="İsteğe bağlı kısa not..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer invexp-modal-footer">
+                    <button type="button" class="invexp-modal-btn soft" data-bs-dismiss="modal">
+                        Vazgeç
+                    </button>
+
+                    <button type="submit" class="invexp-modal-btn primary">
+                        Gönder
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .invexp-page {
+        width: min(1280px, calc(100% - 56px));
+        margin: 0 auto;
+        padding: 30px 0 64px;
+        color: #061936;
+    }
+
+    .invexp-hero {
+        margin-bottom: 22px;
+        padding: 24px 28px;
+        border-radius: 30px;
+        background: radial-gradient(circle at 78% 40%, rgba(255,255,255,.16), transparent 30%), linear-gradient(135deg, #07111f 0%, #111827 48%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 26px 70px rgba(15, 23, 42, .20);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22px;
+        overflow: hidden;
+    }
+
+    .invexp-hero-left {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .invexp-back-btn {
+        width: 54px;
+        height: 54px;
+        flex: 0 0 54px;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.20);
+        color: white;
+        text-decoration: none;
+        font-size: 34px;
+        font-weight: 950;
+        line-height: 1;
+    }
+
+    .invexp-eyebrow {
+        display: inline-flex;
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.18);
+        color: rgba(255,255,255,.82);
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: .2px;
+    }
+
+    .invexp-hero h1 {
+        margin: 0;
+        font-size: clamp(30px, 4vw, 42px);
+        line-height: 1;
+        letter-spacing: -1.6px;
+    }
+
+    .invexp-hero p {
+        max-width: 780px;
+        margin: 10px 0 0;
+        color: rgba(255,255,255,.74);
+        font-size: 15px;
+        line-height: 1.45;
+    }
+
+    .invexp-hero-actions {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .invexp-primary-action,
+    .invexp-secondary-action {
+        min-height: 46px;
+        border-radius: 16px;
+        padding: 0 18px;
+        border: 0;
+        font-size: 13px;
+        font-weight: 950;
+        white-space: nowrap;
+        transition: .18s ease;
+    }
+
+    .invexp-primary-action {
+        background: #22c55e;
+        color: white;
+        box-shadow: 0 18px 36px rgba(34,197,94,.24);
+    }
+
+    .invexp-secondary-action {
+        background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.22);
+        color: white;
+    }
+
+    .invexp-primary-action:disabled,
+    .invexp-secondary-action:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    .invexp-filter-shell {
+        margin-bottom: 20px;
+        padding: 18px;
+        border-radius: 26px;
+        background: rgba(255,255,255,.96);
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, .07);
+        display: grid;
+        gap: 14px;
+    }
+
+    .invexp-quick-presets {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .invexp-quick-presets a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid #dbe3ef;
+        color: #334155;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 900;
+    }
+
+    .invexp-quick-presets a.active {
+        background: #eff6ff;
+        color: #2563eb;
+        border-color: #bfdbfe;
+    }
+
+    .invexp-filter-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(180px, 240px)) minmax(180px, auto) auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .invexp-date-field label,
+    .invexp-modal-field label {
+        display: block;
+        margin-bottom: 7px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .invexp-date-field input,
+    .invexp-modal-field input,
+    .invexp-modal-field textarea {
+        width: 100%;
+        min-height: 44px;
+        border-radius: 14px;
+        border: 1px solid #dbe3ef;
+        background: #f8fafc;
+        padding: 0 14px;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 800;
+        outline: none;
+    }
+
+    .invexp-modal-field textarea {
+        min-height: 98px;
+        padding-top: 12px;
+        resize: vertical;
+    }
+
+    .invexp-check-field {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 0 13px;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #dbe3ef;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .invexp-filter-submit {
+        min-height: 44px;
+        border: 0;
+        border-radius: 14px;
+        background: #0f172a;
+        color: white;
+        padding: 0 20px;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .invexp-stats {
+        margin-bottom: 20px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .invexp-stat-card {
+        min-width: 0;
+        padding: 20px;
+        border-radius: 22px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
+    }
+
+    .invexp-stat-card.highlight {
+        background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+    }
+
+    .invexp-stat-card span {
+        display: block;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+        margin-bottom: 6px;
+    }
+
+    .invexp-stat-card strong {
+        display: block;
+        color: #0f172a;
+        font-size: clamp(20px, 2vw, 28px);
+        font-weight: 950;
+        letter-spacing: -.7px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .invexp-stat-card small {
+        display: block;
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .invexp-table-shell {
+        border-radius: 26px;
+        background: white;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, .07);
+        overflow: hidden;
+    }
+
+    .invexp-table-header {
+        padding: 18px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .invexp-table-header span {
+        display: block;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+        margin-bottom: 4px;
+    }
+
+    .invexp-table-header strong {
+        display: block;
+        color: #0f172a;
+        font-size: 19px;
+        font-weight: 950;
+    }
+
+    .invexp-table-note {
+        max-width: 430px;
+        padding: 10px 13px;
+        border-radius: 14px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.45;
+    }
+
+    .invexp-table-wrap {
+        overflow-x: auto;
+    }
+
+    .invexp-table {
+        width: 100%;
+        min-width: 960px;
+        border-collapse: collapse;
+    }
+
+    .invexp-table th,
+    .invexp-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #edf2f7;
+        text-align: left;
+        vertical-align: middle;
+        font-size: 13px;
+    }
+
+    .invexp-table th {
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+    }
+
+    .invexp-table td {
+        color: #334155;
+        font-weight: 800;
+    }
+
+    .invexp-table td small {
+        display: block;
+        margin-top: 3px;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .invexp-table .num {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .invexp-table .strong {
+        color: #0f172a;
+        font-weight: 950;
+    }
+
+    .invexp-invoice-link {
+        color: #2563eb;
+        font-weight: 950;
+        text-decoration: none;
+    }
+
+    .invexp-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 28px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 950;
+    }
+
+    .invexp-status.issued {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .invexp-status.cancelled {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .invexp-status.draft {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .invexp-empty {
+        padding: 56px 20px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .invexp-empty div {
+        width: 58px;
+        height: 58px;
+        margin-bottom: 12px;
+        border-radius: 20px;
+        display: grid;
+        place-items: center;
+        background: #f1f5f9;
+        color: #94a3b8;
+        font-size: 28px;
+    }
+
+    .invexp-empty strong {
+        display: block;
+        color: #0f172a;
+        font-size: 18px;
+        font-weight: 950;
+        margin-bottom: 4px;
+    }
+
+    .invexp-modal {
+        border: 0;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 24px 80px rgba(15,23,42,.25);
+    }
+
+    .invexp-modal-header,
+    .invexp-modal-footer {
+        border-color: #e2e8f0;
+    }
+
+    .invexp-modal-header {
+        padding: 20px 22px;
+    }
+
+    .invexp-modal-header span {
+        display: block;
+        color: #2563eb;
+        font-size: 12px;
+        font-weight: 950;
+        margin-bottom: 4px;
+    }
+
+    .invexp-modal-header h5 {
+        margin: 0;
+        color: #0f172a;
+        font-weight: 950;
+    }
+
+    .invexp-modal-body {
+        padding: 20px 22px;
+        display: grid;
+        gap: 14px;
+    }
+
+    .invexp-modal-info {
+        padding: 14px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .invexp-modal-info strong {
+        display: block;
+        color: #0f172a;
+        font-weight: 950;
+    }
+
+    .invexp-modal-info span {
+        display: block;
+        margin-top: 4px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .invexp-modal-footer {
+        padding: 16px 22px 20px;
+    }
+
+    .invexp-modal-btn {
+        min-height: 42px;
+        border-radius: 14px;
+        padding: 0 16px;
+        border: 0;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .invexp-modal-btn.soft {
+        background: #f1f5f9;
+        color: #334155;
+    }
+
+    .invexp-modal-btn.primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    @@media (max-width: 980px) {
+        .invexp-page {
+            width: min(100% - 28px, 1280px);
+            padding-top: 18px;
+        }
+
+        .invexp-hero {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .invexp-hero-actions {
+            width: 100%;
+            justify-content: stretch;
+        }
+
+        .invexp-hero-actions form,
+        .invexp-primary-action,
+        .invexp-secondary-action {
+            width: 100%;
+        }
+
+        .invexp-filter-form {
+            grid-template-columns: 1fr;
+        }
+
+        .invexp-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @@media (max-width: 640px) {
+        .invexp-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .invexp-table-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>

@@ -69,6 +69,15 @@
                 <p>Taslak, kesilmiş ve iptal edilmiş faturaları tek ekrandan takip edin.</p>
             </div>
         </div>
+        <div class="inv-hero-actions">
+            <a asp-controller="Invoices"
+               asp-action="Export"
+               class="inv-export-btn">
+                <span>⇩</span>
+                <strong>Fatura Aktarımı</strong>
+            </a>
+        </div>
+
     </section>
 
     <section class="inv-filter-shell">
@@ -1176,6 +1185,27 @@
             flex-basis: 62px;
         }
     }
+
+    .invoice-export-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 16px;
+        border-radius: 14px;
+        background: #0f172a;
+        color: #fff;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 950;
+        box-shadow: 0 14px 30px rgba(15,23,42,.16);
+    }
+
+        .invoice-export-btn:hover {
+            color: #fff;
+            background: #1e293b;
+        }
+
 </style>
 
 <script>

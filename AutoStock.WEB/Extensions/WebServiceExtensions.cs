@@ -1,4 +1,4 @@
-﻿using AutoStock.Services.Interfaces;
+using AutoStock.Services.Interfaces;
 using AutoStock.Services.Options;
 using AutoStock.Services.Services;
 using AutoStock.WEB.Services;
@@ -23,6 +23,8 @@ namespace AutoStock.WEB.Extensions
             services.AddScoped<CustomerPageService>();
             services.AddScoped<InvoiceApiService>();
             services.AddScoped<InvoicePageService>();
+            services.AddScoped<InvoiceExportApiService>();
+            services.AddScoped<InvoiceExportPageService>();
             services.AddScoped<CurrentAccountApiService>();
             services.AddScoped<CurrentAccountPageService>();
             services.AddScoped<SupportRequestApiService>();
