@@ -38,6 +38,9 @@ namespace AutoStock.Repositories
         public DbSet<UserSecurityToken> UserSecurityTokens { get; set; }
         public DbSet<WorkshopBankAccount> WorkshopBankAccounts { get; set; }
         public DbSet<VehicleVariant> VehicleVariants { get; set; } = null!;
+        public DbSet<WorkshopEmailRecipient> WorkshopEmailRecipients { get; set; }
+        public DbSet<AccountingInvoiceRequest> AccountingInvoiceRequests { get; set; }
+        public DbSet<OfficialInvoiceDocument> OfficialInvoiceDocuments { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder builder)

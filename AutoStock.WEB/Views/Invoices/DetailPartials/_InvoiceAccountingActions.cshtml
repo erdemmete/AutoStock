@@ -1,0 +1,536 @@
+@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+
+<section class="inv-accounting-card" data-accounting-card data-invoice-id="@Model.Id" data-invoice-status="@Model.Status">
+    <div class="inv-accounting-head">
+        <div>
+            <span class="inv-accounting-kicker">MUHASEBE AKIŞI</span>
+            <h3>Fatura Takibi</h3>
+            <p>Hesap özetini muhasebeciye gönderin, fatura PDF’i yüklendiğinde buradan takip edin.</p>
+        </div>
+
+        <button type="button"
+                class="inv-accounting-send-btn"
+                data-accounting-open
+                @(Model.Status == 2 ? null : "disabled")>
+            Muhasebeciye Gönder
+        </button>
+    </div>
+
+    <div class="inv-accounting-status" data-accounting-status>
+        <div class="inv-accounting-skeleton"></div>
+    </div>
+</section>
+
+<div class="inv-accounting-modal-backdrop" data-accounting-modal hidden>
+    <div class="inv-accounting-modal">
+        <div class="inv-accounting-modal-head">
+            <div>
+                <span class="inv-accounting-kicker">FATURA HAZIRLIK TALEBİ</span>
+                <h3>Muhasebeciye Gönder</h3>
+            </div>
+            <button type="button" class="inv-accounting-close" data-accounting-close>×</button>
+        </div>
+
+        <div class="inv-accounting-modal-body">
+            <div class="inv-accounting-error" data-accounting-error hidden></div>
+            <div class="inv-accounting-success" data-accounting-success hidden></div>
+
+            <div class="inv-accounting-section">
+                <label>Kayıtlı muhasebe adresleri</label>
+                <div class="inv-accounting-recipient-list" data-accounting-recipient-list>
+                    <span class="inv-accounting-muted">Adresler yükleniyor...</span>
+                </div>
+            </div>
+
+            <div class="inv-accounting-section two-col">
+                <div>
+                    <label>Yeni e-posta</label>
+                    <input type="email" data-accounting-new-email placeholder="muhasebe@firma.com" />
+                </div>
+                <div>
+                    <label>Kayıt adı</label>
+                    <input type="text" data-accounting-new-name placeholder="Muhasebe" />
+                </div>
+            </div>
+
+            <label class="inv-accounting-checkline">
+                <input type="checkbox" data-accounting-save-new />
+                <span>Yeni e-posta adresini kayıtlı muhasebe adreslerine ekle</span>
+            </label>
+
+            <div class="inv-accounting-section">
+                <label>Mesaj</label>
+                <textarea data-accounting-message placeholder="Muhasebeciye iletilecek kısa not..."></textarea>
+            </div>
+        </div>
+
+        <div class="inv-accounting-modal-actions">
+            <button type="button" class="inv-accounting-cancel" data-accounting-close>Vazgeç</button>
+            <button type="button" class="inv-accounting-confirm" data-accounting-send>Gönder</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .inv-accounting-card {
+        margin-top: 18px;
+        border-radius: 24px;
+        border: 1px solid #dbe3ef;
+        background: white;
+        box-shadow: 0 12px 28px rgba(15,23,42,.055);
+        overflow: hidden;
+    }
+
+    .inv-accounting-head {
+        padding: 20px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .inv-accounting-kicker {
+        display: inline-flex;
+        margin-bottom: 7px;
+        color: #4f46e5;
+        font-size: 11px;
+        font-weight: 950;
+        letter-spacing: .55px;
+    }
+
+    .inv-accounting-head h3,
+    .inv-accounting-modal h3 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 20px;
+        font-weight: 950;
+        letter-spacing: -.45px;
+    }
+
+    .inv-accounting-head p {
+        margin: 7px 0 0;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.45;
+        font-weight: 750;
+    }
+
+    .inv-accounting-send-btn,
+    .inv-accounting-confirm {
+        height: 44px;
+        padding: 0 18px;
+        border: none;
+        border-radius: 15px;
+        background: #4f46e5;
+        color: white;
+        font-size: 13px;
+        font-weight: 950;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .inv-accounting-send-btn:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+    }
+
+    .inv-accounting-status {
+        padding: 18px 22px;
+    }
+
+    .inv-accounting-state {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: center;
+        padding: 15px;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .inv-accounting-state strong {
+        display: block;
+        color: #0f172a;
+        font-size: 15px;
+        font-weight: 950;
+    }
+
+    .inv-accounting-state span {
+        display: block;
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .inv-accounting-download {
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 13px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #0f172a;
+        color: white;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
+    .inv-accounting-skeleton {
+        height: 62px;
+        border-radius: 18px;
+        background: linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9);
+        background-size: 200% 100%;
+        animation: invAccountingPulse 1.2s linear infinite;
+    }
+
+    @@keyframes invAccountingPulse {
+        from { background-position: 0 0; }
+        to { background-position: -200% 0; }
+    }
+
+    .inv-accounting-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(15, 23, 42, .58);
+        display: grid;
+        place-items: center;
+        padding: 18px;
+    }
+
+    .inv-accounting-modal {
+        width: min(680px, 100%);
+        max-height: min(760px, calc(100vh - 36px));
+        overflow: auto;
+        border-radius: 26px;
+        background: white;
+        box-shadow: 0 32px 90px rgba(15,23,42,.28);
+    }
+
+    .inv-accounting-modal-head {
+        padding: 20px 22px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .inv-accounting-close {
+        width: 38px;
+        height: 38px;
+        border: none;
+        border-radius: 14px;
+        background: #f1f5f9;
+        color: #0f172a;
+        font-size: 26px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .inv-accounting-modal-body {
+        padding: 20px 22px;
+        display: grid;
+        gap: 15px;
+    }
+
+    .inv-accounting-section label,
+    .inv-accounting-section > label {
+        display: block;
+        margin-bottom: 7px;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: .45px;
+        text-transform: uppercase;
+    }
+
+    .inv-accounting-section input,
+    .inv-accounting-section textarea {
+        width: 100%;
+        min-height: 46px;
+        padding: 11px 13px;
+        border-radius: 15px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 800;
+        outline: none;
+    }
+
+    .inv-accounting-section textarea {
+        min-height: 90px;
+        resize: vertical;
+    }
+
+    .inv-accounting-section.two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .inv-accounting-recipient-list {
+        display: grid;
+        gap: 8px;
+    }
+
+    .inv-accounting-recipient {
+        min-height: 44px;
+        padding: 10px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+    }
+
+    .inv-accounting-recipient strong {
+        display: block;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 950;
+    }
+
+    .inv-accounting-recipient span,
+    .inv-accounting-muted {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 750;
+    }
+
+    .inv-accounting-checkline {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+    .inv-accounting-error,
+    .inv-accounting-success {
+        padding: 12px 14px;
+        border-radius: 15px;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+    .inv-accounting-error { background: #fee2e2; color: #991b1b; }
+    .inv-accounting-success { background: #dcfce7; color: #166534; }
+
+    .inv-accounting-modal-actions {
+        padding: 16px 22px 20px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .inv-accounting-cancel {
+        height: 44px;
+        padding: 0 16px;
+        border-radius: 15px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+    @@media(max-width: 720px) {
+        .inv-accounting-head,
+        .inv-accounting-state {
+            grid-template-columns: 1fr;
+            display: grid;
+        }
+
+        .inv-accounting-send-btn,
+        .inv-accounting-download {
+            width: 100%;
+        }
+
+        .inv-accounting-section.two-col {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const card = document.querySelector("[data-accounting-card]");
+        if (!card) return;
+
+        const invoiceId = parseInt(card.dataset.invoiceId || "0", 10);
+        const statusBox = card.querySelector("[data-accounting-status]");
+        const modal = document.querySelector("[data-accounting-modal]");
+        const openBtn = card.querySelector("[data-accounting-open]");
+        const closeBtns = document.querySelectorAll("[data-accounting-close]");
+        const sendBtn = document.querySelector("[data-accounting-send]");
+        const recipientList = document.querySelector("[data-accounting-recipient-list]");
+        const errorBox = document.querySelector("[data-accounting-error]");
+        const successBox = document.querySelector("[data-accounting-success]");
+
+        const showError = message => {
+            if (!errorBox) return;
+            errorBox.textContent = message || "İşlem başarısız.";
+            errorBox.hidden = false;
+            if (successBox) successBox.hidden = true;
+        };
+
+        const showSuccess = message => {
+            if (!successBox) return;
+            successBox.textContent = message || "İşlem başarılı.";
+            successBox.hidden = false;
+            if (errorBox) errorBox.hidden = true;
+        };
+
+        const readError = async response => {
+            try {
+                const json = await response.json();
+                return json?.errorMessage || json?.ErrorMessage || (json?.errorMessages || json?.ErrorMessages || [])[0] || "İşlem başarısız.";
+            } catch {
+                return "İşlem başarısız.";
+            }
+        };
+
+        const loadStatus = async () => {
+            if (!statusBox || !invoiceId) return;
+
+            try {
+                const response = await fetch(`/AccountingInvoiceRequests/Invoice/${invoiceId}/Status`);
+                if (!response.ok) throw new Error(await readError(response));
+                const data = await response.json();
+                renderStatus(data);
+            } catch (err) {
+                statusBox.innerHTML = `<div class="inv-accounting-state"><div><strong>Fatura durumu alınamadı</strong><span>${err.message || "Tekrar deneyiniz."}</span></div></div>`;
+            }
+        };
+
+        const renderStatus = data => {
+            const doc = data?.latestOfficialInvoice || data?.LatestOfficialInvoice;
+            const statusText = data?.statusText || data?.StatusText || "Fatura bekleniyor";
+            const lastSentAt = data?.lastSentAt || data?.LastSentAt;
+            const lastSentToEmail = data?.lastSentToEmail || data?.LastSentToEmail;
+
+            let subText = "Henüz muhasebeciden fatura PDF’i yüklenmedi.";
+            let action = "";
+
+            if (doc) {
+                subText = `Fatura yüklendi: ${doc.officialInvoiceNumber || doc.OfficialInvoiceNumber}`;
+                const docId = doc.id || doc.Id;
+                action = `<a class="inv-accounting-download" href="/AccountingInvoiceRequests/OfficialDocument/${docId}/Download">PDF İndir</a>`;
+            } else if (lastSentAt) {
+                subText = `Son gönderim: ${new Date(lastSentAt).toLocaleString("tr-TR")} / ${lastSentToEmail || "-"}`;
+            }
+
+            statusBox.innerHTML = `
+                <div class="inv-accounting-state">
+                    <div>
+                        <strong>${statusText}</strong>
+                        <span>${subText}</span>
+                    </div>
+                    ${action}
+                </div>`;
+        };
+
+        const loadRecipients = async () => {
+            if (!recipientList) return;
+            recipientList.innerHTML = `<span class="inv-accounting-muted">Adresler yükleniyor...</span>`;
+
+            try {
+                const response = await fetch("/AccountingInvoiceRequests/Recipients");
+                if (!response.ok) throw new Error(await readError(response));
+                const recipients = await response.json();
+
+                if (!recipients || recipients.length === 0) {
+                    recipientList.innerHTML = `<span class="inv-accounting-muted">Kayıtlı muhasebe adresi yok. Yeni e-posta alanından ekleyebilirsiniz.</span>`;
+                    return;
+                }
+
+                recipientList.innerHTML = recipients.map(x => `
+                    <label class="inv-accounting-recipient">
+                        <input type="checkbox" value="${x.email || x.Email}" ${x.isDefault || x.IsDefault ? "checked" : ""} />
+                        <span>
+                            <strong>${x.displayName || x.DisplayName}</strong>
+                            <span>${x.email || x.Email}</span>
+                        </span>
+                    </label>`).join("");
+            } catch (err) {
+                recipientList.innerHTML = `<span class="inv-accounting-muted">Adresler alınamadı: ${err.message || "Hata"}</span>`;
+            }
+        };
+
+        openBtn?.addEventListener("click", function () {
+            if (!modal) return;
+            modal.hidden = false;
+            if (errorBox) errorBox.hidden = true;
+            if (successBox) successBox.hidden = true;
+            loadRecipients();
+        });
+
+        closeBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                if (modal) modal.hidden = true;
+            });
+        });
+
+        sendBtn?.addEventListener("click", async function () {
+            const selectedEmails = Array.from(document.querySelectorAll("[data-accounting-recipient-list] input[type='checkbox']:checked"))
+                .map(x => x.value)
+                .filter(Boolean);
+
+            const newEmail = document.querySelector("[data-accounting-new-email]")?.value || "";
+            const newName = document.querySelector("[data-accounting-new-name]")?.value || "";
+            const saveNew = document.querySelector("[data-accounting-save-new]")?.checked || false;
+            const message = document.querySelector("[data-accounting-message]")?.value || "";
+
+            if (selectedEmails.length === 0 && !newEmail.trim()) {
+                showError("En az bir muhasebeci e-posta adresi seçiniz veya yeni adres yazınız.");
+                return;
+            }
+
+            sendBtn.disabled = true;
+            sendBtn.textContent = "Gönderiliyor...";
+
+            try {
+                const response = await fetch("/AccountingInvoiceRequests/Send", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        invoiceId,
+                        recipientEmails: selectedEmails,
+                        newRecipientEmail: newEmail,
+                        newRecipientDisplayName: newName,
+                        saveNewRecipient: saveNew,
+                        message
+                    })
+                });
+
+                if (!response.ok) throw new Error(await readError(response));
+
+                showSuccess("Fatura hazırlık talebi muhasebeciye gönderildi.");
+                await loadStatus();
+
+                setTimeout(() => {
+                    if (modal) modal.hidden = true;
+                }, 900);
+            } catch (err) {
+                showError(err.message || "Gönderim başarısız.");
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = "Gönder";
+            }
+        });
+
+        loadStatus();
+    });
+</script>

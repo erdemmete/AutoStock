@@ -37,6 +37,7 @@ namespace AutoStock.WEB.Extensions
 
             services.AddScoped<IEmailSender, SmtpEmailSender>();
             services.AddScoped<AdminWorkshopInviteEmailService>();
+            services.AddScoped<AccountingInvoiceRequestApiService>();
 
             return services;
         }

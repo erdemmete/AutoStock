@@ -1,0 +1,380 @@
+@model AutoStock.WEB.Models.Accounting.AccountingInvoiceRequestPublicViewModel
+
+@{
+    Layout = null;
+
+    string Money(decimal value) => value.ToString("N2") + " TL";
+    string ValueOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
+    string TaxLine()
+    {
+        var parts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(Model.CustomerTckn)) parts.Add($"TCKN: {Model.CustomerTckn}");
+        if (!string.IsNullOrWhiteSpace(Model.CustomerTaxNumber)) parts.Add($"VKN: {Model.CustomerTaxNumber}");
+        if (!string.IsNullOrWhiteSpace(Model.CustomerTaxOffice)) parts.Add($"VD: {Model.CustomerTaxOffice}");
+
+        return parts.Any() ? string.Join(" / ", parts) : "-";
+    }
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fatura Hazırlık Talebi - @Model.InvoiceNumber</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #eef2f7;
+            color: #0f172a;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .page {
+            width: min(1100px, calc(100% - 28px));
+            margin: 0 auto;
+            padding: 26px 0 56px;
+        }
+        .hero {
+            padding: 24px 26px;
+            border-radius: 28px;
+            background: linear-gradient(135deg, #07111f 0%, #111827 48%, #4f46e5 100%);
+            color: white;
+            box-shadow: 0 24px 60px rgba(15,23,42,.18);
+        }
+        .hero-eyebrow {
+            display: inline-flex;
+            padding: 6px 11px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.14);
+            color: rgba(255,255,255,.8);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: .3px;
+        }
+        .hero h1 {
+            margin: 12px 0 8px;
+            font-size: clamp(28px, 4vw, 42px);
+            line-height: 1;
+            letter-spacing: -1.3px;
+        }
+        .hero p {
+            margin: 0;
+            max-width: 760px;
+            color: rgba(255,255,255,.72);
+            font-size: 15px;
+            line-height: 1.45;
+        }
+        .grid {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 360px;
+            gap: 18px;
+            align-items: start;
+        }
+        .card {
+            border: 1px solid #dbe3ef;
+            border-radius: 24px;
+            background: white;
+            box-shadow: 0 12px 28px rgba(15,23,42,.06);
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+        .card-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 950;
+            letter-spacing: -.3px;
+        }
+        .status {
+            height: 30px;
+            padding: 0 12px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: 12px;
+            font-weight: 950;
+            white-space: nowrap;
+        }
+        .card-body { padding: 18px 20px; }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .info-box {
+            padding: 13px 14px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+        .info-box span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 6px;
+        }
+        .info-box strong {
+            display: block;
+            color: #0f172a;
+            font-size: 14px;
+            line-height: 1.25;
+            font-weight: 950;
+        }
+        .table-wrap { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px 9px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 13px;
+            vertical-align: top;
+        }
+        th {
+            background: #f8fafc;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 950;
+            text-transform: uppercase;
+            letter-spacing: .35px;
+            text-align: left;
+        }
+        td.num, th.num { text-align: right; white-space: nowrap; }
+        .totals {
+            display: grid;
+            gap: 9px;
+        }
+        .total-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+            font-weight: 850;
+        }
+        .total-row strong { font-weight: 950; }
+        .total-row.grand {
+            margin-top: 4px;
+            padding: 14px;
+            border: none;
+            border-radius: 16px;
+            background: #0f172a;
+            color: white;
+        }
+        .upload-form {
+            display: grid;
+            gap: 12px;
+        }
+        .field label {
+            display: block;
+            margin-bottom: 6px;
+            color: #475569;
+            font-size: 12px;
+            font-weight: 950;
+        }
+        .field input,
+        .field textarea {
+            width: 100%;
+            min-height: 44px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid #d4deeb;
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 750;
+            outline: none;
+        }
+        .field textarea { min-height: 78px; resize: vertical; }
+        .btn {
+            height: 48px;
+            border: none;
+            border-radius: 16px;
+            background: #4f46e5;
+            color: white;
+            font-size: 14px;
+            font-weight: 950;
+            cursor: pointer;
+        }
+        .alert {
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 850;
+        }
+        .alert.success { background: #dcfce7; color: #166534; }
+        .alert.error { background: #fee2e2; color: #991b1b; }
+        .muted {
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.45;
+            font-weight: 750;
+        }
+        @@media(max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+            .info-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="hero">
+            <span class="hero-eyebrow">SENTE360</span>
+            <h1>Fatura Hazırlık Talebi</h1>
+            <p>@Model.WorkshopName tarafından gönderilen servis hesap özeti bilgilerini kontrol edip resmi e-Arşiv/e-Fatura PDF’ini bu sayfadan yükleyebilirsiniz.</p>
+        </section>
+
+        <section class="grid">
+            <div class="card">
+                <div class="card-header">
+                    <h2>@Model.InvoiceNumber</h2>
+                    <span class="status">@Model.StatusText</span>
+                </div>
+
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-box"><span>Servis</span><strong>@Model.WorkshopName</strong></div>
+                        <div class="info-box"><span>Tarih</span><strong>@Model.InvoiceDate.ToString("dd.MM.yyyy")</strong></div>
+                        <div class="info-box"><span>Fatura Kesilen</span><strong>@Model.CustomerTitle</strong></div>
+                        <div class="info-box"><span>Vergi Bilgisi</span><strong>@TaxLine()</strong></div>
+                        <div class="info-box"><span>Adres</span><strong>@ValueOrDash(Model.CustomerAddress)</strong></div>
+                        <div class="info-box"><span>Araç</span><strong>@ValueOrDash(Model.Plate) / @ValueOrDash(Model.VehicleText)</strong></div>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Tür</th>
+                                <th>Mal / Hizmet</th>
+                                <th class="num">Miktar</th>
+                                <th class="num">Birim</th>
+                                <th class="num">KDV</th>
+                                <th class="num">Tutar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Items.Count; i++)
+                            {
+                                var item = Model.Items[i];
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td>@item.ItemTypeText</td>
+                                    <td>@item.Description</td>
+                                    <td class="num">@item.Quantity.ToString("N2") @item.Unit</td>
+                                    <td class="num">@Money(item.UnitPrice)</td>
+                                    <td class="num">@Money(item.VatAmount)</td>
+                                    <td class="num"><strong>@Money(item.LineTotal)</strong></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <aside class="card">
+                <div class="card-header">
+                    <h2>Özet</h2>
+                </div>
+                <div class="card-body">
+                    @if (Model.Uploaded)
+                    {
+                        <div class="alert success">Fatura PDF’i başarıyla yüklendi.</div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(Model.UploadError))
+                    {
+                        <div class="alert error">@Model.UploadError</div>
+                    }
+
+                    <div class="totals">
+                        <div class="total-row"><span>Mal Hizmet Toplamı</span><strong>@Money(Model.Subtotal)</strong></div>
+                        <div class="total-row"><span>İskonto</span><strong>@Money(Model.DiscountTotal)</strong></div>
+                        <div class="total-row"><span>KDV</span><strong>@Money(Model.VatTotal)</strong></div>
+                        <div class="total-row"><span>Genel Toplam</span><strong>@Money(Model.GrandTotal)</strong></div>
+                        <div class="total-row"><span>Tahsil</span><strong>@Money(Model.PaidTotal)</strong></div>
+                        <div class="total-row grand"><span>Kalan</span><strong>@Money(Model.RemainingAmount)</strong></div>
+                    </div>
+                </div>
+
+                <div class="card-header">
+                    <h2>Fatura PDF</h2>
+                </div>
+                <div class="card-body">
+                    @if (Model.OfficialInvoiceDocument is not null)
+                    {
+                        <div class="alert success">
+                            Fatura yüklendi:<br />
+                            <strong>@Model.OfficialInvoiceDocument.OfficialInvoiceNumber</strong>
+                        </div>
+                    }
+
+                    @if (Model.CanUpload)
+                    {
+                        <form class="upload-form" method="post" enctype="multipart/form-data" action="@Model.UploadApiUrl">
+                            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+                            <div class="field">
+                                <label>Fatura No</label>
+                                <input name="officialInvoiceNumber" required maxlength="80" />
+                            </div>
+
+                            <div class="field">
+                                <label>Fatura Tarihi</label>
+                                <input name="officialInvoiceDate" type="date" required value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                            </div>
+
+                            <div class="field">
+                                <label>ETTN / UUID <span class="muted">opsiyonel</span></label>
+                                <input name="ettnOrUuid" maxlength="80" />
+                            </div>
+
+                            <div class="field">
+                                <label>Yükleyen E-posta</label>
+                                <input name="uploadedByEmail" type="email" required />
+                            </div>
+
+                            <div class="field">
+                                <label>Fatura PDF</label>
+                                <input name="file" type="file" accept="application/pdf,.pdf" required />
+                                <div class="muted">Sadece PDF, maksimum 10 MB.</div>
+                            </div>
+
+                            <div class="field">
+                                <label>Not <span class="muted">opsiyonel</span></label>
+                                <textarea name="note"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn">Faturayı Yükle</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <p class="muted">Bu bağlantı üzerinden yükleme yapılamıyor. Bağlantının süresi dolmuş veya talep kapatılmış olabilir.</p>
+                    }
+                </div>
+            </aside>
+        </section>
+    </main>
+</body>
+</html>

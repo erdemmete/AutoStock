@@ -38,6 +38,7 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<IEmailSender, SmtpEmailSender>();
             services.AddScoped<IInvoiceEmailService, InvoiceEmailService>();
             services.AddScoped<IVehicleCatalogSeeder, VehicleCatalogSeeder>();
+            services.AddScoped<IAccountingInvoiceRequestService, AccountingInvoiceRequestService>();
 
             return services;
         }

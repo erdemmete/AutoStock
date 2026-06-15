@@ -4,17 +4,17 @@
     string GetStatusText(int status) => status switch
     {
         1 => "Onay Bekliyor",
-        2 => "Kesildi",
+        2 => "Onaylandı",
         3 => "İptal Edildi",
         _ => "Bilinmiyor"
     };
 
     var title = Model.Status switch
     {
-        1 => "Fatura Taslağı",
-        2 => "Kesilmiş Fatura",
-        3 => "İptal Edilmiş Fatura",
-        _ => "Fatura Detayı"
+        1 => "Hesap Özeti Taslağı",
+        2 => "Onaylanmış Hesap Özeti",
+        3 => "İptal Edilmiş Hesap Özeti",
+        _ => "Hesap Özeti Detayı"
     };
 }
 
@@ -59,7 +59,7 @@
             </button>
 
             <button type="button" class="action-btn success" onclick="issueInvoice(@Model.Id)">
-                Faturayı Kes
+                Hesap Özetini Onayla
             </button>
         }
     </div>

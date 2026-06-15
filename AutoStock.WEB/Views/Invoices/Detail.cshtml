@@ -1,7 +1,7 @@
-﻿@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+@model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
 
 @{
-    ViewData["Title"] = "Fatura Detayı";
+    ViewData["Title"] = "Hesap Özeti Detayı";
 }
 
 <div class="invoice-page">
@@ -18,9 +18,7 @@
 
         @await Html.PartialAsync("~/Views/Invoices/DetailPartials/_InvoiceTotals.cshtml", Model)
 
-        @await Html.PartialAsync("~/Views/Invoices/DetailPartials/_InvoiceCurrentAccountActions.cshtml", Model)
-
-        @await Html.PartialAsync("~/Views/Invoices/DetailPartials/_InvoiceFooterActions.cshtml", Model)
+        @await Html.PartialAsync("~/Views/Invoices/DetailPartials/_InvoiceActionHub.cshtml", Model)
 
         @if (Model.Status == 1)
         {

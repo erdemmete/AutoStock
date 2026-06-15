@@ -1656,7 +1656,7 @@
                 const message =
                     result?.errorMessage ||
                     result?.errorMessages?.[0] ||
-                    "Fatura güncellenirken hata oluştu.";
+                    "Hesap özeti güncellenirken hata oluştu.";
 
                 alert(message);
                 throw new Error(message);
@@ -1667,8 +1667,8 @@
 
         async function issueInvoice(invoiceId) {
             const confirmed = confirm(
-                "Bu faturayı kesmek istediğinize emin misiniz?\n\n" +
-                "Kesilen faturalar artık taslak olarak düzenlenemez."
+                "Bu hesap özetini onaylamak istediğinize emin misiniz?\n\n" +
+                "Onaylanan hesap özetleri artık taslak olarak düzenlenemez."
             );
 
             if (!confirmed) return;
@@ -1689,7 +1689,7 @@
                 }
 
                 if (!response.ok || !result?.isSuccess) {
-                    alert(result?.errorMessage || "Fatura kesilirken hata oluştu.");
+                    alert(result?.errorMessage || "Hesap özeti onaylanırken hata oluştu.");
                     return;
                 }
 
@@ -1701,7 +1701,7 @@
         }
 
         async function cancelInvoice(invoiceId) {
-            const confirmed = confirm("Bu faturayı iptal etmek istediğinize emin misiniz?");
+            const confirmed = confirm("Bu hesap özetini iptal etmek istediğinize emin misiniz?");
 
             if (!confirmed) return;
 
@@ -1711,7 +1711,7 @@
                 });
 
                 if (!response.ok) {
-                    alert("Fatura iptal edilemedi.");
+                    alert("Hesap özeti iptal edilemedi.");
                     return;
                 }
 
