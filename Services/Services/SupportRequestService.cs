@@ -1,25 +1,40 @@
-﻿using AutoStock.Repositories.Entities;
+using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Enums;
 using AutoStock.Repositories.Interfaces;
 using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Common;
+using AutoStock.Services.Dtos.Notifications;
 using AutoStock.Services.Dtos.SupportRequests;
 using AutoStock.Services.Interfaces;
 using System.Net;
 
 namespace AutoStock.Services.Services
 {
-    public class SupportRequestService(
-        ISupportRequestRepository supportRequestRepository,
-        IAuditLogService auditLogService,
-        IDateTimeProvider dateTimeProvider) : ISupportRequestService
+    public class SupportRequestService : ISupportRequestService
     {
+        private readonly ISupportRequestRepository _supportRequestRepository;
+        private readonly IAuditLogService _auditLogService;
+        private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly INotificationService _notificationService;
+
+        public SupportRequestService(
+            ISupportRequestRepository supportRequestRepository,
+            IAuditLogService auditLogService,
+            IDateTimeProvider dateTimeProvider,
+            INotificationService notificationService)
+        {
+            _supportRequestRepository = supportRequestRepository;
+            _auditLogService = auditLogService;
+            _dateTimeProvider = dateTimeProvider;
+            _notificationService = notificationService;
+        }
+
         public async Task<ServiceResult<PagedResult<SupportRequestListItemDto>>> GetPagedForWorkshopAsync(
-    SupportRequestListQueryDto query,
-    int workshopId,
-    int currentUserId,
-    string? currentUserRole)
+            SupportRequestListQueryDto query,
+            int workshopId,
+            int currentUserId,
+            string? currentUserRole)
         {
             query ??= new SupportRequestListQueryDto();
             query.Normalize();
@@ -30,7 +45,7 @@ namespace AutoStock.Services.Services
 
             var excludeClosedAndCancelled = !query.Status.HasValue;
 
-            var totalCount = await supportRequestRepository.GetCountForWorkshopAsync(
+            var totalCount = await _supportRequestRepository.GetCountForWorkshopAsync(
                 workshopId,
                 query.Status,
                 query.RequestType,
@@ -40,7 +55,7 @@ namespace AutoStock.Services.Services
                 createdByUserId,
                 excludeClosedAndCancelled);
 
-            var items = await supportRequestRepository.GetListForWorkshopAsync(
+            var items = await _supportRequestRepository.GetListForWorkshopAsync(
                 workshopId,
                 query.Status,
                 query.RequestType,
@@ -64,16 +79,16 @@ namespace AutoStock.Services.Services
         }
 
         public async Task<ServiceResult<SupportRequestDetailDto>> GetByIdForWorkshopAsync(
-    int id,
-    int workshopId,
-    int currentUserId,
-    string? currentUserRole)
+            int id,
+            int workshopId,
+            int currentUserId,
+            string? currentUserRole)
         {
             var createdByUserId = currentUserRole == AppRoles.Staff
                 ? currentUserId
                 : (int?)null;
 
-            var supportRequest = await supportRequestRepository.GetByIdForWorkshopAsync(
+            var supportRequest = await _supportRequestRepository.GetByIdForWorkshopAsync(
                 id,
                 workshopId,
                 createdByUserId);
@@ -89,7 +104,7 @@ namespace AutoStock.Services.Services
             int workshopId,
             int createdByUserId)
         {
-            var now = dateTimeProvider.Now;
+            var now = _dateTimeProvider.Now;
 
             var supportRequest = new SupportRequest
             {
@@ -103,10 +118,10 @@ namespace AutoStock.Services.Services
                 CreatedAt = now
             };
 
-            await supportRequestRepository.AddAsync(supportRequest);
-            await supportRequestRepository.SaveChangesAsync();
+            await _supportRequestRepository.AddAsync(supportRequest);
+            await _supportRequestRepository.SaveChangesAsync();
 
-            await auditLogService.AddAsync(new AuditLogCreateDto
+            await _auditLogService.AddAsync(new AuditLogCreateDto
             {
                 WorkshopId = workshopId,
                 ActionType = AuditActionType.Create,
@@ -122,7 +137,19 @@ namespace AutoStock.Services.Services
                 }
             });
 
-            await supportRequestRepository.SaveChangesAsync();
+            await _notificationService.CreateForAdminsAsync(new CreateNotificationDto
+            {
+                WorkshopId = workshopId,
+                Type = NotificationType.SupportRequestCreated,
+                Title = "Yeni destek talebi",
+                Message = supportRequest.Subject,
+                RelatedEntityType = NotificationRelatedEntityType.SupportRequest,
+                RelatedEntityId = supportRequest.Id,
+                ActionUrl = $"/AdminSupportRequests/Detail/{supportRequest.Id}",
+                CreatedByUserId = createdByUserId
+            });
+
+            await _supportRequestRepository.SaveChangesAsync();
 
             return ServiceResult<int>.Success(supportRequest.Id);
         }
@@ -140,7 +167,7 @@ namespace AutoStock.Services.Services
                     HttpStatusCode.Forbidden);
             }
 
-            var now = dateTimeProvider.Now;
+            var now = _dateTimeProvider.Now;
 
             var supportRequest = new SupportRequest
             {
@@ -153,19 +180,17 @@ namespace AutoStock.Services.Services
                 Description = string.IsNullOrWhiteSpace(request.Note)
                     ? "Servis kullanıcısı ekleme talebi oluşturuldu."
                     : request.Note.Trim(),
-
                 RequestedUserFullName = request.RequestedUserFullName.Trim(),
                 RequestedUserPhone = request.RequestedUserPhone?.Trim(),
                 RequestedUserEmail = request.RequestedUserEmail?.Trim(),
                 RequestedUserRole = request.RequestedUserRole,
-
                 CreatedAt = now
             };
 
-            await supportRequestRepository.AddAsync(supportRequest);
-            await supportRequestRepository.SaveChangesAsync();
+            await _supportRequestRepository.AddAsync(supportRequest);
+            await _supportRequestRepository.SaveChangesAsync();
 
-            await auditLogService.AddAsync(new AuditLogCreateDto
+            await _auditLogService.AddAsync(new AuditLogCreateDto
             {
                 WorkshopId = workshopId,
                 ActionType = AuditActionType.Create,
@@ -184,7 +209,19 @@ namespace AutoStock.Services.Services
                 }
             });
 
-            await supportRequestRepository.SaveChangesAsync();
+            await _notificationService.CreateForAdminsAsync(new CreateNotificationDto
+            {
+                WorkshopId = workshopId,
+                Type = NotificationType.SupportRequestCreated,
+                Title = "Yeni kullanıcı ekleme talebi",
+                Message = $"{supportRequest.RequestedUserFullName} için kullanıcı ekleme talebi oluşturuldu.",
+                RelatedEntityType = NotificationRelatedEntityType.SupportRequest,
+                RelatedEntityId = supportRequest.Id,
+                ActionUrl = $"/AdminSupportRequests/Detail/{supportRequest.Id}",
+                CreatedByUserId = createdByUserId
+            });
+
+            await _supportRequestRepository.SaveChangesAsync();
 
             return ServiceResult<int>.Success(supportRequest.Id);
         }
@@ -194,7 +231,7 @@ namespace AutoStock.Services.Services
             int workshopId,
             int currentUserId)
         {
-            var supportRequest = await supportRequestRepository.GetByIdForWorkshopAsync(id, workshopId);
+            var supportRequest = await _supportRequestRepository.GetByIdForWorkshopAsync(id, workshopId);
 
             if (supportRequest == null)
                 return ServiceResult<int>.Fail("Destek talebi bulunamadı.");
@@ -210,32 +247,26 @@ namespace AutoStock.Services.Services
                 return ServiceResult<int>.Fail("Bu destek talebi artık iptal edilemez.");
 
             var oldStatus = supportRequest.Status;
-            var now = dateTimeProvider.Now;
+            var now = _dateTimeProvider.Now;
 
             supportRequest.Status = SupportRequestStatus.Cancelled;
             supportRequest.UpdatedAt = now;
             supportRequest.ClosedAt = now;
 
-            supportRequestRepository.Update(supportRequest);
+            _supportRequestRepository.Update(supportRequest);
 
-            await auditLogService.AddAsync(new AuditLogCreateDto
+            await _auditLogService.AddAsync(new AuditLogCreateDto
             {
                 WorkshopId = workshopId,
                 ActionType = AuditActionType.Cancel,
                 EntityType = AuditEntityType.SupportRequest,
                 EntityId = supportRequest.Id,
                 Description = $"Destek talebi iptal edildi: {supportRequest.Subject}",
-                OldValues = new
-                {
-                    Status = oldStatus
-                },
-                NewValues = new
-                {
-                    supportRequest.Status
-                }
+                OldValues = new { Status = oldStatus },
+                NewValues = new { supportRequest.Status }
             });
 
-            await supportRequestRepository.SaveChangesAsync();
+            await _supportRequestRepository.SaveChangesAsync();
 
             return ServiceResult<int>.Success(supportRequest.Id);
         }
@@ -246,7 +277,7 @@ namespace AutoStock.Services.Services
             query ??= new AdminSupportRequestListQueryDto();
             query.Normalize();
 
-            var totalCount = await supportRequestRepository.GetCountForAdminAsync(
+            var totalCount = await _supportRequestRepository.GetCountForAdminAsync(
                 query.WorkshopId,
                 query.Status,
                 query.RequestType,
@@ -254,7 +285,7 @@ namespace AutoStock.Services.Services
                 query.StartDate,
                 query.EndDate);
 
-            var items = await supportRequestRepository.GetListForAdminAsync(
+            var items = await _supportRequestRepository.GetListForAdminAsync(
                 query.WorkshopId,
                 query.Status,
                 query.RequestType,
@@ -277,7 +308,7 @@ namespace AutoStock.Services.Services
 
         public async Task<ServiceResult<SupportRequestDetailDto>> GetByIdForAdminAsync(int id)
         {
-            var supportRequest = await supportRequestRepository.GetByIdAsync(id);
+            var supportRequest = await _supportRequestRepository.GetByIdAsync(id);
 
             if (supportRequest == null)
                 return ServiceResult<SupportRequestDetailDto>.Fail("Destek talebi bulunamadı.");
@@ -289,7 +320,7 @@ namespace AutoStock.Services.Services
             AdminAnswerSupportRequestDto request,
             int respondedByUserId)
         {
-            var supportRequest = await supportRequestRepository.GetByIdAsync(request.Id);
+            var supportRequest = await _supportRequestRepository.GetByIdAsync(request.Id);
 
             if (supportRequest == null)
                 return ServiceResult<int>.Fail("Destek talebi bulunamadı.");
@@ -306,7 +337,7 @@ namespace AutoStock.Services.Services
                 supportRequest.AdminResponse
             };
 
-            var now = dateTimeProvider.Now;
+            var now = _dateTimeProvider.Now;
 
             supportRequest.AdminResponse = request.AdminResponse.Trim();
             supportRequest.RespondedByUserId = respondedByUserId;
@@ -317,9 +348,9 @@ namespace AutoStock.Services.Services
             if (request.Status == SupportRequestStatus.Closed)
                 supportRequest.ClosedAt = now;
 
-            supportRequestRepository.Update(supportRequest);
+            _supportRequestRepository.Update(supportRequest);
 
-            await auditLogService.AddAsync(new AuditLogCreateDto
+            await _auditLogService.AddAsync(new AuditLogCreateDto
             {
                 WorkshopId = supportRequest.WorkshopId,
                 ActionType = AuditActionType.Update,
@@ -336,7 +367,22 @@ namespace AutoStock.Services.Services
                 }
             });
 
-            await supportRequestRepository.SaveChangesAsync();
+            await _notificationService.CreateForWorkshopOwnersAndUsersAsync(
+                supportRequest.WorkshopId,
+                new[] { supportRequest.CreatedByUserId },
+                new CreateNotificationDto
+                {
+                    WorkshopId = supportRequest.WorkshopId,
+                    Type = NotificationType.SupportRequestAnswered,
+                    Title = "Destek talebiniz yanıtlandı",
+                    Message = supportRequest.Subject,
+                    RelatedEntityType = NotificationRelatedEntityType.SupportRequest,
+                    RelatedEntityId = supportRequest.Id,
+                    ActionUrl = $"/SupportRequests/Detail/{supportRequest.Id}",
+                    CreatedByUserId = respondedByUserId
+                });
+
+            await _supportRequestRepository.SaveChangesAsync();
 
             return ServiceResult<int>.Success(supportRequest.Id);
         }
@@ -345,13 +391,13 @@ namespace AutoStock.Services.Services
             AdminUpdateSupportRequestStatusDto request,
             int updatedByUserId)
         {
-            var supportRequest = await supportRequestRepository.GetByIdAsync(request.Id);
+            var supportRequest = await _supportRequestRepository.GetByIdAsync(request.Id);
 
             if (supportRequest == null)
                 return ServiceResult<int>.Fail("Destek talebi bulunamadı.");
 
             var oldStatus = supportRequest.Status;
-            var now = dateTimeProvider.Now;
+            var now = _dateTimeProvider.Now;
 
             supportRequest.Status = request.Status;
             supportRequest.UpdatedAt = now;
@@ -362,19 +408,16 @@ namespace AutoStock.Services.Services
             if (request.Status is SupportRequestStatus.Open or SupportRequestStatus.InProgress or SupportRequestStatus.Answered)
                 supportRequest.ClosedAt = null;
 
-            supportRequestRepository.Update(supportRequest);
+            _supportRequestRepository.Update(supportRequest);
 
-            await auditLogService.AddAsync(new AuditLogCreateDto
+            await _auditLogService.AddAsync(new AuditLogCreateDto
             {
                 WorkshopId = supportRequest.WorkshopId,
                 ActionType = AuditActionType.Update,
                 EntityType = AuditEntityType.SupportRequest,
                 EntityId = supportRequest.Id,
                 Description = $"Destek talebi durumu güncellendi: {supportRequest.Subject}",
-                OldValues = new
-                {
-                    Status = oldStatus
-                },
+                OldValues = new { Status = oldStatus },
                 NewValues = new
                 {
                     supportRequest.Status,
@@ -382,7 +425,25 @@ namespace AutoStock.Services.Services
                 }
             });
 
-            await supportRequestRepository.SaveChangesAsync();
+            if (oldStatus != supportRequest.Status)
+            {
+                await _notificationService.CreateForWorkshopOwnersAndUsersAsync(
+                    supportRequest.WorkshopId,
+                    new[] { supportRequest.CreatedByUserId },
+                    new CreateNotificationDto
+                    {
+                        WorkshopId = supportRequest.WorkshopId,
+                        Type = NotificationType.SupportRequestStatusChanged,
+                        Title = "Destek talebi durumu güncellendi",
+                        Message = $"{supportRequest.Subject} - {GetStatusText(supportRequest.Status)}",
+                        RelatedEntityType = NotificationRelatedEntityType.SupportRequest,
+                        RelatedEntityId = supportRequest.Id,
+                        ActionUrl = $"/SupportRequests/Detail/{supportRequest.Id}",
+                        CreatedByUserId = updatedByUserId
+                    });
+            }
+
+            await _supportRequestRepository.SaveChangesAsync();
 
             return ServiceResult<int>.Success(supportRequest.Id);
         }
@@ -394,19 +455,14 @@ namespace AutoStock.Services.Services
                 Id = supportRequest.Id,
                 WorkshopId = supportRequest.WorkshopId,
                 WorkshopName = supportRequest.Workshop?.Name,
-
                 RequestType = supportRequest.RequestType,
                 RequestTypeText = GetRequestTypeText(supportRequest.RequestType),
-
                 Status = supportRequest.Status,
                 StatusText = GetStatusText(supportRequest.Status),
-
                 Priority = supportRequest.Priority,
                 PriorityText = GetPriorityText(supportRequest.Priority),
-
                 Subject = supportRequest.Subject,
                 CreatedByUserName = supportRequest.CreatedByUser?.FullName ?? supportRequest.CreatedByUser?.UserName ?? "-",
-
                 CreatedAt = supportRequest.CreatedAt,
                 RespondedAt = supportRequest.RespondedAt,
                 ClosedAt = supportRequest.ClosedAt
@@ -420,36 +476,26 @@ namespace AutoStock.Services.Services
                 Id = supportRequest.Id,
                 WorkshopId = supportRequest.WorkshopId,
                 WorkshopName = supportRequest.Workshop?.Name,
-
                 CreatedByUserId = supportRequest.CreatedByUserId,
                 CreatedByUserName = supportRequest.CreatedByUser?.FullName ?? supportRequest.CreatedByUser?.UserName ?? "-",
-
                 RequestType = supportRequest.RequestType,
                 RequestTypeText = GetRequestTypeText(supportRequest.RequestType),
-
                 Status = supportRequest.Status,
                 StatusText = GetStatusText(supportRequest.Status),
-
                 Priority = supportRequest.Priority,
                 PriorityText = GetPriorityText(supportRequest.Priority),
-
                 Subject = supportRequest.Subject,
                 Description = supportRequest.Description,
-
                 RequestedUserFullName = supportRequest.RequestedUserFullName,
                 RequestedUserPhone = supportRequest.RequestedUserPhone,
                 RequestedUserEmail = supportRequest.RequestedUserEmail,
-
                 RequestedUserRole = supportRequest.RequestedUserRole,
                 RequestedUserRoleText = supportRequest.RequestedUserRole.HasValue
                     ? GetRequestedUserRoleText(supportRequest.RequestedUserRole.Value)
                     : null,
-
                 AdminResponse = supportRequest.AdminResponse,
-
                 RespondedByUserId = supportRequest.RespondedByUserId,
                 RespondedByUserName = supportRequest.RespondedByUser?.FullName ?? supportRequest.RespondedByUser?.UserName,
-
                 RespondedAt = supportRequest.RespondedAt,
                 CreatedAt = supportRequest.CreatedAt,
                 UpdatedAt = supportRequest.UpdatedAt,

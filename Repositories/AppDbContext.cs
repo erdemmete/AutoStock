@@ -41,7 +41,8 @@ namespace AutoStock.Repositories
         public DbSet<WorkshopEmailRecipient> WorkshopEmailRecipients { get; set; }
         public DbSet<AccountingInvoiceRequest> AccountingInvoiceRequests { get; set; }
         public DbSet<OfficialInvoiceDocument> OfficialInvoiceDocuments { get; set; }
-
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<UserNotification> UserNotifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

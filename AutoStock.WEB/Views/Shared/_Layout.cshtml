@@ -17,16 +17,16 @@
 <body>
     <div id="toastMessage" class="toast-message"></div>
 
+    @{
+        var isAuthPage = Context.Request.Path.StartsWithSegments("/Auth");
+    }
+
+    @if (!isAuthPage)
+    {
+        <partial name="_AdminQuickActions" />
+    }
+
     <div class="container">
-        @{
-            var isAuthPage = Context.Request.Path.StartsWithSegments("/Auth");
-        }
-
-        @if (!isAuthPage)
-        {
-            <partial name="_AdminQuickActions" />
-        }
-
         <main role="main" class="pb-3">
             @RenderBody()
         </main>

@@ -24,6 +24,10 @@
                 Destek Talepleri
             </a>
 
+            <div class="admin-quick-notification">
+                @await Component.InvokeAsync("NotificationBell")
+            </div>
+
             <form asp-controller="Auth"
                   asp-action="Logout"
                   method="post"
@@ -36,4 +40,35 @@
             </form>
         </div>
     </div>
+
+    <style>
+        .admin-quick-notification {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 42px;
+        }
+
+            .admin-quick-notification .s360-notification-bell,
+            .admin-quick-notification .notification-bell-button,
+            .admin-quick-notification a {
+                flex: 0 0 auto;
+            }
+
+        @@media (max-width: 768px) {
+            .admin-quick-actions {
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .admin-quick-links {
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+
+            .admin-quick-notification {
+                height: 40px;
+            }
+        }
+    </style>
 }

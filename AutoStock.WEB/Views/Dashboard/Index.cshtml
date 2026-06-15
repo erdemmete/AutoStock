@@ -1,4 +1,4 @@
-﻿@model AutoStock.WEB.Models.DashboardViewModel
+@model AutoStock.WEB.Models.DashboardViewModel
 
 @{
     Layout = null;
@@ -839,6 +839,82 @@
                         align-items: center;
                     }
             }
+
+
+            .mobile-topbar-actions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .dashboard-header-actions {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .dashboard-notification-slot {
+                display: flex;
+                align-items: center;
+            }
+
+            @@media (max-width: 860px) {
+                .page-header .dashboard-notification-slot {
+                    display: none !important;
+                }
+
+                .mobile-topbar .s360-notification-shell {
+                    z-index: 25 !important;
+                }
+
+                body.sidebar-open .mobile-topbar .s360-notification-shell {
+                    display: none !important;
+                }
+            }
+
+            .dashboard-header-actions,
+            .mobile-topbar-actions {
+                position: relative;
+                z-index: 50;
+            }
+
+            .mobile-topbar {
+                z-index: 99990 !important;
+                overflow: visible !important;
+            }
+
+            .mobile-topbar-actions {
+                position: relative !important;
+                z-index: 99999 !important;
+            }
+
+            .mobile-topbar .s360-notification-shell {
+                position: relative !important;
+                z-index: 100000 !important;
+            }
+
+            .mobile-topbar .s360-notification-panel {
+                z-index: 100001 !important;
+            }
+
+            .date-badge,
+            .page-header,
+            .main,
+            .app-shell {
+                position: relative;
+                z-index: 1;
+            }
+
+            @@media (max-width: 860px) {
+                .mobile-topbar .s360-notification-panel {
+                    position: fixed !important;
+                    top: 64px !important;
+                    left: 12px !important;
+                    right: 12px !important;
+                    width: auto !important;
+                    z-index: 100001 !important;
+                }
+            }
     </style>
 </head>
 
@@ -849,9 +925,13 @@
             <span>Sente360</span>
         </div>
 
-        <button type="button" class="mobile-menu-button" id="mobileMenuButton">
-            Menü
-        </button>
+        <div class="mobile-topbar-actions">
+            @await Component.InvokeAsync("NotificationBell")
+
+            <button type="button" class="mobile-menu-button" id="mobileMenuButton">
+                Menü
+            </button>
+        </div>
     </div>
 
     <div class="app-shell">
@@ -932,8 +1012,14 @@
                     </p>
                 </div>
 
-                <div class="date-badge">
-                    @DateTime.Now.ToString("dd.MM.yyyy")
+                <div class="dashboard-header-actions">
+                    <div class="dashboard-notification-slot">
+                        @await Component.InvokeAsync("NotificationBell")
+                    </div>
+
+                    <div class="date-badge">
+                        @DateTime.Now.ToString("dd.MM.yyyy")
+                    </div>
                 </div>
             </header>
 
