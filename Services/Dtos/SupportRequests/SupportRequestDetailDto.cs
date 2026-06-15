@@ -1,4 +1,4 @@
-﻿using AutoStock.Repositories.Enums;
+using AutoStock.Repositories.Enums;
 
 namespace AutoStock.Services.Dtos.SupportRequests
 {
@@ -40,6 +40,7 @@ namespace AutoStock.Services.Dtos.SupportRequests
 
         public string? RequestedUserRoleText { get; set; }
 
+        // Eski tek cevap alanları geriye uyumluluk için duruyor.
         public string? AdminResponse { get; set; }
 
         public int? RespondedByUserId { get; set; }
@@ -53,5 +54,7 @@ namespace AutoStock.Services.Dtos.SupportRequests
         public DateTime? UpdatedAt { get; set; }
 
         public DateTime? ClosedAt { get; set; }
+
+        public List<SupportRequestMessageDto> Messages { get; set; } = new();
     }
 }

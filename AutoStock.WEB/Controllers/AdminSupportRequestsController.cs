@@ -1,4 +1,4 @@
-﻿using AutoStock.WEB.Models.SupportRequests;
+using AutoStock.WEB.Models.SupportRequests;
 using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -66,7 +66,7 @@ namespace AutoStock.WEB.Controllers
                 onSuccess: () => RedirectToAction(nameof(Detail), new { id = model.Id }),
                 onFailure: () => RedirectToAction(nameof(Detail), new { id = model.Id }),
                 defaultErrorMessage: "Destek talebi yanıtlanırken hata oluştu.",
-                successMessage: "Destek talebi yanıtlandı.");
+                successMessage: model.CloseAfterAnswer ? "Destek talebi cevaplandı ve kapatıldı." : "Destek talebine cevap eklendi.");
         }
 
         [HttpPost]

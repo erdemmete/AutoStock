@@ -1,5 +1,3 @@
-﻿using AutoStock.Services.Dtos.Common;
-using AutoStock.WEB.Models.Common;
 using AutoStock.WEB.Models.SupportRequests;
 using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -42,6 +40,7 @@ namespace AutoStock.WEB.Controllers
                 IsOwner = IsOwner
             });
         }
+
         public async Task<IActionResult> Detail(int id)
         {
             if (!IsOwner && !IsStaff)
@@ -53,6 +52,23 @@ namespace AutoStock.WEB.Controllers
                 result,
                 "Destek talebi detayı alınırken hata oluştu.",
                 () => RedirectToAction(nameof(Index)));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddMessage(CreateSupportRequestMessageViewModel model)
+        {
+            if (!IsOwner && !IsStaff)
+                return RedirectToLogin();
+
+            var result = await _supportRequestApiService.AddMessageAsync(model);
+
+            return HandleCommandResult(
+                result,
+                onSuccess: () => RedirectToAction(nameof(Detail), new { id = model.Id }),
+                onFailure: () => RedirectToAction(nameof(Detail), new { id = model.Id }),
+                defaultErrorMessage: "Mesaj eklenirken hata oluştu.",
+                successMessage: "Mesajınız gönderildi.");
         }
 
         [HttpGet]

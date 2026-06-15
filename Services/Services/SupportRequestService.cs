@@ -14,17 +14,20 @@ namespace AutoStock.Services.Services
     public class SupportRequestService : ISupportRequestService
     {
         private readonly ISupportRequestRepository _supportRequestRepository;
+        private readonly ISupportRequestMessageRepository _supportRequestMessageRepository;
         private readonly IAuditLogService _auditLogService;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly INotificationService _notificationService;
 
         public SupportRequestService(
             ISupportRequestRepository supportRequestRepository,
+            ISupportRequestMessageRepository supportRequestMessageRepository,
             IAuditLogService auditLogService,
             IDateTimeProvider dateTimeProvider,
             INotificationService notificationService)
         {
             _supportRequestRepository = supportRequestRepository;
+            _supportRequestMessageRepository = supportRequestMessageRepository;
             _auditLogService = auditLogService;
             _dateTimeProvider = dateTimeProvider;
             _notificationService = notificationService;
@@ -96,7 +99,9 @@ namespace AutoStock.Services.Services
             if (supportRequest == null)
                 return ServiceResult<SupportRequestDetailDto>.Fail("Destek talebi bulunamadı.");
 
-            return ServiceResult<SupportRequestDetailDto>.Success(MapToDetailDto(supportRequest));
+            var messages = await _supportRequestMessageRepository.GetBySupportRequestIdAsync(supportRequest.Id);
+
+            return ServiceResult<SupportRequestDetailDto>.Success(MapToDetailDto(supportRequest, messages));
         }
 
         public async Task<ServiceResult<int>> CreateIssueAsync(
@@ -104,6 +109,12 @@ namespace AutoStock.Services.Services
             int workshopId,
             int createdByUserId)
         {
+            if (string.IsNullOrWhiteSpace(request.Subject))
+                return ServiceResult<int>.Fail("Konu zorunludur.", HttpStatusCode.BadRequest);
+
+            if (string.IsNullOrWhiteSpace(request.Description))
+                return ServiceResult<int>.Fail("Açıklama zorunludur.", HttpStatusCode.BadRequest);
+
             var now = _dateTimeProvider.Now;
 
             var supportRequest = new SupportRequest
@@ -112,7 +123,7 @@ namespace AutoStock.Services.Services
                 CreatedByUserId = createdByUserId,
                 RequestType = SupportRequestType.Issue,
                 Status = SupportRequestStatus.Open,
-                Priority = SupportRequestPriority.Normal,
+                Priority = request.Priority,
                 Subject = request.Subject.Trim(),
                 Description = request.Description.Trim(),
                 CreatedAt = now
@@ -120,6 +131,15 @@ namespace AutoStock.Services.Services
 
             await _supportRequestRepository.AddAsync(supportRequest);
             await _supportRequestRepository.SaveChangesAsync();
+
+            await _supportRequestMessageRepository.AddAsync(new SupportRequestMessage
+            {
+                SupportRequestId = supportRequest.Id,
+                SenderUserId = createdByUserId,
+                IsAdminMessage = false,
+                Message = supportRequest.Description,
+                CreatedAt = now
+            });
 
             await _auditLogService.AddAsync(new AuditLogCreateDto
             {
@@ -167,7 +187,13 @@ namespace AutoStock.Services.Services
                     HttpStatusCode.Forbidden);
             }
 
+            if (string.IsNullOrWhiteSpace(request.RequestedUserFullName))
+                return ServiceResult<int>.Fail("Talep edilen kullanıcı adı zorunludur.", HttpStatusCode.BadRequest);
+
             var now = _dateTimeProvider.Now;
+            var initialMessage = string.IsNullOrWhiteSpace(request.Note)
+                ? "Servis kullanıcısı ekleme talebi oluşturuldu."
+                : request.Note.Trim();
 
             var supportRequest = new SupportRequest
             {
@@ -175,11 +201,9 @@ namespace AutoStock.Services.Services
                 CreatedByUserId = createdByUserId,
                 RequestType = SupportRequestType.UserCreateRequest,
                 Status = SupportRequestStatus.Open,
-                Priority = SupportRequestPriority.Normal,
+                Priority = request.Priority,
                 Subject = "Kullanıcı ekleme talebi",
-                Description = string.IsNullOrWhiteSpace(request.Note)
-                    ? "Servis kullanıcısı ekleme talebi oluşturuldu."
-                    : request.Note.Trim(),
+                Description = initialMessage,
                 RequestedUserFullName = request.RequestedUserFullName.Trim(),
                 RequestedUserPhone = request.RequestedUserPhone?.Trim(),
                 RequestedUserEmail = request.RequestedUserEmail?.Trim(),
@@ -189,6 +213,15 @@ namespace AutoStock.Services.Services
 
             await _supportRequestRepository.AddAsync(supportRequest);
             await _supportRequestRepository.SaveChangesAsync();
+
+            await _supportRequestMessageRepository.AddAsync(new SupportRequestMessage
+            {
+                SupportRequestId = supportRequest.Id,
+                SenderUserId = createdByUserId,
+                IsAdminMessage = false,
+                Message = initialMessage,
+                CreatedAt = now
+            });
 
             await _auditLogService.AddAsync(new AuditLogCreateDto
             {
@@ -219,6 +252,82 @@ namespace AutoStock.Services.Services
                 RelatedEntityId = supportRequest.Id,
                 ActionUrl = $"/AdminSupportRequests/Detail/{supportRequest.Id}",
                 CreatedByUserId = createdByUserId
+            });
+
+            await _supportRequestRepository.SaveChangesAsync();
+
+            return ServiceResult<int>.Success(supportRequest.Id);
+        }
+
+        public async Task<ServiceResult<int>> AddWorkshopMessageAsync(
+            CreateSupportRequestMessageDto request,
+            int workshopId,
+            int currentUserId,
+            string? currentUserRole)
+        {
+            if (string.IsNullOrWhiteSpace(request.Message))
+                return ServiceResult<int>.Fail("Mesaj boş olamaz.", HttpStatusCode.BadRequest);
+
+            var createdByUserId = currentUserRole == AppRoles.Staff
+                ? currentUserId
+                : (int?)null;
+
+            var supportRequest = await _supportRequestRepository.GetByIdForWorkshopAsync(
+                request.Id,
+                workshopId,
+                createdByUserId);
+
+            if (supportRequest == null)
+                return ServiceResult<int>.Fail("Destek talebi bulunamadı.");
+
+            if (supportRequest.Status == SupportRequestStatus.Cancelled)
+                return ServiceResult<int>.Fail("İptal edilmiş destek talebine mesaj yazılamaz.");
+
+            var oldStatus = supportRequest.Status;
+            var now = _dateTimeProvider.Now;
+
+            await _supportRequestMessageRepository.AddAsync(new SupportRequestMessage
+            {
+                SupportRequestId = supportRequest.Id,
+                SenderUserId = currentUserId,
+                IsAdminMessage = false,
+                Message = request.Message.Trim(),
+                CreatedAt = now
+            });
+
+            // Kullanıcı kapatılmış kayda cevap yazarsa talep otomatik yeniden açılır.
+            if (supportRequest.Status == SupportRequestStatus.Closed)
+            {
+                supportRequest.Status = SupportRequestStatus.Open;
+                supportRequest.ClosedAt = null;
+            }
+
+            supportRequest.UpdatedAt = now;
+            _supportRequestRepository.Update(supportRequest);
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = supportRequest.WorkshopId,
+                ActionType = AuditActionType.Update,
+                EntityType = AuditEntityType.SupportRequest,
+                EntityId = supportRequest.Id,
+                Description = $"Destek talebine kullanıcı mesajı eklendi: {supportRequest.Subject}",
+                OldValues = new { Status = oldStatus },
+                NewValues = new { supportRequest.Status }
+            });
+
+            await _notificationService.CreateForAdminsAsync(new CreateNotificationDto
+            {
+                WorkshopId = supportRequest.WorkshopId,
+                Type = NotificationType.SupportRequestAnswered,
+                Title = oldStatus == SupportRequestStatus.Closed
+                    ? "Destek talebi yeniden açıldı"
+                    : "Destek talebine yeni mesaj geldi",
+                Message = supportRequest.Subject,
+                RelatedEntityType = NotificationRelatedEntityType.SupportRequest,
+                RelatedEntityId = supportRequest.Id,
+                ActionUrl = $"/AdminSupportRequests/Detail/{supportRequest.Id}",
+                CreatedByUserId = currentUserId
             });
 
             await _supportRequestRepository.SaveChangesAsync();
@@ -313,7 +422,9 @@ namespace AutoStock.Services.Services
             if (supportRequest == null)
                 return ServiceResult<SupportRequestDetailDto>.Fail("Destek talebi bulunamadı.");
 
-            return ServiceResult<SupportRequestDetailDto>.Success(MapToDetailDto(supportRequest));
+            var messages = await _supportRequestMessageRepository.GetBySupportRequestIdAsync(supportRequest.Id);
+
+            return ServiceResult<SupportRequestDetailDto>.Success(MapToDetailDto(supportRequest, messages));
         }
 
         public async Task<ServiceResult<int>> AnswerAsync(
@@ -325,11 +436,11 @@ namespace AutoStock.Services.Services
             if (supportRequest == null)
                 return ServiceResult<int>.Fail("Destek talebi bulunamadı.");
 
-            if (supportRequest.Status is SupportRequestStatus.Closed or SupportRequestStatus.Cancelled)
-                return ServiceResult<int>.Fail("Kapalı veya iptal edilmiş talebe cevap yazılamaz.");
+            if (supportRequest.Status == SupportRequestStatus.Cancelled)
+                return ServiceResult<int>.Fail("İptal edilmiş talebe cevap yazılamaz.");
 
-            if (request.Status is SupportRequestStatus.Open or SupportRequestStatus.Cancelled)
-                return ServiceResult<int>.Fail("Cevap sonrası durum Yanıtlandı, İşlemde veya Kapandı olabilir.");
+            if (string.IsNullOrWhiteSpace(request.AdminResponse))
+                return ServiceResult<int>.Fail("Cevap boş olamaz.", HttpStatusCode.BadRequest);
 
             var oldValues = new
             {
@@ -339,14 +450,27 @@ namespace AutoStock.Services.Services
 
             var now = _dateTimeProvider.Now;
 
-            supportRequest.AdminResponse = request.AdminResponse.Trim();
+            supportRequest.AdminResponse = request.AdminResponse.Trim(); // Eski alan geriye uyumluluk için son admin cevabı olarak tutulur.
             supportRequest.RespondedByUserId = respondedByUserId;
             supportRequest.RespondedAt = now;
             supportRequest.UpdatedAt = now;
-            supportRequest.Status = request.Status;
+            supportRequest.Status = request.CloseAfterAnswer
+                ? SupportRequestStatus.Closed
+                : SupportRequestStatus.InProgress;
 
-            if (request.Status == SupportRequestStatus.Closed)
+            if (supportRequest.Status == SupportRequestStatus.Closed)
                 supportRequest.ClosedAt = now;
+            else
+                supportRequest.ClosedAt = null;
+
+            await _supportRequestMessageRepository.AddAsync(new SupportRequestMessage
+            {
+                SupportRequestId = supportRequest.Id,
+                SenderUserId = respondedByUserId,
+                IsAdminMessage = true,
+                Message = request.AdminResponse.Trim(),
+                CreatedAt = now
+            });
 
             _supportRequestRepository.Update(supportRequest);
 
@@ -356,7 +480,9 @@ namespace AutoStock.Services.Services
                 ActionType = AuditActionType.Update,
                 EntityType = AuditEntityType.SupportRequest,
                 EntityId = supportRequest.Id,
-                Description = $"Destek talebi yanıtlandı: {supportRequest.Subject}",
+                Description = request.CloseAfterAnswer
+                    ? $"Destek talebi cevaplandı ve kapatıldı: {supportRequest.Subject}"
+                    : $"Destek talebine admin cevabı eklendi: {supportRequest.Subject}",
                 OldValues = oldValues,
                 NewValues = new
                 {
@@ -374,7 +500,9 @@ namespace AutoStock.Services.Services
                 {
                     WorkshopId = supportRequest.WorkshopId,
                     Type = NotificationType.SupportRequestAnswered,
-                    Title = "Destek talebiniz yanıtlandı",
+                    Title = request.CloseAfterAnswer
+                        ? "Destek talebiniz kapatıldı"
+                        : "Destek talebinize cevap geldi",
                     Message = supportRequest.Subject,
                     RelatedEntityType = NotificationRelatedEntityType.SupportRequest,
                     RelatedEntityId = supportRequest.Id,
@@ -396,6 +524,9 @@ namespace AutoStock.Services.Services
             if (supportRequest == null)
                 return ServiceResult<int>.Fail("Destek talebi bulunamadı.");
 
+            if (request.Status is SupportRequestStatus.Answered)
+                return ServiceResult<int>.Fail("Yanıtlandı durumu artık kullanılmıyor. Açık, İşlemde, Kapandı veya İptal seçiniz.", HttpStatusCode.BadRequest);
+
             var oldStatus = supportRequest.Status;
             var now = _dateTimeProvider.Now;
 
@@ -405,7 +536,7 @@ namespace AutoStock.Services.Services
             if (request.Status is SupportRequestStatus.Closed or SupportRequestStatus.Cancelled)
                 supportRequest.ClosedAt = now;
 
-            if (request.Status is SupportRequestStatus.Open or SupportRequestStatus.InProgress or SupportRequestStatus.Answered)
+            if (request.Status is SupportRequestStatus.Open or SupportRequestStatus.InProgress)
                 supportRequest.ClosedAt = null;
 
             _supportRequestRepository.Update(supportRequest);
@@ -469,8 +600,44 @@ namespace AutoStock.Services.Services
             };
         }
 
-        private static SupportRequestDetailDto MapToDetailDto(SupportRequest supportRequest)
+        private static SupportRequestDetailDto MapToDetailDto(
+            SupportRequest supportRequest,
+            IReadOnlyCollection<SupportRequestMessage>? messages = null)
         {
+            var messageDtos = (messages ?? Array.Empty<SupportRequestMessage>())
+                .OrderBy(x => x.CreatedAt)
+                .Select(MapToMessageDto)
+                .ToList();
+
+            // Eski kayıtlar için geriye uyumluluk: mesaj tablosunda kayıt yoksa Description/AdminResponse'tan göster.
+            if (!messageDtos.Any())
+            {
+                messageDtos.Add(new SupportRequestMessageDto
+                {
+                    Id = 0,
+                    SupportRequestId = supportRequest.Id,
+                    SenderUserId = supportRequest.CreatedByUserId,
+                    SenderUserName = supportRequest.CreatedByUser?.FullName ?? supportRequest.CreatedByUser?.UserName ?? "Kullanıcı",
+                    IsAdminMessage = false,
+                    Message = supportRequest.Description,
+                    CreatedAt = supportRequest.CreatedAt
+                });
+
+                if (!string.IsNullOrWhiteSpace(supportRequest.AdminResponse))
+                {
+                    messageDtos.Add(new SupportRequestMessageDto
+                    {
+                        Id = 0,
+                        SupportRequestId = supportRequest.Id,
+                        SenderUserId = supportRequest.RespondedByUserId ?? 0,
+                        SenderUserName = supportRequest.RespondedByUser?.FullName ?? supportRequest.RespondedByUser?.UserName ?? "Admin",
+                        IsAdminMessage = true,
+                        Message = supportRequest.AdminResponse,
+                        CreatedAt = supportRequest.RespondedAt ?? supportRequest.UpdatedAt ?? supportRequest.CreatedAt
+                    });
+                }
+            }
+
             return new SupportRequestDetailDto
             {
                 Id = supportRequest.Id,
@@ -499,7 +666,22 @@ namespace AutoStock.Services.Services
                 RespondedAt = supportRequest.RespondedAt,
                 CreatedAt = supportRequest.CreatedAt,
                 UpdatedAt = supportRequest.UpdatedAt,
-                ClosedAt = supportRequest.ClosedAt
+                ClosedAt = supportRequest.ClosedAt,
+                Messages = messageDtos
+            };
+        }
+
+        private static SupportRequestMessageDto MapToMessageDto(SupportRequestMessage message)
+        {
+            return new SupportRequestMessageDto
+            {
+                Id = message.Id,
+                SupportRequestId = message.SupportRequestId,
+                SenderUserId = message.SenderUserId,
+                SenderUserName = message.SenderUser?.FullName ?? message.SenderUser?.UserName ?? "-",
+                IsAdminMessage = message.IsAdminMessage,
+                Message = message.Message,
+                CreatedAt = message.CreatedAt
             };
         }
 
@@ -519,8 +701,8 @@ namespace AutoStock.Services.Services
             {
                 SupportRequestStatus.Open => "Açık",
                 SupportRequestStatus.InProgress => "İşlemde",
-                SupportRequestStatus.Answered => "Yanıtlandı",
-                SupportRequestStatus.Closed => "Kapandı",
+                SupportRequestStatus.Answered => "Açık", // Eski kayıtlar için ekranda Açık gibi gösterilir.
+                SupportRequestStatus.Closed => "Kapatıldı",
                 SupportRequestStatus.Cancelled => "İptal Edildi",
                 _ => "Bilinmeyen"
             };

@@ -1,5 +1,3 @@
-﻿using AutoStock.Repositories.Enums;
-
 namespace AutoStock.Services.Dtos.SupportRequests
 {
     public class AdminAnswerSupportRequestDto
@@ -8,6 +6,6 @@ namespace AutoStock.Services.Dtos.SupportRequests
 
         public string AdminResponse { get; set; } = null!;
 
-        public SupportRequestStatus Status { get; set; } = SupportRequestStatus.Answered;
+        public bool CloseAfterAnswer { get; set; }
     }
 }

@@ -53,5 +53,6 @@ namespace AutoStock.WEB.Models.SupportRequests
         public DateTime? UpdatedAt { get; set; }
 
         public DateTime? ClosedAt { get; set; }
+        public List<SupportRequestMessageViewModel> Messages { get; set; } = new();
     }
 }

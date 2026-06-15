@@ -43,6 +43,7 @@ namespace AutoStock.Repositories
         public DbSet<OfficialInvoiceDocument> OfficialInvoiceDocuments { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<UserNotification> UserNotifications { get; set; }
+        public DbSet<SupportRequestMessage> SupportRequestMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

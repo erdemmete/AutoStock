@@ -11,39 +11,35 @@
     var canCancel =
         currentUserId.HasValue &&
         currentUserId.Value == Model.CreatedByUserId &&
-        Model.Status != SupportRequestStatus.Closed &&
-        Model.Status != SupportRequestStatus.Cancelled;
+        Model.Status is SupportRequestStatus.Open or SupportRequestStatus.InProgress;
 
-    string StatusClass(string? statusText)
+    var canReply = Model.Status != SupportRequestStatus.Cancelled;
+    var messages = Model.Messages ?? new List<AutoStock.WEB.Models.SupportRequests.SupportRequestMessageViewModel>();
+
+    string StatusClass(SupportRequestStatus status)
     {
-        if (string.IsNullOrWhiteSpace(statusText)) return "neutral";
-        if (statusText.Contains("Açık", StringComparison.OrdinalIgnoreCase)) return "warning";
-        if (statusText.Contains("İşlem", StringComparison.OrdinalIgnoreCase)) return "info";
-        if (statusText.Contains("Yanıt", StringComparison.OrdinalIgnoreCase) || statusText.Contains("Cevap", StringComparison.OrdinalIgnoreCase)) return "success";
-        if (statusText.Contains("Kapan", StringComparison.OrdinalIgnoreCase)) return "neutral";
-        if (statusText.Contains("İptal", StringComparison.OrdinalIgnoreCase)) return "danger";
-        return "neutral";
+        return status switch
+        {
+            SupportRequestStatus.Open => "open",
+            SupportRequestStatus.InProgress => "progress",
+            SupportRequestStatus.Closed => "closed",
+            SupportRequestStatus.Cancelled => "cancelled",
+            _ => "open"
+        };
     }
 }
 
 <div class="s360-ticket-page">
     <section class="s360-ticket-hero">
-        <div class="s360-ticket-hero-text">
+        <div>
             <span class="s360-ticket-kicker">Destek Talebi</span>
             <h1>@Model.Subject</h1>
             <p>@Model.RequestTypeText</p>
         </div>
 
         <div class="s360-ticket-hero-actions">
-            <a asp-controller="SupportRequests"
-               asp-action="Index"
-               class="s360-ticket-btn secondary">
-                ← Liste
-            </a>
-
-            <a href="@homeUrl" class="s360-ticket-btn secondary">
-                Ana Sayfa
-            </a>
+            <a asp-controller="SupportRequests" asp-action="Index" class="s360-ticket-btn secondary">← Liste</a>
+            <a href="@homeUrl" class="s360-ticket-btn secondary">Ana Sayfa</a>
         </div>
     </section>
 
@@ -55,9 +51,7 @@
                     <h2>@Model.Subject</h2>
                 </div>
 
-                <span class="s360-ticket-status @StatusClass(Model.StatusText)">
-                    @Model.StatusText
-                </span>
+                <span class="s360-ticket-status @StatusClass(Model.Status)">@Model.StatusText</span>
             </div>
 
             <div class="s360-ticket-meta-grid">
@@ -77,79 +71,83 @@
                 </div>
             </div>
 
-            <section class="s360-ticket-section">
-                <span class="s360-ticket-label">Açıklama</span>
-                <article class="s360-ticket-message plain">@((Model.Description ?? string.Empty).Trim())</article>
-            </section>
-
             @if (Model.RequestType == SupportRequestType.UserCreateRequest)
             {
                 <section class="s360-ticket-section">
                     <span class="s360-ticket-label">Talep Edilen Kullanıcı</span>
 
                     <div class="s360-ticket-meta-grid two">
-                        <div class="s360-ticket-meta">
-                            <span>Ad Soyad</span>
-                            <strong>@Model.RequestedUserFullName</strong>
-                        </div>
-
-                        <div class="s360-ticket-meta">
-                            <span>Telefon</span>
-                            <strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserPhone) ? "-" : Model.RequestedUserPhone)</strong>
-                        </div>
-
-                        <div class="s360-ticket-meta">
-                            <span>E-posta</span>
-                            <strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserEmail) ? "-" : Model.RequestedUserEmail)</strong>
-                        </div>
-
-                        <div class="s360-ticket-meta">
-                            <span>Rol</span>
-                            <strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserRoleText) ? "-" : Model.RequestedUserRoleText)</strong>
-                        </div>
+                        <div class="s360-ticket-meta"><span>Ad Soyad</span><strong>@Model.RequestedUserFullName</strong></div>
+                        <div class="s360-ticket-meta"><span>Telefon</span><strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserPhone) ? "-" : Model.RequestedUserPhone)</strong></div>
+                        <div class="s360-ticket-meta"><span>E-posta</span><strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserEmail) ? "-" : Model.RequestedUserEmail)</strong></div>
+                        <div class="s360-ticket-meta"><span>Rol</span><strong>@(string.IsNullOrWhiteSpace(Model.RequestedUserRoleText) ? "-" : Model.RequestedUserRoleText)</strong></div>
                     </div>
                 </section>
             }
 
             <section class="s360-ticket-section">
-                <span class="s360-ticket-label">Cevap</span>
+                <span class="s360-ticket-label">Konuşma</span>
 
-                @if (!string.IsNullOrWhiteSpace(Model.AdminResponse))
-                {
-                    <article class="s360-ticket-answer">
-                        <div class="s360-ticket-answer-icon">✓</div>
-
-                        <div class="s360-ticket-answer-body">
-                            <div class="s360-ticket-message answer-text">@((Model.AdminResponse ?? string.Empty).Trim())</div>
-
-                            <div class="s360-ticket-answer-meta">
-                                @if (!string.IsNullOrWhiteSpace(Model.RespondedByUserName))
-                                {
-                                    <span>@Model.RespondedByUserName</span>
-                                }
-
-                                @if (Model.RespondedAt.HasValue)
-                                {
-                                    <span>@Model.RespondedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
-                                }
+                <div class="s360-ticket-conversation">
+                    @if (!messages.Any())
+                    {
+                        <div class="s360-ticket-message-row user">
+                            <div class="s360-ticket-message-card">
+                                <div class="s360-ticket-message-author">@Model.CreatedByUserName</div>
+                                <div class="s360-ticket-message-text">@((Model.Description ?? string.Empty).Trim())</div>
+                                <div class="s360-ticket-message-time">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</div>
                             </div>
                         </div>
-                    </article>
-                }
-                else
-                {
-                    <div class="s360-ticket-empty-answer">
-                        Talebiniz yanıtlandığında cevap burada görünecek.
-                    </div>
-                }
+                    }
+                    else
+                    {
+                        foreach (var message in messages)
+                        {
+                            <div class="s360-ticket-message-row @(message.IsAdminMessage ? "admin" : "user")">
+                                <div class="s360-ticket-message-card">
+                                    <div class="s360-ticket-message-author">
+                                        @(message.IsAdminMessage ? "Sente360 Destek" : message.SenderUserName)
+                                    </div>
+
+                                    <div class="s360-ticket-message-text">@((message.Message ?? string.Empty).Trim())</div>
+
+                                    <div class="s360-ticket-message-time">@message.CreatedAt.ToString("dd.MM.yyyy HH:mm")</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
             </section>
 
+            @if (canReply)
+            {
+                <section class="s360-ticket-section">
+                    <span class="s360-ticket-label">Mesaj Yaz</span>
+
+                    @if (Model.Status == SupportRequestStatus.Closed)
+                    {
+                        <div class="s360-ticket-info">
+                            Bu talep kapatılmış. Mesaj yazarsanız talep otomatik olarak tekrar açık duruma alınır.
+                        </div>
+                    }
+
+                    <form asp-controller="SupportRequests" asp-action="AddMessage" method="post" class="s360-ticket-reply-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="Id" value="@Model.Id" />
+
+                        <textarea name="Message" rows="4" placeholder="Mesajınızı yazın..." required></textarea>
+
+                        <button type="submit" class="s360-ticket-btn primary">Mesajı Gönder</button>
+                    </form>
+                </section>
+            }
+            else
+            {
+                <div class="s360-ticket-info danger">Bu talep iptal edildiği için yeni mesaj yazılamaz.</div>
+            }
+
             <div class="s360-ticket-footer">
-                <a asp-controller="SupportRequests"
-                   asp-action="Index"
-                   class="s360-ticket-btn secondary">
-                    Listeye Dön
-                </a>
+                <a asp-controller="SupportRequests" asp-action="Index" class="s360-ticket-btn secondary">Listeye Dön</a>
 
                 @if (canCancel)
                 {
@@ -159,10 +157,7 @@
                           method="post"
                           onsubmit="return confirm('Bu destek talebini iptal etmek istediğinize emin misiniz?');">
                         @Html.AntiForgeryToken()
-
-                        <button type="submit" class="s360-ticket-btn danger">
-                            Talebi İptal Et
-                        </button>
+                        <button type="submit" class="s360-ticket-btn danger">Talebi İptal Et</button>
                     </form>
                 }
             </div>
@@ -175,20 +170,14 @@
                 <div class="s360-ticket-timeline">
                     <div class="s360-ticket-timeline-row done">
                         <i></i>
-                        <div>
-                            <strong>Talep oluşturuldu</strong>
-                            <span>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
-                        </div>
+                        <div><strong>Talep oluşturuldu</strong><span>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span></div>
                     </div>
 
-                    @if (Model.RespondedAt.HasValue)
+                    @if (Model.UpdatedAt.HasValue)
                     {
                         <div class="s360-ticket-timeline-row done">
                             <i></i>
-                            <div>
-                                <strong>Yanıt verildi</strong>
-                                <span>@Model.RespondedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
-                            </div>
+                            <div><strong>Son güncelleme</strong><span>@Model.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</span></div>
                         </div>
                     }
 
@@ -196,10 +185,7 @@
                     {
                         <div class="s360-ticket-timeline-row done">
                             <i></i>
-                            <div>
-                                <strong>Talep kapandı</strong>
-                                <span>@Model.ClosedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
-                            </div>
+                            <div><strong>Talep kapatıldı</strong><span>@Model.ClosedAt.Value.ToString("dd.MM.yyyy HH:mm")</span></div>
                         </div>
                     }
                 </div>
@@ -214,436 +200,72 @@
 </div>
 
 <style>
-    .s360-ticket-page,
-    .s360-ticket-page * {
-        box-sizing: border-box;
-    }
-
-    .s360-ticket-page {
-        width: min(1180px, calc(100% - 56px));
-        margin: 0 auto;
-        padding: 32px 0 64px;
-        color: #0f172a;
-        text-align: left;
-    }
-
-    .s360-ticket-hero {
-        margin-bottom: 18px;
-        padding: 24px;
-        border-radius: 30px;
-        background: linear-gradient(135deg, #0f172a 0%, #111827 52%, #4f46e5 100%);
-        color: #fff;
-        box-shadow: 0 26px 70px rgba(15, 23, 42, .18);
-        display: flex;
-        justify-content: space-between;
-        gap: 18px;
-        align-items: flex-start;
-    }
-
-    .s360-ticket-kicker {
-        display: inline-flex;
-        margin-bottom: 10px;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, .12);
-        color: rgba(255, 255, 255, .82);
-        font-size: 12px;
-        font-weight: 950;
-        letter-spacing: .4px;
-    }
-
-    .s360-ticket-hero h1 {
-        margin: 0;
-        font-size: clamp(28px, 4vw, 44px);
-        line-height: 1.05;
-        letter-spacing: -1.4px;
-        font-weight: 950;
-        overflow-wrap: anywhere;
-    }
-
-    .s360-ticket-hero p {
-        margin: 8px 0 0;
-        color: rgba(255, 255, 255, .72);
-        font-weight: 850;
-    }
-
-    .s360-ticket-hero-actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-    }
-
-    .s360-ticket-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 320px;
-        gap: 18px;
-        align-items: start;
-    }
-
-    .s360-ticket-card,
-    .s360-ticket-side-card,
-    .s360-ticket-status-card {
-        background: #fff;
-        border: 1px solid #dbe3ef;
-        border-radius: 26px;
-        box-shadow: 0 14px 36px rgba(15, 23, 42, .06);
-    }
-
-    .s360-ticket-card {
-        padding: 24px;
-    }
-
-    .s360-ticket-head {
-        padding-bottom: 18px;
-        border-bottom: 1px solid #edf2f7;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 16px;
-    }
-
-    .s360-ticket-label {
-        display: block;
-        margin-bottom: 8px;
-        color: #64748b;
-        font-size: 12px;
-        font-weight: 950;
-        letter-spacing: .45px;
-        text-transform: uppercase;
-        text-align: left;
-    }
-
-    .s360-ticket-head h2 {
-        margin: 0;
-        color: #0f172a;
-        font-size: 26px;
-        line-height: 1.14;
-        letter-spacing: -.6px;
-        font-weight: 950;
-        overflow-wrap: anywhere;
-    }
-
-    .s360-ticket-status {
-        min-height: 34px;
-        padding: 0 13px;
-        border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        white-space: nowrap;
-        font-size: 12px;
-        font-weight: 950;
-    }
-
-        .s360-ticket-status.warning {
-            background: #fff7ed;
-            color: #c2410c;
-        }
-
-        .s360-ticket-status.info {
-            background: #eef2ff;
-            color: #4f46e5;
-        }
-
-        .s360-ticket-status.success {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        .s360-ticket-status.danger {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-        .s360-ticket-status.neutral {
-            background: #f1f5f9;
-            color: #475569;
-        }
-
-    .s360-ticket-meta-grid {
-        margin-top: 18px;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-    }
-
-        .s360-ticket-meta-grid.two {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-    .s360-ticket-meta {
-        min-width: 0;
-        padding: 14px 15px;
-        border-radius: 18px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        text-align: left;
-    }
-
-        .s360-ticket-meta span {
-            display: block;
-            margin-bottom: 6px;
-            color: #8aa0bd;
-            font-size: 12px;
-            font-weight: 950;
-        }
-
-        .s360-ticket-meta strong {
-            display: block;
-            color: #0f172a;
-            font-size: 14px;
-            font-weight: 950;
-            overflow-wrap: anywhere;
-        }
-
-    .s360-ticket-section {
-        margin-top: 22px;
-    }
-
-    .s360-ticket-message {
-        display: block;
-        width: 100%;
-        min-height: 0;
-        height: auto;
-        margin: 0;
-        padding: 18px 20px;
-        border-radius: 20px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #334155;
-        font-size: 15px;
-        line-height: 1.65;
-        font-weight: 750;
-        white-space: pre-line;
-        text-align: left;
-        overflow-wrap: anywhere;
-    }
-
-    .s360-ticket-answer {
-        display: flex;
-        align-items: flex-start;
-        gap: 14px;
-        padding: 18px;
-        border-radius: 22px;
-        background: #f0fdf4;
-        border: 1px solid #bbf7d0;
-        text-align: left;
-    }
-
-    .s360-ticket-answer-icon {
-        width: 38px;
-        height: 38px;
-        flex: 0 0 38px;
-        border-radius: 14px;
-        background: #ffffff;
-        color: #16a34a;
-        display: grid;
-        place-items: center;
-        font-weight: 950;
-    }
-
-    .s360-ticket-answer-body {
-        min-width: 0;
-        flex: 1;
-    }
-
-    .s360-ticket-answer .s360-ticket-message {
-        padding: 0;
-        border: none;
-        background: transparent;
-        color: #14532d;
-    }
-
-    .s360-ticket-answer-meta {
-        margin-top: 10px;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        color: #64748b;
-        font-size: 12px;
-        font-weight: 850;
-        justify-content: flex-start;
-    }
-
-    .s360-ticket-empty-answer {
-        padding: 16px 18px;
-        border-radius: 18px;
-        background: #fffbeb;
-        border: 1px solid #fde68a;
-        color: #92400e;
-        font-weight: 850;
-        text-align: left;
-    }
-
-    .s360-ticket-footer {
-        margin-top: 24px;
-        padding-top: 18px;
-        border-top: 1px solid #edf2f7;
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .s360-ticket-btn {
-        min-height: 46px;
-        padding: 0 18px;
-        border-radius: 16px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        border: 1px solid transparent;
-        font-weight: 950;
-        cursor: pointer;
-        white-space: nowrap;
-    }
-
-        .s360-ticket-btn.secondary {
-            background: #f8fafc;
-            color: #334155;
-            border-color: #d4deeb;
-        }
-
-        .s360-ticket-btn.danger {
-            background: #fff1f2;
-            color: #b91c1c;
-            border-color: #fecaca;
-        }
-
-    .s360-ticket-side {
-        display: grid;
-        gap: 14px;
-    }
-
-    .s360-ticket-side-card {
-        padding: 20px;
-    }
-
-        .s360-ticket-side-card h3 {
-            margin: 0 0 18px;
-            color: #0f172a;
-            font-size: 21px;
-            font-weight: 950;
-            letter-spacing: -.4px;
-        }
-
-    .s360-ticket-timeline {
-        display: grid;
-        gap: 15px;
-    }
-
-    .s360-ticket-timeline-row {
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-    }
-
-        .s360-ticket-timeline-row i {
-            width: 13px;
-            height: 13px;
-            flex: 0 0 13px;
-            margin-top: 4px;
-            border-radius: 999px;
-            background: #4f46e5;
-            box-shadow: 0 0 0 5px rgba(79,70,229,.12);
-        }
-
-        .s360-ticket-timeline-row strong {
-            display: block;
-            color: #0f172a;
-            font-size: 14px;
-            font-weight: 950;
-        }
-
-        .s360-ticket-timeline-row span {
-            display: block;
-            margin-top: 4px;
-            color: #64748b;
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-    .s360-ticket-status-card {
-        padding: 18px;
-        background: #111827;
-        color: #fff;
-    }
-
-        .s360-ticket-status-card span {
-            display: block;
-            margin-bottom: 6px;
-            color: rgba(255,255,255,.72);
-            font-size: 12px;
-            font-weight: 950;
-        }
-
-        .s360-ticket-status-card strong {
-            display: block;
-            font-size: 21px;
-            font-weight: 950;
-        }
-
-    @@media (max-width: 1000px) {
-        .s360-ticket-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
+    .s360-ticket-page, .s360-ticket-page * { box-sizing: border-box; }
+    .s360-ticket-page { width: min(1180px, calc(100% - 56px)); margin: 0 auto; padding: 32px 0 64px; color: #0f172a; text-align: left; }
+    .s360-ticket-hero { margin-bottom: 18px; padding: 24px; border-radius: 30px; background: linear-gradient(135deg, #0f172a 0%, #111827 52%, #4f46e5 100%); color: #fff; box-shadow: 0 26px 70px rgba(15, 23, 42, .18); display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
+    .s360-ticket-kicker { display: inline-flex; margin-bottom: 10px; padding: 6px 12px; border-radius: 999px; background: rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .82); font-size: 12px; font-weight: 950; letter-spacing: .4px; }
+    .s360-ticket-hero h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); line-height: 1.05; letter-spacing: -1.4px; font-weight: 950; overflow-wrap: anywhere; }
+    .s360-ticket-hero p { margin: 8px 0 0; color: rgba(255, 255, 255, .72); font-weight: 850; }
+    .s360-ticket-hero-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .s360-ticket-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+    .s360-ticket-card, .s360-ticket-side-card, .s360-ticket-status-card { background: #fff; border: 1px solid #dbe3ef; border-radius: 26px; box-shadow: 0 14px 36px rgba(15, 23, 42, .06); }
+    .s360-ticket-card { padding: 24px; }
+    .s360-ticket-head { padding-bottom: 18px; border-bottom: 1px solid #edf2f7; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    .s360-ticket-label { display: block; margin-bottom: 8px; color: #64748b; font-size: 12px; font-weight: 950; letter-spacing: .45px; text-transform: uppercase; text-align: left; }
+    .s360-ticket-head h2 { margin: 0; color: #0f172a; font-size: 26px; line-height: 1.14; letter-spacing: -.6px; font-weight: 950; overflow-wrap: anywhere; }
+    .s360-ticket-status { min-height: 34px; padding: 0 13px; border-radius: 999px; display: inline-flex; align-items: center; white-space: nowrap; font-size: 12px; font-weight: 950; }
+    .s360-ticket-status.open { background: #fef3c7; color: #b45309; }
+    .s360-ticket-status.progress { background: #eef2ff; color: #4f46e5; }
+    .s360-ticket-status.closed { background: #dcfce7; color: #15803d; }
+    .s360-ticket-status.cancelled { background: #fee2e2; color: #b91c1c; }
+    .s360-ticket-meta-grid { margin-top: 18px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .s360-ticket-meta-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .s360-ticket-meta { min-width: 0; padding: 14px 15px; border-radius: 18px; background: #f8fafc; border: 1px solid #e2e8f0; text-align: left; }
+    .s360-ticket-meta span { display: block; margin-bottom: 6px; color: #8aa0bd; font-size: 12px; font-weight: 950; }
+    .s360-ticket-meta strong { display: block; color: #0f172a; font-size: 14px; font-weight: 950; overflow-wrap: anywhere; }
+    .s360-ticket-section { margin-top: 22px; }
+    .s360-ticket-conversation { display: grid; gap: 12px; }
+    .s360-ticket-message-row { display: flex; }
+    .s360-ticket-message-row.admin { justify-content: flex-start; }
+    .s360-ticket-message-row.user { justify-content: flex-end; }
+    .s360-ticket-message-card { max-width: min(760px, 100%); padding: 16px 18px; border-radius: 20px; border: 1px solid #dbe3ef; background: #f8fafc; text-align: left; }
+    .s360-ticket-message-row.user .s360-ticket-message-card { background: #eef2ff; border-color: #c7d2fe; }
+    .s360-ticket-message-row.admin .s360-ticket-message-card { background: #f0fdf4; border-color: #bbf7d0; }
+    .s360-ticket-message-author { color: #0f172a; font-size: 13px; font-weight: 950; margin-bottom: 7px; }
+    .s360-ticket-message-text { color: #334155; font-size: 15px; font-weight: 750; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; }
+    .s360-ticket-message-time { margin-top: 9px; color: #64748b; font-size: 12px; font-weight: 850; }
+    .s360-ticket-info { margin-bottom: 10px; padding: 12px 14px; border-radius: 16px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-weight: 850; }
+    .s360-ticket-info.danger { background: #fff1f2; border-color: #fecaca; color: #b91c1c; }
+    .s360-ticket-reply-form { display: grid; gap: 10px; }
+    .s360-ticket-reply-form textarea { width: 100%; min-height: 110px; padding: 14px; border-radius: 18px; border: 1px solid #d4deeb; background: #f8fafc; color: #0f172a; font-weight: 750; outline: none; resize: vertical; }
+    .s360-ticket-reply-form textarea:focus { background: #fff; border-color: #4f46e5; box-shadow: 0 0 0 4px rgba(79,70,229,.10); }
+    .s360-ticket-footer { margin-top: 24px; padding-top: 18px; border-top: 1px solid #edf2f7; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .s360-ticket-btn { min-height: 46px; padding: 0 18px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; border: 1px solid transparent; font-weight: 950; cursor: pointer; white-space: nowrap; }
+    .s360-ticket-btn.primary { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+    .s360-ticket-btn.secondary { background: #f8fafc; color: #334155; border-color: #d4deeb; }
+    .s360-ticket-btn.danger { background: #fff1f2; color: #b91c1c; border-color: #fecaca; }
+    .s360-ticket-side { display: grid; gap: 14px; }
+    .s360-ticket-side-card { padding: 20px; }
+    .s360-ticket-side-card h3 { margin: 0 0 18px; color: #0f172a; font-size: 21px; font-weight: 950; letter-spacing: -.4px; }
+    .s360-ticket-timeline { display: grid; gap: 15px; }
+    .s360-ticket-timeline-row { display: flex; gap: 12px; align-items: flex-start; }
+    .s360-ticket-timeline-row i { width: 13px; height: 13px; flex: 0 0 13px; margin-top: 4px; border-radius: 999px; background: #4f46e5; box-shadow: 0 0 0 5px rgba(79,70,229,.12); }
+    .s360-ticket-timeline-row strong { display: block; color: #0f172a; font-size: 14px; font-weight: 950; }
+    .s360-ticket-timeline-row span { display: block; margin-top: 4px; color: #64748b; font-size: 12px; font-weight: 800; }
+    .s360-ticket-status-card { padding: 18px; background: #111827; color: #fff; }
+    .s360-ticket-status-card span { display: block; margin-bottom: 6px; color: rgba(255,255,255,.72); font-size: 12px; font-weight: 950; }
+    .s360-ticket-status-card strong { display: block; font-size: 21px; font-weight: 950; }
+    @@media (max-width: 1000px) { .s360-ticket-grid { grid-template-columns: 1fr; } }
     @@media (max-width: 720px) {
-        .s360-ticket-page {
-            width: min(100% - 20px, 1180px);
-            padding: 16px 0 44px;
-        }
-
-        .s360-ticket-hero {
-            padding: 18px;
-            border-radius: 24px;
-            flex-direction: column;
-        }
-
-        .s360-ticket-hero-actions {
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .s360-ticket-btn {
-            width: 100%;
-        }
-
-        .s360-ticket-card,
-        .s360-ticket-side-card,
-        .s360-ticket-status-card {
-            border-radius: 22px;
-        }
-
-        .s360-ticket-card {
-            padding: 18px;
-        }
-
-        .s360-ticket-head {
-            flex-direction: column;
-        }
-
-        .s360-ticket-meta-grid,
-        .s360-ticket-meta-grid.two {
-            grid-template-columns: 1fr;
-        }
-
-        .s360-ticket-message {
-            padding: 16px;
-            border-radius: 18px;
-        }
-
-        .s360-ticket-answer {
-            padding: 16px;
-            border-radius: 18px;
-        }
-
-        .s360-ticket-footer {
-            display: grid;
-            grid-template-columns: 1fr;
-        }
+        .s360-ticket-page { width: min(100% - 20px, 1180px); padding: 16px 0 44px; }
+        .s360-ticket-hero { padding: 18px; border-radius: 24px; flex-direction: column; }
+        .s360-ticket-hero-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+        .s360-ticket-btn { width: 100%; }
+        .s360-ticket-card, .s360-ticket-side-card, .s360-ticket-status-card { border-radius: 22px; }
+        .s360-ticket-card { padding: 18px; }
+        .s360-ticket-head { flex-direction: column; }
+        .s360-ticket-meta-grid, .s360-ticket-meta-grid.two { grid-template-columns: 1fr; }
+        .s360-ticket-message-card { max-width: 100%; }
+        .s360-ticket-footer { display: grid; grid-template-columns: 1fr; }
     }
 </style>

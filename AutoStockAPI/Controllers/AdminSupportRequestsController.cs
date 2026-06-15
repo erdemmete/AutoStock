@@ -1,4 +1,3 @@
-﻿using AutoStock.API.Controllers;
 using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.SupportRequests;
@@ -25,7 +24,6 @@ namespace AutoStock.API.Controllers
         public async Task<IActionResult> GetList([FromQuery] AdminSupportRequestListQueryDto query)
         {
             var result = await _supportRequestService.GetPagedForAdminAsync(query);
-
             return ToActionResult(result);
         }
 
@@ -33,7 +31,6 @@ namespace AutoStock.API.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _supportRequestService.GetByIdForAdminAsync(id);
-
             return ToActionResult(result);
         }
 
@@ -42,17 +39,13 @@ namespace AutoStock.API.Controllers
         {
             if (id != request.Id)
             {
-                var badRequestResult = ServiceResult<int>.Fail(
+                return ToActionResult(ServiceResult<int>.Fail(
                     "Destek talebi bilgisi hatalı.",
-                    HttpStatusCode.BadRequest);
-
-                return ToActionResult(badRequestResult);
+                    HttpStatusCode.BadRequest));
             }
 
             var userIdResult = GetCurrentUserId();
-
-            if (userIdResult.IsFailure)
-                return UnauthorizedResult(userIdResult);
+            if (userIdResult.IsFailure) return UnauthorizedResult(userIdResult);
 
             var result = await _supportRequestService.AnswerAsync(
                 request,
@@ -66,17 +59,13 @@ namespace AutoStock.API.Controllers
         {
             if (id != request.Id)
             {
-                var badRequestResult = ServiceResult<int>.Fail(
+                return ToActionResult(ServiceResult<int>.Fail(
                     "Destek talebi bilgisi hatalı.",
-                    HttpStatusCode.BadRequest);
-
-                return ToActionResult(badRequestResult);
+                    HttpStatusCode.BadRequest));
             }
 
             var userIdResult = GetCurrentUserId();
-
-            if (userIdResult.IsFailure)
-                return UnauthorizedResult(userIdResult);
+            if (userIdResult.IsFailure) return UnauthorizedResult(userIdResult);
 
             var result = await _supportRequestService.UpdateStatusAsync(
                 request,

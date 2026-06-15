@@ -1,4 +1,4 @@
-﻿using AutoStock.Services.Dtos.Common;
+using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.SupportRequests;
 
 namespace AutoStock.Services.Interfaces
@@ -6,16 +6,17 @@ namespace AutoStock.Services.Interfaces
     public interface ISupportRequestService
     {
         Task<ServiceResult<PagedResult<SupportRequestListItemDto>>> GetPagedForWorkshopAsync(
-    SupportRequestListQueryDto query,
-    int workshopId,
-    int currentUserId,
-    string? currentUserRole);
+            SupportRequestListQueryDto query,
+            int workshopId,
+            int currentUserId,
+            string? currentUserRole);
 
         Task<ServiceResult<SupportRequestDetailDto>> GetByIdForWorkshopAsync(
             int id,
             int workshopId,
             int currentUserId,
             string? currentUserRole);
+
         Task<ServiceResult<int>> CreateIssueAsync(
             CreateIssueSupportRequestDto request,
             int workshopId,
@@ -25,6 +26,12 @@ namespace AutoStock.Services.Interfaces
             CreateUserSupportRequestDto request,
             int workshopId,
             int createdByUserId,
+            string? currentUserRole);
+
+        Task<ServiceResult<int>> AddWorkshopMessageAsync(
+            CreateSupportRequestMessageDto request,
+            int workshopId,
+            int currentUserId,
             string? currentUserRole);
 
         Task<ServiceResult<int>> CancelForWorkshopAsync(

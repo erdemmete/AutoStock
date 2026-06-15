@@ -9,5 +9,6 @@ namespace AutoStock.WEB.Models.SupportRequests
         public string AdminResponse { get; set; } = null!;
 
         public SupportRequestStatus Status { get; set; } = SupportRequestStatus.Answered;
+        public bool CloseAfterAnswer { get; set; }
     }
 }

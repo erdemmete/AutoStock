@@ -45,5 +45,6 @@ namespace AutoStock.Repositories.Entities
         public DateTime? UpdatedAt { get; set; }
 
         public DateTime? ClosedAt { get; set; }
+        public ICollection<SupportRequestMessage> Messages { get; set; } = new List<SupportRequestMessage>();
     }
 }
