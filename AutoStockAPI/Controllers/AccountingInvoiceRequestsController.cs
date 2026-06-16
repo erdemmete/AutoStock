@@ -56,9 +56,15 @@ namespace AutoStock.API.Controllers
             if (workshopIdResult.IsFailure)
                 return UnauthorizedResult(workshopIdResult);
 
+            var userIdResult = GetCurrentUserId();
+
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
             var result = await _accountingInvoiceRequestService.SendAccountingRequestAsync(
                 request,
-                workshopIdResult.Data);
+                workshopIdResult.Data,
+                userIdResult.Data);
 
             return ToActionResult(result);
         }

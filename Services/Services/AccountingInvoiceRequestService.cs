@@ -4,6 +4,7 @@ using AutoStock.Repositories.Enums;
 using AutoStock.Services.Dtos.Accounting;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Emails;
+using AutoStock.Services.Dtos.Notifications;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -25,6 +26,7 @@ namespace AutoStock.Services.Services
         private readonly AppDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IEmailSender _emailSender;
+        private readonly INotificationService _notificationService;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AccountingInvoiceRequestService> _logger;
 
@@ -32,12 +34,14 @@ namespace AutoStock.Services.Services
             AppDbContext context,
             IDateTimeProvider dateTimeProvider,
             IEmailSender emailSender,
+            INotificationService notificationService,
             IConfiguration configuration,
             ILogger<AccountingInvoiceRequestService> logger)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
             _emailSender = emailSender;
+            _notificationService = notificationService;
             _configuration = configuration;
             _logger = logger;
         }
@@ -138,10 +142,14 @@ namespace AutoStock.Services.Services
 
         public async Task<ServiceResult<SendAccountingInvoiceRequestResponseDto>> SendAccountingRequestAsync(
             SendAccountingInvoiceRequestDto request,
-            int workshopId)
+            int workshopId,
+            int requestedByUserId)
         {
             if (request is null)
                 return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("Gönderim bilgisi alınamadı.");
+
+            if (requestedByUserId <= 0)
+                return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("Kullanıcı bilgisi bulunamadı.");
 
             if (request.InvoiceId <= 0)
                 return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("Geçerli bir hesap özeti seçiniz.");
@@ -232,12 +240,28 @@ namespace AutoStock.Services.Services
 
                 emailWorkItems.Add(new AccountingInvoiceEmailWorkItem(
                     email,
+                    invoice.InvoiceNumber,
                     subject,
                     htmlBody,
                     accountingRequest));
             }
 
             await _context.SaveChangesAsync();
+
+            try
+            {
+                CreateAccountingRequestAuditLogs(emailWorkItems, requestedByUserId, workshopId, now);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Accounting invoice request audit log could not be created. InvoiceId: {InvoiceId}, WorkshopId: {WorkshopId}, RequestedByUserId: {RequestedByUserId}",
+                    invoice.Id,
+                    workshopId,
+                    requestedByUserId);
+            }
 
             var failedEmails = new List<string>();
 
@@ -402,6 +426,9 @@ namespace AutoStock.Services.Services
                 return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Bu talep iptal edilmiş.");
 
             var now = _dateTimeProvider.Now;
+            var hadOfficialInvoiceDocument = await _context.Set<OfficialInvoiceDocument>()
+                .AsNoTracking()
+                .AnyAsync(x => x.AccountingInvoiceRequestId == accountingRequest.Id);
             var safeOriginalFileName = SanitizeFileName(request.FileName);
             var storedFileName = $"official-invoice-{accountingRequest.InvoiceId}-{Guid.NewGuid():N}.pdf";
             var relativePath = Path.Combine(
@@ -460,7 +487,10 @@ namespace AutoStock.Services.Services
                     "Fatura dosyası yüklendi ancak kayıt bilgileri kaydedilemedi. Lütfen tekrar deneyin.");
             }
 
-            await NotifyWorkshopOfficialInvoiceUploadedAsync(accountingRequest, document);
+            await NotifyWorkshopOfficialInvoiceUploadedAsync(
+                accountingRequest,
+                document,
+                hadOfficialInvoiceDocument);
 
             return ServiceResult<OfficialInvoiceDocumentDto>.Success(ToDocumentDto(document));
         }
@@ -623,15 +653,17 @@ namespace AutoStock.Services.Services
 
         private async Task NotifyWorkshopOfficialInvoiceUploadedAsync(
             AccountingInvoiceRequest accountingRequest,
-            OfficialInvoiceDocument document)
+            OfficialInvoiceDocument document,
+            bool isReplacement)
         {
-            var workshop = await GetWorkshopInfoAsync(accountingRequest.WorkshopId);
+            try
+            {
+                var workshop = await GetWorkshopInfoAsync(accountingRequest.WorkshopId);
 
-            if (string.IsNullOrWhiteSpace(workshop.NotificationEmail))
-                return;
-
-            var subject = $"Sente360 - Fatura yüklendi - {accountingRequest.Invoice.InvoiceNumber}";
-            var htmlBody = $@"
+                if (!string.IsNullOrWhiteSpace(workshop.NotificationEmail))
+                {
+                    var subject = $"Sente360 - Fatura yüklendi - {accountingRequest.Invoice.InvoiceNumber}";
+                    var htmlBody = $@"
 <div style='font-family:Arial,sans-serif;font-size:14px;color:#0f172a;line-height:1.55'>
   <h2 style='margin:0 0 12px'>Fatura hazır</h2>
   <p>{HtmlEncode(accountingRequest.AccountantEmail)} tarafından <strong>{HtmlEncode(accountingRequest.Invoice.InvoiceNumber)}</strong> hesap özeti için fatura PDF'i yüklendi.</p>
@@ -640,12 +672,125 @@ namespace AutoStock.Services.Services
   <p>Sente360 panelinden ilgili hesap özetine girerek PDF'i indirebilir ve müşteriye iletebilirsiniz.</p>
 </div>";
 
-            await _emailSender.SendAsync(new EmailMessageDto
+                    var emailResult = await _emailSender.SendAsync(new EmailMessageDto
+                    {
+                        ToEmail = workshop.NotificationEmail,
+                        Subject = subject,
+                        HtmlBody = htmlBody
+                    });
+
+                    if (!emailResult.IsSuccess)
+                    {
+                        _logger.LogWarning(
+                            "Official invoice upload email notification failed. AccountingRequestId: {AccountingRequestId}, InvoiceId: {InvoiceId}, Error: {ErrorMessage}",
+                            accountingRequest.Id,
+                            accountingRequest.InvoiceId,
+                            emailResult.ErrorMessage);
+                    }
+                }
+            }
+            catch (Exception ex)
             {
-                ToEmail = workshop.NotificationEmail,
-                Subject = subject,
-                HtmlBody = htmlBody
-            });
+                _logger.LogError(
+                    ex,
+                    "Official invoice upload email notification threw after successful upload. AccountingRequestId: {AccountingRequestId}, InvoiceId: {InvoiceId}",
+                    accountingRequest.Id,
+                    accountingRequest.InvoiceId);
+            }
+
+            try
+            {
+                await CreateOfficialInvoiceUploadNotificationAsync(accountingRequest, document, isReplacement);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Official invoice upload app notification failed after successful upload. AccountingRequestId: {AccountingRequestId}, InvoiceId: {InvoiceId}",
+                    accountingRequest.Id,
+                    accountingRequest.InvoiceId);
+            }
+        }
+
+        private void CreateAccountingRequestAuditLogs(
+            IEnumerable<AccountingInvoiceEmailWorkItem> emailWorkItems,
+            int requestedByUserId,
+            int workshopId,
+            DateTime createdAt)
+        {
+            foreach (var item in emailWorkItems)
+            {
+                _context.AuditLogs.Add(new AuditLog
+                {
+                    WorkshopId = workshopId,
+                    UserId = requestedByUserId,
+                    ActionType = AuditActionType.Create,
+                    EntityType = AuditEntityType.AccountingInvoiceRequest,
+                    EntityId = item.AccountingRequest.Id,
+                    Description = $"Muhasebeciye fatura hazırlık talebi gönderildi. Fatura: {item.InvoiceNumber}, Alıcı: {item.Email}",
+                    NewValuesJson = $$"""
+                    {"invoiceId":{{item.AccountingRequest.InvoiceId}},"accountantEmail":"{{JsonEscape(item.Email)}}"}
+                    """,
+                    CreatedAt = createdAt
+                });
+            }
+        }
+
+        private async Task CreateOfficialInvoiceUploadNotificationAsync(
+            AccountingInvoiceRequest accountingRequest,
+            OfficialInvoiceDocument document,
+            bool isReplacement)
+        {
+            var requesterUserIds = await GetAccountingRequestRequesterUserIdsAsync(accountingRequest.Id);
+            var title = isReplacement
+                ? "Fatura PDF'i güncellendi"
+                : "Fatura PDF'i yüklendi";
+            var actionText = isReplacement
+                ? "güncellendi"
+                : "yüklendi";
+            var invoiceText = string.IsNullOrWhiteSpace(document.OfficialInvoiceNumber)
+                ? accountingRequest.Invoice.InvoiceNumber
+                : document.OfficialInvoiceNumber;
+
+            var notificationResult = await _notificationService.CreateForWorkshopOwnersAndUsersAsync(
+                accountingRequest.WorkshopId,
+                requesterUserIds,
+                new CreateNotificationDto
+                {
+                    WorkshopId = accountingRequest.WorkshopId,
+                    Type = isReplacement
+                        ? NotificationType.InvoiceDocumentReuploaded
+                        : NotificationType.InvoiceDocumentUploaded,
+                    Title = title,
+                    Message = $"{invoiceText} için e-Arşiv fatura PDF'i muhasebeci tarafından sisteme {actionText}.",
+                    RelatedEntityType = NotificationRelatedEntityType.AccountingInvoiceRequest,
+                    RelatedEntityId = accountingRequest.Id,
+                    ActionUrl = $"/Invoices/Detail/{accountingRequest.InvoiceId}"
+                });
+
+            if (notificationResult.IsFailure)
+            {
+                _logger.LogWarning(
+                    "Official invoice upload app notification returned failure. AccountingRequestId: {AccountingRequestId}, InvoiceId: {InvoiceId}, Error: {ErrorMessage}",
+                    accountingRequest.Id,
+                    accountingRequest.InvoiceId,
+                    notificationResult.ErrorMessage);
+            }
+        }
+
+        private async Task<List<int>> GetAccountingRequestRequesterUserIdsAsync(int accountingRequestId)
+        {
+            return await _context.AuditLogs
+                .AsNoTracking()
+                .Where(x =>
+                    x.EntityType == AuditEntityType.AccountingInvoiceRequest &&
+                    x.EntityId == accountingRequestId &&
+                    x.ActionType == AuditActionType.Create &&
+                    x.UserId.HasValue &&
+                    x.UserId.Value > 0)
+                .Select(x => x.UserId!.Value)
+                .Distinct()
+                .ToListAsync();
         }
 
         private static string BuildAccountingRequestEmailBody(
@@ -846,6 +991,13 @@ namespace AutoStock.Services.Services
             return System.Net.WebUtility.HtmlEncode(value ?? string.Empty);
         }
 
+        private static string JsonEscape(string? value)
+        {
+            return (value ?? string.Empty)
+                .Replace("\\", "\\\\", StringComparison.Ordinal)
+                .Replace("\"", "\\\"", StringComparison.Ordinal);
+        }
+
         private sealed class WorkshopInfo
         {
             public string DisplayName { get; set; } = null!;
@@ -859,6 +1011,7 @@ namespace AutoStock.Services.Services
 
         private sealed record AccountingInvoiceEmailWorkItem(
             string Email,
+            string InvoiceNumber,
             string Subject,
             string HtmlBody,
             AccountingInvoiceRequest AccountingRequest);

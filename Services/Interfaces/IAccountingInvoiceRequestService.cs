@@ -13,7 +13,8 @@ namespace AutoStock.Services.Interfaces
 
         Task<ServiceResult<SendAccountingInvoiceRequestResponseDto>> SendAccountingRequestAsync(
             SendAccountingInvoiceRequestDto request,
-            int workshopId);
+            int workshopId,
+            int requestedByUserId);
 
         Task<ServiceResult<AccountingInvoiceRequestPublicDto>> GetPublicRequestAsync(string token);
 

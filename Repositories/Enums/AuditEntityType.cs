@@ -10,6 +10,7 @@
 
     Invoice = 30,
     CurrentAccountTransaction = 31,
+    AccountingInvoiceRequest = 32,
 
     Workshop = 40,
     WorkshopUser = 41,
