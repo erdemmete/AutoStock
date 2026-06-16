@@ -6,6 +6,8 @@ using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Emails;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
@@ -18,19 +20,26 @@ namespace AutoStock.Services.Services
         private const int TokenByteLength = 32;
         private const int TokenValidDays = 14;
         private const long MaxOfficialInvoicePdfBytes = 10 * 1024 * 1024;
+        private const string OfficialInvoiceUploadsPathConfigKey = "Storage:OfficialInvoiceUploadsPath";
 
         private readonly AppDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IEmailSender _emailSender;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<AccountingInvoiceRequestService> _logger;
 
         public AccountingInvoiceRequestService(
             AppDbContext context,
             IDateTimeProvider dateTimeProvider,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            IConfiguration configuration,
+            ILogger<AccountingInvoiceRequestService> logger)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
             _emailSender = emailSender;
+            _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<ServiceResult<List<AccountingEmailRecipientDto>>> GetAccountingRecipientsAsync(int workshopId)
@@ -69,7 +78,7 @@ namespace AutoStock.Services.Services
             if (!normalizedEmailResult.IsSuccess)
                 return ServiceResult<AccountingEmailRecipientDto>.Fail(normalizedEmailResult.ErrorMessage);
 
-            var email = normalizedEmailResult.Data;
+            var email = normalizedEmailResult.Data!;
             var displayName = string.IsNullOrWhiteSpace(request.DisplayName)
                 ? email
                 : request.DisplayName.Trim();
@@ -160,7 +169,7 @@ namespace AutoStock.Services.Services
             if (!recipientEmailsResult.IsSuccess)
                 return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail(recipientEmailsResult.ErrorMessage);
 
-            var recipientEmails = recipientEmailsResult.Data;
+            var recipientEmails = recipientEmailsResult.Data ?? new List<string>();
 
             if (!recipientEmails.Any())
                 return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("En az bir muhasebeci e-posta adresi seçiniz.");
@@ -181,6 +190,7 @@ namespace AutoStock.Services.Services
             var remaining = Math.Max(0m, invoice.GrandTotal - paidTotal);
 
             var response = new SendAccountingInvoiceRequestResponseDto();
+            var emailWorkItems = new List<AccountingInvoiceEmailWorkItem>();
 
             foreach (var email in recipientEmails)
             {
@@ -220,21 +230,52 @@ namespace AutoStock.Services.Services
                     publicLink,
                     request.Message);
 
-                var emailResult = await _emailSender.SendAsync(new EmailMessageDto
-                {
-                    ToEmail = email,
-                    Subject = subject,
-                    HtmlBody = htmlBody
-                });
-
-                if (!emailResult.IsSuccess)
-                    return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail(emailResult.ErrorMessage ?? $"{email} adresine e-posta gönderilemedi.");
-
-                response.SentCount++;
-                response.SentEmails.Add(email);
+                emailWorkItems.Add(new AccountingInvoiceEmailWorkItem(
+                    email,
+                    subject,
+                    htmlBody,
+                    accountingRequest));
             }
 
             await _context.SaveChangesAsync();
+
+            var failedEmails = new List<string>();
+
+            foreach (var item in emailWorkItems)
+            {
+                var emailResult = await _emailSender.SendAsync(new EmailMessageDto
+                {
+                    ToEmail = item.Email,
+                    Subject = item.Subject,
+                    HtmlBody = item.HtmlBody
+                });
+
+                if (emailResult.IsSuccess)
+                {
+                    response.SentCount++;
+                    response.SentEmails.Add(item.Email);
+                    continue;
+                }
+
+                failedEmails.Add(item.Email);
+
+                _logger.LogWarning(
+                    "Accounting invoice request email failed after DB save. InvoiceId: {InvoiceId}, AccountingRequestId: {AccountingRequestId}, Email: {Email}, Error: {ErrorMessage}",
+                    item.AccountingRequest.InvoiceId,
+                    item.AccountingRequest.Id,
+                    item.Email,
+                    emailResult.ErrorMessage);
+            }
+
+            if (failedEmails.Any())
+            {
+                var failedEmailText = string.Join(", ", failedEmails);
+                var message = response.SentCount > 0
+                    ? $"Fatura hazırlık talebi kaydedildi. Ancak şu adreslere e-posta gönderilemedi: {failedEmailText}."
+                    : $"Fatura hazırlık talebi kaydedildi ancak e-posta gönderilemedi: {failedEmailText}.";
+
+                return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail(message);
+            }
 
             return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Success(response);
         }
@@ -369,7 +410,7 @@ namespace AutoStock.Services.Services
                 accountingRequest.InvoiceId.ToString(),
                 storedFileName);
 
-            var fullPath = Path.Combine(GetUploadRootPath(), relativePath);
+            var fullPath = BuildOfficialInvoiceFullPath(relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
 
             await using (var output = File.Create(fullPath))
@@ -391,7 +432,7 @@ namespace AutoStock.Services.Services
                 ContentType = "application/pdf",
                 FileSizeBytes = request.FileSizeBytes,
                 UploadedAt = now,
-                UploadedByEmail = uploadedByResult.Data,
+                UploadedByEmail = uploadedByResult.Data!,
                 Note = NormalizeNullable(request.Note)
             };
 
@@ -400,7 +441,24 @@ namespace AutoStock.Services.Services
             accountingRequest.Status = AccountingInvoiceRequestStatus.Uploaded;
             accountingRequest.CompletedAt = now;
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                TryDeleteFile(fullPath);
+
+                _logger.LogError(
+                    ex,
+                    "Official invoice document DB save failed after file write. FilePath: {FilePath}, InvoiceId: {InvoiceId}, WorkshopId: {WorkshopId}",
+                    fullPath,
+                    accountingRequest.InvoiceId,
+                    accountingRequest.WorkshopId);
+
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail(
+                    "Fatura dosyası yüklendi ancak kayıt bilgileri kaydedilemedi. Lütfen tekrar deneyin.");
+            }
 
             await NotifyWorkshopOfficialInvoiceUploadedAsync(accountingRequest, document);
 
@@ -462,7 +520,7 @@ namespace AutoStock.Services.Services
             if (document is null)   
                 return ServiceResult<OfficialInvoiceFileDto>.Fail("Fatura dosyası bulunamadı.");
 
-            var fullPath = Path.Combine(GetUploadRootPath(), document.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+            var fullPath = BuildOfficialInvoiceFullPath(document.RelativePath);
 
             if (!File.Exists(fullPath))
                 return ServiceResult<OfficialInvoiceFileDto>.Fail("Fatura dosyası sunucuda bulunamadı.");
@@ -653,7 +711,7 @@ namespace AutoStock.Services.Services
                 var result = NormalizeEmail(email);
                 if (!result.IsSuccess)
                     return ServiceResult<List<string>>.Fail(result.ErrorMessage);
-                emails.Add(result.Data);
+                emails.Add(result.Data!);
             }
 
             if (!string.IsNullOrWhiteSpace(request.NewRecipientEmail))
@@ -661,7 +719,7 @@ namespace AutoStock.Services.Services
                 var result = NormalizeEmail(request.NewRecipientEmail);
                 if (!result.IsSuccess)
                     return ServiceResult<List<string>>.Fail(result.ErrorMessage);
-                emails.Add(result.Data);
+                emails.Add(result.Data!);
             }
 
             return ServiceResult<List<string>>.Success(emails.Distinct(StringComparer.OrdinalIgnoreCase).ToList());
@@ -699,9 +757,53 @@ namespace AutoStock.Services.Services
             return string.IsNullOrWhiteSpace(name) ? "official-invoice.pdf" : name;
         }
 
-        private static string GetUploadRootPath()
+        private string BuildOfficialInvoiceFullPath(string relativePath)
         {
-            return Path.Combine(AppContext.BaseDirectory, "Uploads");
+            var rootPath = GetUploadRootPath();
+            var normalizedRootPath = EnsureTrailingDirectorySeparator(rootPath);
+            var normalizedRelativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
+            var fullPath = Path.GetFullPath(Path.Combine(rootPath, normalizedRelativePath));
+
+            if (!fullPath.StartsWith(normalizedRootPath, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Fatura dosya yolu geçersiz.");
+
+            return fullPath;
+        }
+
+        private string GetUploadRootPath()
+        {
+            var configuredPath = _configuration[OfficialInvoiceUploadsPathConfigKey];
+            var rootPath = string.IsNullOrWhiteSpace(configuredPath)
+                ? Path.Combine(AppContext.BaseDirectory, "Uploads")
+                : configuredPath.Trim();
+
+            if (!Path.IsPathRooted(rootPath))
+                rootPath = Path.Combine(AppContext.BaseDirectory, rootPath);
+
+            return Path.GetFullPath(rootPath);
+        }
+
+        private void TryDeleteFile(string fullPath)
+        {
+            try
+            {
+                if (File.Exists(fullPath))
+                    File.Delete(fullPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Official invoice orphan file cleanup failed. FilePath: {FilePath}",
+                    fullPath);
+            }
+        }
+
+        private static string EnsureTrailingDirectorySeparator(string path)
+        {
+            return path.EndsWith(Path.DirectorySeparatorChar)
+                ? path
+                : path + Path.DirectorySeparatorChar;
         }
 
         private static string? NormalizeNullable(string? value)
@@ -754,5 +856,11 @@ namespace AutoStock.Services.Services
 
             public string? TaxNumber { get; set; }
         }
+
+        private sealed record AccountingInvoiceEmailWorkItem(
+            string Email,
+            string Subject,
+            string HtmlBody,
+            AccountingInvoiceRequest AccountingRequest);
     }
 }

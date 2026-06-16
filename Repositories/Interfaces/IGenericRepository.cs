@@ -6,7 +6,7 @@ namespace AutoStock.Repositories.Interfaces
     {
         IQueryable<T> GetAll();
         IQueryable<T> Where(Expression<Func<T, bool>> predicate);
-        ValueTask<T> GetByIdAsync(int id);
+        ValueTask<T?> GetByIdAsync(int id);
         ValueTask AddAsync(T entity);
         void Update(T entity);
         void Delete(T entity);

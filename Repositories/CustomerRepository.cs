@@ -3,11 +3,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AutoStock.Repositories
 {
-    public class CustomerRepository(AppDbContext context) : GenericRepository<Customer>(context), ICustomerRepository
+    public class CustomerRepository : GenericRepository<Customer>, ICustomerRepository
     {
+        private readonly AppDbContext _context;
+
+        public CustomerRepository(AppDbContext context) : base(context)
+        {
+            _context = context;
+        }
+
         public async Task<IEnumerable<Customer>> GetCustomersWithVehicles()
         {
-            return await context.Customers.Include(c => c.Vehicles).ToListAsync();
+            return await _context.Customers.Include(c => c.Vehicles).ToListAsync();
         }
 
         public Task<List<Customer>> GetCustomersWithVehicles(int count)
@@ -19,7 +26,7 @@ namespace AutoStock.Repositories
         {
             query = query.Trim().ToLower();
 
-            return await context.Customers
+            return await _context.Customers
                 .Where(x =>
                     x.WorkshopId == workshopId &&
                     (

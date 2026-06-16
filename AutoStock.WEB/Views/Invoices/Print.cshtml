@@ -49,22 +49,6 @@
         return "%" + value.ToString("N2");
     }
 
-    string FormatIban(string? iban)
-    {
-        if (string.IsNullOrWhiteSpace(iban))
-            return "-";
-
-        var clean = new string(iban.Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
-
-        if (string.IsNullOrWhiteSpace(clean))
-            return "-";
-
-        var groups = Enumerable.Range(0, (clean.Length + 3) / 4)
-            .Select(i => clean.Substring(i * 4, Math.Min(4, clean.Length - i * 4)));
-
-        return string.Join(" ", groups);
-    }
-
     var workshopTitle =
         !string.IsNullOrWhiteSpace(Model.WorkshopLegalTitle)
             ? Model.WorkshopLegalTitle

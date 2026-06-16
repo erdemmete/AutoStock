@@ -10,9 +10,6 @@
         ? "Kullanıcı"
         : Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? Model.FullName;
 
-    // QR tarama route'u sende farklıysa sadece burayı değiştiririz.
-    var qrScanUrl = "/VehicleQrCodes/Scan";
-
     string FormatMoney(decimal value)
     {
         return value.ToString("N2") + " ₺";

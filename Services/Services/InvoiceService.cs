@@ -1079,7 +1079,7 @@ namespace AutoStock.Services.Services
             {
                 InvoiceId = createResult.Data.InvoiceId,
                 Status = 1,
-                InvoiceNumber = createResult.Data.InvoiceNumber
+                InvoiceNumber = createResult.Data.InvoiceNumber ?? string.Empty
             });
         }
 

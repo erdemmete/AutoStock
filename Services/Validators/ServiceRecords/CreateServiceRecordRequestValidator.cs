@@ -1,5 +1,6 @@
 ﻿using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Services.Interfaces;
+using AutoStock.Services.Services;
 using FluentValidation;
 
 namespace AutoStock.Services.Validators.ServiceRecords;
@@ -8,12 +9,18 @@ public class CreateServiceRecordRequestValidator : AbstractValidator<CreateServi
 {
     private readonly IDateTimeProvider _dateTimeProvider;
 
+    public CreateServiceRecordRequestValidator()
+        : this(new DateTimeProvider())
+    {
+    }
+
     public CreateServiceRecordRequestValidator(IDateTimeProvider dateTimeProvider)
     {
         _dateTimeProvider = dateTimeProvider;
-      
+        ConfigureRules();
     }
-    public CreateServiceRecordRequestValidator()
+
+    private void ConfigureRules()
     {
         RuleFor(x => x.CustomerPhoneNumber)
             .Cascade(CascadeMode.Stop)

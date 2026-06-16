@@ -143,37 +143,73 @@ namespace AutoStock.API.Controllers
                     FileContent = stream
                 });
 
-            var safeReturnUrl = ResolveSafeReturnUrl(returnUrl);
+            var safeReturnUrl = ResolveSafeReturnUrl(returnUrl, token, Request);
 
             if (result.IsFailure)
             {
-                if (!string.IsNullOrWhiteSpace(safeReturnUrl))
-                    return Redirect($"{safeReturnUrl}{(safeReturnUrl.Contains('?') ? '&' : '?')}uploadError={Uri.EscapeDataString(result.ErrorMessage ?? "Yükleme başarısız.")}");
-
-                return BadRequest(result.ErrorMessage ?? "Yükleme başarısız.");
+                return Redirect(AddQueryParameter(
+                    safeReturnUrl,
+                    "uploadError",
+                    result.ErrorMessage ?? "Yükleme başarısız."));
             }
 
-            if (!string.IsNullOrWhiteSpace(safeReturnUrl))
-                return Redirect($"{safeReturnUrl}{(safeReturnUrl.Contains('?') ? '&' : '?')}uploaded=1");
-
-            return Ok(result.Data);
+            return Redirect(AddQueryParameter(safeReturnUrl, "uploaded", "1"));
         }
 
-        private static string? ResolveSafeReturnUrl(string? returnUrl)
+        private static string ResolveSafeReturnUrl(
+            string? returnUrl,
+            string token,
+            HttpRequest request)
         {
-            if (string.IsNullOrWhiteSpace(returnUrl))
-                return null;
+            var fallback = $"/Accounting/InvoiceRequest/{Uri.EscapeDataString(token)}";
 
-            if (!Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri))
-                return null;
+            if (string.IsNullOrWhiteSpace(returnUrl))
+                return fallback;
+
+            var trimmedReturnUrl = returnUrl.Trim();
+
+            if (IsSafeLocalAccountingReturnUrl(trimmedReturnUrl))
+                return trimmedReturnUrl;
+
+            if (!Uri.TryCreate(trimmedReturnUrl, UriKind.Absolute, out var uri))
+                return fallback;
 
             if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
-                return null;
+                return fallback;
 
-            if (!uri.AbsolutePath.Contains("/Accounting/InvoiceRequest/", StringComparison.OrdinalIgnoreCase))
-                return null;
+            if (!string.Equals(uri.Host, request.Host.Host, StringComparison.OrdinalIgnoreCase))
+                return fallback;
 
-            return returnUrl;
+            if (!IsAccountingInvoiceRequestPath(uri.AbsolutePath))
+                return fallback;
+
+            return uri.ToString();
+        }
+
+        private static bool IsSafeLocalAccountingReturnUrl(string returnUrl)
+        {
+            if (!returnUrl.StartsWith("/", StringComparison.Ordinal) ||
+                returnUrl.StartsWith("//", StringComparison.Ordinal) ||
+                returnUrl.StartsWith("/\\", StringComparison.Ordinal) ||
+                returnUrl.Contains('\\'))
+            {
+                return false;
+            }
+
+            return IsAccountingInvoiceRequestPath(returnUrl);
+        }
+
+        private static bool IsAccountingInvoiceRequestPath(string path)
+        {
+            return path.Contains(
+                "/Accounting/InvoiceRequest/",
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string AddQueryParameter(string url, string key, string value)
+        {
+            var separator = url.Contains('?') ? '&' : '?';
+            return $"{url}{separator}{Uri.EscapeDataString(key)}={Uri.EscapeDataString(value)}";
         }
     }
 }

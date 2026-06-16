@@ -23,17 +23,22 @@ namespace AutoStockAPI.Controllers
                 return BadRequest();
 
             var qr = await _context.VehicleQrCodes
-    .Include(x => x.Vehicle)
-        .ThenInclude(x => x.VehicleBrand)
-    .Include(x => x.Vehicle)
-        .ThenInclude(x => x.VehicleModel)
-    .FirstOrDefaultAsync(x => x.Code == code);
+                .Include(x => x.Vehicle!)
+                    .ThenInclude(x => x.VehicleBrand)
+                .Include(x => x.Vehicle!)
+                    .ThenInclude(x => x.VehicleModel)
+                .FirstOrDefaultAsync(x => x.Code == code);
 
             if (qr == null)
                 return NotFound("QR kod bulunamadı.");
 
             if (!qr.VehicleId.HasValue)
                 return BadRequest("QR kod henüz bir araca atanmadı.");
+
+            if (qr.Vehicle is null)
+                return NotFound("QR kodun bağlı olduğu araç kaydı bulunamadı.");
+
+            var vehicle = qr.Vehicle;
 
             var records = await _context.ServiceRecords
                 .Where(x => x.VehicleId == qr.VehicleId.Value)
@@ -53,10 +58,10 @@ namespace AutoStockAPI.Controllers
                 qr.Code,
                 Vehicle = new
                 {
-                    qr.Vehicle!.Plate,
-                    Brand = qr.Vehicle.VehicleBrand?.Name ?? "-",
-                    Model = qr.Vehicle.VehicleModel?.Name ?? "-",
-                    qr.Vehicle.ModelYear
+                    vehicle.Plate,
+                    Brand = vehicle.VehicleBrand?.Name ?? "-",
+                    Model = vehicle.VehicleModel?.Name ?? "-",
+                    vehicle.ModelYear
                 },
                 Records = records
             });

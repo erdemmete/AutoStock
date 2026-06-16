@@ -45,7 +45,7 @@ namespace AutoStock.WEB.Controllers
 
             fileName = fileName.Trim('"');
 
-            return File(fileBytes, "application/pdf", fileName); return File(fileBytes, "application/pdf", $"servis-formu-{serviceRecordId}.pdf");
+            return File(fileBytes, "application/pdf", fileName);
         }
     }
 }

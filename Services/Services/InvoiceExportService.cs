@@ -44,7 +44,7 @@ public class InvoiceExportService : IInvoiceExportService
         if (!periodResult.IsSuccess)
             return ServiceResult<InvoiceExportPreviewDto>.Fail(periodResult.ErrorMessage);
 
-        var period = periodResult.Data;
+        var period = periodResult.Data!;
 
         var invoices = await GetInvoicesAsync(period.StartDate, period.EndDate, query.IncludeCancelled, workshopId);
         var preview = await BuildPreviewAsync(invoices, period.StartDate, period.EndDate, query.IncludeCancelled, workshopId);
@@ -59,7 +59,7 @@ public class InvoiceExportService : IInvoiceExportService
         if (!periodResult.IsSuccess)
             return ServiceResult<InvoiceExportFileDto>.Fail(periodResult.ErrorMessage);
 
-        var period = periodResult.Data;
+        var period = periodResult.Data!;
         var invoices = await GetInvoicesAsync(period.StartDate, period.EndDate, query.IncludeCancelled, workshopId);
 
         if (!invoices.Any())
@@ -100,7 +100,7 @@ public class InvoiceExportService : IInvoiceExportService
             return ServiceResult<bool>.Fail(zipResult.ErrorMessage ?? "Fatura aktarım paketi oluşturulamadı.");
 
         var periodResult = ResolvePeriod(request);
-        var periodText = periodResult.IsSuccess
+        var periodText = periodResult.IsSuccess && periodResult.Data is not null
             ? BuildPeriodText(periodResult.Data.StartDate, periodResult.Data.EndDate)
             : "seçilen dönem";
 
@@ -1182,9 +1182,9 @@ public class InvoiceExportService : IInvoiceExportService
             : value.Trim();
     }
 
-    private static string WebUtilityHtmlEncode(string value)
+    private static string WebUtilityHtmlEncode(string? value)
     {
-        return System.Net.WebUtility.HtmlEncode(value);
+        return System.Net.WebUtility.HtmlEncode(value ?? string.Empty);
     }
 
     private sealed record ExportPeriod(DateTime StartDate, DateTime EndDate);

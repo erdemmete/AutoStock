@@ -601,7 +601,7 @@ public class PdfService : IPdfService
 
             if (hasBankAccounts)
             {
-                column.Item().Element(c => BuildPaymentInfo(c, request.BankAccounts));
+                column.Item().Element(c => BuildPaymentInfo(c, request.BankAccounts!));
             }
 
             if (total > 0)

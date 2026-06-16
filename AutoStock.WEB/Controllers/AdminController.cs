@@ -23,7 +23,7 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("Admin/Dashboard")]
         public IActionResult Dashboard()
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             return View();
@@ -38,7 +38,7 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("Admin/Workshops")]
         public async Task<IActionResult> Workshops(AdminWorkshopListQueryViewModel query)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             var pageResult = await _adminWorkshopPageService.GetIndexPageAsync(query);
@@ -52,7 +52,7 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("Admin/Workshops/Create")]
         public IActionResult CreateWorkshop()
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             var model = new CreateAdminWorkshopViewModel
@@ -70,7 +70,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateWorkshop(CreateAdminWorkshopViewModel model)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             if (!ModelState.IsValid)
@@ -117,7 +117,7 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("Admin/Workshops/Details/{id:int}")]
         public async Task<IActionResult> WorkshopDetails(int id)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             var result = await _adminWorkshopApiService.GetByIdAsync(id);
@@ -132,7 +132,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateWorkshopSubscription(UpdateAdminWorkshopSubscriptionViewModel model)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             if (model.WorkshopId <= 0)
@@ -155,7 +155,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateWorkshopProfile(UpdateAdminWorkshopProfileViewModel model)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             if (model.WorkshopId <= 0)
@@ -178,7 +178,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddWorkshopPartner(CreateAdminWorkshopPartnerViewModel model)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             if (model.WorkshopId <= 0)
@@ -207,7 +207,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteWorkshopPartner(int workshopId, int partnerId)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             if (workshopId <= 0 || partnerId <= 0)
@@ -229,7 +229,7 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("Admin/Workshops/{workshopId:int}/Users/Create")]
         public async Task<IActionResult> CreateWorkshopUser(int workshopId)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             var pageResult = await _adminWorkshopPageService.GetCreateUserPageAsync(workshopId);
@@ -247,7 +247,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateWorkshopUser(int workshopId, CreateAdminWorkshopUserViewModel model)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             model.WorkshopId = workshopId;
@@ -303,7 +303,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateWorkshopUserStatus(int workshopId, int userId, bool isActive)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             if (workshopId <= 0 || userId <= 0)
@@ -331,7 +331,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateWorkshopUserPasswordResetLink(int workshopId, int userId)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             if (workshopId <= 0 || userId <= 0)
@@ -366,7 +366,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddWorkshopBankAccount(CreateAdminWorkshopBankAccountViewModel model)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             if (model.WorkshopId <= 0)
@@ -389,7 +389,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateWorkshopBankAccount(UpdateAdminWorkshopBankAccountViewModel model)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             if (model.WorkshopId <= 0 || model.BankAccountId <= 0)
@@ -412,7 +412,7 @@ namespace AutoStock.WEB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteWorkshopBankAccount(int workshopId, int bankAccountId)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
                 return RedirectToLogin();
 
             if (workshopId <= 0 || bankAccountId <= 0)
@@ -436,7 +436,7 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("Admin/Workshops/{workshopId:int}/Users/SuggestCredentials")]
         public async Task<IActionResult> SuggestWorkshopUserCredentials(int workshopId, string fullName)
         {
-            if (!IsAdmin())
+            if (!IsAdmin)
             {
                 return Json(new
                 {
@@ -467,19 +467,6 @@ namespace AutoStock.WEB.Controllers
         }
 
         
-
-
-        private bool IsAdmin()
-        {
-            var role = HttpContext.Session.GetString("UserRole");
-
-            return role == "Admin";
-        }
-
-        private IActionResult RedirectToLogin()
-        {
-            return RedirectToAction("Login", "Auth");
-        }
 
 
         private void StoreCreatedUserInviteTempData(AdminWorkshopUserCreatedViewModel createdUser)
