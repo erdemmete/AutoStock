@@ -6,6 +6,7 @@ using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Controllers;
 using AutoStock.WEB.Models.Invoices;
 using AutoStock.WEB.Models.ServiceRecords;
+using AutoStock.WEB.Models.SupportRequests;
 using AutoStock.WEB.Models.StockItems;
 using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -17,15 +18,18 @@ public class ServiceRecordsController : BaseController
     private readonly ServiceRecordApiService _serviceRecordApiService;
     private readonly ServiceRecordPageService _serviceRecordPageService;
     private readonly InvoiceApiService _invoiceApiService;
+    private readonly SupportRequestApiService _supportRequestApiService;
 
     public ServiceRecordsController(
         ServiceRecordApiService serviceRecordApiService,
         ServiceRecordPageService serviceRecordPageService,
-        InvoiceApiService invoiceApiService)
+        InvoiceApiService invoiceApiService,
+        SupportRequestApiService supportRequestApiService)
     {
         _serviceRecordApiService = serviceRecordApiService;
         _serviceRecordPageService = serviceRecordPageService;
         _invoiceApiService = invoiceApiService;
+        _supportRequestApiService = supportRequestApiService;
     }
 
     [HttpGet("ServiceRecords")]
@@ -111,6 +115,60 @@ public class ServiceRecordsController : BaseController
         ShowSuccess($"Servis kaydı oluşturuldu. Kayıt No: {result.Data.RecordNumber}");
 
         return RedirectToAction(nameof(Create));
+    }
+
+    [HttpPost("ServiceRecords/VehicleCatalogSupportRequest")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateVehicleCatalogSupportRequest([FromBody] CreateVehicleCatalogSupportRequestViewModel model)
+    {
+        const string successMessage = "Araç katalog talebiniz Sente360 Destek ekibine iletildi. Servis kaydına devam edebilirsiniz.";
+        const string failureMessage = "Talep oluşturulurken hata oluştu. Servis kaydına devam edebilirsiniz, daha sonra Destek ekranından talep açabilirsiniz.";
+
+        if (!IsOwner && !IsStaff)
+        {
+            return Unauthorized(new
+            {
+                success = false,
+                message = failureMessage
+            });
+        }
+
+        var missingVehicleInfo = NormalizeSupportRequestText(model?.MissingVehicleInfo);
+
+        if (string.IsNullOrWhiteSpace(missingVehicleInfo))
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "Lütfen eklenmesini istediğiniz araç bilgisini yazın."
+            });
+        }
+
+        var supportRequest = new CreateIssueSupportRequestViewModel
+        {
+            Subject = "Araç katalog ekleme talebi",
+            Description = BuildVehicleCatalogSupportDescription(model!, missingVehicleInfo),
+            Priority = SupportRequestPriority.Normal
+        };
+
+        var result = await _supportRequestApiService.CreateIssueAsync(supportRequest);
+
+        if (result.IsFailure || result.Data <= 0)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = failureMessage
+            });
+        }
+
+        return Json(new
+        {
+            success = true,
+            message = successMessage,
+            supportRequestId = result.Data,
+            detailUrl = Url.Action("Detail", "SupportRequests", new { id = result.Data }) ?? $"/SupportRequests/Detail/{result.Data}"
+        });
     }
 
     [HttpGet]
@@ -484,6 +542,48 @@ public class ServiceRecordsController : BaseController
         }
 
         return code;
+    }
+
+    private static string BuildVehicleCatalogSupportDescription(
+        CreateVehicleCatalogSupportRequestViewModel model,
+        string missingVehicleInfo)
+    {
+        var lines = new List<string>
+        {
+            "Eksik araç bilgisi:",
+            missingVehicleInfo,
+            string.Empty,
+            "Servis kaydı oluşturma ekranındaki mevcut bağlam:"
+        };
+
+        AddDescriptionLine(lines, "Seçili marka", model.SelectedBrandText);
+        AddDescriptionLine(lines, "Seçili model", model.SelectedModelText);
+        AddDescriptionLine(lines, "Seçili versiyon", model.SelectedVariantText);
+        AddDescriptionLine(lines, "Plaka", model.Plate);
+        AddDescriptionLine(lines, "Model yılı", model.ModelYear);
+        AddDescriptionLine(lines, "Şasi no", model.ChassisNumber);
+
+        lines.Add(string.Empty);
+        lines.Add("Bu talep servis kaydı oluşturma ekranındaki araç kataloğu yardım modalından gönderildi.");
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static void AddDescriptionLine(List<string> lines, string label, string? value)
+    {
+        var normalizedValue = NormalizeSupportRequestText(value);
+
+        if (!string.IsNullOrWhiteSpace(normalizedValue))
+        {
+            lines.Add($"{label}: {normalizedValue}");
+        }
+    }
+
+    private static string? NormalizeSupportRequestText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
     }
 
     private async Task PrepareCreateModelAsync(CreateServiceRecordViewModel model)

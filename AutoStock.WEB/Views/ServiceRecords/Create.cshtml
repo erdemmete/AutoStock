@@ -735,7 +735,14 @@
                                           placeholder="Örn: Renault Boreal Iconic E-Tech 160"></textarea>
 
                                 <div class="vehicle-help-info">
-                                    Bu not servis kaydıyla birlikte saklanır. Destek talebi entegrasyonunu bir sonraki adımda ServiceRecordId ile bağlayacağız.
+                                    Talebiniz Sente360 Destek ekibine iletilir. En yakın marka/model seçimiyle servis kaydına devam edebilirsiniz.
+                                </div>
+
+                                <div id="MissingVehicleSupportStatus"
+                                     class="vehicle-help-status"
+                                     role="status"
+                                     aria-live="polite"
+                                     hidden>
                                 </div>
 
                                 <div class="vehicle-help-actions">
@@ -746,9 +753,10 @@
                                     </button>
 
                                     <button type="button"
+                                            id="MissingVehicleSubmitButton"
                                             class="vehicle-help-primary"
-                                            onclick="acceptMissingVehicleNote()">
-                                        Notu Kaydet
+                                            onclick="submitMissingVehicleSupportRequest()">
+                                        Talebi Gönder
                                     </button>
                                 </div>
                             </div>

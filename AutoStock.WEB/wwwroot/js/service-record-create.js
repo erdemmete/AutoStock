@@ -168,14 +168,128 @@ function closeMissingVehicleHelpModal() {
     }, 180);
 }
 
-function acceptMissingVehicleNote() {
+let missingVehicleSupportSubmitting = false;
+let missingVehicleSupportSubmitted = false;
+
+async function submitMissingVehicleSupportRequest() {
     const note = get("MissingVehicleNote")?.value?.trim();
 
-    closeMissingVehicleHelpModal();
-
-    if (note) {
-        showToast("Araç notu saklandı. En yakın modelle kayda devam edebilirsin.", "success");
+    if (missingVehicleSupportSubmitting || missingVehicleSupportSubmitted) {
+        return;
     }
+
+    if (!note) {
+        showMissingVehicleSupportStatus("Lütfen eklenmesini istediğiniz araç bilgisini yazın.", "error");
+        get("MissingVehicleNote")?.focus();
+        return;
+    }
+
+    missingVehicleSupportSubmitting = true;
+    setMissingVehicleSubmitState(true, "Gönderiliyor...");
+    hideMissingVehicleSupportStatus();
+
+    try {
+        const response = await fetch("/ServiceRecords/VehicleCatalogSupportRequest", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "RequestVerificationToken": getAntiForgeryToken()
+            },
+            body: JSON.stringify(buildMissingVehicleSupportPayload(note))
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || data?.success === false) {
+            throw new Error(data?.message || "Talep oluşturulamadı.");
+        }
+
+        missingVehicleSupportSubmitted = true;
+        get("MissingVehicleNote")?.setAttribute("readonly", "readonly");
+        setMissingVehicleSubmitState(true, "Talep Gönderildi");
+        showMissingVehicleSupportStatus(
+            data?.message || "Araç katalog talebiniz Sente360 Destek ekibine iletildi. Servis kaydına devam edebilirsiniz.",
+            "success",
+            data?.detailUrl
+        );
+        showToast("Araç katalog talebi destek ekibine iletildi.", "success");
+    } catch {
+        missingVehicleSupportSubmitting = false;
+        setMissingVehicleSubmitState(false, "Talebi Gönder");
+        showMissingVehicleSupportStatus(
+            "Talep oluşturulurken hata oluştu. Servis kaydına devam edebilirsiniz, daha sonra Destek ekranından talep açabilirsiniz.",
+            "error"
+        );
+        showToast("Talep oluşturulamadı. Servis kaydına devam edebilirsiniz.", "error");
+        return;
+    }
+
+    missingVehicleSupportSubmitting = false;
+}
+
+function buildMissingVehicleSupportPayload(note) {
+    return {
+        missingVehicleInfo: note,
+        selectedBrandText: getSelectedOptionText("brandSelect"),
+        selectedModelText: getSelectedOptionText("modelSelect"),
+        selectedVariantText: getSelectedOptionText("VehicleVariantId"),
+        plate: get("Plate")?.value?.trim() || "",
+        modelYear: get("ModelYear")?.value?.trim() || "",
+        chassisNumber: get("ChassisNumber")?.value?.trim() || ""
+    };
+}
+
+function getSelectedOptionText(selectId) {
+    const select = get(selectId);
+    const option = select?.selectedOptions?.[0];
+
+    if (!option || !option.value) {
+        return "";
+    }
+
+    return option.textContent?.trim() || "";
+}
+
+function getAntiForgeryToken() {
+    return document.querySelector('input[name="__RequestVerificationToken"]')?.value || "";
+}
+
+function setMissingVehicleSubmitState(disabled, text) {
+    const submitButton = get("MissingVehicleSubmitButton");
+
+    if (!submitButton) {
+        return;
+    }
+
+    submitButton.disabled = disabled;
+    submitButton.textContent = text;
+}
+
+function showMissingVehicleSupportStatus(message, type, detailUrl) {
+    const status = get("MissingVehicleSupportStatus");
+
+    if (!status) {
+        return;
+    }
+
+    status.className = `vehicle-help-status ${type}`;
+    status.hidden = false;
+    status.innerHTML = detailUrl
+        ? `${escapeHtml(message)} <a href="${escapeHtml(detailUrl)}">Destek talebini görüntüle</a>`
+        : escapeHtml(message);
+}
+
+function hideMissingVehicleSupportStatus() {
+    const status = get("MissingVehicleSupportStatus");
+
+    if (!status) {
+        return;
+    }
+
+    status.hidden = true;
+    status.textContent = "";
+    status.className = "vehicle-help-status";
 }
 
 
