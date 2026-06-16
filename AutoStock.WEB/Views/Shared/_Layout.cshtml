@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>@ViewData["Title"] - Sente360</title>
+    @if (Context.Request.Path.StartsWithSegments("/Auth"))
+    {
+        <meta name="robots" content="noindex, nofollow" />
+    }
 
     <script type="importmap"></script>
 

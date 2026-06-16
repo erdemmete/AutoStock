@@ -20,7 +20,6 @@ namespace AutoStock.WEB.Controllers
             _authApiService = authApiService;
         }
 
-        [HttpGet("/")]
         [HttpGet("/Auth/Login")]
         public IActionResult Login()
         {

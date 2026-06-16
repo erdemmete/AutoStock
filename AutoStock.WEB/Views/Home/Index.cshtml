@@ -1,1161 +1,461 @@
-﻿@{
-    ViewData["Title"] = "Sente360 | Servis Formu";
+@{
+    Layout = null;
+
+    const string whatsappPhone = "905384427271";
+    const string contactPhone = "0538 442 72 71";
+    const string contactEmail = "erdem.mete@bilisimart.com";
+    const string siteUrl = "https://sente360.com/";
+    const string bilisimartUrl = "https://www.bilisimart.com/";
+    var whatsappMessage = Uri.EscapeDataString("Merhaba, Sente360 için tanıtım görüşmesi planlamak istiyorum.");
+    var whatsappUrl = $"https://wa.me/{whatsappPhone}?text={whatsappMessage}";
+    var loginUrl = Url.Action("Login", "Auth") ?? "/Auth/Login";
+    var metaDescription = "Sente360; oto servisler için araç kabul, müşteri ve araç geçmişi, servis işlemleri, fotoğraf kaydı, belge çıktıları, cari, stok ve fatura süreçlerini tek yerde toplayan web tabanlı servis yönetim platformudur.";
 }
 
-<style>
-    * {
-        box-sizing: border-box;
-    }
-
-    body {
-        margin: 0;
-        background: radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 28rem), radial-gradient(circle at top right, rgba(22, 163, 74, .10), transparent 28rem), #f3f6fb;
-        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        color: #0f172a;
-    }
-
-    .page {
-        width: min(1420px, calc(100% - 48px));
-        margin: 0 auto;
-        padding: 36px 0 60px;
-    }
-
-    .premium-header {
-        position: relative;
-        overflow: hidden;
-        margin-bottom: 28px;
-        padding: 32px 36px;
-        border-radius: 32px;
-        background: radial-gradient(circle at 92% 35%, rgba(255,255,255,.16), transparent 18rem), linear-gradient(135deg, #07111f 0%, #111827 42%, #1d4ed8 100%);
-        color: white;
-        box-shadow: 0 28px 80px rgba(15, 23, 42, .24);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .premium-brand {
-        display: flex;
-        align-items: center;
-        gap: 22px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .premium-logo {
-        width: 50px;
-        height: 50px;
-        border-radius: 17px;
-        display: grid;
-        place-items: center;
-        background: linear-gradient(135deg, #2563eb, #16a34a);
-        color: white;
-        font-weight: 950;
-        transition: transform .22s ease, box-shadow .22s ease;
-        flex-shrink: 0;
-    }
-
-    .premium-header:hover .premium-logo {
-        transform: rotate(-3deg) scale(1.04);
-        box-shadow: 0 22px 48px rgba(37, 99, 235, .42);
-    }
-
-    .premium-eyebrow {
-        display: inline-flex;
-        margin-bottom: 7px;
-        padding: 6px 11px;
-        border-radius: 999px;
-        background: rgba(255,255,255,.13);
-        border: 1px solid rgba(255,255,255,.18);
-        color: rgba(255,255,255,.80);
-        font-size: 12px;
-        font-weight: 800;
-    }
-
-    .premium-header h1 {
-        margin: 0;
-        font-size: 36px;
-        line-height: 1;
-        letter-spacing: -1.7px;
-    }
-
-    .premium-header p {
-        margin: 12px 0 0;
-        max-width: 700px;
-        color: rgba(255,255,255,.72);
-        font-size: 15px;
-        line-height: 1.55;
-    }
-
-    .premium-home {
-        width: 54px;
-        height: 54px;
-        display: grid;
-        place-items: center;
-        border-radius: 18px;
-        background: rgba(255,255,255,.12);
-        border: 1px solid rgba(255,255,255,.18);
-        color: white;
-        text-decoration: none;
-        font-size: 22px;
-        position: relative;
-        z-index: 1;
-        transition: .18s ease;
-        flex-shrink: 0;
-    }
-
-        .premium-home:hover {
-            background: rgba(255,255,255,.22);
-            transform: translateY(-2px);
-            box-shadow: 0 14px 28px rgba(0,0,0,.18);
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sente360 | Oto servis yönetim platformu</title>
+    <meta name="description" content="@metaDescription" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="@siteUrl" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="@siteUrl" />
+    <meta property="og:title" content="Sente360 | Oto servis yönetim platformu" />
+    <meta property="og:description" content="@metaDescription" />
+    <meta property="og:site_name" content="Sente360" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+    <script type="application/ld+json">
+        {
+          "@@context": "https://schema.org",
+          "@@type": "SoftwareApplication",
+          "name": "Sente360",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "url": "@siteUrl",
+          "description": "@metaDescription",
+          "creator": {
+            "@@type": "Organization",
+            "name": "Bilişimart",
+            "url": "@bilisimartUrl"
+          }
         }
-
-    .layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 390px;
-        gap: 24px;
-        align-items: start;
-    }
-
-    .panel,
-    .summary {
-        background: rgba(255,255,255,.90);
-        border: 1px solid #e2e8f0;
-        border-radius: 30px;
-        padding: 24px;
-        box-shadow: 0 22px 55px rgba(15, 23, 42, .08);
-        backdrop-filter: blur(18px);
-    }
-
-    .panel,
-    .summary,
-    .card,
-    .premium-header {
-        transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
-    }
-
-    .grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 18px;
-    }
-
-    .card {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        padding: 22px;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, .045);
-    }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 18px 42px rgba(15, 23, 42, .075);
-            border-color: #cbd5e1;
-        }
-
-        .card.full {
-            grid-column: 1 / -1;
-        }
-
-        .card h3,
-        .summary h3 {
-            margin: 0 0 18px;
-            font-size: 21px;
-            letter-spacing: -0.5px;
-            color: #0f172a;
-        }
-
-    .fields {
-        display: grid;
-        gap: 15px;
-    }
-
-    .two {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
-    }
-
-    label {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 13px;
-        font-weight: 800;
-        color: #334155;
-    }
-
-    input,
-    select,
-    textarea {
-        width: 100%;
-        min-height: 52px;
-        border: 1px solid #dbe3ef;
-        border-radius: 16px;
-        background: #f8fafc;
-        padding: 13px 15px;
-        font: inherit;
-        font-size: 15px;
-        color: #0f172a;
-        outline: none;
-        transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, transform .18s ease;
-    }
-
-        input::placeholder,
-        textarea::placeholder {
-            color: #94a3b8;
-        }
-
-        input:hover,
-        select:hover,
-        textarea:hover {
-            border-color: #cbd5e1;
-            background: #ffffff;
-        }
-
-        input:focus,
-        select:focus,
-        textarea:focus {
-            border-color: #2563eb;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, .11);
-            transform: translateY(-1px);
-        }
-
-    textarea {
-        min-height: 105px;
-        resize: vertical;
-    }
-
-    .form-field {
-        position: relative;
-    }
-
-        .form-field input,
-        .form-field select,
-        .form-field textarea {
-            padding-top: 20px;
-        }
-
-        .form-field label {
-            position: absolute;
-            top: 16px;
-            left: 15px;
-            margin: 0;
-            padding: 0 6px;
-            background: #f8fafc;
-            color: #64748b;
-            font-size: 14px;
-            font-weight: 700;
-            pointer-events: none;
-            transition: .18s ease;
-            border-radius: 8px;
-        }
-
-        .form-field input:focus + label,
-        .form-field input:not(:placeholder-shown) + label,
-        .form-field textarea:focus + label,
-        .form-field textarea:not(:placeholder-shown) + label,
-        .form-field select + label {
-            top: -8px;
-            left: 12px;
-            background: white;
-            color: #2563eb;
-            font-size: 11px;
-        }
-
-    .operation-row {
-        display: grid;
-        grid-template-columns: 220px 1fr 90px 140px 120px;
-        gap: 12px;
-        align-items: end;
-    }
-
-    .type-toggle {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        height: 52px;
-        max-width: 220px;
-    }
-
-    .type-option {
-        min-height: 52px;
-        border: 1px solid #dbe3ef;
-        background: #f8fafc;
-        color: #334155;
-        border-radius: 16px;
-        font-weight: 900;
-        cursor: pointer;
-        transition: .18s ease;
-    }
-
-        .type-option.active {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            color: white;
-            border-color: #2563eb;
-            box-shadow: 0 12px 25px rgba(37, 99, 235, .20);
-        }
-
-    button {
-        border: none;
-        border-radius: 16px;
-        min-height: 52px;
-        padding: 0 20px;
-        font: inherit;
-        font-weight: 900;
-        cursor: pointer;
-        transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
-    }
-
-    .btn-blue {
-        background: #2563eb;
-        color: white;
-        box-shadow: 0 12px 25px rgba(37, 99, 235, .20);
-    }
-
-        .btn-blue:hover {
-            background: #1d4ed8;
-            transform: translateY(-1px);
-        }
-
-    .btn-green {
-        width: 100%;
-        min-height: 56px;
-        background: linear-gradient(135deg, #16a34a, #15803d);
-        color: white;
-        font-size: 16px;
-        border-radius: 18px;
-        box-shadow: 0 14px 28px rgba(22, 163, 74, .22);
-    }
-
-        .btn-green:hover {
-            background: linear-gradient(135deg, #15803d, #166534);
-            transform: translateY(-2px);
-            box-shadow: 0 20px 40px rgba(22, 163, 74, .30);
-        }
-
-        .btn-green:active,
-        .btn-blue:active {
-            transform: translateY(0) scale(.98);
-        }
-
-    .summary {
-        position: sticky;
-        top: 24px;
-        max-width: 390px;
-    }
-
-        .summary:hover {
-            box-shadow: 0 28px 70px rgba(15, 23, 42, .11);
-        }
-
-    .summary-line {
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 12px 0;
-        border-bottom: 1px solid #e2e8f0;
-        font-size: 14px;
-    }
-
-        .summary-line span {
-            color: #64748b;
-            font-weight: 700;
-        }
-
-        .summary-line strong {
-            text-align: right;
-            font-weight: 900;
-            color: #0f172a;
-        }
-
-    .total {
-        margin: 22px 0;
-        padding: 22px;
-        border-radius: 22px;
-        background: linear-gradient(135deg, #0f172a, #1e293b);
-        color: white;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 34px rgba(15,23,42,.16);
-    }
-
-        .total span {
-            color: rgba(255,255,255,.66);
-            font-weight: 700;
-        }
-
-        .total strong {
-            display: block;
-            margin-top: 8px;
-            font-size: 32px;
-            letter-spacing: -1.3px;
-        }
-
-    .operation-list {
-        margin-top: 18px;
-        display: grid;
-        gap: 10px;
-    }
-
-    .operation-item {
-        position: relative;
-        display: block;
-        border: 1px solid #e2e8f0;
-        background: #f8fafc;
-        border-radius: 18px;
-        padding: 14px;
-        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-    }
-
-        .operation-item:hover {
-            border-color: #cbd5e1;
-            box-shadow: 0 12px 26px rgba(15,23,42,.07);
-            transform: translateY(-1px);
-        }
-
-    .operation-main {
-        display: grid;
-        grid-template-columns: 110px 1fr 130px 42px;
-        gap: 14px;
-        align-items: center;
-    }
-
-    .badge {
-        padding: 8px 11px;
-        border-radius: 999px;
-        font-size: 12px;
-        font-weight: 900;
-        text-align: center;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.45);
-    }
-
-        .badge.part {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .badge.labor {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-    .operation-info strong {
-        display: block;
-        font-size: 15px;
-        color: #0f172a;
-    }
-
-    .operation-info span {
-        display: block;
-        margin-top: 4px;
-        color: #475569;
-        font-size: 13px;
-    }
-
-    .operation-price {
-        text-align: right;
-        font-weight: 900;
-        color: #0f172a;
-    }
-
-    .operation-note {
-        max-height: 0;
-        overflow: hidden;
-        font-size: 13px;
-        color: #475569;
-        margin-left: 124px;
-        transition: .25s ease;
-        line-height: 1.55;
-    }
-
-        .operation-note.open {
-            margin-top: 10px;
-            max-height: 200px;
-            padding: 12px 14px;
-            border-radius: 14px;
-            background: white;
-            border: 1px solid #e2e8f0;
-        }
-
-    .note-toggle {
-        margin-top: 8px;
-        border: none;
-        background: transparent;
-        color: #2563eb;
-        font-size: 12px;
-        font-weight: 800;
-        padding: 0;
-        min-height: auto;
-    }
-
-    .delete {
-        width: 38px;
-        height: 38px;
-        min-height: 38px;
-        padding: 0;
-        border-radius: 14px;
-        background: #fee2e2;
-        color: #b91c1c;
-        font-size: 18px;
-        font-weight: 900;
-    }
-
-        .delete:hover {
-            background: #fecaca;
-            transform: scale(1.05);
-        }
-
-    .field-error {
-        margin-top: 6px;
-        color: #dc2626;
-        font-size: 12px;
-        font-weight: 700;
-        display: none;
-    }
-
-    .input-invalid {
-        border-color: #ef4444 !important;
-        background: #fff7f7 !important;
-        box-shadow: 0 0 0 4px rgba(239, 68, 68, .10) !important;
-    }
-
-    @@media (max-width: 1200px) {
-        .page {
-            width: min(100% - 32px, 1420px);
-        }
-
-        .layout {
-            grid-template-columns: 1fr;
-        }
-
-        .summary {
-            position: static;
-            max-width: none;
-        }
-    }
-
-    @@media (max-width: 900px) {
-        .premium-header {
-            padding: 24px;
-            border-radius: 26px;
-            align-items: flex-start;
-        }
-
-        .premium-brand {
-            align-items: flex-start;
-        }
-
-        .premium-logo {
-            width: 62px;
-            height: 62px;
-            border-radius: 22px;
-            font-size: 22px;
-        }
-
-        .premium-header h1 {
-            font-size: 28px;
-            line-height: 1.1;
-        }
-
-        .premium-header p {
-            font-size: 14px;
-        }
-
-        .grid,
-        .two {
-            grid-template-columns: 1fr;
-        }
-
-        .operation-row {
-            grid-template-columns: 1fr;
-        }
-
-        .type-toggle {
-            width: 100%;
-            max-width: none;
-        }
-
-        .btn-blue {
-            width: 100%;
-        }
-
-        .operation-main {
-            grid-template-columns: 1fr auto;
-            gap: 12px;
-        }
-
-            .operation-main .badge {
-                width: fit-content;
-            }
-
-        .operation-info {
-            grid-column: 1 / -1;
-        }
-
-        .operation-price {
-            text-align: left;
-        }
-
-        .delete {
-            grid-column: 2;
-            grid-row: 1;
-        }
-
-        .operation-note {
-            margin-left: 0;
-        }
-    }
-
-    @@media (max-width: 600px) {
-        .page {
-            width: 100%;
-            padding: 14px;
-        }
-
-        .premium-header {
-            margin-bottom: 18px;
-            padding: 20px;
-        }
-
-        .premium-brand {
-            gap: 14px;
-        }
-
-        .premium-home {
-            width: 44px;
-            height: 44px;
-            border-radius: 15px;
-            font-size: 18px;
-        }
-
-        .panel {
-            padding: 16px;
-            border-radius: 22px;
-        }
-
-        .card {
-            padding: 18px;
-            border-radius: 20px;
-        }
-
-            .card h3,
-            .summary h3 {
-                font-size: 20px;
-            }
-
-        input,
-        select,
-        textarea {
-            min-height: 50px;
-            font-size: 15px;
-        }
-
-        .form-field label {
-            max-width: calc(100% - 24px);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .summary-line {
-            font-size: 14px;
-        }
-
-        .total {
-            padding: 20px;
-        }
-
-            .total strong {
-                font-size: 32px;
-            }
-
-        .btn-green {
-            min-height: 56px;
-        }
-    }
-</style>
-
-<div class="page">
-
-    <section class="premium-header">
-        <div class="premium-brand">
-            <div class="premium-logo">S360</div>
-
-            <div>
-                <div class="premium-eyebrow">Sente360 V1</div>
-                <h1>Servis Formu Oluştur</h1>
-                <p>Parça, işçilik ve araç bilgilerini tek ekrandan profesyonel PDF formuna dönüştür.</p>
-            </div>
+    </script>
+</head>
+<body>
+    <header class="landing-header">
+        <div class="landing-header-top">
+            <a class="brand" href="/" aria-label="Sente360 ana sayfa">
+                <span class="brand-mark">S</span>
+                <span>Sente360</span>
+            </a>
+
+            <details class="mobile-menu">
+                <summary aria-label="Menüyü aç">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </summary>
+
+                <nav class="mobile-menu-panel" aria-label="Mobil menü">
+                    <a href="#ozellikler" onclick="this.closest('details').removeAttribute('open')">Özellikler</a>
+                    <a href="#nasil-calisir" onclick="this.closest('details').removeAttribute('open')">Nasıl Çalışır</a>
+                    <a href="#kimler-icin" onclick="this.closest('details').removeAttribute('open')">Kimler İçin</a>
+                    <a href="#iletisim" onclick="this.closest('details').removeAttribute('open')">İletişim</a>
+                    <a class="mobile-menu-primary" href="@whatsappUrl" target="_blank" rel="noopener">WhatsApp’tan Görüşme Planla</a>
+                    <a href="@loginUrl">Giriş Yap</a>
+                </nav>
+            </details>
         </div>
 
-        <a class="premium-home" href="/Dashboard/Index" title="Ana sayfa">
-            <span>⌂</span>
-        </a>
-    </section>
+        <nav class="landing-nav" aria-label="Ana menü">
+            <a href="#ozellikler">Özellikler</a>
+            <a href="#nasil-calisir">Nasıl Çalışır</a>
+            <a href="#kimler-icin">Kimler İçin</a>
+            <a href="#iletisim">İletişim</a>
+            <a class="nav-contact" href="@whatsappUrl" target="_blank" rel="noopener">WhatsApp’tan Görüşme Planla</a>
+            <a class="nav-login" href="@loginUrl">Giriş Yap</a>
+        </nav>
+    </header>
 
-    <div class="layout">
+    <main>
+        <section class="hero-section" id="tanitim">
+            <div class="hero-copy">
+                <p class="eyebrow">Oto servis yönetim platformu</p>
+                <h1>Sente360, oto servisinizin araç kabulden fatura takibine kadar tüm servis sürecini dijitalleştirir.</h1>
+                <p class="hero-text">
+                    Araç kabul, müşteri ve araç geçmişi, servis işlemleri, fotoğraf kaydı,
+                    belge çıktıları, cari, stok ve fatura süreçlerini tek yerde toplayan
+                    web tabanlı yönetim platformu.
+                </p>
 
-        <main class="panel">
-            <div class="grid">
-                <section class="card">
-                    <h3>Müşteri Bilgileri</h3>
+                <div class="hero-actions">
+                    <a class="primary-action" href="@whatsappUrl" target="_blank" rel="noopener">WhatsApp’tan Tanıtım Görüşmesi Planla</a>
+                    <a class="secondary-action" href="@loginUrl">Giriş Yap</a>
+                </div>
+            </div>
 
-                    <div class="fields">
-                        <div class="form-field">
-                            <input id="customerName" placeholder=" " />
-                            <label for="customerName">Ad Soyad</label>
-                            <div class="field-error" id="customerNameError">Bu alan zorunlu.</div>
-                        </div>
-
-                        <div class="form-field">
-                            <input id="customerPhone" inputmode="numeric" placeholder=" " />
-                            <label for="customerPhone">Cep Numarası</label>
-                            <div class="field-error" id="customerPhoneError">Cep numarası sadece rakam içermeli.</div>
-                        </div>
-
-                        <div class="form-field">
-                            <input id="customerEmail" type="email" placeholder=" " />
-                            <label for="customerEmail">Mail Adresi</label>
-                        </div>
+            <div class="hero-product" aria-label="Sente360 ürün önizlemesi">
+                <div class="hero-window">
+                    <div class="window-bar">
+                        <span></span>
+                        <strong>Servis Akışı</strong>
+                        <small>Hızlı kayıt</small>
                     </div>
-                </section>
 
-                <section class="card">
-                    <h3>Araç Bilgileri</h3>
-
-                    <div class="fields">
-                        <div class="form-field">
-                            <input id="plate" placeholder=" " />
-                            <label for="plate">Plaka</label>
-                            <div class="field-error" id="plateError">Plaka boş bırakılamaz.</div>
-                        </div>
-
-                        <div class="two">
-                            <div class="form-field">
-                                <input id="brand" placeholder=" " />
-                                <label for="brand">Marka</label>
-                            </div>
-
-                            <div class="form-field">
-                                <input id="model" placeholder=" " />
-                                <label for="model">Model</label>
-                            </div>
-                        </div>
-
-                        <div class="form-field">
-                            <input id="modelYear" inputmode="numeric" pattern="[0-9]*" placeholder=" " />
-                            <label for="modelYear">Model Yılı</label>
-                            <div class="field-error" id="modelYearError">Model yılı 4 haneli olmalı.</div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="card full">
-                    <h3>Parça / İşçilik</h3>
-
-                    <div class="operation-row">
+                    <div class="metric-strip">
                         <div>
-                            <input type="hidden" id="operationType" value="Parça" />
-
-                            <div class="type-toggle">
-                                <button type="button" class="type-option active" data-type="Parça" onclick="selectOperationType(this)">
-                                    Parça
-                                </button>
-
-                                <button type="button" class="type-option" data-type="İşçilik" onclick="selectOperationType(this)">
-                                    İşçilik
-                                </button>
-                            </div>
+                            <span>Açık Kayıt</span>
+                            <strong>14</strong>
                         </div>
-
-                        <div class="form-field">
-                            <select id="operationName">
-                                <option value="">İşlem seç</option>
-                                <option>Fren disk değişimi</option>
-                                <option>Yağ değişimi</option>
-                                <option>Filtre değişimi</option>
-                                <option>Balata değişimi</option>
-                                <option>Lastik değişimi</option>
-                                <option>Akü değişimi</option>
-                                <option>Genel bakım</option>
-                                <option>Diğer</option>
-                            </select>
-                            <label for="operationName">İşlem</label>
+                        <div>
+                            <span>Bugünkü Kabul</span>
+                            <strong>6</strong>
                         </div>
-
-                        <div class="form-field">
-                            <input id="operationQty" type="number" value="1" min="1" placeholder=" " />
-                            <label for="operationQty">Adet</label>
+                        <div>
+                            <span>Hazır Araç</span>
+                            <strong>3</strong>
                         </div>
-
-                        <div class="form-field">
-                            <input id="operationPrice" type="number" min="0" placeholder=" " />
-                            <label for="operationPrice">Birim Fiyat</label>
-                        </div>
-
-                        <button type="button" class="btn-blue" onclick="addOperation()">+ Ekle</button>
                     </div>
 
-                    <div class="form-field" style="margin-top:16px;">
-                        <textarea id="notes" placeholder=" "></textarea>
-                        <label for="notes">Ek Açıklama</label>
+                    <div class="service-card active">
+                        <div>
+                            <strong>34 SNT 360</strong>
+                            <span>Fren kontrolü ve bakım talebi</span>
+                        </div>
+                        <em>İşlemde</em>
                     </div>
 
-                    <div id="operationList" class="operation-list"></div>
-                </section>
+                    <div class="service-card">
+                        <div>
+                            <strong>06 SRV 145</strong>
+                            <span>Yağ bakımı, filtre ve genel kontrol</span>
+                        </div>
+                        <em>Bekliyor</em>
+                    </div>
+
+                    <div class="mini-panel">
+                        <div>
+                            <span>Belge</span>
+                            <strong>Ön kabul hazır</strong>
+                        </div>
+                        <div>
+                            <span>Bildirim</span>
+                            <strong>PDF yüklendi</strong>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </main>
+        </section>
 
-        <aside class="panel summary">
-            <h3>Form Özeti</h3>
+        <section class="trust-tags" aria-label="Sente360 güven etiketleri">
+            <span><strong>Servis kaydı</strong><small>Araç kabulünü ve işlem sürecini hızlıca başlatın.</small></span>
+            <span><strong>Müşteri ve araç bilgisi</strong><small>Geçmiş kayıtları, talepleri ve araç detaylarını düzenli tutun.</small></span>
+            <span><strong>Cari ve fatura takibi</strong><small>Hesap özeti, tahsilat ve fatura sürecini birlikte izleyin.</small></span>
+            <span><strong>Stok yönetimi</strong><small>Parça ve sarf malzemesi hareketlerini servis akışıyla bağlayın.</small></span>
+            <span><strong>Sente360 Destek</strong><small>Sorularınızı ve destek taleplerinizi panelden iletin; Sente360 ekibinden dönüş alın.</small></span>
+        </section>
 
-            <div class="summary-line">
-                <span>Müşteri</span>
-                <strong id="sumCustomer">—</strong>
-            </div>
-
-            <div class="summary-line">
-                <span>Telefon</span>
-                <strong id="sumPhone">—</strong>
-            </div>
-
-            <div class="summary-line">
-                <span>Araç</span>
-                <strong id="sumVehicle">—</strong>
-            </div>
-
-            <div class="summary-line">
-                <span>Plaka</span>
-                <strong id="sumPlate">—</strong>
-            </div>
-
-            <div class="summary-line">
-                <span>Parça Sayısı</span>
-                <strong id="sumPartCount">0</strong>
-            </div>
-
-            <div class="summary-line">
-                <span>İşçilik Sayısı</span>
-                <strong id="sumLaborCount">0</strong>
+        <section class="content-band problem-band">
+            <div class="section-heading">
+                <p class="eyebrow">Problem</p>
+                <h2>Defter, WhatsApp ve dağınık notlarla servis takibi zorlaşır.</h2>
             </div>
 
-            <div class="total">
-                <span>Toplam Tutar</span>
-                <strong id="totalText">₺0,00</strong>
+            <ul class="problem-list">
+                <li>Eski araç geçmişini bulmak zaman alır.</li>
+                <li>Müşteri talepleri ve yapılan işlemler karışabilir.</li>
+                <li>Fotoğraflar personel telefonunda kalır.</li>
+                <li>Fiyat, işçilik ve parça kayıtları dağınık ilerler.</li>
+                <li>Müşteriye profesyonel belge sunmak zorlaşır.</li>
+            </ul>
+        </section>
+
+        <section class="content-band" id="ozellikler">
+            <div class="section-heading">
+                <p class="eyebrow">Özellikler</p>
+                <h2>Sente360 servis akışınızı baştan sona düzenler.</h2>
+                <p>
+                    Dağınık servis kayıtlarını tek yerde toplayın; müşteri, araç, işlem,
+                    fotoğraf ve belge geçmişine ekip olarak düzenli şekilde erişin.
+                </p>
             </div>
 
-            <button class="btn-green" onclick="createPdf()">PDF Oluştur</button>
-        </aside>
+            <div class="feature-grid">
+                <article>
+                    <span>01</span>
+                    <h3>Hızlı araç kabul</h3>
+                    <p>Plaka, müşteri ve araç bilgileriyle servis kaydını hızlıca başlatın.</p>
+                </article>
+                <article>
+                    <span>02</span>
+                    <h3>Müşteri ve araç geçmişi</h3>
+                    <p>Önceki gelişleri, işlemleri ve belge kayıtlarını aynı yerde görün.</p>
+                </article>
+                <article>
+                    <span>03</span>
+                    <h3>Şikayet/talep bazlı kayıt</h3>
+                    <p>Müşteri taleplerini servis kaydı içinde düzenli başlıklar halinde takip edin.</p>
+                </article>
+                <article>
+                    <span>04</span>
+                    <h3>Fotoğraf kayıtları</h3>
+                    <p>Teslim alma ve işlem fotoğraflarını servis kaydına bağlayın.</p>
+                </article>
+                <article>
+                    <span>05</span>
+                    <h3>Servis ön kabul ve kayıt belgeleri</h3>
+                    <p>Araç kabul ve servis işlem kayıtlarını müşteriye düzenli belge olarak sunun.</p>
+                </article>
+                <article>
+                    <span>06</span>
+                    <h3>Cari, hesap özeti ve fatura</h3>
+                    <p>Parça, işçilik, hesap özeti ve fatura takibi adımlarını servis kaydının devamında yürütün.</p>
+                </article>
+                <article>
+                    <span>07</span>
+                    <h3>QR ile araç geçmişi</h3>
+                    <p>Araç geçmişine QR kod ile daha hızlı erişim sağlayın.</p>
+                </article>
+                <article>
+                    <span>08</span>
+                    <h3>Destek ve bildirim merkezi</h3>
+                    <p>Katalog, fatura ve kullanım taleplerinizi Sente360 Destek üzerinden iletin; yanıtları ve önemli bildirimleri panelden takip edin.</p>
+                </article>
+            </div>
+        </section>
 
-    </div>
-</div>
-
-<script>
-    const operations = [];
-
-    const formatter = new Intl.NumberFormat("tr-TR", {
-        style: "currency",
-        currency: "TRY"
-    });
-
-    function get(id) {
-        return document.getElementById(id);
-    }
-
-    function setError(inputId, messageId, hasError) {
-        const input = get(inputId);
-        const message = get(messageId);
-
-        if (!input || !message) return;
-
-        if (hasError) {
-            input.classList.add("input-invalid");
-            message.style.display = "block";
-        } else {
-            input.classList.remove("input-invalid");
-            message.style.display = "none";
-        }
-    }
-
-    function showTemporaryError(inputId, messageId) {
-        setError(inputId, messageId, true);
-
-        setTimeout(() => {
-            setError(inputId, messageId, false);
-        }, 1500);
-    }
-
-    function updateSummary() {
-        const brand = get("brand").value.trim();
-        const model = get("model").value.trim();
-
-        const total = operations.reduce((sum, x) => sum + (x.quantity * x.unitPrice), 0);
-        const partCount = operations.filter(x => x.type === "Parça").length;
-        const laborCount = operations.filter(x => x.type === "İşçilik").length;
-
-        get("sumCustomer").innerText = get("customerName").value || "—";
-        get("sumPhone").innerText = get("customerPhone").value || "—";
-        get("sumVehicle").innerText = `${brand} ${model}`.trim() || "—";
-        get("sumPlate").innerText = get("plate").value.toUpperCase() || "—";
-        get("sumPartCount").innerText = partCount;
-        get("sumLaborCount").innerText = laborCount;
-        get("totalText").innerText = formatter.format(total);
-    }
-
-    function addOperation() {
-        const type = get("operationType").value;
-        const name = get("operationName").value;
-        const quantity = Number(get("operationQty").value);
-        const unitPrice = Number(get("operationPrice").value || 0);
-
-        if (!name) {
-            alert("İşlem seçmelisin.");
-            return;
-        }
-
-        if (quantity <= 0) {
-            alert("Adet geçerli olmalı.");
-            return;
-        }
-
-            const note = get("notes").value.trim();
-
-         operations.push({
-             type,
-             name,
-             quantity,
-             unitPrice,
-             note
-           });
-
-        get("operationName").value = "";
-        get("operationQty").value = 1;
-        get("operationPrice").value = "";
-
-        renderOperations();
-        updateSummary();
-    }
-
-    function renderOperations() {
-        const list = get("operationList");
-        list.innerHTML = "";
-
-        operations.forEach((operation, index) => {
-            const total = operation.quantity * operation.unitPrice;
-
-            const div = document.createElement("div");
-            div.className = "operation-item";
-
-                  div.innerHTML = `
-        <div class="operation-main">
-            <span class="badge ${operation.type === "Parça" ? "part" : "labor"}">${operation.type}</span>
-
-            <div class="operation-info">
-                <strong>${operation.name}</strong>
-                <span>${operation.quantity} adet × ${formatter.format(operation.unitPrice)}</span>
-                ${
-                    operation.note
-                        ? `<button type="button" class="note-toggle" onclick="toggleNote(${index})">Açıklamayı göster</button>`
-                        : ""
-                }
+        <section class="content-band process-band" id="nasil-calisir">
+            <div class="section-heading">
+                <p class="eyebrow">Nasıl Çalışır</p>
+                <h2>Servis akışı hızlı kabulden belge ve faturaya uzanır.</h2>
+                <p>
+                    Amaç her adımı büyütmek değil; aracı hızlı bulmak, işlemi kaybetmeden yürütmek
+                    ve servis sonunda müşteriye düzenli belge ile net hesap sunmaktır.
+                </p>
             </div>
 
-            <div class="operation-price">${formatter.format(total)}</div>
+            <ol class="timeline">
+                <li>
+                    <span>1</span>
+                    <div>
+                        <h3>Araç plaka veya QR ile bulunur</h3>
+                        <p>Gelen araç hızlıca sisteme tanıtılır ya da mevcut geçmişi açılır.</p>
+                    </div>
+                </li>
+                <li>
+                    <span>2</span>
+                    <div>
+                        <h3>Servis kaydı hızlıca başlatılır</h3>
+                        <p>Şikayet, talep, fotoğraf ve ilk notlar aynı kayıt altında toplanır.</p>
+                    </div>
+                </li>
+                <li>
+                    <span>3</span>
+                    <div>
+                        <h3>İşlem, parça ve işçilik eklenir</h3>
+                        <p>Yapılan işlemler, kullanılan parçalar ve işçilik kalemleri düzenli ilerler.</p>
+                    </div>
+                </li>
+                <li>
+                    <span>4</span>
+                    <div>
+                        <h3>PDF servis çıktısı paylaşılır</h3>
+                        <p>İşlem tamamlanınca servis kaydı PDF olarak araç sahibine iletilebilir.</p>
+                    </div>
+                </li>
+                <li>
+                    <span>5</span>
+                    <div>
+                        <h3>Hesap özeti ve fatura süreci takip edilir</h3>
+                        <p>Servis hesabı netleştirilir, fatura takibi ve muhasebe PDF süreci düzenli şekilde izlenir.</p>
+                    </div>
+                </li>
+                <li>
+                    <span>6</span>
+                    <div>
+                        <h3>Geçmiş sonraki gelişte hazırdır</h3>
+                        <p>Aynı araç geldiğinde geçmiş işlemler ve belgeler tekrar kolayca görüntülenir.</p>
+                    </div>
+                </li>
+            </ol>
+        </section>
 
-            <button type="button" class="delete" onclick="removeOperation(${index})">×</button>
+        <section class="product-story">
+            <div class="section-heading">
+                <p class="eyebrow">Tek panelden takip</p>
+                <h2>Servis kabul, işlem takibi, bildirim ve fatura akışı aynı düzen içinde ilerler.</h2>
+            </div>
+
+            <div class="flow-mockup">
+                <aside>
+                    <strong>Sente360</strong>
+                    <span>Genel Bakış</span>
+                    <span>Servis Akışı</span>
+                    <span>Cari İşlemler</span>
+                    <span>Fatura Takibi</span>
+                    <span>Destek</span>
+                </aside>
+
+                <div class="mock-main">
+                    <div class="mock-toolbar">
+                        <div>
+                            <span>Bugün</span>
+                            <strong>Günlük servis akışı</strong>
+                        </div>
+                        <em>3 yeni bildirim</em>
+                    </div>
+
+                    <div class="mock-stats">
+                        <article><span>Bekleyen</span><strong>8</strong></article>
+                        <article><span>İşlemde</span><strong>14</strong></article>
+                        <article><span>Takipte</span><strong>5</strong></article>
+                    </div>
+
+                    <div class="mock-row">
+                        <strong>34 ABC 123</strong>
+                        <span>Kaporta kontrolü</span>
+                        <em>Fotoğraf eklendi</em>
+                    </div>
+                    <div class="mock-row">
+                        <strong>35 KLM 789</strong>
+                        <span>Periyodik bakım</span>
+                        <em>Fatura takibi</em>
+                    </div>
+                    <div class="mock-row">
+                        <strong>16 SRV 040</strong>
+                        <span>Elektrik arıza kontrolü</span>
+                        <em>Destek yanıtı</em>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-band trust-band">
+            <div class="section-heading">
+                <p class="eyebrow">Veri düzeni</p>
+                <h2>Kayıtlar işletme bazında düzenli ve erişilebilir kalır.</h2>
+            </div>
+            <div class="trust-layout">
+                <p>
+                    Sente360’da müşteri, araç, servis kaydı, fotoğraf, belge ve fatura bilgileri
+                    işletme düzenine göre tutulur. Ekip içinde kimin hangi işlemleri yapacağı
+                    yetki seviyelerine göre ayrıştırılabilir.
+                </p>
+                <div class="trust-points">
+                    <span>İşletmeye özel müşteri ve araç kayıtları</span>
+                    <span>Ekip içi yetki seviyelerine göre kullanım</span>
+                    <span>Sente360 Destek talepleri ve bildirimlerinde düzenli takip</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-band audience-band" id="kimler-icin">
+            <div class="section-heading">
+                <p class="eyebrow">Kimler için?</p>
+                <h2>Farklı servis türleri için düzenli çalışma alanı.</h2>
+                <p>Sente360; araç kabul, işlem takibi ve servis geçmişini daha düzenli yönetmek isteyen farklı servis türleri için uygundur.</p>
+            </div>
+
+            <div class="audience-grid">
+                <article>
+                    <span aria-hidden="true">OS</span>
+                    <h3>Özel oto servisleri</h3>
+                    <p>Araç kabul, servis geçmişi ve müşteri kayıtlarını düzenli tutmak isteyen işletmeler.</p>
+                </article>
+                <article>
+                    <span aria-hidden="true">MB</span>
+                    <h3>Mekanik bakım servisleri</h3>
+                    <p>Periyodik bakım, parça/işçilik ve işlem kayıtlarını tek yerden takip eden servisler.</p>
+                </article>
+                <article>
+                    <span aria-hidden="true">KB</span>
+                    <h3>Kaporta/boya işletmeleri</h3>
+                    <p>Teslim alma fotoğrafları, hasar notları ve işlem sürecini kayıt altında tutmak isteyen atölyeler.</p>
+                </article>
+                <article>
+                    <span aria-hidden="true">OE</span>
+                    <h3>Oto elektrik servisleri</h3>
+                    <p>Arıza talepleri, yapılan işlemler ve araç geçmişini düzenli izlemek isteyen servisler.</p>
+                </article>
+                <article>
+                    <span aria-hidden="true">LB</span>
+                    <h3>Lastik/bakım işletmeleri</h3>
+                    <p>Hızlı kayıt, müşteri geçmişi ve bakım notlarını pratik şekilde takip etmek isteyen işletmeler.</p>
+                </article>
+                <article>
+                    <span aria-hidden="true">AT</span>
+                    <h3>Küçük ve orta ölçekli atölyeler</h3>
+                    <p>Defter, WhatsApp ve dağınık notlardan daha düzenli bir sisteme geçmek isteyen ekipler.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="company-band" aria-label="Bilişimart bilgisi">
+            <div class="company-card">
+                <div>
+                    <p class="eyebrow">Bilişimart ürünü</p>
+                    <h2>Sente360, Bilişimart tarafından geliştirilen bir servis yönetim ürünüdür.</h2>
+                    <p>
+                        Oto servis yönetimi dışında işletmenize özel yazılım, entegrasyon veya süreç
+                        otomasyonu ihtiyacınız varsa Bilişimart üzerinden iletişime geçebilirsiniz.
+                    </p>
+                </div>
+                <a class="secondary-action company-link" href="@bilisimartUrl" target="_blank" rel="noopener">Bilişimart’ı ziyaret et</a>
+            </div>
+        </section>
+
+        <section class="cta-section" id="iletisim">
+            <div>
+                <p class="eyebrow">İletişim</p>
+                <h2>Servisiniz için kısa bir tanıtım görüşmesi planlayalım.</h2>
+                <p>Görüşmede hızlı araç kabul, QR/plaka ile geçmiş erişimi, servis PDF’i, hesap özeti ve fatura akışını birlikte gözden geçirebiliriz.</p>
+                <div class="contact-links">
+                    <a href="tel:+905384427271">@contactPhone</a>
+                    <a href="mailto:@contactEmail">@contactEmail</a>
+                </div>
+            </div>
+            <a class="primary-action" href="@whatsappUrl" target="_blank" rel="noopener">WhatsApp’tan Görüşme Planla</a>
+        </section>
+
+        <section class="content-band faq-band">
+            <div class="section-heading">
+                <p class="eyebrow">Sıkça sorulan sorular</p>
+                <h2>Tanıtım görüşmesi öncesi merak edilenler.</h2>
+            </div>
+
+            <div class="faq-list">
+                <details>
+                    <summary>Web tabanlı mı?</summary>
+                    <p>Evet. Sente360 web tabanlı çalışır; servis kullanıcıları yetkileri dahilinde panelden işlem yapar.</p>
+                </details>
+                <details>
+                    <summary>Tanıtım görüşmesi nasıl ilerler?</summary>
+                    <p>WhatsApp üzerinden iletişime geçilir, kısa bir görüşme planlanır ve örnek servis akışı birlikte incelenir.</p>
+                </details>
+                <details>
+                    <summary>Belge çıktısı alınabilir mi?</summary>
+                    <p>Servis ön kabul ve servis işlem kayıtları için müşteriye sunulabilecek düzenli belge çıktıları bulunur.</p>
+                </details>
+                <details>
+                    <summary>Araç geçmişi görülebilir mi?</summary>
+                    <p>Araç ve müşteri geçmişi servis kayıtlarıyla birlikte tutulur; sonraki gelişlerde daha hızlı erişilebilir.</p>
+                </details>
+            </div>
+        </section>
+    </main>
+
+    <footer class="landing-footer">
+        <span>Sente360 © 2026</span>
+        <div>
+            <a href="tel:+905384427271">@contactPhone</a>
+            <a href="mailto:@contactEmail">@contactEmail</a>
+            <a href="@loginUrl">Giriş Yap</a>
+            <a href="@whatsappUrl" target="_blank" rel="noopener">WhatsApp’tan Görüşme Planla</a>
         </div>
-
-        ${
-            operation.note
-                ? `<div class="operation-note" id="note-${index}">${operation.note}</div>`
-                : ""
-        }
-    `;
-
-            list.appendChild(div);
-        });
-    }
-
-    function removeOperation(index) {
-        operations.splice(index, 1);
-        get("notes").value = "";
-        renderOperations();
-        updateSummary();
-    }
-        function selectOperationType(button) {
-        document.querySelectorAll(".type-option")
-            .forEach(x => x.classList.remove("active"));
-
-        button.classList.add("active");
-
-        document.getElementById("operationType").value = button.dataset.type;
-    }
-
-    function formatPhone(digits) {
-          if (digits.length > 9) {
-        return digits.replace(/(\d{4})(\d{3})(\d{2})(\d{0,2})/, "$1 $2 $3 $4").trim();
-    }
-
-    if (digits.length > 7) {
-        return digits.replace(/(\d{4})(\d{3})(\d{0,2})/, "$1 $2 $3").trim();
-    }
-
-    if (digits.length > 4) {
-        return digits.replace(/(\d{4})(\d{0,3})/, "$1 $2").trim();
-    }
-
-    return digits;
-    }
-       
-        function toggleNote(index) {
-        const note = document.getElementById("note-" + index);
-        if (!note) return;
-
-        note.classList.toggle("open");
-    }
-
-    async function createPdf() {
-        const phoneDigits = get("customerPhone").value.replace(/\D/g, "");
-
-        const isCustomerNameInvalid = get("customerName").value.trim().length === 0;
-        const isPlateInvalid = get("plate").value.trim().length === 0;
-        const isModelYearInvalid =
-            get("modelYear").value.length > 0 && get("modelYear").value.length < 4;
-        const isPhoneInvalid =
-            phoneDigits.length > 0 && phoneDigits.length < 10;
-
-        setError("customerName", "customerNameError", isCustomerNameInvalid);
-        setError("plate", "plateError", isPlateInvalid);
-        setError("modelYear", "modelYearError", isModelYearInvalid);
-        setError("customerPhone", "customerPhoneError", isPhoneInvalid);
-
-        if (isCustomerNameInvalid || isPlateInvalid || isModelYearInvalid || isPhoneInvalid) {
-            alert("Lütfen hatalı alanları düzelt.");
-            return;
-        }
-
-        if (operations.length === 0) {
-            alert("En az bir işlem eklemelisin.");
-            return;
-        }
-
-        const request = {
-            customerName: get("customerName").value.trim(),
-            customerPhone: phoneDigits,
-            customerEmail: get("customerEmail").value.trim(),
-            plate: get("plate").value.trim().toUpperCase(),
-            brand: get("brand").value.trim(),
-            model: get("model").value.trim(),
-            modelYear: get("modelYear").value.trim(),
-            notes: get("notes").value.trim(),
-            operations: operations
-        };
-
-       
-            const response = await fetch("/service-pdf/create", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(request)
-    });
-
-            if (!response.ok) {
-        const errorText = await response.text();
-        alert("PDF oluşturulurken hata oluştu:\n" + errorText);
-        return;
-    }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "servis-formu.pdf";
-        a.click();
-
-        window.URL.revokeObjectURL(url);
-    }
-
-    get("customerName").addEventListener("input", function () {
-        this.value = this.value.replace(/[^a-zA-ZğüşöçıİĞÜŞÖÇ\s]/g, "");
-        setError("customerName", "customerNameError", this.value.trim().length === 0);
-        updateSummary();
-    });
-
-    get("customerPhone").addEventListener("beforeinput", function (e) {
-        if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
-            e.preventDefault();
-            showTemporaryError("customerPhone", "customerPhoneError");
-        }
-    });
-
-    get("customerPhone").addEventListener("paste", function (e) {
-        const pastedText = (e.clipboardData || window.clipboardData).getData("text");
-        const digits = pastedText.replace(/\D/g, "").slice(0, 11);
-
-        if (pastedText !== digits) {
-            e.preventDefault();
-            this.value = formatPhone(digits);
-            showTemporaryError("customerPhone", "customerPhoneError");
-            updateSummary();
-        }
-    });
-
-    get("customerPhone").addEventListener("input", function () {
-        const digits = this.value.replace(/\D/g, "").slice(0, 11);
-        this.value = formatPhone(digits);
-        updateSummary();
-    });
-
-    get("plate").addEventListener("beforeinput", function (e) {
-        if (e.inputType === "insertText" && !/^[a-zA-Z0-9]$/.test(e.data)) {
-            e.preventDefault();
-            showTemporaryError("plate", "plateError");
-        }
-    });
-
-    get("plate").addEventListener("input", function () {
-        this.value = this.value
-            .toUpperCase()
-            .replace(/[^A-Z0-9]/g, "");
-
-        setError("plate", "plateError", this.value.trim().length === 0);
-        updateSummary();
-    });
-
-    get("modelYear").addEventListener("beforeinput", function (e) {
-        if (e.inputType === "insertText" && !/^\d$/.test(e.data)) {
-            e.preventDefault();
-            showTemporaryError("modelYear", "modelYearError");
-        }
-    });
-
-    get("modelYear").addEventListener("input", function () {
-        this.value = this.value.replace(/\D/g, "").slice(0, 4);
-        setError("modelYear", "modelYearError", this.value.length > 0 && this.value.length < 4);
-    });
-
-    ["brand", "model", "customerEmail"].forEach(id => {
-        get(id).addEventListener("input", updateSummary);
-    });
-
-    get("customerName").addEventListener("blur", function () {
-        this.value = this.value
-            .toLowerCase()
-            .replace(/\b\w/g, char => char.toUpperCase());
-    });
-
-    get("brand").addEventListener("input", function () {
-        this.value = this.value.toUpperCase();
-    });
-
-    get("model").addEventListener("blur", function () {
-        this.value = this.value
-            .toLowerCase()
-            .replace(/\b\w/g, char => char.toUpperCase());
-    });
-
-    updateSummary();
-</script>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /Auth/
+Disallow: /Admin/
+Disallow: /Dashboard/
+
+Sitemap: https://sente360.com/sitemap.xml
