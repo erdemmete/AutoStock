@@ -184,30 +184,31 @@
     });
 
     /* =========================================================
-   QR scanner modal override
-   Eski inline QR alanı yerine kapatılabilir modal kullanır.
-   ========================================================= */
+       QR assign scanner modal
+       Mobil-safe kamera overlay'i ve stream cleanup.
+       ========================================================= */
 
     (function () {
         let qrModalScanner = null;
         let qrModalLocked = false;
         let qrModalVehicleId = null;
         let qrModalButton = null;
+        let qrModalClosing = false;
 
         function getQrModal() {
             return document.getElementById("qrAssignModal");
         }
 
-        function getQrResultBox() {
-            return document.getElementById("qr-modal-result");
+        function getQrReader() {
+            return document.getElementById("qr-modal-reader");
         }
 
-        function setQrResult(message) {
-            const resultBox = getQrResultBox();
+        function getQrErrorPanel() {
+            return document.getElementById("qr-modal-error");
+        }
 
-            if (resultBox) {
-                resultBox.textContent = message;
-            }
+        function getQrResultBox() {
+            return document.getElementById("qr-modal-result");
         }
 
         function resetQrButton(text = "QR Tara") {
@@ -219,35 +220,138 @@
             qrModalButton.textContent = text;
         }
 
-        async function stopQrModalScanner() {
-            if (!qrModalScanner) {
+        function setQrError(message) {
+            const errorPanel = getQrErrorPanel();
+            const resultBox = getQrResultBox();
+
+            if (resultBox) {
+                resultBox.textContent = message || "Kamera açılamadı.";
+            }
+
+            if (errorPanel) {
+                errorPanel.hidden = false;
+            }
+        }
+
+        function clearQrError() {
+            const errorPanel = getQrErrorPanel();
+            const resultBox = getQrResultBox();
+
+            if (resultBox) {
+                resultBox.textContent = "";
+            }
+
+            if (errorPanel) {
+                errorPanel.hidden = true;
+            }
+        }
+
+        function isQrModalVisible() {
+            return getQrModal()?.classList.contains("show") === true;
+        }
+
+        function hideQrModalSurface() {
+            const modal = getQrModal();
+
+            clearQrError();
+
+            if (modal) {
+                modal.classList.remove("show");
+                modal.setAttribute("aria-hidden", "true");
+            }
+
+            document.body.classList.remove("srx-qr-modal-open");
+        }
+
+        function showQrAssignError(message) {
+            const text = message || "QR atanırken hata oluştu.";
+
+            if (isQrModalVisible()) {
+                setQrError(text);
                 return;
             }
 
-            try {
-                await qrModalScanner.stop();
-            } catch {
-                // Kamera zaten kapalı olabilir.
+            if (typeof showToast === "function") {
+                showToast(text, "error");
             }
+        }
 
-            try {
-                qrModalScanner.clear();
-            } catch {
-                // Kritik değil.
-            }
+        function finishQrModalSession(buttonText = "QR Tara") {
+            qrModalLocked = false;
+            qrModalVehicleId = null;
+            resetQrButton(buttonText);
+            qrModalButton = null;
+            clearQrError();
+        }
+
+        function stopQrReaderTracks() {
+            const reader = getQrReader();
+
+            reader?.querySelectorAll("video").forEach(video => {
+                const stream = video.srcObject;
+
+                if (stream && typeof stream.getTracks === "function") {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+
+                video.pause();
+                video.srcObject = null;
+                video.removeAttribute("src");
+                video.load?.();
+            });
+        }
+
+        async function stopQrModalScanner() {
+            const activeScanner = qrModalScanner;
+            const reader = getQrReader();
 
             qrModalScanner = null;
+
+            if (activeScanner) {
+                try {
+                    await activeScanner.stop();
+                } catch {
+                }
+
+                try {
+                    await activeScanner.clear();
+                } catch {
+                }
+            }
+
+            stopQrReaderTracks();
+
+            if (reader) {
+                reader.innerHTML = "";
+            }
+        }
+
+        function getQrCameraErrorMessage(error) {
+            const name = error?.name || "";
+            const message = String(error?.message || error || "");
+
+            if (name.includes("NotAllowed") || message.includes("Permission")) {
+                return "Kamera izni verilmedi.";
+            }
+
+            if (name.includes("NotFound") || message.includes("Requested device not found")) {
+                return "Kamera bulunamadı.";
+            }
+
+            if (name.includes("NotReadable")) {
+                return "Kamera başka bir uygulama tarafından kullanılıyor olabilir.";
+            }
+
+            return "Kamera açılamadı.";
         }
 
         async function assignQrCodeFromModal(code) {
             if (!qrModalVehicleId || !code) {
-                setQrResult("QR bilgisi okunamadı.");
+                showQrAssignError("QR bilgisi okunamadı.");
                 qrModalLocked = false;
                 resetQrButton("Tekrar Tara");
                 return;
             }
-
-            setQrResult("QR kod atanıyor...");
 
             const formData = new FormData();
             formData.append("vehicleId", qrModalVehicleId);
@@ -263,25 +367,67 @@
                 if (!response.ok) {
                     const errorText = await response.text();
 
-                    setQrResult(errorText || "QR atanırken hata oluştu.");
+                    showQrAssignError(errorText || "QR atanırken hata oluştu.");
                     qrModalLocked = false;
                     resetQrButton("Tekrar Tara");
                     return;
                 }
 
-                setQrResult("QR kod araca başarıyla atandı.");
                 resetQrButton("QR Atandı");
 
                 if (typeof showToast === "function") {
                     showToast("QR kod başarıyla eşleştirildi.", "success");
                 }
 
-                window.setTimeout(() => {
-                    closeQrAssignModal();
-                }, 750);
+                finishQrModalSession("QR Tara");
             }
             catch {
-                setQrResult("QR atanırken beklenmeyen bir hata oluştu.");
+                showQrAssignError("QR atanırken hata oluştu.");
+                qrModalLocked = false;
+                resetQrButton("Tekrar Tara");
+            }
+        }
+
+        async function startQrModalCamera() {
+            const modal = getQrModal();
+            const reader = getQrReader();
+
+            if (!modal || !reader || !modal.classList.contains("show") || qrModalScanner) {
+                return;
+            }
+
+            if (typeof Html5Qrcode === "undefined") {
+                setQrError("QR okuyucu yüklenemedi.");
+                resetQrButton("Tekrar Tara");
+                return;
+            }
+
+            clearQrError();
+            qrModalLocked = false;
+
+            try {
+                reader.innerHTML = "";
+                qrModalScanner = new Html5Qrcode("qr-modal-reader");
+
+                await qrModalScanner.start(
+                    { facingMode: "environment" },
+                    { fps: 10 },
+                    async decodedText => {
+                        if (qrModalLocked) {
+                            return;
+                        }
+
+                        qrModalLocked = true;
+                        await stopQrModalScanner();
+                        hideQrModalSurface();
+                        await assignQrCodeFromModal(decodedText);
+                    }
+                );
+            }
+            catch (error) {
+                console.error(error);
+                await stopQrModalScanner();
+                setQrError(getQrCameraErrorMessage(error));
                 qrModalLocked = false;
                 resetQrButton("Tekrar Tara");
             }
@@ -298,80 +444,32 @@
                 return;
             }
 
-            if (typeof Html5Qrcode === "undefined") {
-                setQrResult("QR okuyucu yüklenemedi.");
-
-                if (typeof showToast === "function") {
-                    showToast("QR okuyucu yüklenemedi.", "error");
-                }
-
-                return;
-            }
-
             qrModalVehicleId = vehicleId;
             qrModalButton = button || null;
             qrModalLocked = false;
 
             if (qrModalButton) {
                 qrModalButton.disabled = true;
-                qrModalButton.textContent = "Kamera açılıyor...";
             }
 
             modal.classList.add("show");
             modal.setAttribute("aria-hidden", "false");
-            document.body.style.overflow = "hidden";
-
-            setQrResult("Kamera açılıyor...");
+            document.body.classList.add("srx-qr-modal-open");
 
             await stopQrModalScanner();
-
-            try {
-                qrModalScanner = new Html5Qrcode("qr-modal-reader");
-
-                await qrModalScanner.start(
-                    { facingMode: "environment" },
-                    {
-                        fps: 10,
-                        qrbox: {
-                            width: 240,
-                            height: 240
-                        }
-                    },
-                    async decodedText => {
-                        if (qrModalLocked) {
-                            return;
-                        }
-
-                        qrModalLocked = true;
-
-                        setQrResult(`QR okundu: ${decodedText}`);
-
-                        await stopQrModalScanner();
-
-                        await assignQrCodeFromModal(decodedText);
-                    }
-                );
-
-                if (qrModalButton) {
-                    qrModalButton.textContent = "Taranıyor...";
-                }
-
-                setQrResult("Kamera açık. QR kodu kameraya gösterin.");
-            }
-            catch (error) {
-                console.error(error);
-
-                setQrResult("Kamera hatası: " + (error?.message || error));
-                qrModalLocked = false;
-                resetQrButton("Tekrar Tara");
-            }
+            await startQrModalCamera();
         };
 
         window.closeQrAssignModal = async function () {
             const modal = getQrModal();
             const buttonToFocus = qrModalButton;
 
-            // Modal içindeki kapatma butonu focus'ta kalmasın.
+            if (qrModalClosing) {
+                return;
+            }
+
+            qrModalClosing = true;
+
             if (modal && modal.contains(document.activeElement)) {
                 document.activeElement.blur();
             }
@@ -383,22 +481,20 @@
 
             resetQrButton("QR Tara");
             qrModalButton = null;
+            hideQrModalSurface();
+            qrModalClosing = false;
 
-            setQrResult("Kamera hazırlanıyor.");
-
-            if (modal) {
-                modal.classList.remove("show");
-                modal.setAttribute("aria-hidden", "true");
-            }
-
-            document.body.style.overflow = "";
-
-            // Focus'u modal dışındaki QR butonuna geri ver.
             if (buttonToFocus && typeof buttonToFocus.focus === "function") {
                 window.setTimeout(() => {
                     buttonToFocus.focus({ preventScroll: true });
                 }, 0);
             }
+        };
+
+        window.retryQrAssignScanner = async function () {
+            clearQrError();
+            await stopQrModalScanner();
+            await startQrModalCamera();
         };
 
         document.addEventListener("click", function (event) {
@@ -414,9 +510,21 @@
         });
 
         document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") {
+            const modal = getQrModal();
+
+            if (event.key === "Escape" && modal?.classList.contains("show")) {
                 closeQrAssignModal();
             }
+        });
+
+        window.addEventListener("pagehide", function () {
+            stopQrReaderTracks();
+            void stopQrModalScanner();
+        });
+
+        window.addEventListener("beforeunload", function () {
+            stopQrReaderTracks();
+            void stopQrModalScanner();
         });
     })();
 })();

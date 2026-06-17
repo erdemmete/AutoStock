@@ -1,98 +1,74 @@
-﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http
 @using System.Text.Json
 
 @{
     var role = (Context.Session.GetString("UserRole") ?? "").Trim();
     var fullName = (Context.Session.GetString("FullName") ?? "anonymous").Trim();
     var isOwner = string.Equals(role, "Owner", StringComparison.OrdinalIgnoreCase);
-
     var qrStorageScope = $"{role}:{fullName}";
 }
 
-<div id="qrScannerModal" class="qr-modal-backdrop" hidden>
-    <div class="qr-modal-card" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
-        <header class="qr-modal-header">
-            <div>
-                <h2 id="qrModalTitle">QR Tara</h2>
-                <p>Aracı okutun, ardından yapmak istediğiniz işlemi seçin.</p>
+<div id="qrScannerModal" class="qr-modal-backdrop" hidden aria-hidden="true">
+    <button type="button"
+            class="qr-modal-close"
+            data-qr-modal-close
+            aria-label="QR tarayıcıyı kapat">
+        ×
+    </button>
+
+    <div class="qr-modal-shell" role="dialog" aria-modal="true" aria-label="QR Tara">
+        <section id="qrScanPanel" class="qr-scan-panel">
+            <div id="s360QrReader" class="qr-reader" aria-label="QR kamera görüntüsü"></div>
+            <div class="qr-scan-frame" aria-hidden="true"></div>
+
+            <div id="qrErrorPanel" class="qr-error-panel" hidden>
+                <p id="qrStatusBox">Kamera açılamadı.</p>
+                <button type="button" id="qrRetryButton" class="qr-retry-button">
+                    Tekrar Dene
+                </button>
+            </div>
+        </section>
+
+        <section id="qrResultCard" class="qr-result-card" hidden tabindex="-1">
+            <div class="qr-result-heading">
+                <span>Araç bulundu</span>
+                <h2 id="qrVehiclePlate">-</h2>
+                <p id="qrCustomerName">-</p>
             </div>
 
-            <button type="button" class="qr-modal-close" data-qr-modal-close>
-                ×
-            </button>
-        </header>
-
-        <div class="qr-modal-body">
-            <section class="qr-camera-panel">
-                <div id="dashboardQrReader" class="qr-reader"></div>
-
-                <div class="qr-camera-actions">
-                    <button type="button" id="qrStartButton" class="qr-btn qr-btn-primary">
-                        Kamerayı Başlat
-                    </button>
-
-                    <button type="button" id="qrStopButton" class="qr-btn qr-btn-secondary" disabled>
-                        Durdur
-                    </button>
-
-                    <button type="button" id="qrResetButton" class="qr-btn qr-btn-secondary" hidden>
-                        Tekrar Tara
-                    </button>
+            <div class="qr-vehicle-info">
+                <div>
+                    <span>Araç</span>
+                    <strong id="qrVehicleName">-</strong>
                 </div>
 
-                <div id="qrStatusBox" class="qr-status-box">
-                    QR okutmak için kamerayı başlatın.
+                <div id="qrOpenRecordRow">
+                    <span>Açık kayıt</span>
+                    <strong id="qrOpenRecordText">-</strong>
                 </div>
-            </section>
+            </div>
 
-            <section id="qrResultCard" class="qr-result-card" hidden>
-                <div class="qr-vehicle-title">
-                    <div>
-                        <span>Araç bulundu</span>
-                        <h3 id="qrVehiclePlate">-</h3>
-                    </div>
-
-                    <div id="qrOpenRecordBadge" class="qr-open-record-badge" hidden>
-                        Açık kayıt var
-                    </div>
-                </div>
-
-                <div class="qr-vehicle-info">
-                    <div>
-                        <span>Müşteri</span>
-                        <strong id="qrCustomerName">-</strong>
-                    </div>
-
-                    <div>
-                        <span>Araç</span>
-                        <strong id="qrVehicleName">-</strong>
-                    </div>
-
-                    <div id="qrOpenRecordRow">
-                        <span>Açık kayıt</span>
-                        <strong id="qrOpenRecordText">-</strong>
-                    </div>
-                </div>
-
-                <div id="qrActionGrid" class="qr-action-grid"></div>
-            </section>
-        </div>
+            <div id="qrActionGrid" class="qr-action-grid"></div>
+        </section>
     </div>
 </div>
 
 <style>
     body.qr-modal-open {
         overflow: hidden;
+        touch-action: none;
     }
 
     .qr-modal-backdrop {
         position: fixed;
         inset: 0;
-        z-index: 9999;
+        z-index: 2147483000;
         display: grid;
         place-items: center;
-        padding: 24px;
-        background: rgba(15, 23, 42, .52);
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+        background: rgba(15, 23, 42, .78);
         backdrop-filter: blur(10px);
     }
 
@@ -100,206 +76,211 @@
             display: none !important;
         }
 
-    .qr-modal-card {
-        width: min(920px, 100%);
-        max-height: calc(100vh - 48px);
-        overflow: auto;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 26px;
-        box-shadow: 0 30px 90px rgba(15, 23, 42, .32);
-    }
-
-    .qr-modal-header {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 18px;
-        padding: 22px 24px;
-        background: rgba(255,255,255,.94);
-        border-bottom: 1px solid #eef2f7;
-        backdrop-filter: blur(12px);
-    }
-
-        .qr-modal-header h2 {
-            margin: 0;
-            color: #0f172a;
-            font-size: 24px;
-            font-weight: 950;
-            letter-spacing: -.6px;
-        }
-
-        .qr-modal-header p {
-            margin: 6px 0 0;
-            color: #64748b;
-            font-size: 14px;
-            font-weight: 700;
-        }
-
     .qr-modal-close {
-        width: 42px;
-        height: 42px;
-        border-radius: 14px;
-        border: 1px solid #e2e8f0;
-        background: #f8fafc;
-        color: #334155;
-        font-size: 26px;
+        position: fixed;
+        top: calc(env(safe-area-inset-top, 0px) + 16px);
+        right: calc(env(safe-area-inset-right, 0px) + 16px);
+        z-index: 2147483002;
+        width: 48px;
+        height: 48px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, .28);
+        border-radius: 999px;
+        background: rgba(15, 23, 42, .74);
+        color: #ffffff;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, .28);
+        font-size: 30px;
         line-height: 1;
-        font-weight: 850;
+        font-weight: 900;
         cursor: pointer;
+        backdrop-filter: blur(14px);
     }
 
         .qr-modal-close:hover {
-            background: #fee2e2;
-            border-color: #fecaca;
-            color: #991b1b;
+            background: rgba(220, 38, 38, .9);
         }
 
-    .qr-modal-body {
-        padding: 24px;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 20px;
+    .qr-modal-shell {
+        position: relative;
+        width: min(760px, 100%);
+        height: min(680px, calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+        min-height: 420px;
+        border: 1px solid rgba(255, 255, 255, .2);
+        border-radius: 28px;
+        background: #020617;
+        box-shadow: 0 36px 100px rgba(0, 0, 0, .44);
+        overflow: hidden;
     }
 
-    .qr-camera-panel,
-    .qr-result-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 22px;
-        padding: 18px;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, .06);
+    .qr-scan-panel {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: #020617;
+        overflow: hidden;
     }
+
+        .qr-scan-panel[hidden],
+        .qr-result-card[hidden],
+        .qr-error-panel[hidden] {
+            display: none !important;
+        }
 
     .qr-reader {
-        min-height: 320px;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
         overflow: hidden;
-        border-radius: 18px;
-        background: #0f172a;
+        background: #020617;
     }
 
-        .qr-reader video {
+        .qr-reader video,
+        .qr-reader canvas {
             width: 100% !important;
-            height: auto !important;
+            height: 100% !important;
+            object-fit: cover !important;
         }
 
-    .qr-camera-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
+        .qr-reader > div {
+            width: 100% !important;
+            height: 100% !important;
+            border: 0 !important;
+        }
+
+    .qr-scan-frame {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 2;
+        width: min(68vw, 310px);
+        height: min(68vw, 310px);
+        max-height: min(54dvh, 310px);
+        transform: translate(-50%, -50%);
+        border: 2px solid rgba(255, 255, 255, .92);
+        border-radius: 28px;
+        box-shadow:
+            0 0 0 999px rgba(2, 6, 23, .24),
+            0 0 0 1px rgba(37, 99, 235, .28),
+            0 24px 60px rgba(0, 0, 0, .24);
+        pointer-events: none;
+    }
+
+        .qr-scan-frame::before,
+        .qr-scan-frame::after {
+            content: "";
+            position: absolute;
+            left: 18%;
+            right: 18%;
+            height: 2px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+        }
+
+        .qr-scan-frame::before {
+            top: 22%;
+            animation: qrScanLine 2.1s ease-in-out infinite;
+        }
+
+        .qr-scan-frame::after {
+            bottom: 22%;
+            opacity: .42;
+        }
+
+    .qr-error-panel {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        z-index: 4;
+        width: min(360px, calc(100% - 44px));
+        transform: translate(-50%, -50%);
+        padding: 22px;
+        border: 1px solid rgba(226, 232, 240, .24);
+        border-radius: 22px;
+        background: rgba(15, 23, 42, .9);
+        color: #ffffff;
+        text-align: center;
+        box-shadow: 0 26px 70px rgba(0, 0, 0, .34);
+        backdrop-filter: blur(16px);
+    }
+
+        .qr-error-panel p {
+            margin: 0;
+            color: #f8fafc;
+            font-size: 15px;
+            font-weight: 850;
+            line-height: 1.45;
+        }
+
+    .qr-retry-button {
+        min-height: 44px;
         margin-top: 16px;
-    }
-
-    .qr-btn {
-        min-height: 42px;
-        padding: 0 16px;
-        border-radius: 13px;
-        border: none;
-        cursor: pointer;
+        padding: 0 18px;
+        border: 0;
+        border-radius: 14px;
+        background: #2563eb;
+        color: #ffffff;
         font-weight: 950;
+        cursor: pointer;
     }
 
-    .qr-btn-primary {
-        background: #635bff;
-        color: white;
-        box-shadow: 0 12px 24px rgba(99, 91, 255, .22);
+    .qr-result-card {
+        height: 100%;
+        display: grid;
+        align-content: start;
+        gap: 18px;
+        padding: 34px;
+        overflow: auto;
+        background:
+            linear-gradient(135deg, rgba(37, 99, 235, .08), transparent 52%),
+            #ffffff;
     }
 
-    .qr-btn-secondary {
-        background: #f8fafc;
-        color: #334155;
-        border: 1px solid #e2e8f0;
+    .qr-result-heading {
+        padding-right: 54px;
     }
 
-    .qr-btn:disabled {
-        opacity: .55;
-        cursor: not-allowed;
-    }
-
-    .qr-status-box {
-        margin-top: 14px;
-        padding: 13px 15px;
-        border-radius: 15px;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
-        color: #1e40af;
-        font-weight: 850;
-        line-height: 1.45;
-    }
-
-        .qr-status-box.error {
-            background: #fff1f2;
-            border-color: #fecdd3;
-            color: #be123c;
-        }
-
-    .qr-result-card[hidden] {
-        display: none !important;
-    }
-
-    .qr-vehicle-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 14px;
-        margin-bottom: 16px;
-    }
-
-        .qr-vehicle-title span {
+        .qr-result-heading span,
+        .qr-vehicle-info span {
             display: block;
             color: #64748b;
             font-size: 12px;
             font-weight: 850;
-            margin-bottom: 4px;
         }
 
-        .qr-vehicle-title h3 {
-            margin: 0;
+        .qr-result-heading h2 {
+            margin: 6px 0 4px;
             color: #0f172a;
-            font-size: 26px;
+            font-size: clamp(34px, 7vw, 52px);
+            line-height: 1;
             font-weight: 950;
-            letter-spacing: .2px;
+            letter-spacing: 0;
         }
 
-    .qr-open-record-badge {
-        min-height: 34px;
-        padding: 0 12px;
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        background: #ecfdf5;
-        color: #047857;
-        font-size: 12px;
-        font-weight: 950;
-        white-space: nowrap;
-    }
+        .qr-result-heading p {
+            margin: 0;
+            color: #334155;
+            font-size: 18px;
+            font-weight: 850;
+        }
 
     .qr-vehicle-info {
         display: grid;
         gap: 10px;
-        margin-bottom: 18px;
     }
 
         .qr-vehicle-info div {
             display: flex;
             justify-content: space-between;
-            gap: 16px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #f1f5f9;
+            gap: 18px;
+            padding: 14px 0;
+            border-bottom: 1px solid #e2e8f0;
         }
 
             .qr-vehicle-info div:last-child {
-                border-bottom: none;
-                padding-bottom: 0;
+                border-bottom: 0;
             }
-
-        .qr-vehicle-info span {
-            color: #64748b;
-            font-weight: 750;
-        }
 
         .qr-vehicle-info strong {
             color: #0f172a;
@@ -314,77 +295,111 @@
     }
 
     .qr-action-card {
-        min-height: 84px;
-        border: 1px solid #e2e8f0;
-        border-radius: 17px;
-        padding: 16px;
-        text-decoration: none;
-        color: #0f172a;
-        background: #fff;
+        min-height: 92px;
         display: flex;
         align-items: center;
         gap: 13px;
-        transition: .16s ease;
+        padding: 16px;
+        border: 1px solid #dbe5f3;
+        border-radius: 18px;
+        background: #ffffff;
+        color: #0f172a;
+        text-decoration: none;
+        box-shadow: 0 14px 36px rgba(15, 23, 42, .07);
+        transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
     }
 
         .qr-action-card:hover {
             transform: translateY(-2px);
-            border-color: #c7d2fe;
-            box-shadow: 0 14px 28px rgba(15, 23, 42, .08);
+            border-color: #b8cdf5;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, .12);
         }
 
     .qr-action-icon {
         width: 44px;
         height: 44px;
-        border-radius: 14px;
+        flex: 0 0 auto;
         display: grid;
         place-items: center;
-        background: #eef2ff;
-        flex: 0 0 auto;
-        font-size: 20px;
+        border-radius: 15px;
+        background: #eef4ff;
+        color: #2563eb;
+        font-size: 19px;
+        font-weight: 950;
+    }
+
+    .qr-action-card strong,
+    .qr-action-card span {
+        display: block;
     }
 
     .qr-action-card strong {
-        display: block;
+        margin-bottom: 4px;
         font-weight: 950;
-        margin-bottom: 3px;
     }
 
     .qr-action-card span {
-        display: block;
         color: #64748b;
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 750;
         line-height: 1.35;
+    }
+
+    @@keyframes qrScanLine {
+        0%, 100% {
+            transform: translateY(-38px);
+            opacity: .36;
+        }
+
+        50% {
+            transform: translateY(38px);
+            opacity: 1;
+        }
     }
 
     @@media (max-width: 720px) {
         .qr-modal-backdrop {
-            padding: 12px;
-            align-items: stretch;
+            place-items: stretch;
+            padding: 0;
         }
 
-        .qr-modal-card {
-            max-height: calc(100vh - 24px);
-            border-radius: 22px;
+        .qr-modal-close {
+            top: calc(env(safe-area-inset-top, 0px) + 14px);
+            right: calc(env(safe-area-inset-right, 0px) + 14px);
+            width: 46px;
+            height: 46px;
         }
 
-        .qr-modal-header,
-        .qr-modal-body {
-            padding: 18px;
+        .qr-modal-shell {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            min-height: 100dvh;
+            border: 0;
+            border-radius: 0;
+        }
+
+        .qr-scan-frame {
+            width: min(74vw, 320px);
+            height: min(74vw, 320px);
+        }
+
+        .qr-result-card {
+            padding: calc(env(safe-area-inset-top, 0px) + 76px) 20px calc(env(safe-area-inset-bottom, 0px) + 22px);
         }
 
         .qr-action-grid {
             grid-template-columns: 1fr;
         }
 
-        .qr-vehicle-title {
+        .qr-vehicle-info div {
+            align-items: flex-start;
             flex-direction: column;
+            gap: 4px;
         }
 
-        .qr-camera-actions {
-            display: grid;
-            grid-template-columns: 1fr;
+        .qr-vehicle-info strong {
+            text-align: left;
         }
     }
 </style>
@@ -393,320 +408,449 @@
 
 <script>
     (function () {
-    const isOwner = @isOwner.ToString().ToLowerInvariant();
-    const storageScope = @Html.Raw(JsonSerializer.Serialize(qrStorageScope));
-    const legacyStorageKey = "sente360:lastQrScanResult";
-    const storageKey = `sente360:lastQrScanResult:${storageScope}`;
-    const lastQrMaxAgeMs = 4 * 60 * 60 * 1000;
-
-    const modal = document.getElementById("qrScannerModal");
-    const startButton = document.getElementById("qrStartButton");
-    const stopButton = document.getElementById("qrStopButton");
-    const resetButton = document.getElementById("qrResetButton");
-    const statusBox = document.getElementById("qrStatusBox");
-    const resultCard = document.getElementById("qrResultCard");
-    const actionGrid = document.getElementById("qrActionGrid");
-
-    let scanner = null;
-    let locked = false;
-
-    document.querySelectorAll("[data-qr-modal-open]").forEach(button => {
-    button.addEventListener("click", function () {
-    openQrModal();
-    });
-    });
-
-    document.querySelectorAll("[data-qr-modal-close]").forEach(button => {
-    button.addEventListener("click", function () {
-    closeQrModal();
-    });
-    });
-
-    modal?.addEventListener("click", function (event) {
-    if (event.target === modal) {
-    closeQrModal();
-    }
-    });
-
-    document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && !modal.hidden) {
-    closeQrModal();
-    }
-    });
-
-    startButton?.addEventListener("click", startScanner);
-    stopButton?.addEventListener("click", () => stopScanner(true));
-    resetButton?.addEventListener("click", resetAndStart);
-
-    window.addEventListener("pageshow", renderLastQrScanCard);
-    document.addEventListener("DOMContentLoaded", renderLastQrScanCard);
-    document.getElementById("lastQrDismissButton")?.addEventListener("click", clearLastQrScan);
-
-    function openQrModal() {
-    if (!modal) return;
-
-    modal.hidden = false;
-    document.body.classList.add("qr-modal-open");
-
-    resetResultArea();
-    setStatus("Kamera açılıyor...");
-
-    setTimeout(() => {
-    startScanner();
-    }, 150);
-    }
-
-    async function closeQrModal() {
-    await stopScanner(false);
-
-    if (!modal) return;
-
-    modal.hidden = true;
-    document.body.classList.remove("qr-modal-open");
-    }
-
-    function resetResultArea() {
-    locked = false;
-    resultCard.hidden = true;
-    actionGrid.innerHTML = "";
-    resetButton.hidden = true;
-    }
-
-    async function resetAndStart() {
-    resetResultArea();
-    await startScanner();
-    }
-
-    function setStatus(message, isError = false) {
-    if (!statusBox) return;
-
-    statusBox.textContent = message;
-    statusBox.classList.toggle("error", isError);
-    }
-
-    async function startScanner() {
-    if (scanner) {
-    return;
-    }
-
-    if (!window.Html5Qrcode) {
-    setStatus("QR okuyucu yüklenemedi. İnternet bağlantısını kontrol edin.", true);
-    return;
-    }
-
-    locked = false;
-
-    try {
-    scanner = new Html5Qrcode("dashboardQrReader");
-
-    await scanner.start(
-    { facingMode: "environment" },
-    {
-    fps: 10,
-    qrbox: {
-    width: 240,
-    height: 240
-    }
-    },
-    async decodedText => {
-    if (locked) return;
-
-    locked = true;
-    setStatus("QR okundu. Araç bilgisi getiriliyor...");
-
-    await stopScanner(false);
-    await resolveQr(decodedText);
-    }
-    );
-
-    startButton.disabled = true;
-    stopButton.disabled = false;
-    resetButton.hidden = true;
-
-    setStatus("Kamera açık. QR kodu okutabilirsiniz.");
-    }
-    catch (error) {
-    console.error(error);
-    scanner = null;
-    startButton.disabled = false;
-    stopButton.disabled = true;
-
-    setStatus("Kamera açılamadı: " + (error?.message || error), true);
-    }
-    }
-
-    async function stopScanner(updateStatus) {
-    if (!scanner) {
-    startButton.disabled = false;
-    stopButton.disabled = true;
-    return;
-    }
-
-    try {
-    await scanner.stop();
-    }
-    catch {
-    }
-
-    scanner = null;
-    startButton.disabled = false;
-    stopButton.disabled = true;
-
-    if (updateStatus) {
-    setStatus("Kamera durduruldu.");
-    }
-    }
-
-    async function resolveQr(decodedText) {
-    try {
-    const response = await fetch(
-    `/VehicleQrCodes/Resolve?code=${encodeURIComponent(decodedText)}`
-    );
-
-    const payload = await response.json().catch(() => null);
-
-    if (!response.ok) {
-    const message =
-    payload?.errorMessage ||
-    payload?.errorMessages?.join("\n") ||
-    "QR kod çözümlenemedi.";
-
-    setStatus(message, true);
-    locked = false;
-    resetButton.hidden = false;
-    return;
-    }
-
-    saveLastQrScan(payload);
-    renderResult(payload);
-    renderLastQrScanCard();
-
-    setStatus("Araç bulundu. Yapmak istediğiniz işlemi seçin.");
-    resetButton.hidden = false;
-    }
-    catch (error) {
-    console.error(error);
-    setStatus("QR çözümleme sırasında hata oluştu.", true);
-    locked = false;
-    resetButton.hidden = false;
-    }
-    }
-    function saveLastQrScan(data) {
-    try {
-        sessionStorage.removeItem(legacyStorageKey);
-
-        const payload = {
-            ...data,
-            scannedAt: new Date().toISOString()
-        };
-
-        sessionStorage.setItem(storageKey, JSON.stringify(payload));
-    }
-    catch {
-    }
-}
-
-function getLastQrScan() {
-    try {
-        sessionStorage.removeItem(legacyStorageKey);
-
-        const raw = sessionStorage.getItem(storageKey);
-
-        if (!raw) {
-            return null;
+        if (window.sente360QrScannerModalInitialized) {
+            return;
         }
 
-        const data = JSON.parse(raw);
+        window.sente360QrScannerModalInitialized = true;
 
-        if (!data?.scannedAt) {
-            clearLastQrScan();
-            return null;
+        const isOwner = @isOwner.ToString().ToLowerInvariant();
+        const storageScope = @Html.Raw(JsonSerializer.Serialize(qrStorageScope));
+        const legacyStorageKey = "sente360:lastQrScanResult";
+        const storageKey = `sente360:lastQrScanResult:${storageScope}`;
+        const lastQrMaxAgeMs = 4 * 60 * 60 * 1000;
+
+        const modal = document.getElementById("qrScannerModal");
+        const scanPanel = document.getElementById("qrScanPanel");
+        const reader = document.getElementById("s360QrReader");
+        const errorPanel = document.getElementById("qrErrorPanel");
+        const statusBox = document.getElementById("qrStatusBox");
+        const retryButton = document.getElementById("qrRetryButton");
+        const resultCard = document.getElementById("qrResultCard");
+        const actionGrid = document.getElementById("qrActionGrid");
+
+        let scanner = null;
+        let locked = false;
+        let closeInProgress = false;
+
+        document.addEventListener("click", event => {
+            const openButton = event.target.closest("[data-qr-modal-open]");
+
+            if (openButton) {
+                event.preventDefault();
+                openQrModal();
+                return;
+            }
+
+            if (event.target.closest("[data-qr-modal-close]")) {
+                event.preventDefault();
+                closeQrModal();
+            }
+        });
+
+        modal?.addEventListener("click", event => {
+            if (event.target === modal) {
+                closeQrModal();
+            }
+        });
+
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape" && modal && !modal.hidden) {
+                closeQrModal();
+            }
+        });
+
+        retryButton?.addEventListener("click", () => {
+            resetScanState();
+            startScanner();
+        });
+
+        window.addEventListener("pagehide", () => {
+            stopReaderTracks();
+            void stopScanner();
+        });
+
+        window.addEventListener("beforeunload", () => {
+            stopReaderTracks();
+            void stopScanner();
+        });
+
+        window.addEventListener("pageshow", renderLastQrScanCard);
+        document.addEventListener("DOMContentLoaded", renderLastQrScanCard);
+        document.getElementById("lastQrDismissButton")?.addEventListener("click", clearLastQrScan);
+
+        function openQrModal() {
+            if (!modal) {
+                return;
+            }
+
+            modal.hidden = false;
+            modal.setAttribute("aria-hidden", "false");
+            document.body.classList.add("qr-modal-open");
+
+            resetScanState();
+            void startScanner();
         }
 
-        const scannedAt = new Date(data.scannedAt).getTime();
-        const isExpired = Number.isNaN(scannedAt) || Date.now() - scannedAt > lastQrMaxAgeMs;
+        async function closeQrModal() {
+            if (!modal || closeInProgress) {
+                return;
+            }
 
-        if (isExpired) {
-            clearLastQrScan();
-            return null;
+            closeInProgress = true;
+            await stopScanner();
+            modal.hidden = true;
+            modal.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("qr-modal-open");
+            closeInProgress = false;
         }
 
-        return data;
-    }
-    catch {
-        clearLastQrScan();
-        return null;
-    }
-}
-
-function clearLastQrScan() {
-    try {
-        sessionStorage.removeItem(storageKey);
-        sessionStorage.removeItem(legacyStorageKey);
-    }
-    catch {
-    }
-
-    const card = document.getElementById("lastQrScanCard");
-
-    if (card) {
-        card.hidden = true;
-    }
-}
-
-function renderLastQrScanCard() {
-    const card = document.getElementById("lastQrScanCard");
-
-    if (!card) {
-        return;
-    }
-
-    const data = getLastQrScan();
-
-    if (!data) {
-        card.hidden = true;
-        return;
-    }
-
-    const plate = document.getElementById("lastQrPlate");
-    const customer = document.getElementById("lastQrCustomer");
-    const openRecordInfo = document.getElementById("lastQrOpenRecordInfo");
-    const openRecordLink = document.getElementById("lastQrOpenRecordLink");
-    const newRecordLink = document.getElementById("lastQrNewRecordLink");
-    const historyLink = document.getElementById("lastQrHistoryLink");
-
-    if (plate) {
-        plate.textContent = data.plate || "-";
-    }
-
-    if (customer) {
-        customer.textContent = data.customerName || "-";
-    }
-
-    if (openRecordInfo) {
-        openRecordInfo.hidden = !(data.hasOpenServiceRecord && data.openServiceRecordId);
-    }
-
-    if (openRecordLink) {
-        if (data.hasOpenServiceRecord && data.openServiceRecordId) {
-            openRecordLink.href = `/ServiceRecords/Detail/${data.openServiceRecordId}`;
-            openRecordLink.hidden = false;
+        function resetScanState() {
+            locked = false;
+            scanPanel.hidden = false;
+            resultCard.hidden = true;
+            errorPanel.hidden = true;
+            actionGrid.innerHTML = "";
+            statusBox.textContent = "";
+            reader.innerHTML = "";
         }
-        else {
-            openRecordLink.hidden = true;
+
+        async function startScanner() {
+            if (scanner || !modal || modal.hidden) {
+                return;
+            }
+
+            if (!window.Html5Qrcode) {
+                showCameraError("QR okuyucu yüklenemedi.");
+                return;
+            }
+
+            locked = false;
+
+            try {
+                reader.innerHTML = "";
+                scanner = new Html5Qrcode("s360QrReader");
+
+                await scanner.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 10
+                    },
+                    async decodedText => {
+                        if (locked) {
+                            return;
+                        }
+
+                        locked = true;
+                        await stopScanner();
+                        await resolveQr(decodedText);
+                    }
+                );
+            }
+            catch (error) {
+                console.error(error);
+                await stopScanner();
+                showCameraError(getCameraErrorMessage(error));
+            }
         }
-    }
 
-    if (newRecordLink) {
-        newRecordLink.href = `/ServiceRecords/Create?vehicleId=${data.vehicleId}`;
-    }
+        async function stopScanner() {
+            const activeScanner = scanner;
+            scanner = null;
 
-    if (historyLink) {
-        historyLink.href = `/qr/${encodeURIComponent(data.code)}`;
-    }
+            if (activeScanner) {
+                try {
+                    await activeScanner.stop();
+                }
+                catch {
+                }
 
-    card.hidden = false;
-}
-    
+                try {
+                    await activeScanner.clear();
+                }
+                catch {
+                }
+            }
+
+            stopReaderTracks();
+            reader.innerHTML = "";
+        }
+
+        function stopReaderTracks() {
+            reader?.querySelectorAll("video").forEach(video => {
+                const stream = video.srcObject;
+
+                if (stream && typeof stream.getTracks === "function") {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+
+                video.pause();
+                video.srcObject = null;
+                video.removeAttribute("src");
+                video.load?.();
+            });
+        }
+
+        function showCameraError(message) {
+            scanPanel.hidden = false;
+            resultCard.hidden = true;
+            errorPanel.hidden = false;
+            statusBox.textContent = message || "Kamera açılamadı.";
+            locked = false;
+        }
+
+        function getCameraErrorMessage(error) {
+            const name = error?.name || "";
+            const message = String(error?.message || error || "");
+
+            if (name.includes("NotAllowed") || message.includes("Permission")) {
+                return "Kamera izni verilmedi.";
+            }
+
+            if (name.includes("NotFound") || message.includes("Requested device not found")) {
+                return "Kamera bulunamadı.";
+            }
+
+            if (name.includes("NotReadable")) {
+                return "Kamera başka bir uygulama tarafından kullanılıyor olabilir.";
+            }
+
+            return "Kamera açılamadı.";
+        }
+
+        async function resolveQr(decodedText) {
+            try {
+                const response = await fetch(
+                    `/VehicleQrCodes/Resolve?code=${encodeURIComponent(decodedText)}`
+                );
+
+                const payload = await response.json().catch(() => null);
+
+                if (!response.ok) {
+                    const message =
+                        payload?.errorMessage ||
+                        payload?.errorMessages?.join("\n") ||
+                        "QR kod okunamadı.";
+
+                    showCameraError(message);
+                    return;
+                }
+
+                saveLastQrScan(payload);
+                renderResult(payload);
+                renderLastQrScanCard();
+                window.dispatchEvent(new CustomEvent("sente360:qr-resolved", { detail: payload }));
+            }
+            catch (error) {
+                console.error(error);
+                showCameraError("QR bilgisi alınamadı.");
+            }
+        }
+
+        function renderResult(data) {
+            document.getElementById("qrVehiclePlate").textContent = data.plate || "-";
+            document.getElementById("qrCustomerName").textContent = data.customerName || "-";
+
+            const vehicleName = [data.vehicleBrandName, data.vehicleModelName]
+                .filter(Boolean)
+                .join(" ");
+
+            document.getElementById("qrVehicleName").textContent = vehicleName || "-";
+
+            const openRecordRow = document.getElementById("qrOpenRecordRow");
+            const openRecordText = document.getElementById("qrOpenRecordText");
+
+            if (data.hasOpenServiceRecord && data.openServiceRecordId) {
+                openRecordRow.hidden = false;
+                openRecordText.textContent = data.openServiceRecordNumber || "Açık kayıt var";
+            }
+            else {
+                openRecordRow.hidden = true;
+                openRecordText.textContent = "";
+            }
+
+            actionGrid.innerHTML = "";
+
+            if (data.hasOpenServiceRecord && data.openServiceRecordId) {
+                actionGrid.insertAdjacentHTML("beforeend", createActionCard(
+                    `/ServiceRecords/Detail/${encodeURIComponent(data.openServiceRecordId)}`,
+                    "SR",
+                    "Açık Kayda Git",
+                    "Bu araç için devam eden servis kaydını aç."
+                ));
+            }
+
+            actionGrid.insertAdjacentHTML("beforeend", createActionCard(
+                `/ServiceRecords/Create?vehicleId=${encodeURIComponent(data.vehicleId)}`,
+                "+",
+                "Yeni Servis Kaydı Aç",
+                "Bu araç için yeni servis kabul süreci başlat."
+            ));
+
+            actionGrid.insertAdjacentHTML("beforeend", createActionCard(
+                `/qr/${encodeURIComponent(data.code)}`,
+                "QR",
+                "Araç Geçmişini Gör",
+                "Servis kayıt geçmişini görüntüle.",
+                true
+            ));
+
+            if (isOwner && data.customerId) {
+                actionGrid.insertAdjacentHTML("beforeend", createActionCard(
+                    `/Customers/Details/${encodeURIComponent(data.customerId)}`,
+                    "M",
+                    "Müşteri Bilgileri",
+                    "Müşteri detayına git."
+                ));
+            }
+
+            scanPanel.hidden = true;
+            resultCard.hidden = false;
+            resultCard.focus({ preventScroll: true });
+        }
+
+        function createActionCard(href, icon, title, description, newTab = false) {
+            const target = newTab ? ` target="_blank" rel="noopener"` : "";
+
+            return `
+                <a class="qr-action-card" href="${escapeAttribute(href)}"${target}>
+                    <div class="qr-action-icon" aria-hidden="true">${escapeHtml(icon)}</div>
+                    <div>
+                        <strong>${escapeHtml(title)}</strong>
+                        <span>${escapeHtml(description)}</span>
+                    </div>
+                </a>
+            `;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function escapeAttribute(value) {
+            return escapeHtml(value).replaceAll("`", "&#096;");
+        }
+
+        function saveLastQrScan(data) {
+            try {
+                sessionStorage.removeItem(legacyStorageKey);
+
+                const payload = {
+                    ...data,
+                    scannedAt: new Date().toISOString()
+                };
+
+                sessionStorage.setItem(storageKey, JSON.stringify(payload));
+            }
+            catch {
+            }
+        }
+
+        function getLastQrScan() {
+            try {
+                sessionStorage.removeItem(legacyStorageKey);
+
+                const raw = sessionStorage.getItem(storageKey);
+
+                if (!raw) {
+                    return null;
+                }
+
+                const data = JSON.parse(raw);
+
+                if (!data?.scannedAt) {
+                    clearLastQrScan();
+                    return null;
+                }
+
+                const scannedAt = new Date(data.scannedAt).getTime();
+                const isExpired = Number.isNaN(scannedAt) || Date.now() - scannedAt > lastQrMaxAgeMs;
+
+                if (isExpired) {
+                    clearLastQrScan();
+                    return null;
+                }
+
+                return data;
+            }
+            catch {
+                clearLastQrScan();
+                return null;
+            }
+        }
+
+        function clearLastQrScan() {
+            try {
+                sessionStorage.removeItem(storageKey);
+                sessionStorage.removeItem(legacyStorageKey);
+            }
+            catch {
+            }
+
+            const card = document.getElementById("lastQrScanCard");
+
+            if (card) {
+                card.hidden = true;
+            }
+        }
+
+        function renderLastQrScanCard() {
+            const card = document.getElementById("lastQrScanCard");
+
+            if (!card) {
+                return;
+            }
+
+            const data = getLastQrScan();
+
+            if (!data) {
+                card.hidden = true;
+                return;
+            }
+
+            const plate = document.getElementById("lastQrPlate");
+            const customer = document.getElementById("lastQrCustomer");
+            const openRecordInfo = document.getElementById("lastQrOpenRecordInfo");
+            const openRecordLink = document.getElementById("lastQrOpenRecordLink");
+            const newRecordLink = document.getElementById("lastQrNewRecordLink");
+            const historyLink = document.getElementById("lastQrHistoryLink");
+
+            if (plate) {
+                plate.textContent = data.plate || "-";
+            }
+
+            if (customer) {
+                customer.textContent = data.customerName || "-";
+            }
+
+            if (openRecordInfo) {
+                openRecordInfo.hidden = !(data.hasOpenServiceRecord && data.openServiceRecordId);
+            }
+
+            if (openRecordLink) {
+                if (data.hasOpenServiceRecord && data.openServiceRecordId) {
+                    openRecordLink.href = `/ServiceRecords/Detail/${encodeURIComponent(data.openServiceRecordId)}`;
+                    openRecordLink.hidden = false;
+                }
+                else {
+                    openRecordLink.hidden = true;
+                }
+            }
+
+            if (newRecordLink) {
+                newRecordLink.href = `/ServiceRecords/Create?vehicleId=${encodeURIComponent(data.vehicleId)}`;
+            }
+
+            if (historyLink) {
+                historyLink.href = `/qr/${encodeURIComponent(data.code)}`;
+            }
+
+            card.hidden = false;
+        }
     })();
 </script>

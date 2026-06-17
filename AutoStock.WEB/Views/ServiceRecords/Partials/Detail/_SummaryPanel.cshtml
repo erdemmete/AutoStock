@@ -122,28 +122,27 @@
             </div>
         </details>
 
-        <div id="qr-reader" class="srx-qr-reader" hidden></div>
-        <div id="qr-scan-result" class="srx-qr-result"></div>
-
         <div id="qrAssignModal" class="srx-qr-modal" aria-hidden="true">
-            <div class="srx-qr-modal-card">
-                <div class="srx-qr-modal-head">
-                    <div>
-                        <h3>QR Kod Tara</h3>
-                        <p>Kamera açıkken bu pencereyi kapatırsanız kamera da kapanır.</p>
+            <button type="button"
+                    class="srx-qr-close"
+                    onclick="closeQrAssignModal()"
+                    aria-label="QR kamerayı kapat">
+                ×
+            </button>
+
+            <div class="srx-qr-modal-shell" role="dialog" aria-modal="true" aria-label="QR Tara">
+                <div class="srx-qr-scan-panel">
+                    <div id="qr-modal-reader" class="srx-qr-modal-reader"></div>
+                    <div class="srx-qr-scan-frame" aria-hidden="true"></div>
+
+                    <div id="qr-modal-error" class="srx-qr-error-panel" hidden>
+                        <p id="qr-modal-result"></p>
+                        <button type="button"
+                                class="srx-qr-retry"
+                                onclick="retryQrAssignScanner()">
+                            Tekrar Dene
+                        </button>
                     </div>
-
-                    <button type="button"
-                            class="srx-qr-close"
-                            onclick="closeQrAssignModal()"
-                            aria-label="QR kamerayı kapat">
-                        ×
-                    </button>
-                </div>
-
-                <div class="srx-qr-modal-body">
-                    <div id="qr-modal-reader"></div>
-                    <div id="qr-modal-result">Kamera hazırlanıyor.</div>
                 </div>
             </div>
         </div>
