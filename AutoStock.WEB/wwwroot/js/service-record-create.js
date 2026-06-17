@@ -506,23 +506,277 @@ function getFinalCustomerTypeValue() {
     return 1; // Bireysel
 }
 
-function toggleCustomerExtra() {
-    get("quickCustomerFields")?.classList.add("hidden");
-    get("customerExtraPanel")?.classList.add("active");
+function getCustomerTypeLabel() {
+    const finalType = getFinalCustomerTypeValue();
 
-    setCustomerType(1, document.querySelector('.customer-type-switch button[data-type="1"]'));
+    if (finalType === 3) {
+        return "Kurumsal müşteri";
+    }
+
+    if (finalType === 2) {
+        return "Şahıs firması";
+    }
+
+    return "Bireysel müşteri";
+}
+
+function getFieldValue(input) {
+    return input?.value?.toString().trim() || "";
+}
+
+function getFieldWrapper(input) {
+    return input?.closest(".form-field");
+}
+
+function clearStepFieldHighlights(step = null) {
+    const scope = step
+        ? document.querySelector(`.service-step[data-step="${step}"]`)
+        : document;
+
+    scope?.querySelectorAll(".field-missing").forEach(field => {
+        field.classList.remove("field-missing");
+    });
+}
+
+function markMissingField(input) {
+    getFieldWrapper(input)?.classList.add("field-missing");
+}
+
+function getCustomerRequiredFields() {
+    const container = getActiveCustomerContainer();
+    const finalType = getFinalCustomerTypeValue();
+    const fields = [
+        {
+            name: "Müşteri / Cari Adı",
+            input: container?.querySelector(`[name="CustomerName"]`)
+        },
+        {
+            name: "Telefon Numarası",
+            input: container?.querySelector(`[name="CustomerPhoneNumber"]`)
+        }
+    ];
+
+    if (finalType === 2 || finalType === 3) {
+        fields.push({
+            name: "Aracı Getiren",
+            input: container?.querySelector(`[name="VehicleDeliveredBy"]`)
+        });
+    }
+
+    return fields;
+}
+
+function validateCustomerStep(options = {}) {
+    const { showStatus = true, focusFirst = false, selectedNotice = false } = options;
+    const status = get("customerStepStatus");
+    const requiredFields = getCustomerRequiredFields();
+    const missingFields = requiredFields.filter(field => !getFieldValue(field.input));
+    const customerTypeLabel = getCustomerTypeLabel();
+
+    clearStepFieldHighlights(1);
+
+    missingFields.forEach(field => markMissingField(field.input));
+
+    if (showStatus && status) {
+        status.hidden = false;
+        status.classList.toggle("warning", missingFields.length > 0);
+        status.classList.toggle("success", missingFields.length === 0);
+
+        if (missingFields.length > 0) {
+            const message = selectedNotice || get("SelectedCustomerId")?.value
+                ? "Müşteri seçildi. Devam etmeden önce eksik zorunlu bilgileri tamamlayın."
+                : "Devam etmeden önce eksik zorunlu bilgileri tamamlayın.";
+
+            status.innerHTML = `
+                <strong>${escapeHtml(message)}</strong>
+                <span>Müşteri tipi: ${escapeHtml(customerTypeLabel)}</span>
+                <span>Eksik alan: ${escapeHtml(missingFields.map(x => x.name).join(", "))}</span>
+            `;
+        } else {
+            status.innerHTML = `
+                <strong>Müşteri bilgileri hazır.</strong>
+                <span>Müşteri tipi: ${escapeHtml(customerTypeLabel)}</span>
+            `;
+        }
+    }
+
+    if (focusFirst && missingFields.length > 0) {
+        const firstInput = missingFields[0].input;
+
+        firstInput?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+        window.setTimeout(() => {
+            firstInput?.focus?.({ preventScroll: true });
+        }, 260);
+    }
+
+    return {
+        isValid: missingFields.length === 0,
+        missingFields
+    };
+}
+
+function refreshCustomerStepValidation() {
+    const status = get("customerStepStatus");
+
+    if (!status || status.hidden) {
+        clearStepFieldHighlights(1);
+        return;
+    }
+
+    validateCustomerStep({
+        showStatus: true,
+        focusFirst: false
+    });
+}
+
+function validateVehicleStep(options = {}) {
+    const { focusFirst = false } = options;
+    const requiredFields = [
+        { name: "Plaka", input: get("Plate") },
+        { name: "Marka", input: get("brandSelect") },
+        { name: "Model", input: get("modelSelect") }
+    ];
+
+    const missingFields = requiredFields.filter(field => !getFieldValue(field.input));
+
+    clearStepFieldHighlights(2);
+    missingFields.forEach(field => markMissingField(field.input));
+
+    if (missingFields.length > 0) {
+        showToast(`Eksik alan: ${missingFields.map(x => x.name).join(", ")}`, "error");
+
+        if (focusFirst) {
+            const firstInput = missingFields[0].input;
+
+            firstInput?.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+
+            window.setTimeout(() => {
+                firstInput?.focus?.({ preventScroll: true });
+            }, 260);
+        }
+    }
+
+    return {
+        isValid: missingFields.length === 0,
+        missingFields
+    };
+}
+
+function validateRequestStep(options = {}) {
+    const { focusFirst = false } = options;
+
+    if (requestItems.length > 0) {
+        clearStepFieldHighlights(3);
+        return { isValid: true, missingFields: [] };
+    }
+
+    const input = get("requestInput");
+
+    clearStepFieldHighlights(3);
+    markMissingField(input);
+    showToast("En az bir şikayet / talep eklemelisin.", "error");
+
+    if (focusFirst) {
+        input?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+        window.setTimeout(() => {
+            input?.focus?.({ preventScroll: true });
+        }, 260);
+    }
+
+    return {
+        isValid: false,
+        missingFields: [{ name: "Şikayet / Talep", input }]
+    };
+}
+
+function validateStepBeforeLeaving(step, options = {}) {
+    if (step === 1) {
+        return validateCustomerStep(options).isValid;
+    }
+
+    if (step === 2) {
+        return validateVehicleStep(options).isValid;
+    }
+
+    if (step === 3) {
+        return validateRequestStep(options).isValid;
+    }
+
+    return true;
+}
+
+function ensureCustomerDetailPanelAtBodyRoot() {
+    const panel = get("customerExtraPanel");
+
+    if (panel && panel.parentElement !== document.body) {
+        document.body.appendChild(panel);
+    }
+
+    return panel;
+}
+
+function toggleCustomerExtra() {
+    get("quickCustomerFields")?.classList.remove("hidden");
+    ensureCustomerDetailPanelAtBodyRoot()?.classList.add("active");
+    document.body.classList.add("customer-detail-open");
 
     saveCreateFormDraft();
     updateServiceFormPreview();
+    refreshCustomerStepValidation();
 }
 
 function backToQuickCustomer() {
     get("quickCustomerFields")?.classList.remove("hidden");
-    get("customerExtraPanel")?.classList.remove("active");
+    ensureCustomerDetailPanelAtBodyRoot()?.classList.remove("active");
+    document.body.classList.remove("customer-detail-open");
 
     saveCreateFormDraft();
     updateServiceFormPreview();
+    refreshCustomerStepValidation();
 }
+
+document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && get("customerExtraPanel")?.classList.contains("active")) {
+        backToQuickCustomer();
+    }
+
+    if (event.key === "Escape" && get("ownershipModalBackdrop")?.classList.contains("active")) {
+        closeOwnershipModal();
+    }
+});
+
+document.addEventListener("click", function (event) {
+    if (event.target === get("ownershipModalBackdrop")) {
+        closeOwnershipModal();
+        return;
+    }
+
+    const panel = get("customerExtraPanel");
+
+    if (!panel?.classList.contains("active")) {
+        return;
+    }
+
+    if (
+        panel.contains(event.target) ||
+        event.target.closest(".customer-extra-toggle")
+    ) {
+        return;
+    }
+
+    backToQuickCustomer();
+});
 
 function setCustomerType(type, button) {
     const input = get("CustomerType");
@@ -560,6 +814,7 @@ function setCustomerType(type, button) {
 
     saveCreateFormDraft();
     updateServiceFormPreview();
+    refreshCustomerStepValidation();
 }
 
 function setCustomerSubType(subType, button) {
@@ -581,6 +836,7 @@ function setCustomerSubType(subType, button) {
 
     saveCreateFormDraft();
     updateServiceFormPreview();
+    refreshCustomerStepValidation();
 }
 
 async function loadLocationData() {
@@ -735,7 +991,12 @@ function saveCreateFormDraft() {
 
     const data = {};
 
-    form.querySelectorAll("input, textarea, select").forEach(el => {
+    const draftFields = new Set([
+        ...form.querySelectorAll("input, textarea, select"),
+        ...document.querySelectorAll("#customerExtraPanel input, #customerExtraPanel textarea, #customerExtraPanel select")
+    ]);
+
+    draftFields.forEach(el => {
         if (!el.id && !el.name) return;
 
         const key = el.id || el.name;
@@ -778,7 +1039,8 @@ async function restoreCreateFormDraft() {
 
     if (data.__isExtraPanelOpen) {
         get("quickCustomerFields")?.classList.add("hidden");
-        get("customerExtraPanel")?.classList.add("active");
+        ensureCustomerDetailPanelAtBodyRoot()?.classList.add("active");
+        document.body.classList.add("customer-detail-open");
     }
 
     Object.keys(data).forEach(key => {
@@ -813,7 +1075,7 @@ async function restoreCreateFormDraft() {
     updateSelectedVehicleCard();
 
     const targetStep = Number(data.__currentStep || 1);
-    goToStep(targetStep);
+    goToStep(targetStep, { skipValidation: true });
 }
 
 function restoreDependentSelects(data) {
@@ -946,6 +1208,20 @@ function initializeDraftAutoSave() {
         saveCreateFormDraft();
         updateServiceFormPreview();
     });
+
+    const detailPanel = get("customerExtraPanel");
+
+    detailPanel?.addEventListener("input", () => {
+        saveCreateFormDraft();
+        updateServiceFormPreview();
+        refreshCustomerStepValidation({ showSuccess: false });
+    });
+
+    detailPanel?.addEventListener("change", () => {
+        saveCreateFormDraft();
+        updateServiceFormPreview();
+        refreshCustomerStepValidation({ showSuccess: false });
+    });
 }
 
 function addRequestItem(titleFromDraft = null, noteFromDraft = null, estimatedFromDraft = null) {
@@ -979,6 +1255,7 @@ function addRequestItem(titleFromDraft = null, noteFromDraft = null, estimatedFr
 
     renderRequestItems();
     updateRequestSummary();
+    clearStepFieldHighlights(3);
     saveCreateFormDraft();
 }
 
@@ -1182,28 +1459,32 @@ function updateServiceFormPreview() {
     tableBody.innerHTML = rows + totalRow;
 }
 
-function goToStep(step) {
-    currentStep = step;
+function goToStep(step, options = {}) {
+    const targetStep = Number(step);
 
-    if (step === 4) {
+    clearStepFieldHighlights(targetStep);
+
+    currentStep = targetStep;
+
+    if (targetStep === 4) {
         updateServiceFormPreview();
     }
 
     const layout = get("createLayout");
 
     if (layout) {
-        layout.classList.toggle("preview-mode", step === 4);
+        layout.classList.toggle("preview-mode", targetStep === 4);
     }
 
     document.querySelectorAll(".service-step").forEach(section => {
-        section.classList.toggle("active", Number(section.dataset.step) === step);
+        section.classList.toggle("active", Number(section.dataset.step) === targetStep);
     });
 
     document.querySelectorAll(".step-tab").forEach(tab => {
         const tabStep = Number(tab.dataset.step);
 
-        tab.classList.toggle("active", tabStep === step);
-        tab.classList.toggle("completed", tabStep < step);
+        tab.classList.toggle("active", tabStep === targetStep);
+        tab.classList.toggle("completed", tabStep < targetStep);
     });
 
     window.scrollTo({
@@ -1212,6 +1493,7 @@ function goToStep(step) {
     });
 
     saveCreateFormDraft();
+    return true;
 }
 
 function initializeInputMasks() {
@@ -1311,6 +1593,46 @@ function initializeInputMasks() {
         }
 
         this.value = Number(digits).toLocaleString("tr-TR");
+    });
+}
+
+function initializeStepValidationEvents() {
+    const form = get("serviceCreateForm");
+
+    form?.addEventListener("input", function (event) {
+        const target = event.target;
+
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        if (target.closest('[data-step="1"]')) {
+            refreshCustomerStepValidation();
+        }
+
+        if (target.closest('[data-step="2"]')) {
+            getFieldWrapper(target)?.classList.remove("field-missing");
+        }
+
+        if (target.closest('[data-step="3"]') && requestItems.length > 0) {
+            clearStepFieldHighlights(3);
+        }
+    });
+
+    form?.addEventListener("change", function (event) {
+        const target = event.target;
+
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        if (target.closest('[data-step="1"]')) {
+            refreshCustomerStepValidation();
+        }
+
+        if (target.closest('[data-step="2"]')) {
+            getFieldWrapper(target)?.classList.remove("field-missing");
+        }
     });
 }
 
@@ -1515,13 +1837,22 @@ function applyCustomerDataToCreateForm(customer) {
         "fullAddress"
     ]);
 
+    const vehicleDeliveredBy = getCustomerField(customer, [
+        "vehicleDeliveredBy",
+        "deliveredBy",
+        "contactPerson",
+        "authorizedPersonName"
+    ]);
+
     const normalizedName = toTitleCase(customerName);
     const normalizedPhone = formatPhone(phone);
     const normalizedEmail = (email || "").toLocaleLowerCase("tr-TR");
+    const normalizedDeliveredBy = toTitleCase(vehicleDeliveredBy);
 
     setInputValue("MainCustomerName", normalizedName);
     setInputValue("MainCustomerPhoneNumber", normalizedPhone);
     setInputValue("MainCustomerEmail", normalizedEmail);
+    setInputValue("VehicleDeliveredBy", normalizedDeliveredBy);
 
     if (finalType === 1) {
         setCustomerType(1, document.querySelector('.customer-type-switch button[data-type="1"]'));
@@ -1568,6 +1899,7 @@ function applyCustomerDataToCreateForm(customer) {
 
         setInputValue("SoleCustomerAddress", customerAddress);
 
+        setInputValue("SoleVehicleDeliveredBy", normalizedDeliveredBy);
         setInputValue("SoleCustomerPhoneNumber", normalizedPhone);
         setInputValue("SoleCustomerEmail", normalizedEmail);
     }
@@ -1597,6 +1929,7 @@ function applyCustomerDataToCreateForm(customer) {
 
         setInputValue("CorporateCustomerAddress", customerAddress);
 
+        setInputValue("CorporateVehicleDeliveredBy", normalizedDeliveredBy);
         setInputValue("CorporateCustomerPhoneNumber", normalizedPhone);
         setInputValue("CorporateCustomerEmail", normalizedEmail);
     }
@@ -1752,6 +2085,12 @@ function createCustomerSearchItem(customer) {
 
         saveCreateFormDraft();
         updateServiceFormPreview();
+        updateSelectedCustomerCard();
+        validateCustomerStep({
+            showStatus: true,
+            focusFirst: false,
+            selectedNotice: true
+        });
 
         showToast("Kayıtlı müşteri bilgileri forma aktarıldı.", "success");
     });
@@ -1770,7 +2109,7 @@ function createVehicleSearchItem(vehicle) {
 
     item.innerHTML = `
         <strong>${escapeHtml([plate, brand, model].filter(Boolean).join(" • "))}</strong>
-        <span>Kayıtlı müşteri/cari: ${escapeHtml(customerName || "Belirtilmedi")}</span>
+        <span>Kayıtlı müşteri: ${escapeHtml(customerName || "Belirtilmedi")}</span>
     `;
 
     item.addEventListener("click", async () => {
@@ -1780,6 +2119,11 @@ function createVehicleSearchItem(vehicle) {
 
         saveCreateFormDraft();
         updateServiceFormPreview();
+        validateCustomerStep({
+            showStatus: true,
+            focusFirst: false,
+            selectedNotice: true
+        });
 
         showToast("Araç bilgileri forma aktarıldı.", "success");
     });
@@ -1790,38 +2134,12 @@ function createVehicleSearchItem(vehicle) {
 async function selectVehicleFromUnifiedSearch(vehicle) {
     await selectVehicleFromSearch(vehicle);
 
-    const customerId = vehicle.customerId ?? "";
-
-    if (customerId) {
-        get("SelectedCustomerId").value = customerId;
-
-        const customerFromVehicle = {
-            id: vehicle.customerId,
-            type: vehicle.customerType,
-
-            name: vehicle.customerName,
-            customerName: vehicle.customerName,
-
-            phoneNumber: vehicle.customerPhone,
-            email: vehicle.customerEmail,
-
-            companyName: vehicle.companyName,
-            authorizedPersonName: vehicle.authorizedPersonName,
-
-            nationalIdentityNumber: vehicle.nationalIdentityNumber,
-
-            taxOffice: vehicle.taxOffice,
-            taxNumber: vehicle.taxNumber,
-
-            addressCity: vehicle.addressCity,
-            addressDistrict: vehicle.addressDistrict,
-            customerAddress: vehicle.customerAddress
-        };
-
-        applyCustomerDataToCreateForm(customerFromVehicle);
-    }
-
-    goToStep(2);
+    updateSelectedCustomerCard();
+    validateCustomerStep({
+        showStatus: true,
+        focusFirst: false,
+        selectedNotice: true
+    });
 }
 
 function updateSelectedCustomerCard() {
@@ -1849,6 +2167,54 @@ function clearSelectedCustomer() {
 
     updateSelectedCustomerCard();
     saveCreateFormDraft();
+}
+
+function resetCustomerFieldsForNewVehicleOwner() {
+    get("SelectedCustomerId").value = "";
+
+    [
+        "MainCustomerName",
+        "MainCustomerPhoneNumber",
+        "MainCustomerEmail",
+        "VehicleDeliveredBy",
+        "IndividualCustomerName",
+        "IndividualCustomerPhoneNumber",
+        "IndividualCustomerEmail",
+        "IndividualNationalIdentityNumber",
+        "IndividualAddressCity",
+        "IndividualAddressDistrict",
+        "IndividualCustomerAddress",
+        "SoleCustomerName",
+        "SoleCompanyName",
+        "SoleNationalIdentityNumber",
+        "SoleTaxOfficeCity",
+        "SoleTaxOfficeSelect",
+        "SoleTaxNumber",
+        "SoleAddressCity",
+        "SoleAddressDistrict",
+        "SoleCustomerAddress",
+        "SoleVehicleDeliveredBy",
+        "SoleCustomerPhoneNumber",
+        "SoleCustomerEmail",
+        "CorporateCustomerName",
+        "CorporateCompanyName",
+        "CorporateAuthorizedPersonName",
+        "CorporateTaxOfficeCity",
+        "CorporateTaxOfficeSelect",
+        "CorporateTaxNumber",
+        "CorporateAddressCity",
+        "CorporateAddressDistrict",
+        "CorporateCustomerAddress",
+        "CorporateVehicleDeliveredBy",
+        "CorporateCustomerPhoneNumber",
+        "CorporateCustomerEmail"
+    ].forEach(id => setInputValue(id, ""));
+
+    setCustomerType(1, document.querySelector('.customer-type-switch button[data-type="1"]'));
+    setCustomerSubType("individual", document.querySelector('.customer-subtype-switch button[data-subtype="individual"]'));
+
+    updateSelectedCustomerCard();
+    refreshCustomerStepValidation({ showSuccess: false });
 }
 
 function initializeVehicleSearch() {
@@ -1926,7 +2292,6 @@ function initializeVehicleSearch() {
 
 async function selectVehicleFromSearch(vehicle) {
     const vehicleId = vehicle.id ?? vehicle.vehicleId ?? "";
-    const customerId = vehicle.customerId ?? "";
     const plate = vehicle.plate ?? "";
     const brandId = vehicle.brandId ?? vehicle.vehicleBrandId ?? "";
     const modelId = vehicle.modelId ?? vehicle.vehicleModelId ?? "";
@@ -1961,10 +2326,6 @@ async function selectVehicleFromSearch(vehicle) {
 
     if (vehicle.chassisNumber && get("ChassisNumber")) {
         get("ChassisNumber").value = vehicle.chassisNumber.toUpperCase();
-    }
-
-    if (customerId && !get("SelectedCustomerId").value) {
-        get("SelectedCustomerId").value = customerId;
     }
 
     updateSelectedVehicleCard();
@@ -2013,6 +2374,7 @@ function openOwnershipModal(vehicle) {
     const model = vehicle.modelName ?? vehicle.model ?? "";
     const customerName = vehicle.customerName ?? vehicle.ownerName ?? "";
     const customerPhone = vehicle.customerPhone ?? vehicle.phoneNumber ?? "";
+    const customerEmail = vehicle.customerEmail ?? "";
 
     setPreviewText(
         "ownershipModalVehicleText",
@@ -2023,21 +2385,38 @@ function openOwnershipModal(vehicle) {
     setPreviewText(
         "ownershipModalCustomerText",
         customerName
-            ? `Kayıtlı müşteri/cari: ${customerName}${customerPhone ? " • " + customerPhone : ""}`
-            : "Kayıtlı müşteri/cari bilgisi bulunamadı.",
-        "Kayıtlı müşteri/cari bilgisi bulunamadı."
+            ? `Kayıtlı müşteri: ${customerName}${customerPhone ? " • " + customerPhone : ""}`
+            : "Kayıtlı müşteri bilgisi bulunamadı.",
+        "Kayıtlı müşteri bilgisi bulunamadı."
     );
 
     modal.dataset.customerId = vehicle.customerId ?? "";
+    modal.dataset.customerType = vehicle.customerType ?? "";
     modal.dataset.customerName = customerName || "";
     modal.dataset.customerPhone = customerPhone || "";
-    modal.dataset.customerEmail = vehicle.customerEmail ?? "";
+    modal.dataset.customerEmail = customerEmail || "";
+    modal.dataset.companyName = vehicle.companyName ?? "";
+    modal.dataset.authorizedPersonName = vehicle.authorizedPersonName ?? "";
+    modal.dataset.nationalIdentityNumber = vehicle.nationalIdentityNumber ?? "";
+    modal.dataset.taxOffice = vehicle.taxOffice ?? "";
+    modal.dataset.taxNumber = vehicle.taxNumber ?? "";
+    modal.dataset.addressCity = vehicle.addressCity ?? "";
+    modal.dataset.addressDistrict = vehicle.addressDistrict ?? "";
+    modal.dataset.customerAddress = vehicle.customerAddress ?? "";
+    modal.dataset.vehicleDeliveredBy =
+        vehicle.vehicleDeliveredBy ??
+        vehicle.deliveredBy ??
+        vehicle.contactPerson ??
+        vehicle.authorizedPersonName ??
+        "";
 
     modal.classList.add("active");
+    document.body.classList.add("ownership-modal-open");
 }
 
 function closeOwnershipModal() {
     get("ownershipModalBackdrop")?.classList.remove("active");
+    document.body.classList.remove("ownership-modal-open");
 }
 
 function continueWithRegisteredVehicleCustomer() {
@@ -2054,17 +2433,22 @@ function continueWithRegisteredVehicleCustomer() {
         get("SelectedCustomerId").value = customerId;
     }
 
-    if (customerName) {
-        get("MainCustomerName").value = toTitleCase(customerName);
-    }
-
-    if (customerPhone) {
-        get("MainCustomerPhoneNumber").value = formatPhone(customerPhone);
-    }
-
-    if (customerEmail) {
-        get("MainCustomerEmail").value = customerEmail.toLocaleLowerCase("tr-TR");
-    }
+    applyCustomerDataToCreateForm({
+        id: customerId,
+        customerType: modal.dataset.customerType,
+        customerName,
+        phoneNumber: customerPhone,
+        email: customerEmail,
+        companyName: modal.dataset.companyName,
+        authorizedPersonName: modal.dataset.authorizedPersonName,
+        nationalIdentityNumber: modal.dataset.nationalIdentityNumber,
+        taxOffice: modal.dataset.taxOffice,
+        taxNumber: modal.dataset.taxNumber,
+        addressCity: modal.dataset.addressCity,
+        addressDistrict: modal.dataset.addressDistrict,
+        customerAddress: modal.dataset.customerAddress,
+        vehicleDeliveredBy: modal.dataset.vehicleDeliveredBy
+    });
 
     get("VehicleOwnershipConfirmed").value = "true";
     get("VehicleOwnershipAction").value = "RegisteredCustomer";
@@ -2074,32 +2458,38 @@ function continueWithRegisteredVehicleCustomer() {
 
     saveCreateFormDraft();
     updateServiceFormPreview();
+    goToStep(1, { skipValidation: true });
+    validateCustomerStep({
+        showStatus: true,
+        focusFirst: false,
+        selectedNotice: true
+    });
 }
 
 function chooseAnotherCustomerForVehicle() {
     get("VehicleOwnershipConfirmed").value = "true";
     get("VehicleOwnershipAction").value = "AnotherCustomer";
 
+    resetCustomerFieldsForNewVehicleOwner();
     closeOwnershipModal();
     goToStep(1);
 
     get("MainCustomerName")?.focus();
 
-    showToast("Bu servis kaydı için farklı müşteri seçebilirsin.", "info");
+    showToast("Bu araç için farklı müşteri seçebilir veya yeni müşteri girebilirsin.", "info");
 }
 
 function createNewCustomerForVehicle() {
-    get("SelectedCustomerId").value = "";
     get("VehicleOwnershipConfirmed").value = "true";
     get("VehicleOwnershipAction").value = "NewCustomer";
 
-    clearSelectedCustomer();
+    resetCustomerFieldsForNewVehicleOwner();
     closeOwnershipModal();
     goToStep(1);
 
     get("MainCustomerName")?.focus();
 
-    showToast("Yeni müşteri bilgilerini girerek devam edebilirsin.", "info");
+    showToast("Araç bilgileri korundu. Yeni müşteri bilgilerini girerek devam edebilirsin.", "info");
 }
 
 function initializeVehicleBrandModel() {
@@ -2453,6 +2843,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     initializeDraftAutoSave();
     initializeInputMasks();
+    initializeStepValidationEvents();
     initializeCustomerSearch();
    
     initializeVehicleBrandModel();

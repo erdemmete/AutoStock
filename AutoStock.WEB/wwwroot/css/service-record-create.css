@@ -380,6 +380,69 @@ textarea {
     color: #ef4444;
 }
 
+.step-validation-status {
+    margin: -4px 0 18px;
+    padding: 14px 16px;
+    border: 1px solid #bfdbfe;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #eff6ff, #ffffff);
+    color: #1e40af;
+    font-size: 14px;
+    font-weight: 850;
+    line-height: 1.5;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .06);
+}
+
+    .step-validation-status[hidden] {
+        display: none !important;
+    }
+
+    .step-validation-status strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #0f172a;
+        font-size: 15px;
+        font-weight: 950;
+    }
+
+    .step-validation-status span {
+        display: block;
+        color: #475569;
+        font-weight: 800;
+    }
+
+    .step-validation-status.warning {
+        border-color: #fed7aa;
+        background: linear-gradient(135deg, #fff7ed, #ffffff);
+        color: #9a3412;
+    }
+
+        .step-validation-status.warning strong {
+            color: #9a3412;
+        }
+
+    .step-validation-status.success {
+        border-color: #bbf7d0;
+        background: linear-gradient(135deg, #ecfdf5, #ffffff);
+        color: #047857;
+    }
+
+        .step-validation-status.success strong {
+            color: #047857;
+        }
+
+.form-field.field-missing input,
+.form-field.field-missing select,
+.form-field.field-missing textarea {
+    border-color: #f97316 !important;
+    background: #fff7ed !important;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, .12) !important;
+}
+
+.form-field.field-missing label {
+    color: #c2410c !important;
+}
+
 .field-error,
 .field-validation-error {
     display: block;
@@ -1283,6 +1346,10 @@ textarea {
 
 /* Ownership modal */
 
+body.ownership-modal-open {
+    overflow: hidden;
+}
+
 .modal-backdrop-custom {
     position: fixed;
     inset: 0;
@@ -1291,7 +1358,11 @@ textarea {
     display: none;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    width: 100vw;
+    min-height: 100dvh;
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
+    overflow: auto;
 }
 
     .modal-backdrop-custom.active {
@@ -1299,14 +1370,42 @@ textarea {
     }
 
 .ownership-modal {
-    width: min(520px, 100%);
+    position: relative;
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
     background: white;
     border-radius: 24px;
     box-shadow: 0 34px 90px rgba(15, 23, 42, .35);
     padding: 24px;
+    box-sizing: border-box;
+    overflow: auto;
 }
 
+.ownership-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+    color: #0f172a;
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+    .ownership-close:hover {
+        background: #eef4ff;
+        border-color: #bfdbfe;
+    }
+
     .ownership-modal h3 {
+        padding-right: 52px;
         margin: 0;
         color: #0f172a;
         font-size: 22px;
@@ -1350,23 +1449,82 @@ textarea {
 }
 
     .ownership-actions button {
-        min-height: 48px;
-        border-radius: 15px;
+        min-height: 66px;
+        border-radius: 18px;
+        padding: 12px 16px;
         font: inherit;
-        font-weight: 950;
         cursor: pointer;
+        display: grid;
+        gap: 4px;
+        align-content: center;
+        text-align: left;
     }
+
+        .ownership-actions button strong {
+            display: block;
+            font-size: 15px;
+            font-weight: 950;
+            line-height: 1.15;
+        }
+
+        .ownership-actions button span {
+            display: block;
+            font-size: 12px;
+            font-weight: 750;
+            line-height: 1.35;
+        }
 
 .ownership-primary {
     border: none;
-    background: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
     color: white;
+    box-shadow: 0 16px 34px rgba(37, 99, 235, .24);
 }
+
+    .ownership-primary span {
+        color: rgba(255, 255, 255, .84);
+    }
 
 .ownership-secondary {
     border: 1px solid #dbe3ef;
     background: white;
     color: #0f172a;
+}
+
+    .ownership-secondary span {
+        color: #64748b;
+    }
+
+@media (max-width: 640px) {
+    .modal-backdrop-custom {
+        align-items: flex-start;
+        padding: max(56px, calc(env(safe-area-inset-top, 0px) + 18px)) 12px 12px;
+    }
+
+    .ownership-modal {
+        width: 100%;
+        max-height: calc(100dvh - 68px);
+        border-radius: 24px;
+        padding: 22px 18px 18px;
+    }
+
+        .ownership-modal h3 {
+            font-size: 20px;
+            line-height: 1.15;
+        }
+
+        .ownership-modal p {
+            font-size: 13px;
+        }
+
+    .ownership-modal-card {
+        padding: 13px;
+    }
+
+    .ownership-actions button {
+        min-height: 72px;
+        padding: 13px 15px;
+    }
 }
 
 /* Toast */
@@ -2020,6 +2178,223 @@ textarea {
     font-size: 13px;
     font-weight: 750;
     background: white;
+}
+
+/* Customer detail drawer */
+
+body.customer-detail-open {
+    overflow: hidden;
+}
+
+    body.customer-detail-open::before {
+        content: none !important;
+        display: none !important;
+    }
+
+.customer-extra-toggle {
+    grid-column: 1 / -1;
+}
+
+    .customer-extra-toggle button {
+        position: relative;
+        width: 100%;
+        min-height: 74px;
+        justify-content: flex-start;
+        gap: 14px;
+        padding: 14px 18px;
+        border: 1px solid #bfdbfe;
+        border-radius: 22px;
+        background:
+            linear-gradient(135deg, rgba(37, 99, 235, .08), transparent 55%),
+            #ffffff;
+        color: #0f172a;
+        box-shadow: 0 16px 42px rgba(15, 23, 42, .07);
+        text-align: left;
+        overflow: hidden;
+    }
+
+        .customer-extra-toggle button::before {
+            content: none !important;
+            display: none !important;
+        }
+
+        .customer-extra-toggle button::after {
+            content: "Düzenle";
+            margin-left: auto;
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 0 14px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 13px;
+            font-weight: 950;
+        }
+
+        .customer-extra-toggle button:hover {
+            border-color: #93c5fd;
+            transform: translateY(-1px);
+            box-shadow: 0 20px 52px rgba(37, 99, 235, .12);
+        }
+
+.customer-extra-toggle-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    color: #ffffff;
+    box-shadow: 0 14px 28px rgba(37, 99, 235, .24);
+    font-size: 22px;
+    font-weight: 950;
+}
+
+.customer-extra-toggle-text {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+    .customer-extra-toggle-text strong {
+        color: #0f172a;
+        font-size: 16px;
+        line-height: 1.15;
+    }
+
+    .customer-extra-toggle-text small {
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.3;
+    }
+
+.customer-extra-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2147482000;
+    width: min(760px, calc(100vw - 28px));
+    display: block !important;
+    grid-column: auto;
+    margin: 0;
+    padding: max(24px, env(safe-area-inset-top, 0px)) 24px max(24px, env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-left: 1px solid #dbe4f0;
+    border-radius: 28px 0 0 28px;
+    background:
+        radial-gradient(circle at 12% 0%, rgba(37, 99, 235, .10), transparent 18rem),
+        linear-gradient(180deg, #ffffff 0%, #f6f9ff 100%);
+    box-shadow: -34px 0 90px rgba(15, 23, 42, .24);
+    overflow-y: auto;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(105%);
+    transition: transform .28s cubic-bezier(.22, 1, .36, 1), visibility .28s ease;
+}
+
+    .customer-extra-panel.active {
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateX(0);
+        box-shadow: -34px 0 90px rgba(15, 23, 42, .28), 0 0 0 9999px rgba(15, 23, 42, .22);
+    }
+
+    .customer-extra-panel .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+.customer-extra-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: calc(-1 * max(24px, env(safe-area-inset-top, 0px))) -24px 24px;
+    padding: max(22px, env(safe-area-inset-top, 0px)) 24px 18px;
+    border-radius: 0;
+    background: rgba(255, 255, 255, .88);
+    border: 0;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 18px 38px rgba(15, 23, 42, .06);
+    backdrop-filter: blur(18px);
+}
+
+    .customer-extra-header strong {
+        color: #0f172a;
+        font-size: 24px;
+        letter-spacing: -.7px;
+    }
+
+.customer-extra-back {
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1px solid #dbe4f0;
+    background: #ffffff;
+    color: #0f172a;
+    border-radius: 999px;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, .07);
+}
+
+    .customer-extra-back::before {
+        content: "×";
+        margin-right: 8px;
+        color: #64748b;
+        font-size: 18px;
+        line-height: 1;
+    }
+
+.customer-type-switch,
+.customer-subtype-switch {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-radius: 22px;
+    background: #eaf1fb;
+}
+
+    .customer-type-switch button,
+    .customer-subtype-switch button {
+        min-height: 50px;
+        white-space: normal;
+    }
+
+@media (max-width: 760px) {
+    .customer-extra-toggle button {
+        min-height: 78px;
+        align-items: center;
+    }
+
+        .customer-extra-toggle button::after {
+            display: none;
+        }
+
+    .customer-extra-panel {
+        width: 100vw;
+        border-left: 0;
+        border-radius: 0;
+        padding-inline: 16px;
+    }
+
+        .customer-extra-panel .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+    .customer-extra-header {
+        margin-inline: -16px;
+        padding-inline: 16px;
+    }
+}
+
+@keyframes customerBackdropIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 .chassis-field input {
     letter-spacing: .6px;

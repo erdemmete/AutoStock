@@ -98,6 +98,13 @@
                         </div>
                     </div>
 
+                    <div id="customerStepStatus"
+                         class="step-validation-status"
+                         role="status"
+                         aria-live="polite"
+                         hidden>
+                    </div>
+
                     <div class="form-grid">
 
                         <div class="quick-customer-fields" id="quickCustomerFields">
@@ -163,7 +170,11 @@
 
                         <div class="customer-extra-toggle">
                             <button type="button" onclick="toggleCustomerExtra()">
-                                + Detaylı Müşteri Bilgisi
+                                <span class="customer-extra-toggle-icon" aria-hidden="true">+</span>
+                                <span class="customer-extra-toggle-text">
+                                    <strong>Müşteri tipini ve fatura bilgilerini düzenle</strong>
+                                    <small>Bireysel, şahıs firması veya kurumsal bilgileri kontrol edin</small>
+                                </span>
                             </button>
                         </div>
 
@@ -171,16 +182,16 @@
 
                             <div class="customer-extra-header">
                                 <div>
-                                    <strong>Detaylı Müşteri Bilgisi</strong>
+                                    <strong>Müşteri Tipi ve Cari Bilgiler</strong>
                                     <p style="margin:4px 0 0; color:#64748b; font-size:13px; font-weight:700;">
-                                        Müşteri tipi, fatura/cari ve adres bilgilerini düzenleyin.
+                                        Müşteri tipini, fatura/cari ve servis iletişim bilgilerini kontrol edin.
                                     </p>
                                 </div>
 
                                 <button type="button"
                                         class="customer-extra-back"
                                         onclick="backToQuickCustomer()">
-                                    ← Hızlı kayıta dön
+                                    Kapat
                                 </button>
                             </div>
 
@@ -1144,11 +1155,14 @@
 
 <div id="ownershipModalBackdrop" class="modal-backdrop-custom">
     <div class="ownership-modal">
-        <h3>Araç sistemde kayıtlı bulundu</h3>
+        <button type="button"
+                class="ownership-close"
+                onclick="closeOwnershipModal()"
+                aria-label="Pencereyi kapat">
+            ×
+        </button>
 
-        <p>
-            Servis kaydını açmadan önce aracın hangi müşteri/cari adına kabul edileceğini kontrol edin.
-        </p>
+        <h3>Araç sistemde kayıtlı bulundu</h3>
 
         <div class="ownership-modal-card">
             <strong id="ownershipModalVehicleText">Araç</strong>
@@ -1159,19 +1173,15 @@
             <button type="button"
                     class="ownership-primary"
                     onclick="continueWithRegisteredVehicleCustomer()">
-                Kayıtlı müşteriyle devam et
-            </button>
-
-            <button type="button"
-                    class="ownership-secondary"
-                    onclick="chooseAnotherCustomerForVehicle()">
-                Başka müşteri seç
+                <strong>Kayıtlı müşteriyle devam et</strong>
+                <span>Müşteri ve araç bilgileri birlikte doldurulur.</span>
             </button>
 
             <button type="button"
                     class="ownership-secondary"
                     onclick="createNewCustomerForVehicle()">
-                Yeni müşteri oluştur
+                <strong>Yeni müşteri oluştur</strong>
+                <span>Müşteri alanları temizlenir, araç bilgileri korunur.</span>
             </button>
         </div>
     </div>
