@@ -22,7 +22,11 @@
                   asp-route-id="@Model.Id"
                   method="post"
                   class="invoice-email-form"
-                  onsubmit="return confirm('Bu faturayı müşteriye e-posta olarak göndermek istiyor musun?');">
+                  data-sente-confirm
+                  data-sente-confirm-title="Faturayı e-posta ile gönder"
+                  data-sente-confirm-message="Bu faturayı müşteriye e-posta olarak göndermek istiyor musun?"
+                  data-sente-confirm-text="Gönder"
+                  data-sente-confirm-cancel-text="Vazgeç">
                 @Html.AntiForgeryToken()
 
                 <button type="submit" class="invoice-email-btn">

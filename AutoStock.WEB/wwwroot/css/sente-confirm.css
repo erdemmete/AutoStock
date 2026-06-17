@@ -1,0 +1,142 @@
+.sente-confirm-lock {
+    overflow: hidden;
+}
+
+.sente-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 11000;
+    padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+    background: rgba(15, 23, 42, .56);
+    backdrop-filter: blur(8px);
+    display: grid;
+    place-items: center;
+}
+
+.sente-confirm-backdrop[hidden] {
+    display: none;
+}
+
+.sente-confirm-dialog {
+    width: min(480px, 100%);
+    max-height: calc(100dvh - 36px);
+    overflow: auto;
+    border-radius: 26px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 34px 90px rgba(15, 23, 42, .32);
+}
+
+.sente-confirm-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 22px 22px 12px;
+    background: #ffffff;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: start;
+}
+
+.sente-confirm-title {
+    margin: 0;
+    color: #0f172a;
+    font-size: 24px;
+    font-weight: 950;
+    letter-spacing: -.45px;
+}
+
+.sente-confirm-close {
+    width: 42px;
+    height: 42px;
+    border: 1px solid #dbe3ef;
+    border-radius: 15px;
+    background: #f8fafc;
+    color: #0f172a;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sente-confirm-body {
+    padding: 0 22px 18px;
+}
+
+.sente-confirm-message {
+    margin: 0;
+    color: #475569;
+    font-size: 15px;
+    font-weight: 750;
+    line-height: 1.55;
+    white-space: pre-line;
+}
+
+.sente-confirm-actions {
+    padding: 18px 22px 22px;
+    border-top: 1px solid #edf2f7;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.sente-confirm-btn {
+    min-height: 48px;
+    border-radius: 16px;
+    border: 1px solid transparent;
+    font: inherit;
+    font-weight: 950;
+    cursor: pointer;
+}
+
+.sente-confirm-btn:disabled {
+    opacity: .72;
+    cursor: wait;
+}
+
+.sente-confirm-cancel {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #dbe3ef;
+}
+
+.sente-confirm-ok {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    color: #ffffff;
+    box-shadow: 0 16px 34px rgba(37, 99, 235, .24);
+}
+
+.sente-confirm-dialog.is-danger .sente-confirm-ok {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    box-shadow: 0 16px 34px rgba(220, 38, 38, .22);
+}
+
+@media (max-width: 560px) {
+    .sente-confirm-backdrop {
+        align-items: end;
+        padding: max(12px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    }
+
+    .sente-confirm-dialog {
+        width: 100%;
+        max-height: calc(100dvh - 22px);
+        border-radius: 24px;
+    }
+
+    .sente-confirm-head {
+        padding: 18px 18px 10px;
+    }
+
+    .sente-confirm-title {
+        font-size: 21px;
+    }
+
+    .sente-confirm-body {
+        padding: 0 18px 16px;
+    }
+
+    .sente-confirm-actions {
+        padding: 16px 18px 18px;
+        grid-template-columns: 1fr;
+    }
+}

@@ -58,6 +58,7 @@
         let invoiceTurkeyLocations = [];
         let invoiceTaxOffices = [];
         let invoiceVehicleBrands = [];
+        let invoiceStatusActionInProgress = false;
 
         function toNumber(value) {
             if (value === null || value === undefined || value === "") return 0;
@@ -838,12 +839,15 @@
                 return;
             }
 
-            const confirmed = confirm(
-                `Fatura kalemlerine yaklaşık %${discountRate.toLocaleString("tr-TR", {
+            const confirmed = await SenteConfirm.show({
+                title: "Toplu iskonto uygula",
+                message: `Fatura kalemlerine yaklaşık %${discountRate.toLocaleString("tr-TR", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
-                })} iskonto uygulanacak.\n\nDevam etmek istiyor musun?`
-            );
+                })} iskonto uygulanacak.\n\nDevam etmek istiyor musun?`,
+                confirmText: "Uygula",
+                cancelText: "Vazgeç"
+            });
 
             if (!confirmed) return;
 
@@ -1648,10 +1652,12 @@
             }
 
             if (item.itemType === 2 && !item.stockItemId) {
-                const confirmed = confirm(
-                    "Stok kartı seçilmedi.\n\n" +
-                    "Bu parça servis kaydına eklenecek ancak stoktan düşmeyecek. Devam etmek istiyor musunuz?"
-                );
+                const confirmed = await SenteConfirm.show({
+                    title: "Stok kartı seçilmedi",
+                    message: "Bu parça servis kaydına eklenecek ancak stoktan düşmeyecek.\n\nDevam etmek istiyor musunuz?",
+                    confirmText: "Devam Et",
+                    cancelText: "Vazgeç"
+                });
 
                 if (!confirmed) {
                     return;
@@ -1723,7 +1729,13 @@
                 return;
             }
 
-            const confirmed = confirm("Bu fatura kalemini silmek istediğinize emin misiniz?");
+            const confirmed = await SenteConfirm.show({
+                title: "Fatura kalemini sil",
+                message: "Bu fatura kalemini silmek istediğinize emin misiniz?",
+                confirmText: "Sil",
+                cancelText: "Vazgeç",
+                danger: true
+            });
 
             if (!confirmed) return;
 
@@ -1815,12 +1827,18 @@
         }
 
         async function issueInvoice(invoiceId) {
-            const confirmed = confirm(
-                "Bu hesap özetini onaylamak istediğinize emin misiniz?\n\n" +
-                "Onaylanan hesap özetleri artık taslak olarak düzenlenemez."
-            );
+            if (invoiceStatusActionInProgress) return;
+
+            const confirmed = await SenteConfirm.show({
+                title: "Hesap özetini onayla",
+                message: "Bu hesap özetini onaylamak istediğinize emin misiniz?\n\nOnaylanan hesap özetleri artık taslak olarak düzenlenemez.",
+                confirmText: "Onayla",
+                cancelText: "Vazgeç"
+            });
 
             if (!confirmed) return;
+
+            invoiceStatusActionInProgress = true;
 
             try {
                 const response = await fetch(`/Invoices/Issue/${invoiceId}`, {
@@ -1846,13 +1864,25 @@
             }
             catch {
                 alert("Beklenmeyen bir hata oluştu.");
+            } finally {
+                invoiceStatusActionInProgress = false;
             }
         }
 
         async function cancelInvoice(invoiceId) {
-            const confirmed = confirm("Bu hesap özetini iptal etmek istediğinize emin misiniz?");
+            if (invoiceStatusActionInProgress) return;
+
+            const confirmed = await SenteConfirm.show({
+                title: "Hesap özetini iptal et",
+                message: "Bu hesap özetini iptal etmek istediğinize emin misiniz?",
+                confirmText: "İptal Et",
+                cancelText: "Vazgeç",
+                danger: true
+            });
 
             if (!confirmed) return;
+
+            invoiceStatusActionInProgress = true;
 
             try {
                 const response = await fetch(`/Invoices/Cancel/${invoiceId}`, {
@@ -1868,6 +1898,8 @@
             }
             catch {
                 alert("Beklenmeyen bir hata oluştu.");
+            } finally {
+                invoiceStatusActionInProgress = false;
             }
         }
 
