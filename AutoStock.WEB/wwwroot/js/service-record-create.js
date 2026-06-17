@@ -547,7 +547,7 @@ function getCustomerRequiredFields() {
     const finalType = getFinalCustomerTypeValue();
     const fields = [
         {
-            name: "Müşteri / Cari Adı",
+            name: "Müşteri / Firma Adı",
             input: container?.querySelector(`[name="CustomerName"]`)
         },
         {
@@ -2603,7 +2603,7 @@ function validateBeforeSubmit(formData) {
     const plate = formData.get("Plate")?.toString().trim();
 
     if (!customerName) {
-        showToast("Müşteri / cari adı zorunludur.", "error");
+        showToast("Müşteri / firma adı zorunludur.", "error");
         goToStep(1);
         showTemporaryInvalid(getActiveCustomerContainer()?.querySelector(`[name="CustomerName"]`));
         return false;

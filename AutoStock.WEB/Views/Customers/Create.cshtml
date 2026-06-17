@@ -184,22 +184,6 @@
 
             </main>
 
-            <aside class="side-column">
-                <section class="note-card">
-                    <h3>Müşteri Notu</h3>
-                    <textarea disabled
-                              placeholder="Not alanını ileride müşteri detayına bağlayacağız."></textarea>
-                </section>
-
-                <section class="hint-card">
-                    <h3>Kayıt Kuralları</h3>
-                    <p>
-                        FullName her zaman resmi cari/fatura adıdır.
-                        CompanyName kısa marka/tabela adı olarak kullanılabilir.
-                    </p>
-                </section>
-            </aside>
-
         </div>
     </form>
 </div>
@@ -588,7 +572,7 @@
         }
 
         if (type === "SoleProprietorship") {
-            fullNameLabel.innerHTML = "Resmi Cari / Fatura Adı <b>*</b>";
+            fullNameLabel.innerHTML = "Fatura Adı / Ünvan <b>*</b>";
             fullNameInput.placeholder = "Örn: Erdem Mete";
             companyNameLabel.innerText = "Marka / Tabela Adı";
         }

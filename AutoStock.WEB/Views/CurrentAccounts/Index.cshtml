@@ -2,7 +2,7 @@
 @using AutoStock.WEB.Models.CurrentAccounts
 
 @{
-    ViewData["Title"] = "Cari Yönetimi";
+    ViewData["Title"] = "Hesap Özeti";
 
     var summary = Model.Summary;
     var balances = summary.CustomerBalances.Items ?? new List<CustomerBalanceSummaryViewModel>();
@@ -60,7 +60,7 @@
 
             <div>
                 <span class="cur-eyebrow">SENTE360</span>
-                <h1>Cari Yönetimi</h1>
+                <h1>Hesap Özeti</h1>
                 <p>Müşteri bakiyelerini, tahsilatları ve açık alacakları hızlıca takip edin.</p>
             </div>
         </div>
@@ -156,13 +156,13 @@
                 @if (totalCount > 0)
                 {
                     <span>
-                        <strong>@totalCount</strong> cari hesap —
+                        <strong>@totalCount</strong> müşteri hesabı —
                         <strong>Sayfa @pageNumber / @totalPages</strong>
                     </span>
                 }
                 else
                 {
-                    <span>Cari hesap bulunamadı.</span>
+                    <span>Müşteri hesabı bulunamadı.</span>
                 }
             </div>
 
@@ -325,7 +325,7 @@
 
             <div class="modal-header cur-modal-header">
                 <div>
-                    <span class="cur-modal-eyebrow">Cari İşlem</span>
+                    <span class="cur-modal-eyebrow">Tahsilat</span>
                     <h5 class="modal-title">Tahsilat Ekle</h5>
                 </div>
 

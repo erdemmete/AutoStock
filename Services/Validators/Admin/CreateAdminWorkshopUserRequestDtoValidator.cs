@@ -36,7 +36,7 @@ public class CreateAdminWorkshopUserRequestDtoValidator : AbstractValidator<Crea
             .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("Rol zorunludur.")
             .Must(role => AllowedRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
-            .WithMessage("Rol sadece Owner veya Staff olabilir.");
+            .WithMessage("Rol sadece servis sahibi veya personel olabilir.");
     }
 
     private static bool BeValidPhone(string? value)

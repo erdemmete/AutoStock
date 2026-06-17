@@ -1145,7 +1145,7 @@ async function openInlineCamera() {
     if (!panel || !video) return;
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast("Bu tarayıcı doğrudan kamera açmayı desteklemiyor. Dosyadan seç seçeneğini kullanabilirsin.", "error");
+        showToast("Kamera açılamadı. Fotoğraf yükleyerek devam edebilirsiniz.", "error");
         return;
     }
 
@@ -1185,22 +1185,7 @@ async function openInlineCamera() {
     catch (error) {
         console.error("Kamera açma hatası:", error);
 
-        let message = "Kamera açılamadı.";
-
-        if (error?.name === "NotAllowedError" || error?.name === "SecurityError") {
-            message = "Kamera izni verilmedi. Tarayıcı izinlerini kontrol et.";
-        }
-        else if (error?.name === "NotFoundError" || error?.name === "DevicesNotFoundError") {
-            message = "Kamera bulunamadı.";
-        }
-        else if (error?.name === "NotReadableError" || error?.name === "TrackStartError") {
-            message = "Kamera başka bir uygulama tarafından kullanılıyor olabilir.";
-        }
-        else if (error?.name === "OverconstrainedError" || error?.name === "ConstraintNotSatisfiedError") {
-            message = "İstenen kamera modu desteklenmedi.";
-        }
-
-        showToast(message, "error");
+        showToast("Kamera açılamadı. Fotoğraf yükleyerek devam edebilirsiniz.", "error");
     }
 }
 async function closeInlineCamera(showInfo = true) {

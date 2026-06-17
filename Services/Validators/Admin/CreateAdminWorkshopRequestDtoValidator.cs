@@ -59,6 +59,6 @@ public class CreateAdminWorkshopRequestDtoValidator : AbstractValidator<CreateAd
             .Cascade(CascadeMode.Stop)
             .NotEmpty().WithMessage("İlk kullanıcı rolü zorunludur.")
             .Must(role => AllowedRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
-            .WithMessage("İlk kullanıcı rolü sadece Owner veya Staff olabilir.");
+            .WithMessage("İlk kullanıcı rolü sadece servis sahibi veya personel olabilir.");
     }
 }

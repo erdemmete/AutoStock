@@ -23,7 +23,7 @@ namespace AutoStock.Services.Validators.Customers
 
             RuleFor(x => x.FullName)
                 .NotEmpty()
-                .WithMessage("Resmi cari/fatura adı zorunludur.")
+                .WithMessage("Fatura adı / ünvan zorunludur.")
                 .When(x => x.Type == CustomerType.SoleProprietorship);
 
             RuleFor(x => x.FullName)

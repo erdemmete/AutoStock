@@ -14,11 +14,21 @@
 
     var subscriptionStatusOptions = new List<(int Value, string Text)>
     {
-        (1, "Trial"),
-        (2, "Active"),
-        (3, "Suspended"),
-        (4, "Expired"),
-        (5, "Cancelled")
+        (1, "Deneme"),
+        (2, "Aktif"),
+        (3, "Askıya Alındı"),
+        (4, "Süresi Doldu"),
+        (5, "İptal Edildi")
+    };
+
+    string SubscriptionStatusLabel(string? status) => status switch
+    {
+        "Trial" => "Deneme",
+        "Active" => "Aktif",
+        "Suspended" => "Askıya Alındı",
+        "Expired" => "Süresi Doldu",
+        "Cancelled" => "İptal Edildi",
+        _ => status ?? "-"
     };
 
     var createdUserFullName = TempData["CreatedUserFullName"] as string;
@@ -317,7 +327,7 @@ Bu bağlantı tek kullanımlıktır.";
 
             <div>
                 <span>Üyelik</span>
-                <strong>@Model.SubscriptionStatusText</strong>
+                <strong>@SubscriptionStatusLabel(Model.SubscriptionStatusText)</strong>
             </div>
 
             <div>
@@ -551,7 +561,7 @@ Bu bağlantı tek kullanımlıktır.";
     <div class="card-header-row">
         <div>
             <h2>Banka Hesapları / IBAN</h2>
-            <p>Fatura ve ileride servis formlarında gösterilecek ödeme hesapları.</p>
+            <p>Fatura ve servis formlarında gösterilecek ödeme hesapları.</p>
         </div>
     </div>
 
@@ -676,7 +686,7 @@ Bu bağlantı tek kullanımlıktır.";
 
                             @if (bankAccount.ShowOnServiceForms)
                             {
-                                <span class="status-badge secondary">SKF’de görünür</span>
+                                <span class="status-badge secondary">Servis Kayıt Formu (SKF)</span>
                             }
                         </div>
 
@@ -1010,7 +1020,7 @@ Bu bağlantı tek kullanımlıktır.";
     <div class="card-header-row">
         <div>
             <h2>Kullanıcılar</h2>
-            <p>Bu servise bağlı Owner ve Staff kullanıcıları</p>
+            <p>Bu servise bağlı kullanıcılar</p>
         </div>
 
         <a href="/Admin/Workshops/@Model.Id/Users/Create" class="btn-primary-custom">

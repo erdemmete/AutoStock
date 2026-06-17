@@ -631,7 +631,7 @@ namespace AutoStock.Services.Services
             if (workshopUser.Role != AppRoles.Owner && workshopUser.Role != AppRoles.Staff)
             {
                 return ServiceResult<AdminWorkshopUserPasswordResetLinkDto>.Fail(
-                    "Sadece Owner veya Staff kullanıcıları için şifre sıfırlama bağlantısı oluşturulabilir.");
+                    "Sadece servis sahibi veya personel kullanıcıları için şifre sıfırlama bağlantısı oluşturulabilir.");
             }
 
             if (!workshopUser.User.IsActive)
@@ -1452,7 +1452,7 @@ namespace AutoStock.Services.Services
             var role = request.Role?.Trim();
 
             if (role != AppRoles.Owner && role != AppRoles.Staff)
-                return ServiceResult<int>.Fail("Kullanıcı rolü sadece Owner veya Staff olabilir.");
+                return ServiceResult<int>.Fail("Kullanıcı rolü sadece servis sahibi veya personel olabilir.");
 
             var roleExists = await _roleManager.RoleExistsAsync(role);
 
@@ -1491,7 +1491,7 @@ namespace AutoStock.Services.Services
             var role = request.FirstUserRole?.Trim();
 
             if (role != AppRoles.Owner && role != AppRoles.Staff)
-                return ServiceResult<int>.Fail("İlk kullanıcı rolü sadece Owner veya Staff olabilir.");
+                return ServiceResult<int>.Fail("İlk kullanıcı rolü sadece servis sahibi veya personel olabilir.");
 
             var roleExists = await _roleManager.RoleExistsAsync(role);
 
@@ -1512,7 +1512,7 @@ namespace AutoStock.Services.Services
             }
 
             if (request.TrialDays.HasValue && request.TrialDays.Value < 0)
-                return ServiceResult<int>.Fail("Trial gün sayısı negatif olamaz.");
+                return ServiceResult<int>.Fail("Deneme gün sayısı negatif olamaz.");
 
             if (request.SubscriptionEndDate.HasValue &&
                 request.SubscriptionEndDate.Value <= _dateTimeProvider.Now)

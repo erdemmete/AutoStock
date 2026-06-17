@@ -142,7 +142,7 @@ public class AuthService : IAuthService
         var loginName = request.LoginName?.Trim();
 
         if (string.IsNullOrWhiteSpace(loginName) || string.IsNullOrWhiteSpace(request.Password))
-            throw new ArgumentException("Kullanıcı adı/e-posta ve şifre zorunludur.");
+            throw new ArgumentException("Kullanıcı adı ve şifre zorunludur.");
 
         AppUser? user;
 
@@ -160,7 +160,7 @@ public class AuthService : IAuthService
                 null,
                 "InvalidCredentials");
 
-            throw new UnauthorizedAccessException("Kullanıcı adı/e-posta veya şifre hatalı.");
+            throw new UnauthorizedAccessException("Kullanıcı adı veya şifre hatalı.");
         }
 
         if (!user.IsActive)
@@ -186,7 +186,7 @@ public class AuthService : IAuthService
                 null,
                 "InvalidCredentials");
 
-            throw new UnauthorizedAccessException("Kullanıcı adı/e-posta veya şifre hatalı.");
+            throw new UnauthorizedAccessException("Kullanıcı adı veya şifre hatalı.");
         }
 
         var roles = await _userManager.GetRolesAsync(user);

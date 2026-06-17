@@ -2,7 +2,7 @@
 @using System.Globalization
 
 @{
-    ViewData["Title"] = "Cari Hesap";
+    ViewData["Title"] = "Hesap Özeti";
 
     var canReceivePayment = true; // WEB tarafında auth Session token ile çalıştığı için User.IsInRole burada güvenilir değil. API zaten Owner kontrolü yapıyor.
     var transactions = Model.Transactions
@@ -53,14 +53,14 @@
             <a asp-controller="CurrentAccounts"
                asp-action="Index"
                class="ca-customer-back"
-               title="Cari listesine dön">
+               title="Hesap özetine dön">
                 ←
             </a>
 
             <div class="ca-customer-avatar">@GetInitials(Model.CustomerName)</div>
 
             <div>
-                <span class="ca-customer-eyebrow">Cari Ekstre</span>
+                <span class="ca-customer-eyebrow">Hesap Özeti</span>
                 <h1>@Model.CustomerName</h1>
                 <p>Faturalar, tahsilatlar ve açık bakiye tek ekranda.</p>
             </div>
@@ -205,7 +205,7 @@
         {
             <div class="ca-customer-empty">
                 <strong>Hareket yok</strong>
-                <span>Bu müşteri için henüz cari hareket oluşmamış.</span>
+                <span>Bu müşteri için henüz hesap hareketi oluşmamış.</span>
             </div>
         }
         else
@@ -332,7 +332,7 @@
         <div class="ca-customer-modal" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
             <div class="ca-customer-modal-head">
                 <div>
-                    <span>Cari İşlem</span>
+                    <span>Tahsilat</span>
                     <h3 id="paymentModalTitle">Tahsilat Ekle</h3>
                     <p id="paymentModalSubtitle">Müşteri tahsilatı</p>
                 </div>
@@ -397,9 +397,9 @@
         <div class="ca-customer-modal" role="dialog" aria-modal="true" aria-labelledby="cancelPaymentModalTitle">
             <div class="ca-customer-modal-head danger">
                 <div>
-                    <span>Cari İşlem</span>
+                    <span>Tahsilat İptali</span>
                     <h3 id="cancelPaymentModalTitle">Tahsilatı İptal Et</h3>
-                    <p id="cancelPaymentModalSubtitle">Bu işlem tahsilatı silmez, ters cari hareket oluşturur.</p>
+                    <p id="cancelPaymentModalSubtitle">Bu işlem tahsilatı silmez, ters hesap hareketi oluşturur.</p>
                 </div>
 
                 <button type="button"

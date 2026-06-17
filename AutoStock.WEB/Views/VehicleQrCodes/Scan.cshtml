@@ -285,7 +285,7 @@
         <header class="qr-header">
             <div>
                 <h1>QR Tara</h1>
-                <p>Aracı okutun, ardından yapmak istediğiniz işlemi seçin.</p>
+                <p>Araç QR kodunu tarayın.</p>
             </div>
 
             <a href="/Dashboard/Index" class="back-link">
@@ -298,16 +298,16 @@
 
             <div class="actions">
                 <button type="button" id="startButton" class="btn btn-primary">
-                    Kamerayı Başlat
+                    QR Tara
                 </button>
 
                 <button type="button" id="stopButton" class="btn btn-secondary" disabled>
-                    Durdur
+                    Kapat
                 </button>
             </div>
 
             <div id="statusBox" class="status-box">
-                QR okutmak için kamerayı başlatın.
+                QR taramayı başlatın.
             </div>
         </section>
 
@@ -396,7 +396,7 @@
         startButton.disabled = true;
         stopButton.disabled = false;
 
-        setStatus("Kamera açık. QR kodu okutabilirsiniz.");
+        setStatus("Kamera açık.");
         }
         catch (error) {
         console.error(error);
@@ -423,7 +423,7 @@
         stopButton.disabled = true;
 
         if (updateStatus) {
-        setStatus("Kamera durduruldu.");
+        setStatus("Kamera kapatıldı.");
         }
         }
 
@@ -447,7 +447,7 @@
         }
 
         renderResult(payload);
-        setStatus("Araç bulundu. Yapmak istediğiniz işlemi seçin.");
+        setStatus("Araç bulundu.");
         }
         catch (error) {
         console.error(error);

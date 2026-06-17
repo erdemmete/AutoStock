@@ -8,7 +8,7 @@
 <div class="page-header">
     <div>
         <h1>Kullanıcı Oluştur</h1>
-        <p>@workshopName için Owner veya Staff kullanıcısı oluştur.</p>
+        <p>@workshopName için servis sahibi veya personel kullanıcısı oluştur.</p>
     </div>
 
     <a href="/Admin/Workshops/Details/@Model.WorkshopId" class="btn-secondary-custom">
@@ -86,8 +86,8 @@
             <div class="form-group">
                 <label>Rol</label>
                 <select asp-for="Role" class="form-control-custom">
-                    <option value="Staff">Staff</option>
-                    <option value="Owner">Owner</option>
+                    <option value="Staff">Personel</option>
+                    <option value="Owner">Servis Sahibi</option>
                 </select>
                 <small>Admin kullanıcı bu ekrandan oluşturulmaz.</small>
             </div>

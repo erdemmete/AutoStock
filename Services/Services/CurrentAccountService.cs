@@ -169,7 +169,7 @@ namespace AutoStock.Services.Services
                 return ServiceResult<bool>.Fail("Sadece tahsilat hareketleri iptal edilebilir.");
 
             if (payment.IsSystemGenerated)
-                return ServiceResult<bool>.Fail("Sistem tarafından oluşturulan cari hareketler bu ekrandan iptal edilemez.");
+                return ServiceResult<bool>.Fail("Sistem tarafından oluşturulan hesap hareketleri bu ekrandan iptal edilemez.");
 
             var cancellationDocumentNumber = BuildPaymentCancellationDocumentNumber(payment.Id);
 

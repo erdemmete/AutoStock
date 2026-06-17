@@ -28,7 +28,7 @@
                 <div class="panel-title split-title">
                     <div class="title-left">
                         <span class="title-icon">👤</span>
-                        <h2>Cari / Müşteri Bilgileri</h2>
+                        <h2>Müşteri / Fatura Bilgileri</h2>
                     </div>
 
                     <button type="button"
@@ -1034,7 +1034,7 @@
             titleLabel.textContent = isIndividual
                 ? "Ad Soyad"
                 : type === "sole"
-                    ? "Müşteri / Cari Adı"
+                    ? "Müşteri / Firma Adı"
                     : "Firma Ünvanı";
         }
 
@@ -1212,7 +1212,7 @@
 
         if (!customerTitle.value.trim()) {
             showTemporaryInvalid(customerTitle);
-            alert("Müşteri / cari adı zorunludur.");
+            alert("Müşteri / firma adı zorunludur.");
             return false;
         }
 

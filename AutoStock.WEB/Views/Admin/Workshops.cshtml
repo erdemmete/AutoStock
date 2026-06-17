@@ -5,6 +5,16 @@
 
     var query = Model.Query;
     var paged = Model.Workshops;
+
+    string SubscriptionStatusLabel(string? status) => status switch
+    {
+        "Trial" => "Deneme",
+        "Active" => "Aktif",
+        "Suspended" => "Askıya Alındı",
+        "Expired" => "Süresi Doldu",
+        "Cancelled" => "İptal Edildi",
+        _ => status ?? "-"
+    };
 }
 
 <div class="page-header">
@@ -55,11 +65,11 @@
             <label>Üyelik</label>
             <select name="SubscriptionStatus">
                 <option value="">Tümü</option>
-                <option value="1" selected="@(query.SubscriptionStatus == 1)">Trial</option>
-                <option value="2" selected="@(query.SubscriptionStatus == 2)">Active</option>
-                <option value="3" selected="@(query.SubscriptionStatus == 3)">Expired</option>
-                <option value="4" selected="@(query.SubscriptionStatus == 4)">Suspended</option>
-                <option value="5" selected="@(query.SubscriptionStatus == 5)">Cancelled</option>
+                <option value="1" selected="@(query.SubscriptionStatus == 1)">Deneme</option>
+                <option value="2" selected="@(query.SubscriptionStatus == 2)">Aktif</option>
+                <option value="3" selected="@(query.SubscriptionStatus == 3)">Askıya Alındı</option>
+                <option value="4" selected="@(query.SubscriptionStatus == 4)">Süresi Doldu</option>
+                <option value="5" selected="@(query.SubscriptionStatus == 5)">İptal Edildi</option>
             </select>
         </div>
 
@@ -144,15 +154,15 @@
                                 }
                                 else if (item.SubscriptionStatusText == "Trial")
                                 {
-                                    <span class="status-badge warning">Trial</span>
+                                    <span class="status-badge warning">Deneme</span>
                                 }
                                 else if (item.SubscriptionStatusText == "Active")
                                 {
-                                    <span class="status-badge success">Active</span>
+                                    <span class="status-badge success">Aktif</span>
                                 }
                                 else
                                 {
-                                    <span class="status-badge secondary">@item.SubscriptionStatusText</span>
+                                    <span class="status-badge secondary">@SubscriptionStatusLabel(item.SubscriptionStatusText)</span>
                                 }
                             </td>
 

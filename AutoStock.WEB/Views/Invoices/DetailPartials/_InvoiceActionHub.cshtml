@@ -43,7 +43,7 @@
             </article>
 
             <article class="invoice-action-chip @BalanceClass(Model.CustomerBalance)">
-                <span>Cari</span>
+                <span>Hesap</span>
                 <strong>@Money(Model.CustomerBalance)</strong>
                 <small>@BalanceText(Model.CustomerBalance)</small>
             </article>
@@ -96,7 +96,7 @@
         <div class="invoice-action-drawer-body">
             <section class="invoice-action-group">
                 <div class="invoice-action-group-head">
-                    <span>Cari / Tahsilat</span>
+                    <span>Hesap Özeti / Tahsilat</span>
                     <strong>Ödeme ve ekstre</strong>
                 </div>
 
@@ -106,7 +106,7 @@
                        asp-action="Customer"
                        asp-route-customerId="@Model.CustomerId">
                         <span>₺</span>
-                        <strong>Cari Ekstre</strong>
+                        <strong>Hesap Özeti</strong>
                         <small>@BalanceText(Model.CustomerBalance): @Money(Model.CustomerBalance)</small>
                     </a>
 

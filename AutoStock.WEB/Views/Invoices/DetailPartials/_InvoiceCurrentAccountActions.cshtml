@@ -26,25 +26,25 @@
     }
 }
 
-<section class="invoice-current-panel" aria-label="Cari tahsilat özeti">
+<section class="invoice-current-panel" aria-label="Tahsilat özeti">
     <div class="invoice-current-header">
         <div>
-            <span class="invoice-current-eyebrow">Cari Hesap</span>
+            <span class="invoice-current-eyebrow">Hesap Özeti</span>
 
             @if (isIssued)
             {
                 <h3>Fatura Tahsilatı</h3>
-                <p>Bu faturaya bağlı tahsilatları ve müşterinin güncel cari bakiyesini takip edin.</p>
+                <p>Bu faturaya bağlı tahsilatları ve müşterinin güncel bakiyesini takip edin.</p>
             }
             else if (isCancelled)
             {
                 <h3>İptal Edilmiş Fatura</h3>
-                <p>İptal edilmiş faturada yeni tahsilat alınmaz. Cari hareketler ekstre üzerinden izlenebilir.</p>
+                <p>İptal edilmiş faturada yeni tahsilat alınmaz. Hesap hareketleri ekstre üzerinden izlenebilir.</p>
             }
             else
             {
                 <h3>Tahsilat için fatura kesilmeli</h3>
-                <p>Taslak faturalar cari borç oluşturmaz. Faturayı kestikten sonra tahsilat girebilirsiniz.</p>
+                <p>Taslak faturalar müşteri bakiyesi oluşturmaz. Faturayı kestikten sonra tahsilat girebilirsiniz.</p>
             }
         </div>
 
@@ -52,7 +52,7 @@
            asp-controller="CurrentAccounts"
            asp-action="Customer"
            asp-route-customerId="@Model.CustomerId">
-            Cari Ekstre
+            Hesap Özeti
         </a>
     </div>
 
@@ -108,7 +108,7 @@
     else if (isIssued && !canReceivePayment)
     {
         <div class="invoice-current-note">
-            Tahsilat girişi yalnızca Owner rolüyle yapılır.
+            Tahsilat girişi yalnızca servis sahibi yetkisiyle yapılır.
         </div>
     }
 </section>

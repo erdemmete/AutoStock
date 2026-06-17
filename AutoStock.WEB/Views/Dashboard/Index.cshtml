@@ -961,7 +961,7 @@
 
                     <a class="nav-link" href="/CurrentAccounts">
                         <span class="nav-icon">💰</span>
-                        <span>Cari</span>
+                        <span>Hesap</span>
                     </a>
                 }
 
@@ -1000,7 +1000,7 @@
                     <p>
                         @if (isOwner)
                         {
-                            <span>Servisinizin operasyon ve finans özetini buradan takip edebilirsiniz.</span>
+                            <span>Açık servisleri, tahsilatları ve günlük durumu tek ekranda görün.</span>
                         }
                         else
                         {
@@ -1093,7 +1093,7 @@
 
             <section class="content-grid">
                 <div class="panel">
-                    <h2 class="section-title">⚡ Hızlı Başlat</h2>
+                    <h2 class="section-title">⚡ Kısayollar</h2>
 
                     <div class="quick-start-grid">
                         <a class="quick-start-card blue"
@@ -1101,8 +1101,8 @@
                            asp-action="Create">
                             <div class="quick-start-icon">🔧</div>
                             <div class="quick-start-content">
-                                <strong>Yeni Servis Kaydı</strong>
-                                <span>Araç kabulünü ve müşteri şikayetini hızlıca gir.</span>
+                                <strong>Servis Kaydı</strong>
+                                <span>Hızlı araç kabul</span>
                             </div>
                             <div class="quick-start-arrow">›</div>
                         </a>
@@ -1167,8 +1167,8 @@
                                 data-qr-modal-open>
                             <div class="quick-start-icon">▣</div>
                             <div class="quick-start-content">
-                                <strong>QR Tara</strong>
-                                <span>Aracı okut, açık kayda ya da yeni servis akışına geç.</span>
+                                <strong>QR ile Araç Bul</strong>
+                                <span>Açık kayıt ve araç geçmişi</span>
                             </div>
                             <div class="quick-start-arrow">›</div>
                         </button>
@@ -1177,8 +1177,8 @@
                            href="/StockItems/Create">
                             <div class="quick-start-icon">📦</div>
                             <div class="quick-start-content">
-                                <strong>Yeni Stok Kartı</strong>
-                                <span>Yeni parça veya sarf malzemesi tanımla.</span>
+                                <strong>Yeni Stok Tanımı</strong>
+                                <span>Parça ve sarf malzemesi</span>
                             </div>
                             <div class="quick-start-arrow">›</div>
                         </a>
@@ -1187,8 +1187,8 @@
                            href="/Invoices">
                             <div class="quick-start-icon">🧾</div>
                             <div class="quick-start-content">
-                                <strong>Fatura Taslakları</strong>
-                                <span>Bekleyen taslakları kontrol et ve işlemi tamamla.</span>
+                                <strong>Bekleyen Taslaklar</strong>
+                                <span>Fatura takip listesi</span>
                             </div>
                             <div class="quick-start-arrow">›</div>
                         </a>
@@ -1197,8 +1197,8 @@
                     @if (isStaff)
                     {
                         <div class="notice-box">
-                            Staff kullanıcılar servis, stok ve fatura operasyonlarını yapabilir.
-                            Cari ve genel müşteri listesi sadece servis sahibi tarafından görüntülenir.
+                            Personel kullanıcılar servis, stok ve fatura işlemlerini yapabilir.
+                            Hesap özeti ve genel müşteri listesi sadece servis sahibi tarafından görüntülenir.
                         </div>
                     }
                 </div>

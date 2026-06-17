@@ -12,12 +12,18 @@ namespace AutoStock.WEB.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly AuthApiService _authApiService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IHttpClientFactory httpClientFactory, IConfiguration configuration, AuthApiService authApiService)
+        public AuthController(
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
+            AuthApiService authApiService,
+            ILogger<AuthController> logger)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             _authApiService = authApiService;
+            _logger = logger;
         }
 
         [HttpGet("/Auth/Login")]
@@ -54,7 +60,8 @@ namespace AutoStock.WEB.Controllers
 
                 if (string.IsNullOrWhiteSpace(apiBaseUrl))
                 {
-                    ViewBag.Error = "API adresi yapılandırılmamış. Lütfen sistem yöneticisiyle iletişime geçin.";
+                    _logger.LogError("Login failed because ApiSettings:BaseUrl is missing.");
+                    ViewBag.Error = "Giriş şu anda tamamlanamadı. Lütfen kısa süre sonra tekrar deneyin.";
                     return View(model);
                 }
 
@@ -69,28 +76,37 @@ namespace AutoStock.WEB.Controllers
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    ViewBag.Error = "Kullanıcı adı/e-posta veya şifre hatalı.";
+                    ViewBag.Error = "Kullanıcı adı veya şifre hatalı.";
                     return View(model);
                 }
 
                 if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
                 {
-                    ViewBag.Error = string.IsNullOrWhiteSpace(responseText)
-                        ? "Giriş bilgileri eksik veya hatalı."
-                        : responseText;
+                    _logger.LogWarning(
+                        "Login API returned BadRequest. Response: {ResponseText}",
+                        responseText);
+
+                    ViewBag.Error = "Kullanıcı adı veya şifre hatalı.";
 
                     return View(model);
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    ViewBag.Error = $"API hatası oluştu. Status: {(int)response.StatusCode} - {response.ReasonPhrase}";
+                    _logger.LogError(
+                        "Login API returned unsuccessful status. StatusCode: {StatusCode}, Reason: {ReasonPhrase}, Response: {ResponseText}",
+                        (int)response.StatusCode,
+                        response.ReasonPhrase,
+                        responseText);
+
+                    ViewBag.Error = "Giriş şu anda tamamlanamadı. Lütfen kısa süre sonra tekrar deneyin.";
                     return View(model);
                 }
 
                 if (string.IsNullOrWhiteSpace(responseText))
                 {
-                    ViewBag.Error = "API boş cevap döndü.";
+                    _logger.LogError("Login API returned an empty response.");
+                    ViewBag.Error = "Giriş şu anda tamamlanamadı. Lütfen kısa süre sonra tekrar deneyin.";
                     return View(model);
                 }
 
@@ -103,7 +119,8 @@ namespace AutoStock.WEB.Controllers
 
                 if (loginResult == null || string.IsNullOrWhiteSpace(loginResult.AccessToken))
                 {
-                    ViewBag.Error = "Token alınamadı.";
+                    _logger.LogError("Login API response could not be parsed or access token was missing.");
+                    ViewBag.Error = "Giriş şu anda tamamlanamadı. Lütfen kısa süre sonra tekrar deneyin.";
                     return View(model);
                 }
 
@@ -111,19 +128,22 @@ namespace AutoStock.WEB.Controllers
 
                 return RedirectAfterLogin(loginResult);
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
-                ViewBag.Error = "API sunucusuna ulaşılamıyor. API çalışıyor mu kontrol et.";
+                _logger.LogError(ex, "Login API request failed.");
+                ViewBag.Error = "Giriş şu anda tamamlanamadı. Lütfen kısa süre sonra tekrar deneyin.";
                 return View(model);
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException ex)
             {
-                ViewBag.Error = "API isteği zaman aşımına uğradı.";
+                _logger.LogError(ex, "Login API request timed out.");
+                ViewBag.Error = "Giriş şu anda tamamlanamadı. Lütfen kısa süre sonra tekrar deneyin.";
                 return View(model);
             }
             catch (Exception ex)
             {
-                ViewBag.Error = $"Beklenmeyen hata: {ex.Message}";
+                _logger.LogError(ex, "Unexpected error occurred during login.");
+                ViewBag.Error = "Giriş sırasında bir sorun oluştu.";
                 return View(model);
             }
         }

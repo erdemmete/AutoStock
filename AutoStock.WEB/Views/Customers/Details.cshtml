@@ -72,7 +72,7 @@
 
     <section class="cust-metrics">
         <div class="cust-metric-card balance @(Model.Balance > 0 ? "debt" : Model.Balance < 0 ? "credit" : "zero")">
-            <span>Cari Bakiye</span>
+            <span>Hesap Bakiyesi</span>
             <strong>@Money(Model.Balance)</strong>
             <small>@GetBalanceDescription(Model.Balance)</small>
         </div>
@@ -244,7 +244,7 @@
                 <div class="cust-card">
                     <div class="cust-section-head slim">
                         <div>
-                            <span class="cust-section-kicker">Cari</span>
+                            <span class="cust-section-kicker">Hesap Hareketleri</span>
                             <h2>Son Hareketler</h2>
                         </div>
                     </div>
@@ -252,7 +252,7 @@
                     @if (!Model.RecentCurrentAccountMovements.Any())
                     {
                         <div class="cust-empty compact">
-                            <strong>Cari hareket yok.</strong>
+                            <strong>Hesap hareketi yok.</strong>
                             <span>Kesilmiş fatura veya ödeme hareketi bulunamadı.</span>
                         </div>
                     }

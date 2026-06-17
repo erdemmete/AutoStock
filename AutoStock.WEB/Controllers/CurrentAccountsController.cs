@@ -38,7 +38,7 @@ namespace AutoStock.WEB.Controllers
 
             return ViewObjectResult(
                 result,
-                "Cari hesap bulunamadı.",
+                "Hesap özeti bulunamadı.",
                 onFailure: () => RedirectToAction("Index", "Customers"));
         }
 

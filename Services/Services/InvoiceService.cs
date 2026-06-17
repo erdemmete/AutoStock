@@ -752,7 +752,7 @@ namespace AutoStock.Services.Services
                         x.Type == CurrentAccountTransactionType.Cancel);
 
                 if (hasCancelTransaction)
-                    return ServiceResult<CancelInvoiceResponseDto>.Fail("Bu fatura için iptal cari hareketi zaten oluşturulmuş.");
+                    return ServiceResult<CancelInvoiceResponseDto>.Fail("Bu fatura için iptal hesap hareketi zaten oluşturulmuş.");
             }
 
             await using var dbTransaction = await _context.Database.BeginTransactionAsync();
@@ -911,7 +911,7 @@ namespace AutoStock.Services.Services
             if (customerCardUpdateResult.IsFailure)
             {
                 return ServiceResult<InvoiceDetailDto>.Fail(
-                    customerCardUpdateResult.ErrorMessage ?? "Ana müşteri kartı güncellenemedi.");
+                    customerCardUpdateResult.ErrorMessage ?? "Müşteri kaydı güncellenemedi.");
             }
 
             var vehicleCardUpdateResult = await UpdateVehicleCardIfRequestedAsync(
@@ -922,7 +922,7 @@ namespace AutoStock.Services.Services
             if (vehicleCardUpdateResult.IsFailure)
             {
                 return ServiceResult<InvoiceDetailDto>.Fail(
-                    vehicleCardUpdateResult.ErrorMessage ?? "Ana araç kartı güncellenemedi.");
+                    vehicleCardUpdateResult.ErrorMessage ?? "Araç kaydı güncellenemedi.");
             }
 
             _context.InvoiceItems.RemoveRange(invoice.Items);
@@ -1122,7 +1122,7 @@ namespace AutoStock.Services.Services
                     x.WorkshopId == workshopId);
 
             if (customer is null)
-                return ServiceResult<bool>.Fail("Ana müşteri kartı bulunamadı.");
+                return ServiceResult<bool>.Fail("Müşteri kaydı bulunamadı.");
 
             var customerType = ResolveInvoiceCustomerType(
                 request.CustomerType,
@@ -1173,7 +1173,7 @@ namespace AutoStock.Services.Services
             if (!invoice.ServiceRecordId.HasValue)
             {
                 return ServiceResult<bool>.Fail(
-                    "Ana araç kartını güncellemek için faturanın servis kaydıyla bağlantılı olması gerekir.");
+                    "Araç kaydını güncellemek için faturanın servis kaydıyla bağlantılı olması gerekir.");
             }
 
             var serviceRecord = await _context.ServiceRecords
@@ -1190,7 +1190,7 @@ namespace AutoStock.Services.Services
                     x.WorkshopId == workshopId);
 
             if (vehicle is null)
-                return ServiceResult<bool>.Fail("Ana araç kartı bulunamadı.");
+                return ServiceResult<bool>.Fail("Araç kaydı bulunamadı.");
 
             var plate = NormalizePlate(request.Plate);
 
