@@ -135,6 +135,117 @@
                 .slice(0, 17);
         }
 
+        function showInvoiceToast(message, type = "error") {
+            if (typeof window.showToast === "function") {
+                window.showToast(message, type);
+            }
+        }
+
+        function getVisibleInvoiceModal() {
+            return Array.from(document.querySelectorAll(".invoice-modal"))
+                .find(modal => !modal.hidden);
+        }
+
+        function setInvoiceModalMessage(id, message, type = "error") {
+            const box = document.getElementById(id);
+            if (!box) return;
+
+            box.textContent = message || "";
+            box.classList.toggle("error", type === "error");
+            box.classList.toggle("info", type === "info");
+            box.hidden = !message;
+        }
+
+        function clearInvoiceModalMessages(modal) {
+            const scope = typeof modal === "string"
+                ? document.getElementById(modal)
+                : modal;
+
+            const root = scope || document;
+
+            root.querySelectorAll(".invoice-modal-message").forEach(box => {
+                box.textContent = "";
+                box.hidden = true;
+            });
+        }
+
+        function clearInvoiceFieldError(input) {
+            if (!input) return;
+
+            input.classList.remove("is-invalid");
+            input.removeAttribute("aria-invalid");
+
+            const label = input.closest("label");
+            label?.querySelectorAll(".invoice-field-error").forEach(error => error.remove());
+        }
+
+        function clearInvoiceFieldErrors(modal) {
+            const scope = typeof modal === "string"
+                ? document.getElementById(modal)
+                : modal;
+
+            const root = scope || document;
+            const selector = scope ? ".is-invalid" : ".invoice-modal .is-invalid";
+
+            root.querySelectorAll(selector).forEach(input => {
+                clearInvoiceFieldError(input);
+            });
+        }
+
+        function clearInvoiceFeedback(modal) {
+            clearInvoiceModalMessages(modal);
+            clearInvoiceFieldErrors(modal);
+        }
+
+        function setInvoiceFieldError(input, message, modalErrorId) {
+            if (!input) {
+                if (modalErrorId) {
+                    setInvoiceModalMessage(modalErrorId, message);
+                }
+                return;
+            }
+
+            clearInvoiceFieldError(input);
+
+            input.classList.add("is-invalid");
+            input.setAttribute("aria-invalid", "true");
+
+            const label = input.closest("label");
+            if (label) {
+                const error = document.createElement("small");
+                error.className = "invoice-field-error";
+                error.textContent = message;
+                label.appendChild(error);
+            }
+
+            if (modalErrorId) {
+                setInvoiceModalMessage(modalErrorId, message);
+            }
+
+            input.focus();
+        }
+
+        function showInvoiceOperationError(message) {
+            const visibleModal = getVisibleInvoiceModal();
+
+            if (visibleModal?.id === "customerModal") {
+                setInvoiceModalMessage("invoiceCustomerModalError", message);
+                return;
+            }
+
+            if (visibleModal?.id === "vehicleModal") {
+                setInvoiceModalMessage("invoiceVehicleModalError", message);
+                return;
+            }
+
+            if (visibleModal?.id === "itemModal") {
+                setInvoiceModalMessage("invoiceItemModalError", message);
+                return;
+            }
+
+            showInvoiceToast(message, "error");
+        }
+
         function setTextById(id, value, fallback = "-") {
             const element = document.getElementById(id);
 
@@ -846,6 +957,7 @@
             hideInvoiceElement(document.getElementById("invoiceModalBackdrop"));
 
             closeStockSearchResults();
+            clearInvoiceFeedback();
         }
 
         function setInvoiceCustomerType(type) {
@@ -896,6 +1008,8 @@
 
         function openCustomerModal() {
             if (invoiceStatus !== 1) return;
+
+            clearInvoiceFeedback("customerModal");
 
             invoiceCustomerType = getInitialInvoiceCustomerType();
 
@@ -983,20 +1097,29 @@
             );
 
             if (!title) {
-                alert("Alıcı adı / ünvan zorunludur.");
-                titleInput.focus();
+                setInvoiceFieldError(
+                    titleInput,
+                    "Alıcı adı / ünvan zorunludur.",
+                    "invoiceCustomerModalError"
+                );
                 return;
             }
 
             if (invoiceCustomerType === "individual" && tckn && tckn.length !== 11) {
-                alert("TC kimlik numarası 11 haneli olmalıdır.");
-                tcknInput.focus();
+                setInvoiceFieldError(
+                    tcknInput,
+                    "TC kimlik numarası 11 haneli olmalıdır.",
+                    "invoiceCustomerModalError"
+                );
                 return;
             }
 
             if (invoiceCustomerType !== "individual" && taxNumber && taxNumber.length !== 10) {
-                alert("Vergi numarası 10 haneli olmalıdır.");
-                taxNumberInput.focus();
+                setInvoiceFieldError(
+                    taxNumberInput,
+                    "Vergi numarası 10 haneli olmalıdır.",
+                    "invoiceCustomerModalError"
+                );
                 return;
             }
 
@@ -1032,6 +1155,8 @@
 
         async function openVehicleModal() {
             if (invoiceStatus !== 1) return;
+
+            clearInvoiceFeedback("vehicleModal");
 
             document.getElementById("plateInput").value = invoiceState.plate || "";
             document.getElementById("chassisNumberInput").value = invoiceState.chassisNumber || "";
@@ -1102,20 +1227,29 @@
                 : null;
 
             if (!plate) {
-                alert("Plaka zorunludur.");
-                plateInput.focus();
+                setInvoiceFieldError(
+                    plateInput,
+                    "Plaka zorunludur.",
+                    "invoiceVehicleModalError"
+                );
                 return;
             }
 
             if (chassisNumber && chassisNumber.length > 17) {
-                alert("Şasi numarası en fazla 17 karakter olabilir.");
-                chassisInput.focus();
+                setInvoiceFieldError(
+                    chassisInput,
+                    "Şasi numarası en fazla 17 karakter olabilir.",
+                    "invoiceVehicleModalError"
+                );
                 return;
             }
 
             if (vehicleModelYear && (vehicleModelYear < 1950 || vehicleModelYear > 2100)) {
-                alert("Model yılı 1950 ile 2100 arasında olmalıdır.");
-                modelYearInput.focus();
+                setInvoiceFieldError(
+                    modelYearInput,
+                    "Model yılı 1950 ile 2100 arasında olmalıdır.",
+                    "invoiceVehicleModalError"
+                );
                 return;
             }
 
@@ -1185,6 +1319,9 @@
 
         function openItemModal(index = -1) {
             if (invoiceStatus !== 1) return;
+
+            clearInvoiceFeedback("itemModal");
+            closeStockSearchResults();
 
             const isEdit = index >= 0;
 
@@ -1451,12 +1588,20 @@
             };
 
             if (!item.description) {
-                alert("Kalem açıklaması zorunludur.");
+                setInvoiceFieldError(
+                    document.getElementById("itemDescriptionInput"),
+                    "Kalem açıklaması zorunludur.",
+                    "invoiceItemModalError"
+                );
                 return;
             }
 
             if (item.quantity <= 0) {
-                alert("Miktar 0'dan büyük olmalıdır.");
+                setInvoiceFieldError(
+                    document.getElementById("itemQuantityInput"),
+                    "Miktar 0'dan büyük olmalıdır.",
+                    "invoiceItemModalError"
+                );
                 return;
             }
 
@@ -1465,9 +1610,10 @@
 
             if (isServiceLinked && isOperational) {
                 if (index >= 0) {
-                    alert(
-                        "Servis kaydından gelen parça/işçilik kalemleri servis operasyonudur.\n\n" +
-                        "Bu kalemi düzenlemek için servis kaydı üzerinden düzenleme yapılmalıdır."
+                    setInvoiceModalMessage(
+                        "invoiceItemModalInfo",
+                        "Servis kaydından gelen parça/işçilik kalemleri servis kaydı üzerinden düzenlenmelidir.",
+                        "info"
                     );
 
                     return;
@@ -1493,8 +1639,11 @@
             const serviceRequestItemId = Number(serviceRequestInput?.value || 0);
 
             if (serviceRequestItemId <= 0) {
-                alert("Bu parça/işçilik için servis şikayeti veya talep seçmelisiniz.");
-                serviceRequestInput?.focus();
+                setInvoiceFieldError(
+                    serviceRequestInput,
+                    "Bu parça/işçilik için servis şikayeti veya talep seçmelisiniz.",
+                    "invoiceItemModalError"
+                );
                 return;
             }
 
@@ -1545,7 +1694,7 @@
                     result?.errorMessages?.[0] ||
                     "Servis işlemine kalem eklenirken hata oluştu.";
 
-                alert(message);
+                setInvoiceModalMessage("invoiceItemModalError", message);
                 return;
             }
 
@@ -1658,7 +1807,7 @@
                     result?.errorMessages?.[0] ||
                     "Hesap özeti güncellenirken hata oluştu.";
 
-                alert(message);
+                showInvoiceOperationError(message);
                 throw new Error(message);
             }
 
@@ -1753,6 +1902,27 @@
             mileageInput?.addEventListener("input", function () {
                 this.value = onlyDigits(this.value, 9);
             });
+
+            document.querySelectorAll(".invoice-modal input, .invoice-modal textarea, .invoice-modal select")
+                .forEach(input => {
+                    if (input.dataset.invoiceValidationBound === "true") {
+                        return;
+                    }
+
+                    input.dataset.invoiceValidationBound = "true";
+
+                    const clearFeedback = function () {
+                        clearInvoiceFieldError(input);
+
+                        const modal = input.closest(".invoice-modal");
+                        if (modal && !modal.querySelector(".is-invalid")) {
+                            clearInvoiceModalMessages(modal);
+                        }
+                    };
+
+                    input.addEventListener("input", clearFeedback);
+                    input.addEventListener("change", clearFeedback);
+                });
         }
 
         function bindInvoiceReferenceEvents() {

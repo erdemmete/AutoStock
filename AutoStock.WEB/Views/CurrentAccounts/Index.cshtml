@@ -336,6 +336,8 @@
                 <input type="hidden" id="paymentCustomerId" />
                 <input type="hidden" id="paymentInvoiceId" />
 
+                <div class="cur-modal-error" id="paymentModalError" hidden></div>
+
                 <div class="cur-modal-field">
                     <label>Müşteri</label>
                     <input type="text" id="paymentCustomerName" disabled />
@@ -384,6 +386,77 @@
 </div>
 
 <script>
+    function showCurrentAccountToast(message, type = "error") {
+        if (typeof window.showToast === "function") {
+            window.showToast(message, type);
+            return;
+        }
+
+        console.error(message);
+    }
+
+    function clearPaymentFieldError(input) {
+        if (!input) return;
+
+        input.classList.remove("is-invalid");
+        input.removeAttribute("aria-invalid");
+
+        const field = input.closest(".cur-modal-field") || input.parentElement;
+        field?.querySelectorAll(".cur-field-error").forEach(error => error.remove());
+    }
+
+    function clearPaymentErrors() {
+        const errorBox = document.getElementById("paymentModalError");
+
+        if (errorBox) {
+            errorBox.textContent = "";
+            errorBox.hidden = true;
+        }
+
+        document.querySelectorAll("#paymentModal .is-invalid").forEach(input => {
+            clearPaymentFieldError(input);
+        });
+    }
+
+    function showPaymentError(message, input) {
+        const errorBox = document.getElementById("paymentModalError");
+
+        if (errorBox) {
+            errorBox.textContent = message;
+            errorBox.hidden = false;
+        }
+
+        if (!input) return;
+
+        clearPaymentFieldError(input);
+        input.classList.add("is-invalid");
+        input.setAttribute("aria-invalid", "true");
+
+        const field = input.closest(".cur-modal-field") || input.parentElement;
+
+        if (field) {
+            const error = document.createElement("small");
+            error.className = "cur-field-error";
+            error.textContent = message;
+            field.appendChild(error);
+        }
+
+        input.focus();
+    }
+
+    function hidePaymentErrorIfClean() {
+        if (document.querySelector("#paymentModal .is-invalid")) {
+            return;
+        }
+
+        const errorBox = document.getElementById("paymentModalError");
+
+        if (errorBox) {
+            errorBox.textContent = "";
+            errorBox.hidden = true;
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         const toggleButton = document.querySelector("[data-filter-toggle]");
         const filterPanel = document.querySelector("[data-filter-panel]");
@@ -403,9 +476,24 @@
                 openPaymentModal(customerId, customerName);
             });
         });
+
+        document.querySelectorAll("#paymentModal input, #paymentModal select, #paymentModal textarea")
+            .forEach(function (input) {
+                input.addEventListener("input", function () {
+                    clearPaymentFieldError(input);
+                    hidePaymentErrorIfClean();
+                });
+
+                input.addEventListener("change", function () {
+                    clearPaymentFieldError(input);
+                    hidePaymentErrorIfClean();
+                });
+            });
     });
 
     function openPaymentModal(customerId, customerName, invoiceId, amount, description) {
+        clearPaymentErrors();
+
         document.getElementById("paymentCustomerId").value = customerId;
         document.getElementById("paymentInvoiceId").value = invoiceId || "";
         document.getElementById("paymentCustomerName").value = customerName;
@@ -417,7 +505,7 @@
         const modalElement = document.getElementById("paymentModal");
 
         if (typeof bootstrap === "undefined") {
-            alert("Bootstrap JS yüklenmemiş. _Layout.cshtml dosyasını kontrol et.");
+            showCurrentAccountToast("Tahsilat penceresi açılamadı. Lütfen sayfayı yenileyin.");
             return;
         }
 
@@ -434,7 +522,10 @@
         const description = document.getElementById("paymentDescription").value;
 
         if (!amount || amount <= 0) {
-            alert("Geçerli bir tahsilat tutarı giriniz.");
+            showPaymentError(
+                "Geçerli bir tahsilat tutarı giriniz.",
+                document.getElementById("paymentAmount")
+            );
             return;
         }
 
@@ -454,7 +545,7 @@
         });
 
         if (!response.ok) {
-            alert("Tahsilat isteği başarısız oldu. HTTP " + response.status);
+            showPaymentError("Tahsilat kaydedilemedi. Lütfen tekrar deneyin.");
             return;
         }
 
@@ -465,7 +556,7 @@
                 || (Array.isArray(result.errorMessages) ? result.errorMessages.join("\n") : null)
                 || "Tahsilat kaydedilemedi.";
 
-            alert(message);
+            showPaymentError(message);
             return;
         }
 
@@ -1119,6 +1210,16 @@
         gap: 14px;
     }
 
+    .cur-modal-error {
+        padding: 12px 14px;
+        border: 1px solid #fecaca;
+        border-radius: 14px;
+        background: #fef2f2;
+        color: #991b1b;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
     .cur-modal-field {
         display: grid;
         gap: 7px;
@@ -1154,6 +1255,20 @@
             padding: 12px 14px;
             resize: vertical;
         }
+
+        .cur-modal-field input.is-invalid,
+        .cur-modal-field select.is-invalid,
+        .cur-modal-field textarea.is-invalid {
+            border-color: #ef4444;
+            background: #fff7f7;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, .12);
+        }
+
+    .cur-field-error {
+        color: #b91c1c;
+        font-size: 12px;
+        font-weight: 850;
+    }
 
     .cur-modal-field-two {
         grid-template-columns: repeat(2, minmax(0, 1fr));
