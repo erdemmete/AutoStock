@@ -71,7 +71,7 @@
             <div class="cur-stat-icon icon-blue">₺</div>
             <div>
                 <span>Bu Ay Net Fatura</span>
-                <strong>@summary.ThisMonthInvoiceTotal.ToString("N2") TL</strong>
+                <strong>@SenteMoney.Format(summary.ThisMonthInvoiceTotal)</strong>
                 <small>kesilen - iptal</small>
             </div>
         </article>
@@ -80,7 +80,7 @@
             <div class="cur-stat-icon icon-purple">✓</div>
             <div>
                 <span>Bu Ay Tahsilat</span>
-                <strong>@summary.ThisMonthPaymentTotal.ToString("N2") TL</strong>
+                <strong>@SenteMoney.Format(summary.ThisMonthPaymentTotal)</strong>
                 <small>gelen ödeme</small>
             </div>
         </article>
@@ -89,7 +89,7 @@
             <div class="cur-stat-icon icon-green">↗</div>
             <div>
                 <span>Toplam Açık Alacak</span>
-                <strong>@summary.TotalReceivableBalance.ToString("N2") TL</strong>
+                <strong>@SenteMoney.Format(summary.TotalReceivableBalance)</strong>
                 <small>tahsil edilecek</small>
             </div>
         </article>
@@ -246,7 +246,7 @@
 
                         <div class="cur-balance-box">
                             <span>Güncel Bakiye</span>
-                            <strong class="@balanceClass">@item.Balance.ToString("N2") TL</strong>
+                            <strong class="@balanceClass">@SenteMoney.Format(item.Balance)</strong>
                             <small>@balanceText</small>
                         </div>
 
@@ -345,7 +345,13 @@
 
                 <div class="cur-modal-field">
                     <label>Tutar</label>
-                    <input type="number" id="paymentAmount" step="0.01" min="0.01" placeholder="0,00" />
+                    <input type="text"
+                           id="paymentAmount"
+                           step="0.01"
+                           min="0.01"
+                           inputmode="decimal"
+                           data-sente-money-input
+                           placeholder="0" />
                 </div>
 
                 <div class="cur-modal-field cur-modal-field-two">
@@ -497,7 +503,9 @@
         document.getElementById("paymentCustomerId").value = customerId;
         document.getElementById("paymentInvoiceId").value = invoiceId || "";
         document.getElementById("paymentCustomerName").value = customerName;
-        document.getElementById("paymentAmount").value = amount || "";
+        const amountInput = document.getElementById("paymentAmount");
+        amountInput.value = amount || "";
+        window.SenteMoney?.formatInput(amountInput);
         document.getElementById("paymentDate").value = "";
         document.getElementById("paymentMethod").value = "Nakit";
         document.getElementById("paymentDescription").value = description || "Tahsilat";
@@ -516,7 +524,9 @@
     async function submitPayment() {
         const customerId = parseInt(document.getElementById("paymentCustomerId").value);
         const invoiceIdValue = document.getElementById("paymentInvoiceId").value;
-        const amount = parseFloat(document.getElementById("paymentAmount").value);
+        const amount = window.SenteMoney
+            ? SenteMoney.parse(document.getElementById("paymentAmount").value)
+            : parseFloat(document.getElementById("paymentAmount").value);
         const paymentDate = document.getElementById("paymentDate").value;
         const paymentMethod = document.getElementById("paymentMethod").value;
         const description = document.getElementById("paymentDescription").value;

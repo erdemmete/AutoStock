@@ -360,10 +360,12 @@
 
             <label>
                 <span>Birim Fiyat</span>
-                <input type="number"
+                <input type="text"
                        id="itemUnitPriceInput"
                        min="0"
-                       step="0.01" />
+                       step="0.01"
+                       inputmode="decimal"
+                       data-sente-money-input />
             </label>
 
             <label>
@@ -438,12 +440,12 @@
         <div class="invoice-target-stats">
             <div class="invoice-target-stat">
                 <span>İskontosuz Toplam</span>
-                <strong id="targetUndiscountedTotalText">0,00 ₺</strong>
+                <strong id="targetUndiscountedTotalText">0 ₺</strong>
             </div>
 
             <div class="invoice-target-stat">
                 <span>Mevcut Toplam</span>
-                <strong id="targetCurrentTotalText">0,00 ₺</strong>
+                <strong id="targetCurrentTotalText">0 ₺</strong>
             </div>
 
             <div class="invoice-target-stat discount">
@@ -457,13 +459,14 @@
 
             <div class="invoice-target-input-wrap">
                 <input id="targetTotalInput"
-                       type="number"
+                       type="text"
                        step="0.01"
                        min="0"
                        placeholder="Örn: 12000"
-                       autocomplete="off" />
+                       autocomplete="off"
+                       inputmode="decimal"
+                       data-sente-money-input />
 
-                <b>₺</b>
             </div>
         </label>
 

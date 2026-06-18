@@ -13,32 +13,15 @@ const config = window.serviceRecordDetailConfig || {};
     }
 
     function toNumber(value) {
-    if (value === null || value === undefined || value === "") return 0;
-
-    if (typeof value === "number") return value;
-
-    let normalized = String(value)
-    .replaceAll("₺", "")
-    .replaceAll(" ", "")
-    .trim();
-
-    if (normalized.includes(",")) {
-    normalized = normalized
-    .replaceAll(".", "")
-    .replace(",", ".");
-    }
-    else {
-    normalized = normalized.replaceAll(",", "");
-    }
-
-    return Number(normalized) || 0;
+    return window.SenteMoney
+    ? SenteMoney.parse(value)
+    : Number(String(value || "").replace(",", ".")) || 0;
     }
 
     function formatMoney(value) {
-    return toNumber(value).toLocaleString("tr-TR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-    }) + " ₺";
+    return window.SenteMoney
+    ? SenteMoney.format(value)
+    : toNumber(value).toLocaleString("tr-TR") + " ₺";
     }
 
     function showToast(message, type = "info") {
@@ -386,10 +369,8 @@ const config = window.serviceRecordDetailConfig || {};
     stockInput.value = id;
 
     if (salePrice !== null && priceInput && !priceInput.value) {
-    priceInput.value = toNumber(salePrice).toLocaleString("tr-TR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-    });
+    priceInput.value = toNumber(salePrice);
+    window.SenteMoney?.formatInput(priceInput);
     }
 
     closeResults();
@@ -455,7 +436,9 @@ const config = window.serviceRecordDetailConfig || {};
     setButtonLoading(submitButton, true, "Ekleniyor...");
 
     try {
-    priceInput.value = toNumber(priceInput.value).toFixed(2);
+    priceInput.value = window.SenteMoney
+    ? SenteMoney.toRaw(priceInput.value)
+    : toNumber(priceInput.value).toFixed(2);
 
     const formData = new FormData(form);
 
@@ -562,7 +545,9 @@ const config = window.serviceRecordDetailConfig || {};
     setButtonLoading(submitButton, true, "Kaydediliyor...");
 
     try {
-    priceInput.value = toNumber(priceInput.value).toFixed(2);
+    priceInput.value = window.SenteMoney
+    ? SenteMoney.toRaw(priceInput.value)
+    : toNumber(priceInput.value).toFixed(2);
 
     const formData = new FormData(form);
 

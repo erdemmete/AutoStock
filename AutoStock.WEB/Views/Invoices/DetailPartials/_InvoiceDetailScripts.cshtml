@@ -61,15 +61,15 @@
         let invoiceStatusActionInProgress = false;
 
         function toNumber(value) {
-            if (value === null || value === undefined || value === "") return 0;
-            return Number(String(value).replace(",", ".")) || 0;
+            return window.SenteMoney
+                ? SenteMoney.parse(value)
+                : Number(String(value || "").replace(",", ".")) || 0;
         }
 
         function formatMoney(value) {
-            return toNumber(value).toLocaleString("tr-TR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }) + " ₺";
+            return window.SenteMoney
+                ? SenteMoney.format(value)
+                : toNumber(value).toLocaleString("tr-TR") + " ₺";
         }
 
         function formatQuantity(value) {
@@ -1354,6 +1354,7 @@
             document.getElementById("itemQuantityInput").value = item.quantity;
             document.getElementById("itemUnitInput").value = item.unit || "Adet";
             document.getElementById("itemUnitPriceInput").value = item.unitPrice;
+            window.SenteMoney?.formatInput(document.getElementById("itemUnitPriceInput"));
             document.getElementById("itemDiscountRateInput").value = item.discountRate;
             document.getElementById("itemVatRateInput").value = item.vatRate;
 
@@ -1550,6 +1551,7 @@
 
                                 if (salePrice !== null && priceInput) {
                                     priceInput.value = toNumber(salePrice);
+                                    window.SenteMoney?.formatInput(priceInput);
                                 }
 
                                 closeStockSearchResults();

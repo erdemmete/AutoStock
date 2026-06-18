@@ -10,10 +10,7 @@
         ? "Kullanıcı"
         : Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? Model.FullName;
 
-    string FormatMoney(decimal value)
-    {
-        return value.ToString("N2") + " ₺";
-    }
+    string FormatMoney(decimal value) => SenteMoney.Format(value);
 
     string FormatActivityDate(DateTime date)
     {

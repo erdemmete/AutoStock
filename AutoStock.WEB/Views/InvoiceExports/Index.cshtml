@@ -135,14 +135,14 @@
 
         <article class="invexp-stat-card highlight">
             <span>Genel Toplam</span>
-            <strong>@preview.GrandTotal.ToString("N2") TL</strong>
-            <small>KDV: @preview.VatTotal.ToString("N2") TL</small>
+            <strong>@SenteMoney.Format(preview.GrandTotal)</strong>
+            <small>KDV: @SenteMoney.Format(preview.VatTotal)</small>
         </article>
 
         <article class="invexp-stat-card">
             <span>Tahsil / Kalan</span>
-            <strong>@preview.PaidTotal.ToString("N2") TL</strong>
-            <small>Kalan: @preview.RemainingTotal.ToString("N2") TL</small>
+            <strong>@SenteMoney.Format(preview.PaidTotal)</strong>
+            <small>Kalan: @SenteMoney.Format(preview.RemainingTotal)</small>
         </article>
     </section>
 
@@ -205,9 +205,9 @@
                                         @item.StatusText
                                     </span>
                                 </td>
-                                <td class="num">@item.GrandTotal.ToString("N2") TL</td>
-                                <td class="num">@item.PaidTotal.ToString("N2") TL</td>
-                                <td class="num strong">@item.RemainingAmount.ToString("N2") TL</td>
+                                <td class="num">@SenteMoney.Format(item.GrandTotal)</td>
+                                <td class="num">@SenteMoney.Format(item.PaidTotal)</td>
+                                <td class="num strong">@SenteMoney.Format(item.RemainingAmount)</td>
                             </tr>
                         }
                     </tbody>
@@ -239,7 +239,7 @@
                 <div class="modal-body invexp-modal-body">
                     <div class="invexp-modal-info">
                         <strong>@preview.PeriodText</strong>
-                        <span>@preview.InvoiceCount fatura / @preview.GrandTotal.ToString("N2") TL</span>
+                        <span>@preview.InvoiceCount fatura / @SenteMoney.Format(preview.GrandTotal)</span>
                     </div>
 
                     <div class="invexp-modal-field">

@@ -123,12 +123,13 @@
                 <div class="stk-field">
                     <label>Alış Fiyatı</label>
                     <div class="stk-money-input">
-                        <span>₺</span>
                         <input asp-for="PurchasePrice"
-                               type="number"
+                               type="text"
+                               inputmode="decimal"
+                               data-sente-money-input
                                step="0.01"
                                min="0"
-                               placeholder="0.00" />
+                               placeholder="0" />
                     </div>
                     <span asp-validation-for="PurchasePrice" class="stk-validation"></span>
                 </div>
@@ -136,12 +137,13 @@
                 <div class="stk-field">
                     <label>Satış Fiyatı</label>
                     <div class="stk-money-input">
-                        <span>₺</span>
                         <input asp-for="SalePrice"
-                               type="number"
+                               type="text"
+                               inputmode="decimal"
+                               data-sente-money-input
                                step="0.01"
                                min="0"
-                               placeholder="0.00" />
+                               placeholder="0" />
                     </div>
                     <span asp-validation-for="SalePrice" class="stk-validation"></span>
                 </div>

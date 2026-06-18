@@ -39,10 +39,7 @@
         return string.Join(" / ", parts);
     }
 
-    string FormatMoney(decimal value)
-    {
-        return value.ToString("N2") + " TL";
-    }
+    string FormatMoney(decimal value) => SenteMoney.Format(value);
 
     string FormatPercent(decimal value)
     {

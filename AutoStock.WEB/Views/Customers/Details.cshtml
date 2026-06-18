@@ -944,10 +944,7 @@
             : value.Trim()[0].ToString().ToUpperInvariant();
     }
 
-    private static string Money(decimal value)
-    {
-        return value.ToString("N2", new System.Globalization.CultureInfo("tr-TR")) + " ₺";
-    }
+    private static string Money(decimal value) => AutoStock.WEB.Helpers.SenteMoney.Format(value);
 
     private static string FormatPhone(string? value)
     {

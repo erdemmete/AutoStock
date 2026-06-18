@@ -15,10 +15,13 @@ let turkeyLocations = [];
 let taxOffices = [];
 let vehicleVariants = [];
 
-const formatter = new Intl.NumberFormat("tr-TR", {
-    style: "currency",
-    currency: "TRY"
-});
+const formatter = {
+    format(value) {
+        return window.SenteMoney
+            ? SenteMoney.format(value)
+            : Number(value || 0).toLocaleString("tr-TR") + " ₺";
+    }
+};
 
 async function loadVehicleVariants(modelId) {
     const select = get("VehicleVariantId");
@@ -1234,8 +1237,9 @@ function addRequestItem(titleFromDraft = null, noteFromDraft = null, estimatedFr
     const title = (titleFromDraft ?? titleInput.value).trim();
     const note = (noteFromDraft ?? noteInput.value).trim();
 
-    const estimatedRaw = estimatedFromDraft ?? estimatedInput.value.replace(/\D/g, "");
-    const estimatedAmount = Number(estimatedRaw || 0);
+    const estimatedAmount = estimatedFromDraft !== null && estimatedFromDraft !== undefined
+        ? Number(estimatedFromDraft || 0)
+        : (window.SenteMoney ? SenteMoney.parse(estimatedInput.value) : Number(estimatedInput.value || 0));
 
     if (!title) {
         showTemporaryInvalid(titleInput);
@@ -1582,18 +1586,6 @@ function initializeInputMasks() {
         this.value = formatMileage(this.value);
     });
 
-    const requestEstimatedInput = get("requestEstimatedInput");
-
-    requestEstimatedInput?.addEventListener("input", function () {
-        const digits = this.value.replace(/\D/g, "");
-
-        if (!digits) {
-            this.value = "";
-            return;
-        }
-
-        this.value = Number(digits).toLocaleString("tr-TR");
-    });
 }
 
 function initializeStepValidationEvents() {

@@ -1,10 +1,7 @@
 @model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
 
 @{
-    string FormatMoney(decimal value)
-    {
-        return value.ToString("N2") + " ₺";
-    }
+    string FormatMoney(decimal value) => SenteMoney.Format(value);
 
     var estimatedTotal = Model.RequestItems.Sum(x => x.EstimatedAmount ?? 0);
     var subTotal = Model.TotalAmount;

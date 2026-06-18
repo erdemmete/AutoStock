@@ -3,7 +3,7 @@
 @{
     Layout = null;
 
-    string Money(decimal value) => value.ToString("N2") + " TL";
+    string Money(decimal value) => SenteMoney.Format(value);
     string ValueOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
     string TaxLine()
     {

@@ -76,7 +76,7 @@
             <div class="stk-summary-icon blue">₺</div>
             <div>
                 <span>Satış Fiyatı</span>
-                <strong>₺@Model.SalePrice.ToString("N2")</strong>
+                <strong>@SenteMoney.Format(Model.SalePrice)</strong>
                 <small>Güncel satış fiyatı</small>
             </div>
         </article>
@@ -85,7 +85,7 @@
             <div class="stk-summary-icon purple">₺</div>
             <div>
                 <span>Ortalama Maliyet</span>
-                <strong>₺@Model.PurchasePrice.ToString("N2")</strong>
+                <strong>@SenteMoney.Format(Model.PurchasePrice)</strong>
                 <small>Paçal alış maliyeti</small>
             </div>
         </article>
@@ -257,7 +257,7 @@
 
                             @if (item.UnitPrice.HasValue)
                             {
-                                <strong>₺@item.UnitPrice.Value.ToString("N2")</strong>
+                                <strong>@SenteMoney.Format(item.UnitPrice.Value)</strong>
                             }
                             else
                             {
@@ -309,10 +309,12 @@
             <div class="stk-modal-field">
                 <label>Birim Alış Fiyatı</label>
                 <input name="UnitPrice"
-                       type="number"
+                       type="text"
+                       inputmode="decimal"
+                       data-sente-money-input
                        step="0.01"
                        min="0.01"
-                       placeholder="Örn: 130.00" />
+                       placeholder="Örn: 130" />
             </div>
 
             <div class="stk-modal-field">

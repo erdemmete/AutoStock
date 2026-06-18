@@ -10,7 +10,7 @@
         .ThenByDescending(x => x.Id)
         .ToList();
 
-    string Money(decimal value) => value.ToString("N2") + " TL";
+    string Money(decimal value) => SenteMoney.Format(value);
 
     string GetInitials(string? name)
     {
@@ -352,7 +352,13 @@
                 <div class="ca-customer-form-grid">
                     <label>
                         <span>Tutar</span>
-                        <input type="number" min="0.01" step="0.01" id="paymentAmount" required />
+                        <input type="text"
+                               min="0.01"
+                               step="0.01"
+                               id="paymentAmount"
+                               inputmode="decimal"
+                               data-sente-money-input
+                               required />
                     </label>
 
                     <label>
@@ -491,6 +497,7 @@
             customerInput.value = button.dataset.customerId || "@Model.CustomerId";
             invoiceInput.value = invoiceId;
             amountInput.value = amount;
+            window.SenteMoney?.formatInput(amountInput);
             dateInput.value = "";
             methodInput.value = "Nakit";
             descriptionInput.value = description;
@@ -578,7 +585,9 @@
         form.addEventListener("submit", async function (event) {
             event.preventDefault();
 
-            const amount = Number(amountInput.value);
+            const amount = window.SenteMoney
+                ? SenteMoney.parse(amountInput.value)
+                : Number(amountInput.value);
 
             if (!amount || amount <= 0) {
                 errorBox.textContent = "Geçerli bir tahsilat tutarı giriniz.";

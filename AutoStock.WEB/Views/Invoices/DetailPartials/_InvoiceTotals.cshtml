@@ -19,22 +19,22 @@
     <div class="total-box">
         <div>
             <span>Ara Toplam</span>
-            <strong>@Model.Subtotal.ToString("N2") ₺</strong>
+            <strong>@SenteMoney.Format(Model.Subtotal)</strong>
         </div>
 
         <div class="red">
             <span>Toplam İskonto</span>
-            <strong>-@Model.DiscountTotal.ToString("N2") ₺</strong>
+            <strong>@(Model.DiscountTotal > 0 ? "-" : "")@SenteMoney.Format(Model.DiscountTotal)</strong>
         </div>
 
         <div>
             <span>Hesaplanan KDV</span>
-            <strong>@Model.VatTotal.ToString("N2") ₺</strong>
+            <strong>@SenteMoney.Format(Model.VatTotal)</strong>
         </div>
 
         <div class="grand">
             <span>Genel Toplam</span>
-            <strong>@Model.GrandTotal.ToString("N2") ₺</strong>
+            <strong>@SenteMoney.Format(Model.GrandTotal)</strong>
         </div>
 
         @if (Model.Status == 1)

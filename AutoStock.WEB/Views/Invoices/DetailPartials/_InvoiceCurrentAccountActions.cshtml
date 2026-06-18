@@ -9,7 +9,7 @@
     var paidTotal = Model.InvoicePaidTotal < 0 ? 0 : Model.InvoicePaidTotal;
     var remainingAmount = Model.InvoiceRemainingAmount < 0 ? 0 : Model.InvoiceRemainingAmount;
 
-    string Money(decimal value) => value.ToString("N2") + " TL";
+    string Money(decimal value) => SenteMoney.Format(value);
 
     string BalanceText(decimal balance)
     {
@@ -136,11 +136,13 @@
                 <div class="invoice-current-form-grid">
                     <label>
                         <span>Tutar</span>
-                        <input type="number"
+                        <input type="text"
                                min="0.01"
                                max="@remainingAmount.ToString(CultureInfo.InvariantCulture)"
                                step="0.01"
                                id="invoiceCurrentPaymentAmount"
+                               inputmode="decimal"
+                               data-sente-money-input
                                required />
                     </label>
 
@@ -520,6 +522,7 @@
                 const description = button?.dataset?.description || "";
 
                 amountInput.value = amount;
+                window.SenteMoney?.formatInput(amountInput);
                 dateInput.value = "";
                 methodInput.value = "Nakit";
                 descriptionInput.value = description;
@@ -561,7 +564,9 @@
             form.addEventListener("submit", async function (event) {
                 event.preventDefault();
 
-                const amount = Number(amountInput.value);
+                const amount = window.SenteMoney
+                    ? SenteMoney.parse(amountInput.value)
+                    : Number(amountInput.value);
 
                 if (!amount || amount <= 0) {
                     errorBox.textContent = "Geçerli bir tahsilat tutarı giriniz.";

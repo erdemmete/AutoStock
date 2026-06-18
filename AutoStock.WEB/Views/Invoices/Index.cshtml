@@ -23,9 +23,9 @@
     {
         return status switch
         {
-            1 => "Taslak",
-            2 => "Kesildi",
-            3 => "İptal",
+            1 => "Hazırlanıyor",
+            2 => "Onaylandı",
+            3 => "İptal Edildi",
             _ => "Bilinmiyor"
         };
     }
@@ -41,16 +41,6 @@
         };
     }
 
-    string GetTypeText(int type)
-    {
-        return type switch
-        {
-            1 => "Matbu",
-            2 => "e-Arşiv",
-            3 => "e-Fatura",
-            _ => "Bilinmiyor"
-        };
-    }
 }
 
 <div class="inv-page">
@@ -66,7 +56,7 @@
             <div>
                 <span class="inv-eyebrow">SENTE360</span>
                 <h1>Faturalar</h1>
-                <p>Taslak, kesilmiş ve iptal edilmiş faturaları tek ekrandan takip edin.</p>
+                <p>Hazırlanan, onaylanan ve iptal edilen faturaları tek ekrandan takip edin.</p>
             </div>
         </div>
         <div class="inv-hero-actions">
@@ -74,7 +64,7 @@
                asp-action="Export"
                class="inv-export-btn">
                 <span>⇩</span>
-                <strong>Fatura Aktarımı</strong>
+                <strong>Faturaları Dışa Aktar</strong>
             </a>
         </div>
 
@@ -129,19 +119,19 @@
                         <button type="button"
                                 class="inv-status-chip @(currentStatus == InvoiceStatus.Draft ? "active" : "")"
                                 data-status-value="@((int)InvoiceStatus.Draft)">
-                            Taslak
+                            Hazırlanıyor
                         </button>
 
                         <button type="button"
                                 class="inv-status-chip @(currentStatus == InvoiceStatus.Issued ? "active" : "")"
                                 data-status-value="@((int)InvoiceStatus.Issued)">
-                            Kesildi
+                            Onaylandı
                         </button>
 
                         <button type="button"
                                 class="inv-status-chip @(currentStatus == InvoiceStatus.Cancelled ? "active" : "")"
                                 data-status-value="@((int)InvoiceStatus.Cancelled)">
-                            İptal
+                            İptal Edildi
                         </button>
                     </div>
                 </div>
@@ -253,13 +243,11 @@
                 {
                     var statusText = GetStatusText(invoice.Status);
                     var statusClass = GetStatusClass(invoice.Status);
-                    var typeText = GetTypeText(invoice.Type);
 
                     <article class="inv-card">
                         <a href="/Invoices/Detail/@invoice.Id" class="inv-main">
                             <div class="inv-icon-box">
-                                <span>FAT</span>
-                                <strong>@typeText</strong>
+                                <span aria-hidden="true">▦</span>
                             </div>
 
                             <div class="inv-title-block">
@@ -286,7 +274,7 @@
 
                         <div class="inv-total">
                             <span>Tutar</span>
-                            <strong>@invoice.GrandTotal.ToString("N2") ₺</strong>
+                            <strong>@SenteMoney.Format(invoice.GrandTotal)</strong>
                         </div>
 
                         <div class="inv-actions">
@@ -380,6 +368,13 @@
         align-items: center;
         gap: 18px;
         min-width: 0;
+    }
+
+    .inv-hero-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex: 0 0 auto;
     }
 
     .inv-home-btn {
@@ -723,30 +718,27 @@
     }
 
     .inv-icon-box {
-        width: 70px;
-        height: 54px;
-        flex: 0 0 70px;
+        width: 58px;
+        height: 58px;
+        flex: 0 0 58px;
         border-radius: 17px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #eef2ff, #f8fafc);
+        border: 1px solid #dbe3ef;
         display: grid;
-        align-content: center;
-        justify-items: center;
-        gap: 2px;
+        place-items: center;
     }
 
         .inv-icon-box span {
-            color: #8aa0bd;
-            font-size: 10px;
+            width: 32px;
+            height: 38px;
+            border-radius: 9px;
+            display: grid;
+            place-items: center;
+            background: #ffffff;
+            color: #4f46e5;
+            font-size: 21px;
             font-weight: 950;
-            letter-spacing: .6px;
-        }
-
-        .inv-icon-box strong {
-            color: #0f172a;
-            font-size: 12px;
-            font-weight: 950;
-            text-align: center;
+            box-shadow: 0 8px 18px rgba(79, 70, 229, .12);
         }
 
     .inv-title-block {
@@ -984,6 +976,7 @@
             padding: 18px;
             border-radius: 26px;
             align-items: flex-start;
+            flex-direction: column;
         }
 
         .inv-hero-left {
@@ -1006,6 +999,11 @@
 
         .inv-hero p {
             font-size: 14px;
+        }
+
+        .inv-hero-actions,
+        .inv-export-btn {
+            width: 100%;
         }
 
         .inv-filter-shell {
@@ -1186,24 +1184,40 @@
         }
     }
 
-    .invoice-export-btn {
-        min-height: 42px;
+    .inv-export-btn {
+        min-height: 48px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 10px;
         padding: 0 16px;
-        border-radius: 14px;
-        background: #0f172a;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,.22);
+        background: rgba(255,255,255,.12);
         color: #fff;
         text-decoration: none;
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 950;
-        box-shadow: 0 14px 30px rgba(15,23,42,.16);
+        box-shadow: 0 14px 30px rgba(15, 23, 42, .16);
+        backdrop-filter: blur(8px);
+        transition: .16s ease;
     }
 
-        .invoice-export-btn:hover {
+        .inv-export-btn span {
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            background: rgba(255,255,255,.16);
+            font-size: 15px;
+        }
+
+        .inv-export-btn:hover {
             color: #fff;
-            background: #1e293b;
+            transform: translateY(-1px);
+            background: rgba(255,255,255,.18);
+            border-color: rgba(255,255,255,.32);
         }
 
 </style>
