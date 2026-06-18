@@ -13,7 +13,24 @@
 
     <section class="srx-summary-card">
 
-        <h2>Servis Özeti</h2>
+        <div class="srx-summary-card-header">
+            <h2>Servis Özeti</h2>
+
+            @if (Model.Status == 1 || Model.Status == 2)
+            {
+                <details class="srx-summary-menu" id="summaryActionMenu">
+                    <summary aria-label="Servis özeti işlemleri">…</summary>
+
+                    <div class="srx-summary-menu-panel">
+                        <button type="button"
+                                class="srx-summary-menu-danger status-btn"
+                                data-status="4">
+                            Servis Kaydını İptal Et
+                        </button>
+                    </div>
+                </details>
+            }
+        </div>
 
         <div class="srx-estimate-box">
             <span>Tahmini Fiyat Verildi</span>
@@ -53,14 +70,16 @@
             {
                 <a href="/Invoices/Detail/@Model.ActiveInvoiceId"
                    class="srx-primary-action">
-                    @(Model.ActiveInvoiceStatus == 1 ? "Taslak Faturaya Git" : "Faturaya Git")
+                    <span class="srx-action-text-full">@(Model.ActiveInvoiceStatus == 1 ? "Taslak Faturaya Git" : "Faturaya Git")</span>
+                    <span class="srx-action-text-short">Faturaya Geç</span>
                 </a>
             }
             else
             {
                 <a href="/Invoices/CreateFromServiceRecord/@Model.Id"
                    class="srx-primary-action">
-                    Fatura Taslağına Geç
+                    <span class="srx-action-text-full">Fatura Taslağına Geç</span>
+                    <span class="srx-action-text-short">Faturaya Geç</span>
                 </a>
             }
 
@@ -82,60 +101,62 @@
             }
         </div>
 
-        <details class="srx-more-actions">
-            <summary>Diğer İşlemler</summary>
+        <div class="srx-quick-actions-grid">
 
-            <div class="srx-action-grid">
+            <button type="button"
+                    class="srx-quick-action-card"
+                    data-action="open-photo-modal">
+                <span class="srx-quick-icon">IMG</span>
+                <span class="srx-quick-copy">
+                    <strong>Fotoğraflar</strong>
+                    <small id="photoActionCount">@Model.Images.Count fotoğraf</small>
+                </span>
+            </button>
 
+            <a href="/service-pdf/create/@Model.Id"
+               target="_blank"
+               class="srx-quick-action-card">
+                <span class="srx-quick-icon">PDF</span>
+                <span class="srx-quick-copy">
+                    <strong>PDF Oluştur</strong>
+                    <small>Servis belgesi</small>
+                </span>
+            </a>
+
+            <div class="srx-qr-action-stack"
+                 id="qrActionStack"
+                 data-qr-bound="@Model.HasAssignedQrCode.ToString().ToLowerInvariant()">
                 <button type="button"
-                        class="srx-secondary-action wide"
-                        data-action="open-photo-modal">
-                    Araç Fotoğrafları
-                    <span id="photoActionCount">(@Model.Images.Count)</span>
+                        class="srx-quick-action-card srx-qr-scan-action @(Model.HasAssignedQrCode ? "is-hidden" : "")"
+                        id="qrScanButton"
+                        onclick="startQrScanner(@Model.VehicleId, this)">
+                    <span class="srx-quick-icon">QR</span>
+                    <span class="srx-quick-copy">
+                        <strong class="srx-quick-title">QR Tara</strong>
+                        <small>Araca kod bağla</small>
+                    </span>
                 </button>
 
-                <a href="/service-pdf/create/@Model.Id"
-                   target="_blank"
-                   class="srx-secondary-action">
-                    PDF Oluştur
-                </a>
-
-                <div class="srx-qr-action-stack"
-                     id="qrActionStack"
-                     data-qr-bound="@Model.HasAssignedQrCode.ToString().ToLowerInvariant()">
-                    <button type="button"
-                            class="srx-secondary-action srx-qr-scan-action @(Model.HasAssignedQrCode ? "is-hidden" : "")"
-                            id="qrScanButton"
-                            onclick="startQrScanner(@Model.VehicleId, this)">
-                        QR Tara
-                    </button>
+                <div class="srx-quick-action-card srx-qr-bound-control @(Model.HasAssignedQrCode ? "" : "is-hidden")"
+                     id="qrBoundControl">
+                    <span class="srx-quick-icon success">QR</span>
+                    <span class="srx-quick-copy">
+                        <strong class="srx-qr-bound-pill"
+                                id="qrBoundButton">
+                            QR Bağlı
+                        </strong>
+                    </span>
 
                     <button type="button"
-                            class="srx-secondary-action srx-qr-bound-action @(Model.HasAssignedQrCode ? "" : "is-hidden")"
-                            id="qrBoundButton"
-                            disabled>
-                        ✓ QR Bağlı
-                    </button>
-
-                    <button type="button"
-                            class="srx-secondary-action srx-qr-change-action @(Model.HasAssignedQrCode ? "" : "is-hidden")"
+                            class="srx-qr-change-action"
                             id="qrChangeButton"
                             onclick="confirmChangeQrAndStart(@Model.VehicleId, this)">
                         Değiştir
                     </button>
                 </div>
-
-                @if (Model.Status == 1 || Model.Status == 2)
-                {
-                    <button type="button"
-                            class="srx-secondary-action danger status-btn wide"
-                            data-status="4">
-                        İptal Et
-                    </button>
-                }
-
             </div>
-        </details>
+
+        </div>
 
         <div id="qrAssignModal" class="srx-qr-modal" aria-hidden="true">
             <button type="button"

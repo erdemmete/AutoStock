@@ -290,7 +290,9 @@ public class ServiceRecordsController : BaseController
         var result = await _serviceRecordApiService.AssignQrCodeAsync(vehicleId, code);
 
         if (result.IsFailure)
-            return BadRequest(result);
+            return BadRequest(result.ErrorMessages.FirstOrDefault()
+                ?? result.ErrorMessage
+                ?? "QR kod araca bağlanamadı.");
 
         return Ok(result);
     }

@@ -1696,7 +1696,7 @@ function updatePhotoCount() {
     const emptyState = document.getElementById("photoEmptyState");
 
     if (modalBadge) modalBadge.textContent = `${count} fotoğraf`;
-    if (actionCount) actionCount.textContent = `(${count})`;
+    if (actionCount) actionCount.textContent = `${count} fotoğraf`;
     if (emptyState) emptyState.hidden = count > 0;
 }
 

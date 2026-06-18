@@ -122,12 +122,29 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         syncAllCards();
+        const summaryMenu = document.getElementById("summaryActionMenu");
+
+        function closeSummaryMenu() {
+            summaryMenu?.removeAttribute("open");
+        }
 
         document.addEventListener('click', function (event) {
             const menu = event.target.closest('.srx-request-menu');
             const menuAction = event.target.closest('.srx-request-menu-list button');
             const header = event.target.closest('.srx-request-card-header');
             const directToggle = event.target.closest('.srx-request-summary[data-action="toggle-request"]');
+            const summaryMenuAction = event.target.closest('#summaryActionMenu .status-btn');
+
+            if (summaryMenuAction) {
+                closeSummaryMenu();
+                return;
+            }
+
+            if (summaryMenu &&
+                summaryMenu.open &&
+                !event.target.closest('#summaryActionMenu')) {
+                closeSummaryMenu();
+            }
 
             if (!menu) {
                 closeRequestMenus();
@@ -166,6 +183,7 @@
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 closeRequestMenus();
+                closeSummaryMenu();
             }
         });
 
@@ -217,13 +235,25 @@
             }
 
             qrModalButton.disabled = false;
+
+            if (qrModalButton.id === "qrChangeButton") {
+                qrModalButton.textContent = "Değiştir";
+                return;
+            }
+
+            const title = qrModalButton.querySelector(".srx-quick-title");
+            if (title) {
+                title.textContent = text;
+                return;
+            }
+
             qrModalButton.textContent = text;
         }
 
         function setQrBoundState(isBound) {
             const stack = document.getElementById("qrActionStack");
             const scanButton = document.getElementById("qrScanButton");
-            const boundButton = document.getElementById("qrBoundButton");
+            const boundControl = document.getElementById("qrBoundControl");
             const changeButton = document.getElementById("qrChangeButton");
 
             if (stack) {
@@ -233,17 +263,40 @@
             if (scanButton) {
                 scanButton.classList.toggle("is-hidden", isBound);
                 scanButton.disabled = false;
-                scanButton.textContent = "QR Tara";
+                const scanTitle = scanButton.querySelector(".srx-quick-title");
+                if (scanTitle) {
+                    scanTitle.textContent = "QR Tara";
+                } else {
+                    scanButton.textContent = "QR Tara";
+                }
             }
 
-            if (boundButton) {
-                boundButton.classList.toggle("is-hidden", !isBound);
+            if (boundControl) {
+                boundControl.classList.toggle("is-hidden", !isBound);
             }
 
             if (changeButton) {
-                changeButton.classList.toggle("is-hidden", !isBound);
                 changeButton.disabled = false;
                 changeButton.textContent = "Değiştir";
+            }
+        }
+
+        function getQrAssignMessageFromResponseText(text) {
+            const fallback = "QR kod araca bağlanamadı.";
+
+            if (!text) {
+                return fallback;
+            }
+
+            try {
+                const payload = JSON.parse(text);
+                const messages = payload?.errorMessages || payload?.ErrorMessages;
+                return payload?.errorMessage ||
+                    payload?.ErrorMessage ||
+                    (Array.isArray(messages) ? messages[0] : null) ||
+                    fallback;
+            } catch {
+                return text;
             }
         }
 
@@ -376,7 +429,7 @@
             if (!qrModalVehicleId || !code) {
                 showQrAssignError("QR bilgisi okunamadı.");
                 qrModalLocked = false;
-                resetQrButton("Tekrar Tara");
+                resetQrButton("QR Tara");
                 return;
             }
 
@@ -394,9 +447,9 @@
                 if (!response.ok) {
                     const errorText = await response.text();
 
-                    showQrAssignError(errorText || "QR atanırken hata oluştu.");
+                    showQrAssignError(getQrAssignMessageFromResponseText(errorText));
                     qrModalLocked = false;
-                    resetQrButton("Tekrar Tara");
+                    resetQrButton("QR Tara");
                     return;
                 }
 
@@ -411,7 +464,7 @@
             catch {
                 showQrAssignError("QR atanırken hata oluştu.");
                 qrModalLocked = false;
-                resetQrButton("Tekrar Tara");
+                resetQrButton("QR Tara");
             }
         }
 
@@ -425,7 +478,7 @@
 
             if (typeof Html5Qrcode === "undefined") {
                 setQrError("QR okuyucu yüklenemedi.");
-                resetQrButton("Tekrar Tara");
+                resetQrButton("QR Tara");
                 return;
             }
 
@@ -456,7 +509,7 @@
                 await stopQrModalScanner();
                 setQrError(getQrCameraErrorMessage(error));
                 qrModalLocked = false;
-                resetQrButton("Tekrar Tara");
+                resetQrButton("QR Tara");
             }
         }
 

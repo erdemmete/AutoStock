@@ -183,7 +183,91 @@
     box-shadow: 0 8px 18px rgba(79, 70, 229, .22);
 }
 
-/* Servis özeti: ana aksiyonlar net, diğerleri kapalı menü altında. */
+/* Servis özeti: ana aksiyonlar net, yardımcı işlemler kompakt kart gridinde. */
+.srx-clean-detail .srx-summary-card {
+    position: relative;
+}
+
+.srx-clean-detail .srx-summary-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.srx-clean-detail .srx-summary-card-header h2 {
+    margin: 0;
+}
+
+.srx-clean-detail .srx-summary-menu {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.srx-clean-detail .srx-summary-menu summary {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    border: 1px solid #dbe3ef;
+    background: #fff;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+    font-weight: 950;
+    list-style: none;
+    transition: .18s ease;
+}
+
+.srx-clean-detail .srx-summary-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.srx-clean-detail .srx-summary-menu summary:hover,
+.srx-clean-detail .srx-summary-menu[open] summary {
+    border-color: #bfdbfe;
+    background: #f8fbff;
+    color: #2563eb;
+}
+
+.srx-clean-detail .srx-summary-menu-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    z-index: 30;
+    width: min(240px, calc(100vw - 36px));
+    border: 1px solid #fee2e2;
+    border-radius: 16px;
+    background: #fff;
+    padding: 8px;
+    box-shadow: 0 22px 46px rgba(15, 23, 42, .14);
+}
+
+.srx-clean-detail .srx-summary-menu-danger {
+    width: 100%;
+    min-height: 42px;
+    border-radius: 12px;
+    border: 1px solid #fecaca;
+    background: #fff5f5;
+    color: #dc2626;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 950;
+    cursor: pointer;
+    transition: .18s ease;
+}
+
+.srx-clean-detail .srx-summary-menu-danger:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+}
+
 .srx-clean-detail .srx-summary-main-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -207,48 +291,125 @@
     color: #166534;
 }
 
-.srx-clean-detail .srx-more-actions {
-    margin-top: 12px;
-}
-
-.srx-clean-detail .srx-more-actions summary {
-    min-height: 48px;
-    border-radius: 15px;
-    border: 1px solid #dbe3ef;
-    background: #fff;
-    color: #334155;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 950;
-    cursor: pointer;
-    list-style: none;
-}
-
-.srx-clean-detail .srx-more-actions summary::-webkit-details-marker {
+.srx-clean-detail .srx-action-text-short {
     display: none;
 }
 
-.srx-clean-detail .srx-more-actions summary::after {
-    content: "⌄";
-    font-size: 14px;
-    color: #64748b;
+.srx-clean-detail .srx-quick-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.srx-clean-detail .srx-quick-action-card {
+    min-height: 62px;
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid #dbe3ef;
+    background: #fff;
+    color: #172033;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: .18s ease;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .04);
+}
+
+.srx-clean-detail .srx-quick-action-card:hover {
+    border-color: #bfdbfe;
+    background: #f8fbff;
     transform: translateY(-1px);
 }
 
-.srx-clean-detail .srx-more-actions[open] summary {
-    background: #f8fafc;
-    border-color: #cbd5e1;
+.srx-clean-detail .srx-quick-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: #eef2ff;
+    color: #4f46e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: .02em;
 }
 
-.srx-clean-detail .srx-more-actions[open] summary::after {
-    transform: rotate(180deg);
+.srx-clean-detail .srx-quick-icon.success {
+    background: #dcfce7;
+    color: #047857;
 }
 
-.srx-clean-detail .srx-more-actions .srx-action-grid {
-    margin-top: 10px;
+.srx-clean-detail .srx-quick-copy {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+
+.srx-clean-detail .srx-quick-copy strong {
+    color: #172033;
+    font-size: 13px;
+    line-height: 1.15;
+    font-weight: 950;
+}
+
+.srx-clean-detail .srx-quick-copy small {
+    color: #64748b;
+    font-size: 11px;
+    line-height: 1.2;
+    font-weight: 850;
+}
+
+.srx-clean-detail .srx-qr-action-stack .is-hidden {
+    display: none !important;
+}
+
+.srx-clean-detail .srx-qr-action-stack {
+    grid-column: 1 / -1;
+    min-width: 0;
+}
+
+.srx-clean-detail .srx-qr-scan-action,
+.srx-clean-detail .srx-qr-bound-control {
+    width: 100%;
+    min-height: 62px;
+}
+
+.srx-clean-detail .srx-qr-bound-control {
+    border-color: #bbf7d0;
+    background: #ecfdf5;
+    box-shadow: 0 10px 24px rgba(16, 185, 129, .08);
+}
+
+.srx-clean-detail .srx-qr-bound-pill {
+    color: #047857 !important;
+}
+
+.srx-clean-detail .srx-qr-change-action {
+    margin-left: auto;
+    min-height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(4, 120, 87, .22);
+    background: rgba(255, 255, 255, .78);
+    color: #047857;
+    font-size: 11px;
+    font-weight: 950;
+    padding: 0 10px;
+    white-space: nowrap;
+    transition: .18s ease;
+}
+
+.srx-clean-detail .srx-qr-change-action:hover {
+    background: #fff;
+    border-color: rgba(4, 120, 87, .38);
+    transform: translateY(-1px);
 }
 
 @media (max-width: 900px) {
@@ -276,12 +437,9 @@
         width: 210px;
     }
 
-    .srx-clean-detail .srx-summary-main-actions {
-        grid-template-columns: 1fr;
-    }
-
-    .srx-clean-detail .srx-action-grid {
-        grid-template-columns: 1fr;
+    .srx-clean-detail .srx-summary-main-actions,
+    .srx-clean-detail .srx-quick-actions-grid {
+        grid-template-columns: 1fr 1fr;
     }
 }
 
@@ -312,4 +470,49 @@
     .srx-clean-detail .srx-request-detail-strip {
         grid-template-columns: 1fr;
     }
+
+    .srx-clean-detail .srx-summary-main-actions .srx-primary-action,
+    .srx-clean-detail .srx-summary-main-actions .srx-secondary-action {
+        min-height: 48px;
+        border-radius: 14px;
+        font-size: 12px;
+        padding: 0 8px;
+    }
+
+    .srx-clean-detail .srx-action-text-full {
+        display: none;
+    }
+
+    .srx-clean-detail .srx-action-text-short {
+        display: inline;
+    }
+
+    .srx-clean-detail .srx-quick-action-card {
+        min-height: 58px;
+        border-radius: 15px;
+        gap: 8px;
+        padding: 9px;
+    }
+
+    .srx-clean-detail .srx-quick-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        font-size: 9px;
+    }
+
+    .srx-clean-detail .srx-quick-copy strong {
+        font-size: 12px;
+    }
+
+    .srx-clean-detail .srx-quick-copy small {
+        font-size: 10px;
+    }
+
+    .srx-clean-detail .srx-qr-change-action {
+        min-height: 30px;
+        padding: 0 8px;
+        font-size: 10px;
+    }
+
 }
