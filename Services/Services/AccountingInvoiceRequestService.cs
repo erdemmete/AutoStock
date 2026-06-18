@@ -199,24 +199,41 @@ namespace AutoStock.Services.Services
 
             var response = new SendAccountingInvoiceRequestResponseDto();
             var emailWorkItems = new List<AccountingInvoiceEmailWorkItem>();
+            var existingRequests = await _context.Set<AccountingInvoiceRequest>()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.InvoiceId == invoice.Id &&
+                    x.Status == AccountingInvoiceRequestStatus.Pending &&
+                    x.ExpiresAt > now &&
+                    recipientEmails.Contains(x.AccountantEmail))
+                .ToListAsync();
 
             foreach (var email in recipientEmails)
             {
-                var token = CreateToken();
-                var accountingRequest = new AccountingInvoiceRequest
-                {
-                    WorkshopId = workshopId,
-                    InvoiceId = invoice.Id,
-                    Token = token,
-                    AccountantEmail = email,
-                    Message = NormalizeNullable(request.Message),
-                    Status = AccountingInvoiceRequestStatus.Pending,
-                    SentAt = now,
-                    ExpiresAt = now.AddDays(TokenValidDays),
-                    CreatedAt = now
-                };
+                var accountingRequest = existingRequests
+                    .FirstOrDefault(x => string.Equals(x.AccountantEmail, email, StringComparison.OrdinalIgnoreCase));
 
-                _context.Set<AccountingInvoiceRequest>().Add(accountingRequest);
+                if (accountingRequest is null)
+                {
+                    accountingRequest = new AccountingInvoiceRequest
+                    {
+                        WorkshopId = workshopId,
+                        InvoiceId = invoice.Id,
+                        Token = CreateToken(),
+                        AccountantEmail = email,
+                        Message = NormalizeNullable(request.Message),
+                        Status = AccountingInvoiceRequestStatus.Pending,
+                        SentAt = now,
+                        ExpiresAt = now.AddDays(TokenValidDays),
+                        CreatedAt = now
+                    };
+
+                    _context.Set<AccountingInvoiceRequest>().Add(accountingRequest);
+                }
+                else
+                {
+                    accountingRequest.Message = NormalizeNullable(request.Message);
+                }
 
                 var savedRecipient = await _context.Set<WorkshopEmailRecipient>()
                     .FirstOrDefaultAsync(x =>
@@ -228,7 +245,7 @@ namespace AutoStock.Services.Services
                 if (savedRecipient is not null)
                     savedRecipient.LastUsedAt = now;
 
-                var publicLink = BuildPublicLink(request.PublicBaseUrl!, token);
+                var publicLink = BuildPublicLink(request.PublicBaseUrl!, accountingRequest.Token);
                 var subject = $"Sente360 - Fatura Hazırlık Talebi - {invoice.InvoiceNumber}";
                 var htmlBody = BuildAccountingRequestEmailBody(
                     workshop.DisplayName,
@@ -248,22 +265,9 @@ namespace AutoStock.Services.Services
 
             await _context.SaveChangesAsync();
 
-            try
-            {
-                CreateAccountingRequestAuditLogs(emailWorkItems, requestedByUserId, workshopId, now);
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    ex,
-                    "Accounting invoice request audit log could not be created. InvoiceId: {InvoiceId}, WorkshopId: {WorkshopId}, RequestedByUserId: {RequestedByUserId}",
-                    invoice.Id,
-                    workshopId,
-                    requestedByUserId);
-            }
-
             var failedEmails = new List<string>();
+            var failedEmailErrors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var successfulWorkItems = new List<AccountingInvoiceEmailWorkItem>();
 
             foreach (var item in emailWorkItems)
             {
@@ -276,12 +280,15 @@ namespace AutoStock.Services.Services
 
                 if (emailResult.IsSuccess)
                 {
+                    item.AccountingRequest.SentAt = _dateTimeProvider.Now;
                     response.SentCount++;
                     response.SentEmails.Add(item.Email);
+                    successfulWorkItems.Add(item);
                     continue;
                 }
 
                 failedEmails.Add(item.Email);
+                failedEmailErrors[item.Email] = emailResult.ErrorMessage ?? "E-posta gönderilemedi.";
 
                 _logger.LogWarning(
                     "Accounting invoice request email failed after DB save. InvoiceId: {InvoiceId}, AccountingRequestId: {AccountingRequestId}, Email: {Email}, Error: {ErrorMessage}",
@@ -291,9 +298,39 @@ namespace AutoStock.Services.Services
                     emailResult.ErrorMessage);
             }
 
+            if (successfulWorkItems.Any())
+            {
+                try
+                {
+                    CreateAccountingRequestAuditLogs(successfulWorkItems, requestedByUserId, workshopId, _dateTimeProvider.Now);
+                    await _context.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Accounting invoice request audit log could not be created. InvoiceId: {InvoiceId}, WorkshopId: {WorkshopId}, RequestedByUserId: {RequestedByUserId}",
+                        invoice.Id,
+                        workshopId,
+                        requestedByUserId);
+                }
+            }
+
             if (failedEmails.Any())
             {
-                var failedEmailText = string.Join(", ", failedEmails);
+                var distinctErrorMessages = failedEmailErrors.Values
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (response.SentCount == 0 && distinctErrorMessages.Count == 1)
+                    return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail(distinctErrorMessages[0]);
+
+                var failedEmailText = string.Join(", ", failedEmails.Select(email =>
+                    failedEmailErrors.TryGetValue(email, out var error)
+                        ? $"{email} ({error})"
+                        : email));
+
                 var message = response.SentCount > 0
                     ? $"Fatura hazırlık talebi kaydedildi. Ancak şu adreslere e-posta gönderilemedi: {failedEmailText}."
                     : $"Fatura hazırlık talebi kaydedildi ancak e-posta gönderilemedi: {failedEmailText}.";

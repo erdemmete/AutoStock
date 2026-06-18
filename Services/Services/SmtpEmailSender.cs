@@ -2,6 +2,7 @@ using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Emails;
 using AutoStock.Services.Interfaces;
 using AutoStock.Services.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
@@ -13,11 +14,16 @@ namespace AutoStock.Services.Services
 {
     public class SmtpEmailSender : IEmailSender
     {
+        private const string EmailNotConfiguredMessage = "E-posta gönderimi yapılandırılmamış. Lütfen sistem yöneticisiyle iletişime geçin.";
         private readonly EmailSettings _settings;
+        private readonly ILogger<SmtpEmailSender> _logger;
 
-        public SmtpEmailSender(IOptions<EmailSettings> options)
+        public SmtpEmailSender(
+            IOptions<EmailSettings> options,
+            ILogger<SmtpEmailSender> logger)
         {
             _settings = options.Value;
+            _logger = logger;
         }
 
         public async Task<ServiceResult<bool>> SendAsync(
@@ -25,22 +31,29 @@ namespace AutoStock.Services.Services
             CancellationToken cancellationToken = default)
         {
             if (!_settings.Enabled)
-                return ServiceResult<bool>.Success(true);
+            {
+                _logger.LogWarning("Email sending requested but EmailSettings.Enabled is false. ToEmail: {ToEmail}, Subject: {Subject}",
+                    message.ToEmail,
+                    message.Subject);
+
+                return ServiceResult<bool>.Fail(EmailNotConfiguredMessage);
+            }
 
             if (string.IsNullOrWhiteSpace(message.ToEmail))
                 return ServiceResult<bool>.Fail("Alıcı e-posta adresi boş olamaz.");
 
-            if (string.IsNullOrWhiteSpace(_settings.Host))
-                return ServiceResult<bool>.Fail("SMTP host ayarı eksik.");
+            var configurationErrors = GetConfigurationErrors();
 
-            if (string.IsNullOrWhiteSpace(_settings.UserName))
-                return ServiceResult<bool>.Fail("SMTP kullanıcı adı eksik.");
+            if (configurationErrors.Any())
+            {
+                _logger.LogError(
+                    "Email sending requested with incomplete SMTP configuration. MissingFields: {MissingFields}, ToEmail: {ToEmail}, Subject: {Subject}",
+                    string.Join(", ", configurationErrors),
+                    message.ToEmail,
+                    message.Subject);
 
-            if (string.IsNullOrWhiteSpace(_settings.Password))
-                return ServiceResult<bool>.Fail("SMTP şifresi eksik.");
-
-            if (string.IsNullOrWhiteSpace(_settings.FromEmail))
-                return ServiceResult<bool>.Fail("Gönderen e-posta adresi eksik.");
+                return ServiceResult<bool>.Fail(EmailNotConfiguredMessage);
+            }
 
             try
             {
@@ -113,16 +126,65 @@ namespace AutoStock.Services.Services
 
                 await smtp.SendMailAsync(mail, cancellationToken);
 
+                _logger.LogInformation(
+                    "Email sent successfully. ToEmail: {ToEmail}, Subject: {Subject}, FromEmail: {FromEmail}, Host: {Host}, Port: {Port}",
+                    message.ToEmail,
+                    message.Subject,
+                    _settings.FromEmail,
+                    _settings.Host,
+                    _settings.Port);
+
                 return ServiceResult<bool>.Success(true);
             }
             catch (OperationCanceledException)
             {
-                return ServiceResult<bool>.Fail("E-posta gönderimi iptal edildi.");
+                _logger.LogWarning(
+                    "Email sending cancelled or timed out. ToEmail: {ToEmail}, Subject: {Subject}, Host: {Host}, Port: {Port}, TimeoutSeconds: {TimeoutSeconds}",
+                    message.ToEmail,
+                    message.Subject,
+                    _settings.Host,
+                    _settings.Port,
+                    _settings.TimeoutSeconds);
+
+                return ServiceResult<bool>.Fail("E-posta gönderilemedi. Lütfen kısa süre sonra tekrar deneyin.");
             }
             catch (Exception ex)
             {
-                return ServiceResult<bool>.Fail($"E-posta gönderilemedi: {ex.Message}");
+                _logger.LogError(
+                    ex,
+                    "Email sending failed. ToEmail: {ToEmail}, Subject: {Subject}, Host: {Host}, Port: {Port}, EnableSsl: {EnableSsl}, UserName: {UserName}, FromEmail: {FromEmail}",
+                    message.ToEmail,
+                    message.Subject,
+                    _settings.Host,
+                    _settings.Port,
+                    _settings.EnableSsl,
+                    _settings.UserName,
+                    _settings.FromEmail);
+
+                return ServiceResult<bool>.Fail("E-posta gönderilemedi. Lütfen kısa süre sonra tekrar deneyin.");
             }
+        }
+
+        private List<string> GetConfigurationErrors()
+        {
+            var errors = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(_settings.Host))
+                errors.Add(nameof(_settings.Host));
+
+            if (_settings.Port <= 0)
+                errors.Add(nameof(_settings.Port));
+
+            if (string.IsNullOrWhiteSpace(_settings.UserName))
+                errors.Add(nameof(_settings.UserName));
+
+            if (string.IsNullOrWhiteSpace(_settings.Password))
+                errors.Add(nameof(_settings.Password));
+
+            if (string.IsNullOrWhiteSpace(_settings.FromEmail))
+                errors.Add(nameof(_settings.FromEmail));
+
+            return errors;
         }
 
         private static string CreateMessageId(string fromEmail)
