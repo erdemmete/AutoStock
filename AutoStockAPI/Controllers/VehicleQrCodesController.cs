@@ -59,6 +59,20 @@ namespace AutoStock.API.Controllers
             if (qrCode.IsAssigned)
                 return BadRequest("Bu QR kod daha önce atanmış.");
 
+            var existingAssignments = await _context.VehicleQrCodes
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.VehicleId == vehicle.Id &&
+                    x.IsAssigned)
+                .ToListAsync();
+
+            foreach (var existingAssignment in existingAssignments)
+            {
+                existingAssignment.VehicleId = null;
+                existingAssignment.IsAssigned = false;
+                existingAssignment.AssignedAt = null;
+            }
+
             qrCode.WorkshopId = workshopId;
             qrCode.VehicleId = vehicle.Id;
             qrCode.IsAssigned = true;

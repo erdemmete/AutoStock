@@ -100,12 +100,30 @@
                     PDF Oluştur
                 </a>
 
-                <button type="button"
-                        class="srx-secondary-action"
-                        id="start-qr-scan-btn"
-                        onclick="startQrScanner(@Model.VehicleId, this)">
-                    QR Tara
-                </button>
+                <div class="srx-qr-action-stack"
+                     id="qrActionStack"
+                     data-qr-bound="@Model.HasAssignedQrCode.ToString().ToLowerInvariant()">
+                    <button type="button"
+                            class="srx-secondary-action srx-qr-scan-action @(Model.HasAssignedQrCode ? "is-hidden" : "")"
+                            id="qrScanButton"
+                            onclick="startQrScanner(@Model.VehicleId, this)">
+                        QR Tara
+                    </button>
+
+                    <button type="button"
+                            class="srx-secondary-action srx-qr-bound-action @(Model.HasAssignedQrCode ? "" : "is-hidden")"
+                            id="qrBoundButton"
+                            disabled>
+                        ✓ QR Bağlı
+                    </button>
+
+                    <button type="button"
+                            class="srx-secondary-action srx-qr-change-action @(Model.HasAssignedQrCode ? "" : "is-hidden")"
+                            id="qrChangeButton"
+                            onclick="confirmChangeQrAndStart(@Model.VehicleId, this)">
+                        Değiştir
+                    </button>
+                </div>
 
                 @if (Model.Status == 1 || Model.Status == 2)
                 {

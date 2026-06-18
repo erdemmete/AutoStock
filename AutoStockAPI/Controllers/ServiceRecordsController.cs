@@ -186,6 +186,21 @@ public class ServiceRecordsController : BaseApiController
         return ToActionResult(result);
     }
 
+    [HttpGet("vehicles/{vehicleId:int}/prefill")]
+    public async Task<IActionResult> GetVehiclePrefill(int vehicleId)
+    {
+        var workshopIdResult = GetCurrentWorkshopId();
+
+        if (workshopIdResult.IsFailure)
+            return UnauthorizedResult(workshopIdResult);
+
+        var result = await _vehicleService.GetByIdAsync(
+            vehicleId,
+            workshopIdResult.Data);
+
+        return ToActionResult(result);
+    }
+
     [HttpDelete("operations/{operationId:int}")]
     public async Task<IActionResult> DeleteOperation(int operationId)
     {

@@ -663,27 +663,6 @@
                         </div>
                     </div>
 
-                    <div id="vehicleTechnicalPreview"
-                         class="vehicle-technical-preview"
-                         hidden>
-                        <div>
-                            <span>Yakıt</span>
-                            <strong id="vehiclePreviewFuelType">-</strong>
-                        </div>
-                        <div>
-                            <span>Şanzıman</span>
-                            <strong id="vehiclePreviewTransmissionType">-</strong>
-                        </div>
-                        <div>
-                            <span>Motor</span>
-                            <strong id="vehiclePreviewEngine">-</strong>
-                        </div>
-                        <div>
-                            <span>Kasa</span>
-                            <strong id="vehiclePreviewBodyType">-</strong>
-                        </div>
-                    </div>
-
                     <div id="selectedVehicleCard" class="selected-card">
                         <div>
                             <strong id="selectedVehiclePlateText">Seçili araç</strong>
@@ -1163,6 +1142,13 @@
                     onclick="continueWithRegisteredVehicleCustomer()">
                 <strong>Kayıtlı müşteriyle devam et</strong>
                 <span>Müşteri ve araç bilgileri birlikte doldurulur.</span>
+            </button>
+
+            <button type="button"
+                    class="ownership-secondary"
+                    onclick="chooseAnotherCustomerForVehicle()">
+                <strong>Başka müşteri seç</strong>
+                <span>Müşteri alanları temizlenir, araç bilgileri korunur.</span>
             </button>
 
             <button type="button"

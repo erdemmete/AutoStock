@@ -254,6 +254,31 @@ public class ServiceRecordsController : BaseController
         return Json(result.Data);
     }
 
+    [HttpGet("ServiceRecords/GetVehiclePrefill")]
+    public async Task<IActionResult> GetVehiclePrefill([FromQuery] int vehicleId)
+    {
+        if (vehicleId <= 0)
+        {
+            return BadRequest(new
+            {
+                message = "Araç bilgisi geçersiz."
+            });
+        }
+
+        var result = await _serviceRecordApiService.GetVehiclePrefillAsync(vehicleId);
+
+        if (result.IsFailure || result.Data is null)
+        {
+            return BadRequest(new
+            {
+                message = result.ErrorMessage ?? "Araç bilgisi alınamadı.",
+                errorMessages = result.ErrorMessages
+            });
+        }
+
+        return Json(result.Data);
+    }
+
     [HttpPost("ServiceRecords/AssignQrCode")]
     public async Task<IActionResult> AssignQrCode(int vehicleId, string code)
     {

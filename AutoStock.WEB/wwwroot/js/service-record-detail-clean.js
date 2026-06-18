@@ -220,6 +220,33 @@
             qrModalButton.textContent = text;
         }
 
+        function setQrBoundState(isBound) {
+            const stack = document.getElementById("qrActionStack");
+            const scanButton = document.getElementById("qrScanButton");
+            const boundButton = document.getElementById("qrBoundButton");
+            const changeButton = document.getElementById("qrChangeButton");
+
+            if (stack) {
+                stack.dataset.qrBound = String(isBound);
+            }
+
+            if (scanButton) {
+                scanButton.classList.toggle("is-hidden", isBound);
+                scanButton.disabled = false;
+                scanButton.textContent = "QR Tara";
+            }
+
+            if (boundButton) {
+                boundButton.classList.toggle("is-hidden", !isBound);
+            }
+
+            if (changeButton) {
+                changeButton.classList.toggle("is-hidden", !isBound);
+                changeButton.disabled = false;
+                changeButton.textContent = "Değiştir";
+            }
+        }
+
         function setQrError(message) {
             const errorPanel = getQrErrorPanel();
             const resultBox = getQrResultBox();
@@ -373,7 +400,7 @@
                     return;
                 }
 
-                resetQrButton("QR Atandı");
+                setQrBoundState(true);
 
                 if (typeof showToast === "function") {
                     showToast("QR kod başarıyla eşleştirildi.", "success");
@@ -458,6 +485,29 @@
 
             await stopQrModalScanner();
             await startQrModalCamera();
+        };
+
+        window.confirmChangeQrAndStart = async function (vehicleId, button) {
+            const message = "Bu araca bağlı QR kod değiştirilecek. Yeni QR kodu okuttuğunuzda eski QR bağlantısı kaldırılır.";
+            let confirmed = true;
+
+            if (window.SenteConfirm && typeof window.SenteConfirm.show === "function") {
+                confirmed = await window.SenteConfirm.show({
+                    title: "QR kodu değiştir",
+                    message,
+                    confirmText: "Değiştir",
+                    cancelText: "Vazgeç",
+                    danger: false
+                });
+            } else {
+                confirmed = window.confirm(message);
+            }
+
+            if (!confirmed) {
+                return;
+            }
+
+            await window.startQrScanner(vehicleId, button);
         };
 
         window.closeQrAssignModal = async function () {

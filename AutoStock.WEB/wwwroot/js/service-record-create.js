@@ -10,6 +10,7 @@ let isServiceRecordSaving = false;
 let isServiceRecordCreated = false;
 let createdServiceRecordId = null;
 let suppressDraftSave = false;
+let activePrefillVehicleId = null;
 
 let turkeyLocations = [];
 let taxOffices = [];
@@ -1016,6 +1017,7 @@ function saveCreateFormDraft() {
     data.__uiCustomerType = getUiCustomerType();
     data.__customerSubType = get("CustomerSubType")?.value || "individual";
     data.__isExtraPanelOpen = get("customerExtraPanel")?.classList.contains("active") || false;
+    data.__prefillVehicleId = activePrefillVehicleId || "";
 
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
     localStorage.setItem(REQUEST_ITEMS_DRAFT_KEY, JSON.stringify(requestItems));
@@ -1024,21 +1026,23 @@ function saveCreateFormDraft() {
 async function restoreCreateFormDraft() {
     const raw = localStorage.getItem(DRAFT_KEY);
 
-    if (!raw) return;
+    if (!raw) return false;
 
     let data;
 
     try {
         data = JSON.parse(raw);
     } catch {
-        return;
+        return false;
     }
 
     if (data.__version !== 3) {
         localStorage.removeItem(DRAFT_KEY);
         localStorage.removeItem(REQUEST_ITEMS_DRAFT_KEY);
-        return;
+        return false;
     }
+
+    activePrefillVehicleId = data.__prefillVehicleId || null;
 
     if (data.__isExtraPanelOpen) {
         get("quickCustomerFields")?.classList.add("hidden");
@@ -1079,6 +1083,8 @@ async function restoreCreateFormDraft() {
 
     const targetStep = Number(data.__currentStep || 1);
     goToStep(targetStep, { skipValidation: true });
+
+    return true;
 }
 
 function restoreDependentSelects(data) {
@@ -2308,6 +2314,8 @@ async function selectVehicleFromSearch(vehicle) {
         }
     }
 
+    applyVehicleTechnicalFields(vehicle);
+
     if (vehicle.modelYear && get("ModelYear")) {
         get("ModelYear").value = vehicle.modelYear;
     }
@@ -2325,6 +2333,38 @@ async function selectVehicleFromSearch(vehicle) {
 
     saveCreateFormDraft();
     updateServiceFormPreview();
+}
+
+function applyVehicleTechnicalFields(vehicle) {
+    if (!vehicle) return;
+
+    const technical = {
+        fuelType: vehicle.fuelType ?? vehicle.FuelType ?? "",
+        transmissionType: vehicle.transmissionType ?? vehicle.TransmissionType ?? "",
+        bodyType: vehicle.bodyType ?? vehicle.BodyType ?? "",
+        engineCapacityCc: vehicle.engineCapacityCc ?? vehicle.EngineCapacityCc ?? "",
+        enginePowerHp: vehicle.enginePowerHp ?? vehicle.EnginePowerHp ?? "",
+        engineCode: vehicle.engineCode ?? vehicle.EngineCode ?? ""
+    };
+
+    if (technical.fuelType) setHidden("FuelType", technical.fuelType);
+    if (technical.transmissionType) setHidden("TransmissionType", technical.transmissionType);
+    if (technical.bodyType) setHidden("BodyType", technical.bodyType);
+    if (technical.engineCapacityCc) setHidden("EngineCapacityCc", technical.engineCapacityCc);
+    if (technical.enginePowerHp) setHidden("EnginePowerHp", technical.enginePowerHp);
+    if (technical.engineCode) setHidden("EngineCode", technical.engineCode);
+
+    const variantId = vehicle.variantId ?? vehicle.vehicleVariantId ?? vehicle.VehicleVariantId ?? "";
+    const selectedVariant = vehicleVariants.find(x => Number(x.id) === Number(variantId));
+
+    updateVehicleTechnicalPreview(selectedVariant || {
+        fuelType: technical.fuelType,
+        transmissionType: technical.transmissionType,
+        bodyType: technical.bodyType,
+        engineCapacityCc: technical.engineCapacityCc,
+        enginePowerHp: technical.enginePowerHp,
+        engineCode: technical.engineCode
+    });
 }
 
 function updateSelectedVehicleCard() {
@@ -2482,6 +2522,80 @@ function createNewCustomerForVehicle() {
     get("MainCustomerName")?.focus();
 
     showToast("Araç bilgileri korundu. Yeni müşteri bilgilerini girerek devam edebilirsin.", "info");
+}
+
+function getInitialVehicleIdFromUrl() {
+    const value = new URLSearchParams(window.location.search).get("vehicleId");
+    const id = Number(value || 0);
+
+    return Number.isFinite(id) && id > 0 ? id : null;
+}
+
+function getStoredDraftPrefillVehicleId() {
+    const raw = localStorage.getItem(DRAFT_KEY);
+
+    if (!raw) return null;
+
+    try {
+        const data = JSON.parse(raw);
+        const id = Number(data?.__prefillVehicleId || 0);
+
+        return Number.isFinite(id) && id > 0 ? id : null;
+    } catch {
+        return null;
+    }
+}
+
+async function initializeVehiclePrefillFromQuery(vehicleId) {
+    if (!vehicleId) return;
+
+    try {
+        const response = await fetch(
+            `/ServiceRecords/GetVehiclePrefill?vehicleId=${encodeURIComponent(vehicleId)}`,
+            {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            }
+        );
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            showToast(
+                payload?.message ||
+                payload?.errorMessage ||
+                "QR ile bulunan araç bilgisi forma aktarılamadı.",
+                "error"
+            );
+            return;
+        }
+
+        activePrefillVehicleId = vehicleId.toString();
+
+        await selectVehicleFromSearch(payload);
+
+        if (payload.customerId) {
+            get("SelectedCustomerId").value = payload.customerId;
+            applyCustomerDataToCreateForm(payload);
+            updateSelectedCustomerCard();
+        }
+
+        get("VehicleOwnershipConfirmed").value = "false";
+        get("VehicleOwnershipAction").value = "";
+
+        goToStep(1, { skipValidation: true });
+        validateCustomerStep({
+            showStatus: true,
+            focusFirst: false,
+            selectedNotice: true
+        });
+
+        saveCreateFormDraft();
+    } catch (error) {
+        console.error(error);
+        showToast("QR ile bulunan araç bilgisi forma aktarılamadı.", "error");
+    }
 }
 
 function initializeVehicleBrandModel() {
@@ -2811,12 +2925,22 @@ document.addEventListener("DOMContentLoaded", async function () {
     suppressDraftSave = true;
 
     const urlParams = new URLSearchParams(window.location.search);
+    const initialVehicleId = getInitialVehicleIdFromUrl();
+    const storedPrefillVehicleId = getStoredDraftPrefillVehicleId();
+    const shouldApplyVehiclePrefill =
+        !!initialVehicleId &&
+        storedPrefillVehicleId !== initialVehicleId;
 
     if (urlParams.has("fresh")) {
         clearDrafts();
 
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
+    }
+
+    if (shouldApplyVehiclePrefill) {
+        clearDrafts();
+        activePrefillVehicleId = initialVehicleId.toString();
     }
 
     const customerTypeInput = get("CustomerType");
@@ -2842,8 +2966,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     initializeLocationEvents();
     initializeKeyboardShortcuts();
 
-    await restoreCreateFormDraft();
+    const draftRestored = await restoreCreateFormDraft();
     restoreRequestItemsDraft();
+
+    if (initialVehicleId && (!draftRestored || shouldApplyVehiclePrefill)) {
+        await initializeVehiclePrefillFromQuery(initialVehicleId);
+    }
 
     suppressDraftSave = false;
 

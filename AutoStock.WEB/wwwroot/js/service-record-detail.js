@@ -1343,7 +1343,7 @@ const config = window.serviceRecordDetailConfig || {};
     }
 
     resultBox.textContent = "QR kod araca başarıyla atandı.";
-    button.textContent = "QR Atandı";
+    button.textContent = "✓ QR Bağlı";
 
     showToast("QR kod başarıyla eşleştirildi.", "success");
     }

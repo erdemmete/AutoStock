@@ -35,6 +35,7 @@ namespace AutoStock.Services.Dtos.ServiceRecords
         public DateTime? UpdatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
         public int VehicleId { get; set; }
+        public bool HasAssignedQrCode { get; set; }
         public string? ChassisNumber { get; set; }
 
         public string? VehicleDeliveredBy { get; set; }
