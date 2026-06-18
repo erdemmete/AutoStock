@@ -30,6 +30,9 @@ namespace AutoStock.Repositories.Configurations
             builder.Property(x => x.CustomerAddress)
                 .HasMaxLength(500);
 
+            builder.Property(x => x.CustomerEmail)
+                .HasMaxLength(150);
+
             builder.Property(x => x.Plate)
                 .HasMaxLength(20);
 

@@ -29,6 +29,8 @@ namespace AutoStock.Repositories.Entities
 
         public string? CustomerAddress { get; set; }
 
+        public string? CustomerEmail { get; set; }
+
         public string? Plate { get; set; }
 
         public string? ChassisNumber { get; set; }

@@ -42,9 +42,11 @@ public class InvoiceEmailService : IInvoiceEmailService
         if (invoice is null)
             return ServiceResult<SendInvoiceEmailResponseDto>.Fail("Fatura bulunamadı.");
 
-        var toEmail = string.IsNullOrWhiteSpace(request.ToEmail)
-            ? invoice.Customer.Email
-            : request.ToEmail.Trim();
+        var toEmail = !string.IsNullOrWhiteSpace(invoice.CustomerEmail)
+            ? invoice.CustomerEmail.Trim()
+            : !string.IsNullOrWhiteSpace(invoice.Customer.Email)
+                ? invoice.Customer.Email.Trim()
+                : request.ToEmail?.Trim();
 
         if (string.IsNullOrWhiteSpace(toEmail))
             return ServiceResult<SendInvoiceEmailResponseDto>.Fail("Müşteri e-posta adresi yok. Lütfen alıcı e-posta adresi girin.");

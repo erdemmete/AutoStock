@@ -9,6 +9,7 @@ public class UpdateInvoiceDto
     public string? CustomerTaxNumber { get; set; }
     public string? CustomerTckn { get; set; }
     public string? CustomerAddress { get; set; }
+    public string? CustomerEmail { get; set; }
 
     public string? Plate { get; set; }
     public string? ChassisNumber { get; set; }

@@ -67,6 +67,7 @@ namespace AutoStock.Services.Services
                 CustomerTaxNumber = customer.TaxNumber,
                 CustomerTckn = customer.NationalIdentityNumber,
                 CustomerAddress = string.Join(" / ", addressParts),
+                CustomerEmail = NormalizeNullable(customer.Email),
 
                 Plate = serviceRecord.VehiclePlateSnapshot,
                 ChassisNumber = serviceRecord.Vehicle?.ChassisNumber,
@@ -165,6 +166,7 @@ namespace AutoStock.Services.Services
                 CustomerTaxNumber = request.CustomerTaxNumber,
                 CustomerTckn = request.CustomerTckn,
                 CustomerAddress = request.CustomerAddress,
+                CustomerEmail = NormalizeNullable(request.CustomerEmail),
 
                 Plate = request.Plate,
                 ChassisNumber = request.ChassisNumber,
@@ -250,6 +252,7 @@ namespace AutoStock.Services.Services
         public async Task<ServiceResult<InvoiceDetailDto>> GetDetailAsync(int invoiceId, int workshopId)
         {
             var invoice = await _context.Invoices
+                .Include(x => x.Customer)
                 .Include(x => x.Items)
                 .FirstOrDefaultAsync(x =>
                     x.Id == invoiceId &&
@@ -339,6 +342,9 @@ namespace AutoStock.Services.Services
                 CustomerTaxNumber = invoice.CustomerTaxNumber,
                 CustomerTckn = invoice.CustomerTckn,
                 CustomerAddress = invoice.CustomerAddress,
+                CustomerEmail = !string.IsNullOrWhiteSpace(invoice.CustomerEmail)
+                    ? invoice.CustomerEmail
+                    : invoice.Customer.Email,
 
                 Plate = invoice.Plate,
                 ChassisNumber = invoice.ChassisNumber,
@@ -893,6 +899,7 @@ namespace AutoStock.Services.Services
             invoice.CustomerTaxNumber = request.CustomerTaxNumber;
             invoice.CustomerTckn = request.CustomerTckn;
             invoice.CustomerAddress = request.CustomerAddress;
+            invoice.CustomerEmail = NormalizeNullable(request.CustomerEmail);
 
             invoice.Plate = request.Plate;
             invoice.ChassisNumber = request.ChassisNumber;
@@ -1046,6 +1053,7 @@ namespace AutoStock.Services.Services
                 CustomerTaxNumber = draft.CustomerTaxNumber,
                 CustomerTckn = draft.CustomerTckn,
                 CustomerAddress = draft.CustomerAddress,
+                CustomerEmail = draft.CustomerEmail,
 
                 Plate = draft.Plate,
                 ChassisNumber = draft.ChassisNumber,
@@ -1100,6 +1108,7 @@ namespace AutoStock.Services.Services
                 invoice.ServiceRecordId,
                 invoice.CustomerId,
                 invoice.CustomerTitle,
+                invoice.CustomerEmail,
                 invoice.Plate,
                 invoice.Subtotal,
                 invoice.DiscountTotal,
@@ -1137,6 +1146,7 @@ namespace AutoStock.Services.Services
                 customer.FullName = customerTitle;
 
             customer.Address = NormalizeNullable(request.CustomerAddress);
+            customer.Email = NormalizeNullable(request.CustomerEmail);
             customer.Type = customerType.Value;
 
             if (customerType.Value == CustomerType.Individual)

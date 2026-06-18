@@ -351,6 +351,10 @@ namespace AutoStock.Repositories.Migrations
                     b.Property<int>("CustomerId")
                         .HasColumnType("int");
 
+                    b.Property<string>("CustomerEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<string>("CustomerTaxNumber")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");

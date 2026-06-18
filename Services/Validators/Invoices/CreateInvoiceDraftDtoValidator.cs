@@ -36,6 +36,11 @@ public class CreateInvoiceDraftDtoValidator : AbstractValidator<CreateInvoiceDra
             .MaximumLength(500).WithMessage("Adres en fazla 500 karakter olabilir.")
             .When(x => !string.IsNullOrWhiteSpace(x.CustomerAddress));
 
+        RuleFor(x => x.CustomerEmail)
+            .MaximumLength(150).WithMessage("E-posta en fazla 150 karakter olabilir.")
+            .EmailAddress().WithMessage("Geçerli bir e-posta adresi giriniz.")
+            .When(x => !string.IsNullOrWhiteSpace(x.CustomerEmail));
+
         RuleFor(x => x.Plate)
             .MaximumLength(20).WithMessage("Plaka en fazla 20 karakter olabilir.")
             .When(x => !string.IsNullOrWhiteSpace(x.Plate));

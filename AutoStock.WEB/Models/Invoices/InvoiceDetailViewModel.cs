@@ -58,6 +58,8 @@ public class InvoiceDetailViewModel
 
     public string? CustomerAddress { get; set; }
 
+    public string? CustomerEmail { get; set; }
+
     public string? CustomerAddressLine { get; set; }
 
     public string? CustomerAddressCity { get; set; }

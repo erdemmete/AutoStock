@@ -13,6 +13,7 @@
         customerTaxOffice: @Json.Serialize(Model.CustomerTaxOffice),
         customerTaxNumber: @Json.Serialize(Model.CustomerTaxNumber),
         customerTckn: @Json.Serialize(Model.CustomerTckn),
+        customerEmail: @Json.Serialize(Model.CustomerEmail),
 
         customerAddress: @Json.Serialize(Model.CustomerAddress),
         customerAddressLine: @Json.Serialize(Model.CustomerAddressLine),
@@ -120,6 +121,14 @@
             return String(value || "")
                 .trim()
                 .slice(0, maxLength);
+        }
+
+        function isValidOptionalEmail(value) {
+            const email = String(value || "").trim();
+
+            if (!email) return true;
+
+            return /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(email);
         }
 
         function normalizePlate(value) {
@@ -1003,6 +1012,7 @@
             setTextById("customerTcknView", invoiceState.customerTckn);
             setTextById("customerTaxNumberView", invoiceState.customerTaxNumber);
             setTextById("customerTaxOfficeView", invoiceState.customerTaxOffice);
+            setTextById("customerEmailView", invoiceState.customerEmail);
             setTextById("customerAddressView", invoiceState.customerAddress);
 
             setHiddenById("customerTcknLine", !isIndividual);
@@ -1020,6 +1030,7 @@
             document.getElementById("customerTitleInput").value = invoiceState.customerTitle || "";
             document.getElementById("customerTcknInput").value = invoiceState.customerTckn || "";
             document.getElementById("customerTaxNumberInput").value = invoiceState.customerTaxNumber || "";
+            document.getElementById("customerEmailInput").value = invoiceState.customerEmail || "";
 
             document.getElementById("customerAddressLineInput").value =
                 invoiceState.customerAddressLine || invoiceState.customerAddress || "";
@@ -1082,6 +1093,7 @@
             const tcknInput = document.getElementById("customerTcknInput");
             const taxOfficeInput = document.getElementById("customerTaxOfficeInput");
             const taxNumberInput = document.getElementById("customerTaxNumberInput");
+            const emailInput = document.getElementById("customerEmailInput");
             const addressLineInput = document.getElementById("customerAddressLineInput");
             const addressCityInput = document.getElementById("customerAddressCityInput");
             const addressDistrictInput = document.getElementById("customerAddressDistrictInput");
@@ -1089,6 +1101,7 @@
             const title = normalizeText(titleInput.value, 150);
             const tckn = onlyDigits(tcknInput.value, 11);
             const taxNumber = onlyDigits(taxNumberInput.value, 10);
+            const email = normalizeText(emailInput.value, 150);
             const taxOffice = taxOfficeInput.value;
             const addressLine = normalizeText(addressLineInput.value, 500);
             const addressCity = addressCityInput.value;
@@ -1127,7 +1140,17 @@
                 return;
             }
 
+            if (!isValidOptionalEmail(email)) {
+                setInvoiceFieldError(
+                    emailInput,
+                    "Geçerli bir e-posta adresi giriniz.",
+                    "invoiceCustomerModalError"
+                );
+                return;
+            }
+
             invoiceState.customerTitle = title;
+            invoiceState.customerEmail = email || null;
             invoiceState.customerAddressLine = addressLine || null;
             invoiceState.customerAddressCity = addressCity || null;
             invoiceState.customerAddressDistrict = addressDistrict || null;
@@ -1759,6 +1782,7 @@
                 customerTaxOffice: invoiceState.customerTaxOffice || null,
                 customerTaxNumber: invoiceState.customerTaxNumber || null,
                 customerTckn: invoiceState.customerTckn || null,
+                customerEmail: invoiceState.customerEmail || null,
 
                 customerAddress: invoiceState.customerAddress || null,
                 customerAddressLine: invoiceState.customerAddressLine || null,
