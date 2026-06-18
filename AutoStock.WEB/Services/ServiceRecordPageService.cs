@@ -67,19 +67,19 @@ namespace AutoStock.WEB.Services
                 request);
         }
 
-        public async Task<ApiResponse<object>> UpdateOperationAsync(UpdateServiceOperationFormModel form)
+        public async Task<ApiResponse<ServiceOperationDto>> UpdateOperationAsync(UpdateServiceOperationFormModel form)
         {
             if (form.OperationId <= 0)
-                return ApiResponse<object>.Fail("İşlem bilgisi bulunamadı.");
+                return ApiResponse<ServiceOperationDto>.Fail("İşlem bilgisi bulunamadı.");
 
             if (string.IsNullOrWhiteSpace(form.Description))
-                return ApiResponse<object>.Fail("İşlem açıklaması zorunludur.");
+                return ApiResponse<ServiceOperationDto>.Fail("İşlem açıklaması zorunludur.");
 
             if (form.Quantity <= 0)
-                return ApiResponse<object>.Fail("Miktar 1 veya daha büyük olmalıdır.");
+                return ApiResponse<ServiceOperationDto>.Fail("Miktar 1 veya daha büyük olmalıdır.");
 
             if (form.UnitPrice < 0)
-                return ApiResponse<object>.Fail("Birim fiyat negatif olamaz.");
+                return ApiResponse<ServiceOperationDto>.Fail("Birim fiyat negatif olamaz.");
 
             var request = new UpdateServiceOperationRequest
             {

@@ -76,13 +76,13 @@
                             <div class="srx-request-card-meta">
 
                                 <span>
-                                    <strong>@requestOperations.Count</strong>
+                                    <strong class="srx-request-operation-count">@requestOperations.Count</strong>
                                     işlem
                                 </span>
 
                                 <span>
                                     İşlem toplamı
-                                    <strong>@FormatMoney(requestTotal)</strong>
+                                    <strong class="srx-request-operation-total">@FormatMoney(requestTotal)</strong>
                                 </span>
 
                                 <span>
@@ -160,12 +160,12 @@
 
                                     <div>
                                         <span>Gerçekleşen İşlem Toplamı</span>
-                                        <strong>@FormatMoney(requestTotal)</strong>
+                                        <strong class="srx-request-detail-total">@FormatMoney(requestTotal)</strong>
                                     </div>
 
                                     <div>
                                         <span>İşlem Sayısı</span>
-                                        <strong>@requestOperations.Count</strong>
+                                        <strong class="srx-request-detail-count">@requestOperations.Count</strong>
                                     </div>
 
                                 </div>

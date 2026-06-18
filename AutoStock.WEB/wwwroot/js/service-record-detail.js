@@ -41,6 +41,18 @@ const config = window.serviceRecordDetailConfig || {};
     }, 3200);
     }
 
+    function showFriendlyError(error, fallbackMessage) {
+    const message = error?.isUserSafe
+    ? error.message
+    : fallbackMessage;
+
+    if (!error?.isUserSafe) {
+    console.error(error);
+    }
+
+    showToast(message || "İşlem tamamlanamadı. Lütfen tekrar deneyin.", "error");
+    }
+
     function setButtonLoading(button, isLoading, loadingText = "İşleniyor...") {
     if (!button) return;
 
@@ -79,11 +91,15 @@ const config = window.serviceRecordDetailConfig || {};
     payload?.Message ||
     fallbackMessage;
 
-    throw new Error(message);
+    const error = new Error(message);
+    error.isUserSafe = true;
+    throw error;
     }
 
     if (payload && payload.isSuccess === false) {
-    throw new Error(payload.errorMessage || fallbackMessage);
+    const error = new Error(payload.errorMessage || fallbackMessage);
+    error.isUserSafe = true;
+    throw error;
     }
 
     return payload;
@@ -111,6 +127,298 @@ const config = window.serviceRecordDetailConfig || {};
     if (grandTotalElement) {
     grandTotalElement.dataset.grandTotal = grandTotal;
     grandTotalElement.textContent = formatMoney(grandTotal);
+    }
+    }
+
+    function updateSummaryFromPayload(summary) {
+    if (!summary) return;
+
+    const totalElement = document.querySelector(".summary-total");
+    const vatElement = document.querySelector(".summary-vat");
+    const grandTotalElement = document.querySelector(".summary-grand-total");
+
+    if (totalElement) {
+    totalElement.dataset.total = summary.subTotal ?? 0;
+    totalElement.textContent = summary.subTotalText || formatMoney(summary.subTotal);
+    }
+
+    if (vatElement) {
+    vatElement.dataset.vat = summary.vatTotal ?? 0;
+    vatElement.textContent = summary.vatTotalText || formatMoney(summary.vatTotal);
+    }
+
+    if (grandTotalElement) {
+    grandTotalElement.dataset.grandTotal = summary.grandTotal ?? 0;
+    grandTotalElement.textContent = summary.grandTotalText || formatMoney(summary.grandTotal);
+    }
+    }
+
+    function formatQuantity(value) {
+    return toNumber(value).toLocaleString("tr-TR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+    });
+    }
+
+    function renderOperationCard(operation, serviceRecordId) {
+    const id = operation?.id;
+
+    if (!id) return "";
+
+    const type = Number(operation.type || 1);
+    const typeClass = operation.typeClass || (type === 1 ? "part" : "labor");
+    const typeText = operation.typeText || (type === 1 ? "Parça" : "İşçilik");
+    const requestId = operation.serviceRequestItemId || "";
+    const unitPriceRaw = window.SenteMoney
+    ? SenteMoney.toRaw(operation.unitPrice)
+    : toNumber(operation.unitPrice).toFixed(2);
+
+    return `
+    <article class="srx-operation-card request-operation-item"
+    id="operation-item-${id}"
+    data-operation-id="${id}">
+
+    <div class="srx-operation-display">
+
+    <div class="srx-operation-main">
+
+    <span class="srx-type-badge ${escapeHtml(typeClass)}">
+    ${escapeHtml(typeText)}
+    </span>
+
+    <div class="srx-operation-copy">
+    <strong>${escapeHtml(operation.description)}</strong>
+    ${operation.note
+    ? `<small>${escapeHtml(operation.note)}</small>`
+    : `<small class="muted">Not yok</small>`}
+    </div>
+
+    </div>
+
+    <div class="srx-operation-price">
+    <strong>${formatMoney(operation.totalPrice)}</strong>
+    <span>${formatQuantity(operation.quantity)} × ${formatMoney(operation.unitPrice)}</span>
+    </div>
+
+    <div class="srx-operation-actions">
+
+    <button type="button"
+    class="srx-secondary-mini-btn"
+    data-action="edit-operation">
+    Düzenle
+    </button>
+
+    <button type="button"
+    class="srx-secondary-mini-btn danger"
+    data-action="delete-operation"
+    data-operation-id="${id}">
+    Sil
+    </button>
+
+    </div>
+
+    </div>
+
+    <form action="/ServiceRecords/UpdateOperation"
+    method="post"
+    class="srx-operation-edit-form ajax-operation-edit-form"
+    data-operation-id="${id}"
+    hidden>
+
+    <input type="hidden"
+    name="OperationId"
+    value="${id}" />
+
+    <input type="hidden"
+    name="ServiceRecordId"
+    value="${escapeHtml(serviceRecordId)}" />
+
+    <input type="hidden"
+    name="ServiceRequestItemId"
+    value="${escapeHtml(requestId)}" />
+
+    <input type="hidden"
+    name="StockItemId"
+    class="srx-stock-item-id" />
+
+    <div class="srx-operation-editor">
+
+    <div class="srx-type-switch">
+
+    <input type="radio"
+    id="editPart_${id}"
+    name="Type"
+    value="1"
+    ${type === 1 ? "checked" : ""} />
+
+    <label for="editPart_${id}" title="Parça">
+    P
+    </label>
+
+    <input type="radio"
+    id="editLabor_${id}"
+    name="Type"
+    value="2"
+    ${type === 2 ? "checked" : ""} />
+
+    <label for="editLabor_${id}" title="İşçilik">
+    İ
+    </label>
+
+    </div>
+
+    <div class="srx-search-box">
+
+    <input type="text"
+    name="Description"
+    class="srx-operation-search-input"
+    value="${escapeHtml(operation.description)}"
+    autocomplete="off"
+    placeholder="Parça adı, kodu veya işlem açıklaması..." />
+
+    <div class="srx-search-results"></div>
+
+    </div>
+
+    <input type="number"
+    name="Quantity"
+    class="srx-qty-input"
+    value="${escapeHtml(operation.quantity)}"
+    min="1"
+    step="1"
+    placeholder="Miktar" />
+
+    <div class="srx-money-input">
+
+    <input type="text"
+    name="UnitPrice"
+    class="srx-price-input"
+    value="${escapeHtml(unitPriceRaw)}"
+    inputmode="decimal"
+    data-sente-money-input
+    autocomplete="off"
+    placeholder="Fiyat" />
+
+    </div>
+
+    </div>
+
+    <input type="text"
+    name="Note"
+    class="srx-operation-note"
+    value="${escapeHtml(operation.note || "")}"
+    placeholder="İşlem notu opsiyonel" />
+
+    <div class="srx-form-actions">
+    <button type="submit"
+    class="srx-primary-mini-btn">
+    İşlemi Kaydet
+    </button>
+
+    <button type="button"
+    class="srx-secondary-mini-btn"
+    data-action="cancel-edit-operation">
+    Vazgeç
+    </button>
+    </div>
+
+    </form>
+
+    </article>
+    `;
+    }
+
+    function updateRequestTotals(card, request) {
+    if (!card || !request) return;
+
+    card.querySelectorAll(".srx-request-operation-count, .srx-request-detail-count")
+    .forEach(element => {
+    if (request.operationCount !== null && request.operationCount !== undefined) {
+    element.textContent = request.operationCount;
+    }
+    });
+
+    card.querySelectorAll(".srx-request-operation-total, .srx-request-detail-total")
+    .forEach(element => {
+    element.textContent = request.operationTotalText || formatMoney(request.operationTotal);
+    });
+    }
+
+    function renderEmptyOperationState(operationList) {
+    if (!operationList || operationList.querySelector(".srx-operation-card")) return;
+
+    operationList.innerHTML = `
+    <div class="srx-operation-empty">
+    <strong>Henüz işlem eklenmedi.</strong>
+    <span>Bu şikayetin altına parça veya işçilik ekleyin.</span>
+    </div>
+    `;
+    }
+
+    function replaceOperationInRequest(payload, form) {
+    const operation = payload?.operation;
+    const operationCard = form.closest(".srx-operation-card");
+    const card = form.closest(".srx-request-card");
+
+    if (!operation || !operationCard || !card) return;
+
+    operationCard.outerHTML = renderOperationCard(operation, serviceRecordId);
+
+    const newOperationCard = card.querySelector(`#operation-item-${operation.id}`);
+
+    if (newOperationCard) {
+    window.SenteMoney?.bind(newOperationCard);
+    }
+
+    updateRequestTotals(card, payload?.request);
+    setRequestExpanded(card, true);
+    }
+
+    function removeOperationFromRequest(payload, operationCard) {
+    const card = operationCard?.closest(".srx-request-card");
+    const operationList = operationCard?.closest("[data-operation-list]");
+
+    operationCard?.remove();
+
+    renderEmptyOperationState(operationList);
+    updateRequestTotals(card, payload?.request);
+    setRequestExpanded(card, true);
+    }
+
+    function appendOperationToRequest(payload, form) {
+    const operation = payload?.operation;
+    const card = form.closest(".srx-request-card");
+    const operationList = card?.querySelector("[data-operation-list]");
+
+    if (!operation || !card || !operationList) return;
+
+    operationList.querySelector(".srx-operation-empty")?.remove();
+    operationList.insertAdjacentHTML(
+    "beforeend",
+    renderOperationCard(operation, serviceRecordId)
+    );
+
+    const operationCard = operationList.querySelector(`#operation-item-${operation.id}`);
+
+    if (operationCard) {
+    window.SenteMoney?.bind(operationCard);
+    }
+
+    updateRequestTotals(card, payload?.request);
+    setRequestExpanded(card, true);
+    form.reset();
+    form.hidden = true;
+    form.querySelector(".srx-search-results")?.replaceChildren();
+    form.querySelector(".srx-stock-item-id")?.setAttribute("value", "");
+
+    const stockInput = form.querySelector(".srx-stock-item-id");
+    if (stockInput) {
+    stockInput.value = "";
+    }
+
+    const trigger = card.querySelector('[data-action="show-operation-form"]');
+    if (trigger) {
+    trigger.hidden = false;
     }
     }
 
@@ -442,20 +750,19 @@ const config = window.serviceRecordDetailConfig || {};
 
     const formData = new FormData(form);
 
-    await fetchJsonOrThrow(
+    const payload = await fetchJsonOrThrow(
     form.action,
     formData,
     "İşlem eklenirken hata oluştu."
     );
 
-    showToast("İşlem başarıyla eklendi.", "success");
+    appendOperationToRequest(payload, form);
+    updateSummaryFromPayload(payload?.summary);
 
-    setTimeout(() => {
-    window.location.reload();
-    }, 450);
+    showToast("İşlem başarıyla eklendi.", "success");
     }
     catch (error) {
-    showToast(error.message, "error");
+    showFriendlyError(error, "İşlem eklenemedi. Bilgileri kontrol edip tekrar deneyin.");
     }
     finally {
     form.dataset.submitting = "false";
@@ -508,7 +815,7 @@ const config = window.serviceRecordDetailConfig || {};
     }, 450);
     }
     catch (error) {
-    showToast(error.message, "error");
+    showFriendlyError(error, "İşlem güncellenemedi. Bilgileri kontrol edip tekrar deneyin.");
     }
     finally {
     form.dataset.submitting = "false";
@@ -551,20 +858,19 @@ const config = window.serviceRecordDetailConfig || {};
 
     const formData = new FormData(form);
 
-    await fetchJsonOrThrow(
+    const payload = await fetchJsonOrThrow(
     form.action,
     formData,
     "İşlem güncellenirken hata oluştu."
     );
 
-    showToast("İşlem güncellendi.", "success");
+    replaceOperationInRequest(payload, form);
+    updateSummaryFromPayload(payload?.summary);
 
-    setTimeout(() => {
-    window.location.reload();
-    }, 450);
+    showToast("İşlem güncellendi.", "success");
     }
     catch (error) {
-    showToast(error.message, "error");
+    showFriendlyError(error, "İşlem silinemedi. Lütfen tekrar deneyin.");
     }
     finally {
     form.dataset.submitting = "false";
@@ -640,17 +946,17 @@ const config = window.serviceRecordDetailConfig || {};
     const formData = new FormData();
     formData.append("operationId", operationId);
 
-    await fetchJsonOrThrow(
+    const payload = await fetchJsonOrThrow(
     "/ServiceRecords/DeleteOperation",
     formData,
     "İşlem silinirken hata oluştu."
     );
 
-    showToast("İşlem pasife alındı.", "success");
+    const operationCard = button.closest(".srx-operation-card");
+    removeOperationFromRequest(payload, operationCard);
+    updateSummaryFromPayload(payload?.summary);
 
-    setTimeout(() => {
-    window.location.reload();
-    }, 450);
+    showToast("İşlem pasife alındı.", "success");
     }
     catch (error) {
     showToast(error.message, "error");

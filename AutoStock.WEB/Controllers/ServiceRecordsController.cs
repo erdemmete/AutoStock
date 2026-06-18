@@ -4,6 +4,7 @@ using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Services.Dtos.Vehicles;
 using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Controllers;
+using AutoStock.WEB.Helpers;
 using AutoStock.WEB.Models.Invoices;
 using AutoStock.WEB.Models.ServiceRecords;
 using AutoStock.WEB.Models.SupportRequests;
@@ -298,7 +299,10 @@ public class ServiceRecordsController : BaseController
         if (result.IsFailure || result.Data is null)
             return BadRequest(result);
 
-        return Json(result.Data);
+        return Json(await BuildOperationMutationPayloadAsync(
+            model.ServiceRecordId,
+            result.Data,
+            model.ServiceRequestItemId));
     }
 
     [HttpPost("ServiceRecords/UpdateStatus")]
@@ -317,10 +321,15 @@ public class ServiceRecordsController : BaseController
     {
         var result = await _serviceRecordApiService.DeleteOperationAsync(operationId);
 
-        if (result.IsFailure)
+        if (result.IsFailure || result.Data is null)
             return BadRequest(result);
 
-        return Ok(result);
+        return Json(await BuildOperationMutationPayloadAsync(
+            result.Data.ServiceRecordId,
+            operation: null,
+            result.Data.ServiceRequestItemId,
+            result.Data.RecordTotal,
+            result.Data.RequestItemTotal));
     }
 
     [HttpPost("ServiceRecords/DeleteRequestItem")]
@@ -375,10 +384,79 @@ public class ServiceRecordsController : BaseController
     {
         var result = await _serviceRecordPageService.UpdateOperationAsync(form);
 
-        if (result.IsFailure)
+        if (result.IsFailure || result.Data is null)
             return BadRequest(result);
 
-        return Ok(result);
+        return Json(await BuildOperationMutationPayloadAsync(
+            form.ServiceRecordId,
+            result.Data,
+            result.Data.ServiceRequestItemId ?? form.ServiceRequestItemId));
+    }
+
+    private async Task<object> BuildOperationMutationPayloadAsync(
+        int serviceRecordId,
+        ServiceOperationDto? operation,
+        int? serviceRequestItemId,
+        decimal? fallbackRecordTotal = null,
+        decimal? fallbackRequestTotal = null)
+    {
+        var detailResult = await _serviceRecordApiService.GetDetailAsync(serviceRecordId);
+        var operations = detailResult.IsSuccess && detailResult.Data is not null
+            ? detailResult.Data.Operations
+            : new List<ServiceOperationViewModel>();
+
+        var requestOperations = operations
+            .Where(x => x.ServiceRequestItemId == serviceRequestItemId)
+            .ToList();
+
+        var serviceTotal = detailResult.Data?.TotalAmount
+            ?? fallbackRecordTotal
+            ?? operation?.TotalPrice
+            ?? 0m;
+
+        var requestTotal = detailResult.Data is not null
+            ? requestOperations.Sum(x => x.TotalPrice)
+            : fallbackRequestTotal ?? 0m;
+
+        var vatTotal = serviceTotal * 0.20m;
+        var grandTotal = serviceTotal + vatTotal;
+
+        return new
+        {
+            operation = operation is null
+                ? null
+                : new
+                {
+                    id = operation.Id,
+                    type = (int)operation.Type,
+                    typeText = (int)operation.Type == 1 ? "Parça" : "İşçilik",
+                    typeClass = (int)operation.Type == 1 ? "part" : "labor",
+                    description = operation.Description,
+                    quantity = operation.Quantity,
+                    unitPrice = operation.UnitPrice,
+                    totalPrice = operation.TotalPrice,
+                    note = operation.Note,
+                    serviceRequestItemId = operation.ServiceRequestItemId
+                },
+            request = new
+            {
+                id = serviceRequestItemId,
+                operationCount = detailResult.Data is not null
+                    ? requestOperations.Count
+                    : (int?)null,
+                operationTotal = requestTotal,
+                operationTotalText = SenteMoney.Format(requestTotal)
+            },
+            summary = new
+            {
+                subTotal = serviceTotal,
+                vatTotal,
+                grandTotal,
+                subTotalText = SenteMoney.Format(serviceTotal),
+                vatTotalText = SenteMoney.Format(vatTotal),
+                grandTotalText = SenteMoney.Format(grandTotal)
+            }
+        };
     }
 
 

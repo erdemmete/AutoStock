@@ -167,9 +167,9 @@ namespace AutoStock.WEB.Services
                 "Servis durumu güncellenirken hata oluştu.");
         }
 
-        public async Task<ApiResponse<object>> DeleteOperationAsync(int operationId)
+        public async Task<ApiResponse<DeleteServiceOperationResponse>> DeleteOperationAsync(int operationId)
         {
-            return await DeleteAsync<object>(
+            return await DeleteAsync<DeleteServiceOperationResponse>(
                 $"/api/ServiceRecords/operations/{operationId}",
                 "Operasyon silinirken hata oluştu.");
         }
@@ -220,11 +220,11 @@ namespace AutoStock.WEB.Services
                 "Şikayet güncellenirken hata oluştu.");
         }
 
-        public async Task<ApiResponse<object>> UpdateOperationAsync(
+        public async Task<ApiResponse<ServiceOperationDto>> UpdateOperationAsync(
             int operationId,
             UpdateServiceOperationRequest request)
         {
-            return await PutJsonAsync<UpdateServiceOperationRequest, object>(
+            return await PutJsonAsync<UpdateServiceOperationRequest, ServiceOperationDto>(
                 $"/api/ServiceRecords/operations/{operationId}",
                 request,
                 "İşlem güncellenirken hata oluştu.");
