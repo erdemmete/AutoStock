@@ -431,6 +431,248 @@ namespace AutoStock.Services.Services
             return ServiceResult<List<AdminWorkshopUserDto>>.Success(users);
         }
 
+        public async Task<ServiceResult<AdminWorkshopUserDetailDto>> GetUserDetailAsync(int workshopId, int userId)
+        {
+            var detail = await _context.WorkshopUsers
+                .AsNoTracking()
+                .Where(x => x.WorkshopId == workshopId && x.UserId == userId)
+                .Select(x => new AdminWorkshopUserDetailDto
+                {
+                    WorkshopId = x.WorkshopId,
+                    WorkshopName = x.Workshop.Name,
+                    UserId = x.UserId,
+                    FullName = x.User.FullName,
+                    UserName = x.User.UserName ?? string.Empty,
+                    Email = x.User.Email,
+                    PhoneNumber = x.User.PhoneNumber,
+                    Role = x.Role,
+                    IsActive = x.User.IsActive,
+                    CreatedAt = x.User.CreatedAt,
+                    LastLoginAt = _context.AuditLogs
+                        .Where(a =>
+                            a.UserId == x.UserId &&
+                            a.ActionType == AuditActionType.LoginSuccess)
+                        .OrderByDescending(a => a.CreatedAt)
+                        .Select(a => (DateTime?)a.CreatedAt)
+                        .FirstOrDefault(),
+                    LastLoginIpAddress = _context.AuditLogs
+                        .Where(a =>
+                            a.UserId == x.UserId &&
+                            a.ActionType == AuditActionType.LoginSuccess)
+                        .OrderByDescending(a => a.CreatedAt)
+                        .Select(a => a.IpAddress)
+                        .FirstOrDefault()
+                })
+                .FirstOrDefaultAsync();
+
+            if (detail is null)
+                return ServiceResult<AdminWorkshopUserDetailDto>.Fail("Kullanıcı bu serviste bulunamadı.");
+
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+
+            if (user is null)
+                return ServiceResult<AdminWorkshopUserDetailDto>.Fail("Kullanıcı bulunamadı.");
+
+            if (await _userManager.IsInRoleAsync(user, AppRoles.Admin))
+                return ServiceResult<AdminWorkshopUserDetailDto>.Fail("Admin kullanıcısı bu ekrandan yönetilemez.");
+
+            return ServiceResult<AdminWorkshopUserDetailDto>.Success(detail);
+        }
+
+        public async Task<ServiceResult<bool>> UpdateUserAsync(
+            int workshopId,
+            int userId,
+            UpdateAdminWorkshopUserRequestDto request)
+        {
+            var validationResult = ValidateWorkshopUserRequest(request);
+
+            if (validationResult.IsFailure)
+                return ServiceResult<bool>.Fail(validationResult.ErrorMessages);
+
+            var targetRole = request.Role.Trim();
+
+            var roleExists = await _roleManager.RoleExistsAsync(targetRole);
+
+            if (!roleExists)
+                return ServiceResult<bool>.Fail($"{targetRole} rolü sistemde bulunamadı.");
+
+            var workshopUser = await _context.WorkshopUsers
+                .Include(x => x.User)
+                .Include(x => x.Workshop)
+                .FirstOrDefaultAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.UserId == userId);
+
+            if (workshopUser is null)
+                return ServiceResult<bool>.Fail("Kullanıcı bu serviste bulunamadı.");
+
+            var user = workshopUser.User;
+            var currentRoles = await _userManager.GetRolesAsync(user);
+
+            if (currentRoles.Contains(AppRoles.Admin))
+                return ServiceResult<bool>.Fail("Admin kullanıcısı bu ekrandan yönetilemez.");
+
+            if (workshopUser.Role == AppRoles.Owner &&
+                user.IsActive &&
+                !request.IsActive &&
+                await IsLastActiveOwnerAsync(workshopId, userId))
+            {
+                return ServiceResult<bool>.Fail("Servisin son aktif sahibi pasife alınamaz.");
+            }
+
+            if (workshopUser.Role == AppRoles.Owner &&
+                targetRole == AppRoles.Staff &&
+                user.IsActive &&
+                await IsLastActiveOwnerAsync(workshopId, userId))
+            {
+                return ServiceResult<bool>.Fail("Servisin son aktif sahibi personel rolüne düşürülemez.");
+            }
+
+            var userName = request.UserName.Trim();
+            var email = NormalizeNullable(request.Email);
+
+            var existingUserName = await _userManager.FindByNameAsync(userName);
+            if (existingUserName is not null && existingUserName.Id != userId)
+                return ServiceResult<bool>.Fail("Bu kullanıcı adı başka bir kullanıcı tarafından kullanılıyor.");
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var existingEmail = await _userManager.FindByEmailAsync(email);
+
+                if (existingEmail is not null && existingEmail.Id != userId)
+                    return ServiceResult<bool>.Fail("Bu e-posta adresi başka bir kullanıcı tarafından kullanılıyor.");
+            }
+
+            var oldValues = new
+            {
+                user.FullName,
+                user.UserName,
+                user.Email,
+                user.PhoneNumber,
+                Role = workshopUser.Role,
+                user.IsActive
+            };
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            user.FullName = request.FullName.Trim();
+
+            var setUserNameResult = await _userManager.SetUserNameAsync(user, userName);
+            if (!setUserNameResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+                return IdentityFailure(setUserNameResult);
+            }
+
+            var setEmailResult = await _userManager.SetEmailAsync(user, email);
+            if (!setEmailResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+                return IdentityFailure(setEmailResult);
+            }
+
+            var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, NormalizeNullable(request.PhoneNumber));
+            if (!setPhoneResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+                return IdentityFailure(setPhoneResult);
+            }
+
+            user.IsActive = request.IsActive;
+
+            var userUpdateResult = await _userManager.UpdateAsync(user);
+            if (!userUpdateResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+                return IdentityFailure(userUpdateResult);
+            }
+
+            if (workshopUser.Role != targetRole)
+            {
+                foreach (var roleToRemove in currentRoles.Where(x => x == AppRoles.Owner || x == AppRoles.Staff))
+                {
+                    var removeResult = await _userManager.RemoveFromRoleAsync(user, roleToRemove);
+                    if (!removeResult.Succeeded)
+                    {
+                        await transaction.RollbackAsync();
+                        return IdentityFailure(removeResult);
+                    }
+                }
+
+                var addRoleResult = await _userManager.AddToRoleAsync(user, targetRole);
+                if (!addRoleResult.Succeeded)
+                {
+                    await transaction.RollbackAsync();
+                    return IdentityFailure(addRoleResult);
+                }
+
+                workshopUser.Role = targetRole;
+            }
+
+            var securityStampResult = await _userManager.UpdateSecurityStampAsync(user);
+            if (!securityStampResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+                return IdentityFailure(securityStampResult);
+            }
+
+            var newValues = new
+            {
+                user.FullName,
+                user.UserName,
+                user.Email,
+                user.PhoneNumber,
+                Role = workshopUser.Role,
+                user.IsActive
+            };
+
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                ActionType = AuditActionType.Update,
+                EntityType = AuditEntityType.WorkshopUser,
+                EntityId = userId,
+                Description = $"Servis kullanıcısı bilgileri güncellendi: {user.FullName}",
+                OldValues = oldValues,
+                NewValues = newValues
+            });
+
+            if (!string.Equals((string)oldValues.Role, workshopUser.Role, StringComparison.Ordinal))
+            {
+                await _auditLogService.AddAsync(new AuditLogCreateDto
+                {
+                    WorkshopId = workshopId,
+                    ActionType = AuditActionType.Update,
+                    EntityType = AuditEntityType.WorkshopUser,
+                    EntityId = userId,
+                    Description = $"Servis kullanıcısı rolü değiştirildi: {user.FullName}",
+                    OldValues = new { Role = oldValues.Role },
+                    NewValues = new { Role = workshopUser.Role }
+                });
+            }
+
+            if ((bool)oldValues.IsActive != user.IsActive)
+            {
+                await _auditLogService.AddAsync(new AuditLogCreateDto
+                {
+                    WorkshopId = workshopId,
+                    ActionType = user.IsActive ? AuditActionType.SetActive : AuditActionType.SetPassive,
+                    EntityType = AuditEntityType.WorkshopUser,
+                    EntityId = userId,
+                    Description = user.IsActive
+                        ? $"Servis kullanıcısı aktife alındı: {user.FullName}"
+                        : $"Servis kullanıcısı pasife alındı: {user.FullName}",
+                    OldValues = new { IsActive = oldValues.IsActive },
+                    NewValues = new { user.IsActive }
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return ServiceResult<bool>.Success(true);
+        }
+
         public async Task<ServiceResult<AdminWorkshopUserCreatedDto>> CreateUserAsync(
     int workshopId,
     CreateAdminWorkshopUserRequestDto request)
@@ -573,12 +815,29 @@ namespace AutoStock.Services.Services
                 return ServiceResult<bool>.Fail(
                     "Kullanıcı bu serviste bulunamadı.");
 
+            var currentRoles = await _userManager.GetRolesAsync(workshopUser.User);
+
+            if (currentRoles.Contains(AppRoles.Admin))
+                return ServiceResult<bool>.Fail("Admin kullanıcısı bu ekrandan yönetilemez.");
+
             var oldIsActive = workshopUser.User.IsActive;
 
             if (oldIsActive == request.IsActive)
                 return ServiceResult<bool>.Success(true);
 
+            if (workshopUser.Role == AppRoles.Owner &&
+                oldIsActive &&
+                !request.IsActive &&
+                await IsLastActiveOwnerAsync(workshopId, userId))
+            {
+                return ServiceResult<bool>.Fail("Servisin son aktif sahibi pasife alınamaz.");
+            }
+
             workshopUser.User.IsActive = request.IsActive;
+            var securityStampResult = await _userManager.UpdateSecurityStampAsync(workshopUser.User);
+
+            if (!securityStampResult.Succeeded)
+                return IdentityFailure(securityStampResult);
 
             await _auditLogService.AddAsync(new AuditLogCreateDto
             {
@@ -645,6 +904,10 @@ namespace AutoStock.Services.Services
             await _userSecurityTokenService.RevokeActiveTokensAsync(
                 userId,
                 UserSecurityTokenPurpose.PasswordSetup);
+
+            await _userSecurityTokenService.RevokeActiveTokensAsync(
+                userId,
+                UserSecurityTokenPurpose.PasswordReset);
 
             var tokenResult = await _userSecurityTokenService.CreateAsync(
                 new CreateUserSecurityTokenRequestDto
@@ -1040,6 +1303,51 @@ namespace AutoStock.Services.Services
                 .ToListAsync();
 
             return ServiceResult<List<AdminWorkshopBankAccountDto>>.Success(accounts);
+        }
+
+        private async Task<bool> IsLastActiveOwnerAsync(int workshopId, int userId)
+        {
+            var activeOwnerCount = await _context.WorkshopUsers
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.UserId != userId &&
+                    x.Role == AppRoles.Owner &&
+                    x.User.IsActive);
+
+            return activeOwnerCount == 0;
+        }
+
+        private static ServiceResult<bool> ValidateWorkshopUserRequest(UpdateAdminWorkshopUserRequestDto request)
+        {
+            var errors = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(request.FullName))
+                errors.Add("Ad soyad zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(request.UserName))
+                errors.Add("Kullanıcı adı zorunludur.");
+
+            var role = request.Role?.Trim();
+
+            if (role != AppRoles.Owner && role != AppRoles.Staff)
+                errors.Add("Kullanıcı rolü sadece servis sahibi veya personel olabilir.");
+
+            if (errors.Any())
+                return ServiceResult<bool>.Fail(errors);
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        private static ServiceResult<bool> IdentityFailure(IdentityResult result)
+        {
+            var errors = result.Errors
+                .Select(x => x.Description)
+                .ToList();
+
+            return ServiceResult<bool>.Fail(errors.Any()
+                ? errors
+                : new List<string> { "Identity işlemi tamamlanamadı." });
         }
 
         public async Task<ServiceResult<int>> CreateBankAccountAsync(

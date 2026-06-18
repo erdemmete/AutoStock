@@ -1052,7 +1052,9 @@ Bu bağlantı tek kullanımlıktır.";
                 <tbody>
                     @foreach (var user in Model.Users)
                     {
-                        <tr>
+                        var userDetailUrl = $"/Admin/Workshops/{Model.Id}/Users/{user.UserId}";
+
+                        <tr class="clickable-user-row" data-href="@userDetailUrl">
                             <td>
                                 <strong>@user.FullName</strong>
                                 <div class="text-muted">@user.UserName</div>
@@ -1087,53 +1089,9 @@ Bu bağlantı tek kullanımlıktır.";
                             <td>@user.CreatedAt.ToString("dd.MM.yyyy")</td>
 
                             <td>
-                                <div class="user-action-group">
-                                    <form asp-action="UpdateWorkshopUserStatus"
-                                          asp-controller="Admin"
-                                          method="post"
-                                          onsubmit="return confirm('Kullanıcı durumunu değiştirmek istiyor musun?');">
-
-                                        @Html.AntiForgeryToken()
-
-                                        <input type="hidden" name="workshopId" value="@Model.Id" />
-                                        <input type="hidden" name="userId" value="@user.UserId" />
-                                        <input type="hidden" name="isActive" value="@(!user.IsActive)" />
-
-                                        @if (user.IsActive)
-                                        {
-                                            <button type="submit" class="btn-danger-custom">
-                                                Pasifleştir
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button type="submit" class="btn-success-custom">
-                                                Aktifleştir
-                                            </button>
-                                        }
-                                    </form>
-
-                                    @if (user.IsActive)
-                                    {
-                                        <form asp-action="CreateWorkshopUserPasswordResetLink"
-                                              asp-controller="Admin"
-                                              asp-route-workshopId="@Model.Id"
-                                              asp-route-userId="@user.UserId"
-                                              method="post"
-                                              onsubmit="return confirm('Bu kullanıcı için yeni şifre sıfırlama bağlantısı oluşturulsun mu? Önceki aktif reset bağlantıları geçersiz olur.');">
-
-                                            @Html.AntiForgeryToken()
-
-                                            <button type="submit" class="btn-secondary-custom btn-small-custom">
-                                                Şifre Sıfırla
-                                            </button>
-                                        </form>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">Pasif kullanıcı</span>
-                                    }
-                                </div>
+                                <a href="@userDetailUrl" class="btn-secondary-custom btn-small-custom">
+                                    Yönet
+                                </a>
                             </td>
                         </tr>
                     }
@@ -1318,6 +1276,15 @@ Bu bağlantı tek kullanımlıktır.";
 
         .admin-table tr:last-child td {
             border-bottom: none;
+        }
+
+        .admin-table tr.clickable-user-row {
+            cursor: pointer;
+            transition: background .15s ease, transform .15s ease;
+        }
+
+        .admin-table tr.clickable-user-row:hover {
+            background: #f8fbff;
         }
 
     .text-muted {
@@ -1780,7 +1747,24 @@ Bu bağlantı tek kullanımlıktır.";
         makeAdminCardsCollapsible();
         initializeMobilePhoneInputs();
         initializeCredentialActions();
+        initializeUserRows();
     });
+
+    function initializeUserRows() {
+        document.querySelectorAll(".clickable-user-row").forEach(row => {
+            row.addEventListener("click", function (event) {
+                if (event.target.closest("a, button, input, select, textarea, label, form")) {
+                    return;
+                }
+
+                const href = row.dataset.href;
+
+                if (href) {
+                    window.location.href = href;
+                }
+            });
+        });
+    }
 
     function makeAdminCardsCollapsible() {
         const cards = document.querySelectorAll(".admin-card");

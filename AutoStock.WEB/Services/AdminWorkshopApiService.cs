@@ -121,6 +121,31 @@ namespace AutoStock.WEB.Services
                 "Servis kullanıcısı oluşturulurken hata oluştu.");
         }
 
+        public async Task<ApiResponse<AdminWorkshopUserDetailViewModel>> GetUserDetailAsync(int workshopId, int userId)
+        {
+            return await GetAsync<AdminWorkshopUserDetailViewModel>(
+                $"/api/admin/workshops/{workshopId}/users/{userId}",
+                "Kullanıcı detayı alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<object>> UpdateUserAsync(AdminWorkshopUserDetailViewModel model)
+        {
+            var requestBody = new
+            {
+                fullName = model.FullName,
+                userName = model.UserName,
+                email = model.Email,
+                phoneNumber = model.PhoneNumber,
+                role = model.Role,
+                isActive = model.IsActive
+            };
+
+            return await PutJsonAsync<object, object>(
+                $"/api/admin/workshops/{model.WorkshopId}/users/{model.UserId}",
+                requestBody,
+                "Kullanıcı bilgileri güncellenirken hata oluştu.");
+        }
+
         public async Task<ApiResponse<object>> UpdateUserStatusAsync(int workshopId, int userId, bool isActive)
         {
             var requestBody = new

@@ -20,6 +20,10 @@ public class InvoiceExportsController : BaseController
     [HttpGet("Invoices/Export")]
     public async Task<IActionResult> Index([FromQuery] InvoiceExportQueryViewModel query)
     {
+        var ownerAccess = RequireOwnerAccess();
+        if (ownerAccess is not null)
+            return ownerAccess;
+
         var pageResult = await _invoiceExportPageService.BuildIndexAsync(query);
 
         if (pageResult.HasErrors)
@@ -33,6 +37,10 @@ public class InvoiceExportsController : BaseController
     [HttpGet("Invoices/Export/Download")]
     public async Task<IActionResult> Download([FromQuery] InvoiceExportQueryViewModel query)
     {
+        var ownerAccess = RequireOwnerAccess();
+        if (ownerAccess is not null)
+            return ownerAccess;
+
         var result = await _invoiceExportApiService.DownloadAsync(query);
 
         if (!result.IsSuccess)
@@ -57,6 +65,10 @@ public class InvoiceExportsController : BaseController
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SendEmail(InvoiceExportQueryViewModel query)
     {
+        var ownerAccess = RequireOwnerAccess();
+        if (ownerAccess is not null)
+            return ownerAccess;
+
         if (string.IsNullOrWhiteSpace(query.ToEmail))
         {
             ShowError("Muhasebeci e-posta adresi zorunludur.");

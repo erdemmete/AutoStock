@@ -23,7 +23,8 @@ public class JwtService
         string email,
         string fullName,
         int workshopId,
-        string role)
+        string role,
+        string? securityStamp = null)
     {
         var jwtSettings = _configuration.GetSection("Jwt");
 
@@ -41,6 +42,7 @@ public class JwtService
             new Claim(ClaimTypes.Name, fullName ?? string.Empty),
             new Claim(ClaimTypes.Role, role),
             new Claim("workshopId", workshopId.ToString()),
+            new Claim("securityStamp", securityStamp ?? string.Empty),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

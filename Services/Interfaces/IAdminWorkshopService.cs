@@ -12,8 +12,10 @@ namespace AutoStock.Services.Interfaces
         Task<ServiceResult<AdminWorkshopUserCreatedDto>> CreateAsync(CreateAdminWorkshopRequestDto request);
         Task<ServiceResult<bool>> UpdateSubscriptionAsync(int id, UpdateAdminWorkshopSubscriptionRequestDto request);
         Task<ServiceResult<List<AdminWorkshopUserDto>>> GetUsersAsync(int workshopId);
+        Task<ServiceResult<AdminWorkshopUserDetailDto>> GetUserDetailAsync(int workshopId, int userId);
 
         Task<ServiceResult<AdminWorkshopUserCreatedDto>> CreateUserAsync(int workshopId, CreateAdminWorkshopUserRequestDto request);
+        Task<ServiceResult<bool>> UpdateUserAsync(int workshopId, int userId, UpdateAdminWorkshopUserRequestDto request);
         Task<ServiceResult<AdminWorkshopUserPasswordResetLinkDto>> CreateUserPasswordResetLinkAsync(int workshopId, int userId);
         Task<ServiceResult<bool>> UpdateUserStatusAsync(int workshopId, int userId, UpdateAdminWorkshopUserStatusRequestDto request);
         Task<ServiceResult<bool>> UpdateProfileAsync(int id, UpdateAdminWorkshopProfileRequestDto request);

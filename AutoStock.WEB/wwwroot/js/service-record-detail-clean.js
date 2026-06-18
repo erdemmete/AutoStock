@@ -630,4 +630,133 @@
             void stopQrModalScanner();
         });
     })();
+
+    (function () {
+        function getQrStack() {
+            return document.getElementById("qrActionStack");
+        }
+
+        function buildPublicQrUrl(code) {
+            return `${window.location.origin}/qr/${encodeURIComponent(code)}`;
+        }
+
+        function setQrLoading(button, isLoading) {
+            if (!button) return;
+
+            if (isLoading) {
+                button.dataset.originalText = button.textContent;
+                button.disabled = true;
+                button.textContent = "Hazırlanıyor...";
+                return;
+            }
+
+            button.disabled = false;
+            button.textContent = button.dataset.originalText || button.textContent;
+        }
+
+        function getFriendlyMessage(payload, fallback) {
+            return payload?.message ||
+                payload?.errorMessage ||
+                payload?.ErrorMessage ||
+                (Array.isArray(payload?.errorMessages) ? payload.errorMessages[0] : null) ||
+                fallback;
+        }
+
+        function updateQrReadyState(code) {
+            const stack = getQrStack();
+            const createButton = document.getElementById("qrCreateButton");
+            const readyControl = document.getElementById("qrReadyControl");
+            const publicLinkText = document.getElementById("qrPublicLinkText");
+            const whatsappLink = document.getElementById("qrWhatsappLink");
+
+            if (!stack || !code) return;
+
+            const publicUrl = buildPublicQrUrl(code);
+            stack.dataset.qrBound = "true";
+            stack.dataset.publicUrl = publicUrl;
+
+            createButton?.classList.add("is-hidden");
+            readyControl?.classList.remove("is-hidden");
+
+            if (publicLinkText) {
+                publicLinkText.textContent = "Araç servis geçmişi bağlantısı hazır";
+            }
+
+            if (whatsappLink) {
+                const text = `Merhaba, aracınızın Sente360 servis geçmişi bağlantısı: ${publicUrl}`;
+                whatsappLink.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            }
+        }
+
+        async function createVehicleQr(vehicleId, button, isReplace) {
+            const confirmed = !isReplace || !window.SenteConfirm || await window.SenteConfirm.show({
+                title: "Araç QR'ını değiştir",
+                message: "Yeni QR oluşturulacak ve mevcut QR kullanım dışı bırakılacak. Eski QR tekrar kullanılamaz.",
+                confirmText: "Değiştir",
+                cancelText: "Vazgeç",
+                danger: false
+            });
+
+            if (!confirmed) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("vehicleId", vehicleId);
+
+            setQrLoading(button, true);
+
+            try {
+                const response = await fetch("/ServiceRecords/CreateVehicleQrCode", {
+                    method: "POST",
+                    body: formData,
+                    credentials: "same-origin"
+                });
+
+                let payload = null;
+
+                try {
+                    payload = await response.json();
+                } catch {
+                    payload = null;
+                }
+
+                if (!response.ok || payload?.success === false) {
+                    showToast(
+                        getFriendlyMessage(payload, "Araç QR'ı oluşturulamadı."),
+                        "error");
+                    return;
+                }
+
+                updateQrReadyState(payload.code);
+                showToast(payload.message || "Araç QR'ı hazır.", "success");
+            }
+            catch (error) {
+                console.error(error);
+                showToast("Araç QR'ı oluşturulamadı. Lütfen tekrar deneyin.", "error");
+            }
+            finally {
+                setQrLoading(button, false);
+            }
+        }
+
+        document.addEventListener("click", function (event) {
+            const action = event.target.closest("[data-action='create-vehicle-qr'], [data-action='replace-vehicle-qr']");
+
+            if (!action) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const vehicleId = Number(action.dataset.vehicleId || 0);
+
+            if (!vehicleId) {
+                showToast("Araç bilgisi bulunamadı.", "error");
+                return;
+            }
+
+            void createVehicleQr(vehicleId, action, action.dataset.action === "replace-vehicle-qr");
+        });
+    })();
 })();

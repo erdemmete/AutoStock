@@ -21,6 +21,10 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("CurrentAccounts")]
         public async Task<IActionResult> Index([FromQuery] CurrentAccountListQueryViewModel query)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var pageResult = await _currentAccountPageService.BuildIndexAsync(query);
 
             if (pageResult.HasErrors)
@@ -34,6 +38,10 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("CurrentAccounts/Customer/{customerId:int}")]
         public async Task<IActionResult> Customer(int customerId)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var result = await _currentAccountApiService.GetCustomerAccountAsync(customerId);
 
             return ViewObjectResult(
@@ -45,6 +53,10 @@ namespace AutoStock.WEB.Controllers
         [HttpPost("CurrentAccounts/CreatePayment")]
         public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentViewModel model)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             if (model.Amount <= 0)
             {
                 return BadRequest(new
@@ -68,6 +80,10 @@ namespace AutoStock.WEB.Controllers
         [HttpPost("CurrentAccounts/CancelPayment")]
         public async Task<IActionResult> CancelPayment([FromBody] CancelPaymentViewModel model)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             if (model.TransactionId <= 0)
             {
                 return BadRequest(new

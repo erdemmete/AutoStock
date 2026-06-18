@@ -9,7 +9,7 @@ using System.Net;
 
 namespace AutoStock.API.Controllers
 {
-    [Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
+    [Authorize(Roles = AppRoles.OwnerOrStaff)]
     [ApiController]
     [Route("api/[controller]")]
     public class StockItemsController : BaseApiController
@@ -78,6 +78,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Roles = AppRoles.Owner)]
         public async Task<IActionResult> Update(int id, UpdateStockItemDto dto)
         {
             if (id != dto.Id)
@@ -100,6 +101,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost("{id:int}/passive")]
+        [Authorize(Roles = AppRoles.Owner)]
         public async Task<IActionResult> SetPassive(int id)
         {
             var workshopIdResult = GetCurrentWorkshopId();
@@ -115,6 +117,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost("{id:int}/adjust-stock")]
+        [Authorize(Roles = AppRoles.Owner)]
         public async Task<IActionResult> AdjustStock(int id, AdjustStockDto dto)
         {
             var workshopIdResult = GetCurrentWorkshopId();
@@ -162,6 +165,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost("{id:int}/stock-out")]
+        [Authorize(Roles = AppRoles.Owner)]
         public async Task<IActionResult> StockOut(int id, StockTransactionDto dto)
         {
             var workshopIdResult = GetCurrentWorkshopId();

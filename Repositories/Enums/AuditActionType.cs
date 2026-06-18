@@ -21,5 +21,8 @@
 
     LoginSuccess = 50,
     LoginFailed = 51,
-    Logout = 52
+    Logout = 52,
+
+    Retire = 70,
+    Revoke = 71
 }

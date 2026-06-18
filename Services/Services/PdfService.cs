@@ -609,8 +609,49 @@ public class PdfService : IPdfService
                 column.Item().Element(c => BuildGrandTotal(c, total));
             }
 
+            if (request.VehicleQrPngBytes is { Length: > 0 } &&
+                !string.IsNullOrWhiteSpace(request.VehicleQrPublicUrl))
+            {
+                column.Item().Element(c => BuildVehicleQrInfo(c, request.VehicleQrPngBytes, request.VehicleQrPublicUrl));
+            }
+
             column.Item().Element(BuildLegalBox);
         });
+    }
+
+    private static void BuildVehicleQrInfo(IContainer container, byte[] qrBytes, string publicUrl)
+    {
+        container.Border(1)
+            .BorderColor(Colors.Blue.Lighten4)
+            .Background(Colors.Blue.Lighten5)
+            .Padding(9)
+            .Row(row =>
+            {
+                row.ConstantItem(58)
+                    .Height(58)
+                    .Background(Colors.White)
+                    .Padding(4)
+                    .Image(qrBytes)
+                    .FitArea();
+
+                row.ConstantItem(10);
+
+                row.RelativeItem().Column(column =>
+                {
+                    column.Item().Text("Araç servis geçmişi")
+                        .FontSize(8.8f)
+                        .Bold()
+                        .FontColor(Colors.Blue.Darken3);
+
+                    column.Item().PaddingTop(3).Text("Bu QR kod ile aracın public servis geçmişi görüntülenebilir.")
+                        .FontSize(7.4f)
+                        .FontColor(Colors.Grey.Darken2);
+
+                    column.Item().PaddingTop(2).Text(publicUrl)
+                        .FontSize(6.8f)
+                        .FontColor(Colors.Grey.Darken1);
+                });
+            });
     }
 
     private static void BuildGrandTotal(IContainer container, decimal total)

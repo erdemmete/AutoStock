@@ -76,6 +76,10 @@ namespace AutoStock.WEB.Controllers
         [HttpPost("StockItems/AdjustStock/{id:int}")]
         public async Task<IActionResult> AdjustStock(int id, AdjustStockViewModel model)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             if (model.NewQuantity < 0)
             {
                 TempData["ToastError"] = "Yeni stok miktarı negatif olamaz.";
@@ -120,6 +124,10 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("StockItems/Edit/{id:int}")]
         public async Task<IActionResult> Edit(int id)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var result = await _stockItemApiService.GetEditModelAsync(id);
 
             return ViewObjectResult(
@@ -131,6 +139,10 @@ namespace AutoStock.WEB.Controllers
         [HttpPost("StockItems/Edit/{id:int}")]
         public async Task<IActionResult> Edit(int id, EditStockItemViewModel model)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             if (id != model.Id)
             {
                 TempData["ToastError"] = "Stok bilgisi hatalı.";
@@ -162,6 +174,10 @@ namespace AutoStock.WEB.Controllers
         [HttpPost("StockItems/Passive/{id:int}")]
         public async Task<IActionResult> SetPassive(int id)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var result = await _stockItemApiService.SetPassiveAsync(id);
 
             return HandleCommandResult(

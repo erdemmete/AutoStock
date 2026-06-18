@@ -124,7 +124,8 @@ public class AuthService : IAuthService
             user.Email ?? string.Empty,
             user.FullName,
             request.WorkshopId,
-            AppRoles.Owner);
+            AppRoles.Owner,
+            user.SecurityStamp);
 
         return new AuthResponseDto
         {
@@ -220,7 +221,8 @@ public class AuthService : IAuthService
             user.Email ?? string.Empty,
             user.FullName,
             workshopId,
-            role);
+            role,
+            user.SecurityStamp);
 
         int? auditWorkshopId = workshopId > 0
             ? workshopId
@@ -357,7 +359,8 @@ public class AuthService : IAuthService
             user.Email ?? string.Empty,
             user.FullName,
             workshopId,
-            role);
+            role,
+            user.SecurityStamp);
 
         return new AuthResponseDto
         {

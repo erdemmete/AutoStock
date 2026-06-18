@@ -1,0 +1,542 @@
+@model AutoStock.WEB.Models.Admin.Workshops.AdminWorkshopUserDetailViewModel
+
+@{
+    ViewData["Title"] = "Kullanıcı Yönetimi";
+
+    var resetPasswordToken = TempData["ResetPasswordToken"] as string;
+    var resetPasswordExpiresAt = TempData["ResetPasswordExpiresAt"] as string;
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}".TrimEnd('/');
+    var passwordResetUrl = !string.IsNullOrWhiteSpace(resetPasswordToken)
+        ? $"{baseUrl}/Auth/PasswordReset?token={Uri.EscapeDataString(resetPasswordToken)}"
+        : null;
+
+    string StatusText(bool isActive) => isActive ? "Aktif" : "Pasif";
+    string StatusClass(bool isActive) => isActive ? "success" : "danger";
+}
+
+<div class="admin-user-page">
+    <div class="admin-user-shell">
+        <div class="admin-user-topbar">
+            <a href="/Admin/Workshops/Details/@Model.WorkshopId" class="admin-back-link">← Servis detayına dön</a>
+            <span class="admin-user-workshop">@Model.WorkshopName</span>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(passwordResetUrl))
+        {
+            <div class="reset-link-panel">
+                <div>
+                    <strong>Şifre sıfırlama bağlantısı hazır.</strong>
+                    <p>Bağlantı @resetPasswordExpiresAt tarihine kadar geçerlidir.</p>
+                </div>
+                <input type="text" value="@passwordResetUrl" readonly />
+            </div>
+        }
+
+        <section class="admin-user-hero">
+            <div class="admin-user-avatar">
+                @(!string.IsNullOrWhiteSpace(Model.FullName) ? Model.FullName.Trim()[0].ToString().ToUpperInvariant() : "K")
+            </div>
+            <div class="admin-user-title">
+                <h1>@Model.FullName</h1>
+                <div class="admin-user-meta">
+                    <span>@Model.UserName</span>
+                    <span>@Model.Email</span>
+                    <span class="status-badge @StatusClass(Model.IsActive)">@StatusText(Model.IsActive)</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="admin-user-grid">
+            <section class="admin-user-card admin-user-form-card">
+                <div class="section-heading">
+                    <div>
+                        <span class="eyebrow">Kullanıcı Detayı</span>
+                        <h2>Düzenle</h2>
+                    </div>
+                    <span class="status-badge secondary">@Model.Role</span>
+                </div>
+
+                <form asp-action="UpdateWorkshopUser"
+                      asp-controller="Admin"
+                      asp-route-workshopId="@Model.WorkshopId"
+                      asp-route-userId="@Model.UserId"
+                      method="post"
+                      data-sente-confirm
+                      data-sente-confirm-title="Kullanıcı güncellensin mi?"
+                      data-sente-confirm-message="Rol veya aktiflik değiştiyse kullanıcının mevcut oturumu yenilenir."
+                      data-sente-confirm-text="Güncelle">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" asp-for="WorkshopId" />
+                    <input type="hidden" asp-for="WorkshopName" />
+                    <input type="hidden" asp-for="UserId" />
+                    <input type="hidden" asp-for="CreatedAt" />
+                    <input type="hidden" asp-for="LastLoginAt" />
+                    <input type="hidden" asp-for="LastLoginIpAddress" />
+
+                    <div class="form-grid">
+                        <label>
+                            <span>Ad soyad</span>
+                            <input asp-for="FullName" />
+                            <span asp-validation-for="FullName" class="field-error"></span>
+                        </label>
+
+                        <label>
+                            <span>Kullanıcı adı</span>
+                            <input asp-for="UserName" />
+                            <span asp-validation-for="UserName" class="field-error"></span>
+                        </label>
+
+                        <label>
+                            <span>E-posta</span>
+                            <input asp-for="Email" type="email" />
+                        </label>
+
+                        <label>
+                            <span>Telefon</span>
+                            <input asp-for="PhoneNumber" />
+                        </label>
+                    </div>
+
+                    <div class="permission-panel">
+                        <div>
+                            <span class="eyebrow">Rolü Değiştir</span>
+                            <p>Kullanıcının servis içindeki yetkisini belirleyin.</p>
+                        </div>
+
+                        <select asp-for="Role">
+                            <option value="Owner">Owner</option>
+                            <option value="Staff">Staff</option>
+                        </select>
+                    </div>
+
+                    <label class="status-toggle">
+                        <input asp-for="IsActive" type="checkbox" />
+                        <span>
+                            <strong>Aktif kullanıcı</strong>
+                            <small>Pasife alınan kullanıcı giriş yapamaz; mevcut tokenları geçersizleşir.</small>
+                        </span>
+                    </label>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary-custom">Değişiklikleri Kaydet</button>
+                    </div>
+                </form>
+            </section>
+
+            <aside class="admin-user-card admin-user-side">
+                <div class="section-heading compact">
+                    <div>
+                        <span class="eyebrow">Özet</span>
+                        <h2>Hesap Bilgileri</h2>
+                    </div>
+                </div>
+
+                <dl class="info-list">
+                    <div>
+                        <dt>Bağlı servis</dt>
+                        <dd>@Model.WorkshopName</dd>
+                    </div>
+                    <div>
+                        <dt>Rol</dt>
+                        <dd>@Model.Role</dd>
+                    </div>
+                    <div>
+                        <dt>Oluşturulma</dt>
+                        <dd>@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+                    </div>
+                    <div>
+                        <dt>Son giriş</dt>
+                        <dd>
+                            @if (Model.LastLoginAt.HasValue)
+                            {
+                                <span>@Model.LastLoginAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                                @if (!string.IsNullOrWhiteSpace(Model.LastLoginIpAddress))
+                                {
+                                    <small>@Model.LastLoginIpAddress</small>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Henüz giriş yok</span>
+                            }
+                        </dd>
+                    </div>
+                </dl>
+
+                <div class="side-actions">
+                    <form asp-action="CreateWorkshopUserPasswordResetLink"
+                          asp-controller="Admin"
+                          asp-route-workshopId="@Model.WorkshopId"
+                          asp-route-userId="@Model.UserId"
+                          method="post"
+                          data-sente-confirm
+                          data-sente-confirm-title="Şifre sıfırlama bağlantısı oluşturulsun mu?"
+                          data-sente-confirm-message="Önceki aktif şifre sıfırlama bağlantıları geçersiz olur."
+                          data-sente-confirm-text="Bağlantı Oluştur">
+                        @Html.AntiForgeryToken()
+
+                        <button type="submit" class="btn-secondary-custom" disabled="@(!Model.IsActive)">
+                            Şifre Sıfırlama Bağlantısı Oluştur
+                        </button>
+                    </form>
+
+                    <form asp-action="UpdateWorkshopUser"
+                          asp-controller="Admin"
+                          asp-route-workshopId="@Model.WorkshopId"
+                          asp-route-userId="@Model.UserId"
+                          method="post"
+                          data-sente-confirm
+                          data-sente-confirm-title="Kullanıcı durumu değişsin mi?"
+                          data-sente-confirm-message="Bu işlem kullanıcının mevcut oturumunu geçersiz kılar."
+                          data-sente-confirm-text="Onayla"
+                          data-sente-confirm-danger="@Model.IsActive.ToString().ToLowerInvariant()">
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" asp-for="WorkshopId" />
+                        <input type="hidden" asp-for="WorkshopName" />
+                        <input type="hidden" asp-for="UserId" />
+                        <input type="hidden" asp-for="FullName" />
+                        <input type="hidden" asp-for="UserName" />
+                        <input type="hidden" asp-for="Email" />
+                        <input type="hidden" asp-for="PhoneNumber" />
+                        <input type="hidden" asp-for="Role" />
+                        <input type="hidden" name="IsActive" value="@(!Model.IsActive)" />
+                        <input type="hidden" asp-for="CreatedAt" />
+                        <input type="hidden" asp-for="LastLoginAt" />
+                        <input type="hidden" asp-for="LastLoginIpAddress" />
+
+                        <button type="submit" class="@(Model.IsActive ? "btn-danger-custom" : "btn-success-custom")">
+                            @(Model.IsActive ? "Pasife Al" : "Aktifleştir")
+                        </button>
+                    </form>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<style>
+    .admin-user-page {
+        min-height: calc(100vh - 80px);
+        padding: 32px 20px 56px;
+        background: #f4f7fb;
+    }
+
+    .admin-user-shell {
+        width: min(1180px, 100%);
+        margin: 0 auto;
+    }
+
+    .admin-user-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .admin-back-link {
+        color: #2563eb;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .admin-user-workshop {
+        color: #64748b;
+        font-weight: 800;
+    }
+
+    .reset-link-panel,
+    .admin-user-hero,
+    .admin-user-card {
+        border: 1px solid #dbe6f5;
+        border-radius: 24px;
+        background: #fff;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
+    }
+
+    .reset-link-panel {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 1.4fr);
+        gap: 18px;
+        align-items: center;
+        padding: 18px;
+        margin-bottom: 18px;
+        border-color: #bfdbfe;
+        background: #eff6ff;
+    }
+
+    .reset-link-panel p {
+        margin: 4px 0 0;
+        color: #64748b;
+    }
+
+    .reset-link-panel input {
+        width: 100%;
+        border: 1px solid #bfdbfe;
+        border-radius: 14px;
+        padding: 13px 14px;
+        color: #0f172a;
+        background: #fff;
+        font-weight: 700;
+    }
+
+    .admin-user-hero {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 28px;
+        margin-bottom: 22px;
+        background: linear-gradient(135deg, #fff 0%, #eef4ff 100%);
+    }
+
+    .admin-user-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 22px;
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: 30px;
+        font-weight: 900;
+        background: linear-gradient(135deg, #2563eb, #22c1dc);
+    }
+
+    .admin-user-title h1 {
+        margin: 0;
+        color: #0f172a;
+        font-size: clamp(28px, 4vw, 44px);
+        font-weight: 900;
+    }
+
+    .admin-user-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+        color: #64748b;
+        font-weight: 800;
+    }
+
+    .admin-user-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 22px;
+        align-items: start;
+    }
+
+    .admin-user-card {
+        padding: 24px;
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .section-heading h2 {
+        margin: 4px 0 0;
+        color: #0f172a;
+        font-size: 24px;
+        font-weight: 900;
+    }
+
+    .eyebrow {
+        color: #2563eb;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .form-grid label,
+    .permission-panel,
+    .status-toggle {
+        display: block;
+    }
+
+    .form-grid span:first-child,
+    .permission-panel p,
+    .status-toggle small {
+        color: #64748b;
+        font-weight: 800;
+    }
+
+    .form-grid input,
+    .permission-panel select {
+        width: 100%;
+        margin-top: 8px;
+        border: 1px solid #d7e1ef;
+        border-radius: 16px;
+        padding: 14px 15px;
+        color: #0f172a;
+        font-weight: 800;
+        outline: none;
+        background: #fff;
+    }
+
+    .form-grid input:focus,
+    .permission-panel select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+    }
+
+    .field-error {
+        display: block;
+        margin-top: 6px;
+        color: #dc2626;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .permission-panel,
+    .status-toggle {
+        margin-top: 18px;
+        border: 1px solid #dbe6f5;
+        border-radius: 18px;
+        padding: 18px;
+        background: #f8fbff;
+    }
+
+    .permission-panel {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 180px;
+        gap: 16px;
+        align-items: center;
+    }
+
+    .permission-panel p {
+        margin: 6px 0 0;
+    }
+
+    .status-toggle {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        cursor: pointer;
+    }
+
+    .status-toggle input {
+        width: 22px;
+        height: 22px;
+        accent-color: #2563eb;
+    }
+
+    .status-toggle strong {
+        display: block;
+        color: #0f172a;
+    }
+
+    .status-toggle small {
+        display: block;
+        margin-top: 3px;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 22px;
+    }
+
+    .info-list {
+        display: grid;
+        gap: 14px;
+        margin: 0;
+    }
+
+    .info-list div {
+        border-bottom: 1px solid #edf2f7;
+        padding-bottom: 14px;
+    }
+
+    .info-list dt {
+        color: #64748b;
+        font-weight: 800;
+        font-size: 13px;
+    }
+
+    .info-list dd {
+        margin: 5px 0 0;
+        color: #0f172a;
+        font-weight: 900;
+    }
+
+    .info-list small {
+        display: block;
+        margin-top: 3px;
+        color: #64748b;
+    }
+
+    .side-actions {
+        display: grid;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .side-actions button {
+        width: 100%;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-size: 13px;
+        font-weight: 900;
+    }
+
+    .status-badge.success {
+        color: #047857;
+        background: #d1fae5;
+    }
+
+    .status-badge.danger {
+        color: #b91c1c;
+        background: #fee2e2;
+    }
+
+    .status-badge.secondary {
+        color: #334155;
+        background: #e2e8f0;
+    }
+
+    @@media (max-width: 900px) {
+        .admin-user-grid,
+        .reset-link-panel {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-user-topbar,
+        .admin-user-hero,
+        .section-heading,
+        .permission-panel {
+            align-items: stretch;
+            grid-template-columns: 1fr;
+        }
+
+        .admin-user-hero,
+        .admin-user-topbar,
+        .section-heading {
+            flex-direction: column;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions .btn-primary-custom {
+            width: 100%;
+        }
+    }
+</style>

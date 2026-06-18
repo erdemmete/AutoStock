@@ -25,5 +25,9 @@ namespace AutoStock.Repositories.Entities
         public WorkshopProfile? Profile { get; set; }
 
         public ICollection<WorkshopPartner> Partners { get; set; } = new List<WorkshopPartner>();
+
+        public bool QrGenerationEnabled { get; set; } = true;
+
+        public int QrGenerationLimit { get; set; } = 50;
     }
 }

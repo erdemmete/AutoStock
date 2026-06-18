@@ -18,5 +18,7 @@
 
     Auth = 50,
 
-    SupportRequest = 60
+    SupportRequest = 60,
+
+    VehicleQrCode = 70
 }

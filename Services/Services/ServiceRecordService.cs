@@ -248,17 +248,23 @@ public class ServiceRecordService : IServiceRecordService
                 .Fail("Servis kaydı bulunamadı.");
         }
 
+        var assignedQrCode = await _context.VehicleQrCodes
+            .AsNoTracking()
+            .Where(x =>
+                x.WorkshopId == workshopId &&
+                x.VehicleId == serviceRecord.VehicleId &&
+                x.Status == VehicleQrCodeStatus.Assigned)
+            .OrderByDescending(x => x.AssignedAt)
+            .Select(x => x.Code)
+            .FirstOrDefaultAsync();
+
         var dto = new ServiceRecordDetailDto
         {
             Id = serviceRecord.Id,
             RecordNumber = serviceRecord.RecordNumber,
             VehicleId = serviceRecord.VehicleId,
-            HasAssignedQrCode = await _context.VehicleQrCodes
-                .AsNoTracking()
-                .AnyAsync(x =>
-                    x.WorkshopId == workshopId &&
-                    x.VehicleId == serviceRecord.VehicleId &&
-                    x.IsAssigned),
+            HasAssignedQrCode = !string.IsNullOrWhiteSpace(assignedQrCode),
+            AssignedQrCode = assignedQrCode,
             Status = serviceRecord.Status,
 
             CustomerName = serviceRecord.CustomerNameSnapshot,

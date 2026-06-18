@@ -1,9 +1,11 @@
 ﻿@model AutoStock.WEB.Models.Invoices.InvoiceIndexViewModel
 @using AutoStock.Repositories.Enums
 @using AutoStock.WEB.Models.Invoices
+@using Microsoft.AspNetCore.Http
 
 @{
     ViewData["Title"] = "Faturalar";
+    var isOwner = string.Equals(Context.Session.GetString("UserRole"), "Owner", StringComparison.OrdinalIgnoreCase);
 
     var invoices = Model.Invoices.Items ?? new List<InvoiceListItemViewModel>();
 
@@ -59,14 +61,17 @@
                 <p>Hazırlanan, onaylanan ve iptal edilen faturaları tek ekrandan takip edin.</p>
             </div>
         </div>
-        <div class="inv-hero-actions">
-            <a asp-controller="Invoices"
-               asp-action="Export"
-               class="inv-export-btn">
-                <span>⇩</span>
-                <strong>Faturaları Dışa Aktar</strong>
-            </a>
-        </div>
+        @if (isOwner)
+        {
+            <div class="inv-hero-actions">
+                <a asp-controller="Invoices"
+                   asp-action="Export"
+                   class="inv-export-btn">
+                    <span>⇩</span>
+                    <strong>Faturaları Dışa Aktar</strong>
+                </a>
+            </div>
+        }
 
     </section>
 

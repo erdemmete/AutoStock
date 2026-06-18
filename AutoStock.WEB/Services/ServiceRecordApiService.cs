@@ -2,6 +2,7 @@
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Customers;
 using AutoStock.Services.Dtos.ServiceRecords;
+using AutoStock.Services.Dtos.VehicleQrCodes;
 using AutoStock.Services.Dtos.Vehicles;
 using AutoStock.Web.Models.ServiceRecords;
 using AutoStock.WEB.Models.Common;
@@ -98,6 +99,49 @@ namespace AutoStock.WEB.Services
                 "/api/VehicleQrCodes/assign",
                 request,
                 "QR kod araca atanırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<VehicleQrCodeActionResultDto>> CreateVehicleQrCodeAsync(int vehicleId)
+        {
+            return await PostJsonAsync<object, VehicleQrCodeActionResultDto>(
+                $"/api/VehicleQrCodes/vehicles/{vehicleId}/create",
+                new { },
+                "Araç QR'ı oluşturulurken hata oluştu.");
+        }
+
+        public async Task<(bool Success, byte[] Content, string ContentType, string? ErrorMessage)> DownloadVehicleQrPngAsync(
+            int vehicleId,
+            string publicBaseUrl)
+        {
+            try
+            {
+                var url = BuildUrlWithQuery(
+                    $"/api/VehicleQrCodes/vehicles/{vehicleId}/png",
+                    new Dictionary<string, string?>
+                    {
+                        ["publicBaseUrl"] = publicBaseUrl
+                    });
+
+                var client = CreateApiClient();
+                using var response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    return (false, Array.Empty<byte>(), "image/png", string.IsNullOrWhiteSpace(error)
+                        ? "QR görseli indirilemedi."
+                        : error);
+                }
+
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/png";
+
+                return (true, bytes, contentType, null);
+            }
+            catch
+            {
+                return (false, Array.Empty<byte>(), "image/png", "QR görseli indirilemedi.");
+            }
         }
 
         public async Task<ApiResponse<object>> UpdateRequestItemAsync(

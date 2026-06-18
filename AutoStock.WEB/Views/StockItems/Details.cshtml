@@ -1,9 +1,12 @@
 ﻿@model AutoStock.WEB.Models.StockItems.StockItemDetailViewModel
 
+@using Microsoft.AspNetCore.Http
+
 @{
     ViewData["Title"] = "Stok Detayı";
 
     var isCritical = Model.Quantity <= Model.MinimumQuantity;
+    var isOwner = string.Equals(Context.Session.GetString("UserRole"), "Owner", StringComparison.OrdinalIgnoreCase);
 
     string GetMovementBadgeClass(string? movementType)
     {
@@ -53,13 +56,16 @@
             </div>
         </div>
 
-        <a asp-controller="StockItems"
-           asp-action="Edit"
-           asp-route-id="@Model.Id"
-           class="stk-edit-hero-btn">
-            <span>✎</span>
-            <strong>Düzenle</strong>
-        </a>
+        @if (isOwner)
+        {
+            <a asp-controller="StockItems"
+               asp-action="Edit"
+               asp-route-id="@Model.Id"
+               class="stk-edit-hero-btn">
+                <span>✎</span>
+                <strong>Düzenle</strong>
+            </a>
+        }
     </section>
 
     <section class="stk-summary-grid">
@@ -190,29 +196,38 @@
                     Stok Girişi Yap
                 </button>
 
-                <button type="button"
-                        class="stk-action-btn primary"
-                        onclick="openAdjustStockModal()">
-                    Stok Miktarını Düzelt
-                </button>
-
-                <a asp-controller="StockItems"
-                   asp-action="Edit"
-                   asp-route-id="@Model.Id"
-                   class="stk-action-btn warning">
-                    Stok Kartını Düzenle
-                </a>
-
-                <form asp-controller="StockItems"
-                      asp-action="SetPassive"
-                      asp-route-id="@Model.Id"
-                      method="post"
-                      onsubmit="return confirm('Bu stok kartını silmek istediğinize emin misiniz?');">
-
-                    <button type="submit" class="stk-action-btn danger">
-                        Stok Kartını Sil
+                @if (isOwner)
+                {
+                    <button type="button"
+                            class="stk-action-btn primary"
+                            onclick="openAdjustStockModal()">
+                        Stok Miktarını Düzelt
                     </button>
-                </form>
+                }
+
+                @if (isOwner)
+                {
+                    <a asp-controller="StockItems"
+                       asp-action="Edit"
+                       asp-route-id="@Model.Id"
+                       class="stk-action-btn warning">
+                        Stok Kartını Düzenle
+                    </a>
+                }
+
+                @if (isOwner)
+                {
+                    <form asp-controller="StockItems"
+                          asp-action="SetPassive"
+                          asp-route-id="@Model.Id"
+                          method="post"
+                          onsubmit="return confirm('Bu stok kartını silmek istediğinize emin misiniz?');">
+
+                        <button type="submit" class="stk-action-btn danger">
+                            Stok Kartını Sil
+                        </button>
+                    </form>
+                }
             </div>
         </aside>
     </section>

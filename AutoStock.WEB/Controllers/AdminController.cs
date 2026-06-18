@@ -327,6 +327,65 @@ namespace AutoStock.WEB.Controllers
                     : "Kullanıcı pasifleştirildi.");
         }
 
+        [HttpGet("Admin/Workshops/{workshopId:int}/Users/{userId:int}")]
+        public async Task<IActionResult> WorkshopUserDetails(int workshopId, int userId)
+        {
+            if (!IsAdmin)
+                return RedirectToLogin();
+
+            if (workshopId <= 0 || userId <= 0)
+            {
+                ShowError("Geçersiz kullanıcı bilgisi.");
+                return RedirectToAction(nameof(Workshops));
+            }
+
+            var result = await _adminWorkshopApiService.GetUserDetailAsync(workshopId, userId);
+
+            if (result.IsFailure || result.Data == null)
+            {
+                ShowError(result.ErrorMessage ?? "Kullanıcı detayı alınırken hata oluştu.");
+                return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+            }
+
+            return View("WorkshopUserDetails", result.Data);
+        }
+
+        [HttpPost("Admin/Workshops/{workshopId:int}/Users/{userId:int}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateWorkshopUser(int workshopId, int userId, AdminWorkshopUserDetailViewModel model)
+        {
+            if (!IsAdmin)
+                return RedirectToLogin();
+
+            if (workshopId <= 0 || userId <= 0 || workshopId != model.WorkshopId || userId != model.UserId)
+            {
+                ShowError("Geçersiz kullanıcı bilgisi.");
+                return RedirectToAction(nameof(Workshops));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ShowError("Lütfen zorunlu alanları kontrol edin.");
+                return View("WorkshopUserDetails", model);
+            }
+
+            var result = await _adminWorkshopApiService.UpdateUserAsync(model);
+
+            if (result.IsFailure)
+            {
+                if (result.ErrorMessages.Any())
+                    ShowErrors(result.ErrorMessages);
+                else
+                    ShowError(result.ErrorMessage ?? "Kullanıcı bilgileri güncellenirken hata oluştu.");
+
+                return View("WorkshopUserDetails", model);
+            }
+
+            ShowSuccess("Kullanıcı bilgileri güncellendi.");
+
+            return RedirectToAction(nameof(WorkshopUserDetails), new { workshopId, userId });
+        }
+
         [HttpPost("Admin/Workshops/{workshopId:int}/Users/{userId:int}/PasswordResetLink")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateWorkshopUserPasswordResetLink(int workshopId, int userId)
@@ -351,14 +410,14 @@ namespace AutoStock.WEB.Controllers
                 else
                     ShowError(result.ErrorMessage ?? "Şifre sıfırlama bağlantısı oluşturulurken hata oluştu.");
 
-                return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+                return RedirectToAction(nameof(WorkshopUserDetails), new { workshopId, userId });
             }
 
             StorePasswordResetLinkTempData(result.Data);
 
             ShowSuccess("Şifre sıfırlama bağlantısı oluşturuldu.");
 
-            return RedirectToAction(nameof(WorkshopDetails), new { id = workshopId });
+            return RedirectToAction(nameof(WorkshopUserDetails), new { workshopId, userId });
         }
 
 

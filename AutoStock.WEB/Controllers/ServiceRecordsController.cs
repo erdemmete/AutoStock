@@ -290,11 +290,85 @@ public class ServiceRecordsController : BaseController
         var result = await _serviceRecordApiService.AssignQrCodeAsync(vehicleId, code);
 
         if (result.IsFailure)
-            return BadRequest(result.ErrorMessages.FirstOrDefault()
-                ?? result.ErrorMessage
-                ?? "QR kod araca bağlanamadı.");
+            return BadRequest(new
+            {
+                success = false,
+                message = result.ErrorMessages.FirstOrDefault()
+                    ?? result.ErrorMessage
+                    ?? "QR kod araca bağlanamadı."
+            });
 
-        return Ok(result);
+        return Ok(new
+        {
+            success = true,
+            message = "QR kod araca bağlandı."
+        });
+    }
+
+    [HttpPost("ServiceRecords/CreateVehicleQrCode")]
+    public async Task<IActionResult> CreateVehicleQrCode(int vehicleId)
+    {
+        if (vehicleId <= 0)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "Araç bilgisi geçersiz."
+            });
+        }
+
+        var result = await _serviceRecordApiService.CreateVehicleQrCodeAsync(vehicleId);
+
+        if (result.IsFailure || result.Data is null)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = result.ErrorMessages.FirstOrDefault()
+                    ?? result.ErrorMessage
+                    ?? "Araç QR'ı oluşturulamadı."
+            });
+        }
+
+        return Json(new
+        {
+            success = true,
+            message = result.Data.ReplacedExistingQr
+                ? "Araç QR'ı değiştirildi."
+                : "Araç QR'ı oluşturuldu.",
+            code = result.Data.Code,
+            vehicleId = result.Data.VehicleId,
+            replacedExistingQr = result.Data.ReplacedExistingQr
+        });
+    }
+
+    [HttpGet("ServiceRecords/VehicleQr/{vehicleId:int}/Download")]
+    public async Task<IActionResult> DownloadVehicleQr(int vehicleId)
+    {
+        var publicBaseUrl = $"{Request.Scheme}://{Request.Host}";
+        var result = await _serviceRecordApiService.DownloadVehicleQrPngAsync(vehicleId, publicBaseUrl);
+
+        if (!result.Success)
+        {
+            ShowError(result.ErrorMessage ?? "QR görseli indirilemedi.");
+            var referer = Request.Headers.Referer.ToString();
+
+            if (!string.IsNullOrWhiteSpace(referer) &&
+                Url.IsLocalUrl(new Uri(referer, UriKind.RelativeOrAbsolute).IsAbsoluteUri
+                    ? new Uri(referer).PathAndQuery
+                    : referer))
+            {
+                var localReferer = new Uri(referer, UriKind.RelativeOrAbsolute).IsAbsoluteUri
+                    ? new Uri(referer).PathAndQuery
+                    : referer;
+
+                return Redirect(localReferer);
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        return File(result.Content, result.ContentType, $"arac-{vehicleId}-qr.png");
     }
 
    
@@ -335,6 +409,13 @@ public class ServiceRecordsController : BaseController
     [HttpPost("ServiceRecords/UpdateStatus")]
     public async Task<IActionResult> UpdateStatus(UpdateServiceRecordStatusViewModel model)
     {
+        if (model.Status == (int)ServiceRecordStatus.Cancelled)
+        {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+        }
+
         var result = await _serviceRecordApiService.UpdateStatusAsync(model);
 
         if (result.IsFailure)

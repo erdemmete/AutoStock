@@ -31,9 +31,19 @@ namespace AutoStockAPI.Controllers
 
             var qr = await _context.VehicleQrCodes
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Code == qrCode);
+                .Include(x => x.Workshop)
+                .Include(x => x.Vehicle)
+                .FirstOrDefaultAsync(x =>
+                    x.Code == qrCode &&
+                    x.Status == VehicleQrCodeStatus.Assigned &&
+                    x.WorkshopId.HasValue &&
+                    x.VehicleId.HasValue &&
+                    x.Workshop != null &&
+                    x.Workshop.IsActive &&
+                    x.Vehicle != null &&
+                    x.Vehicle.IsActive);
 
-            if (qr is null || !qr.VehicleId.HasValue)
+            if (qr is null || !qr.VehicleId.HasValue || !qr.WorkshopId.HasValue)
                 return NotFound("QR kod bulunamadı veya araca atanmamış.");
 
             var record = await _context.ServiceRecords
@@ -47,6 +57,7 @@ namespace AutoStockAPI.Controllers
                 .Include(x => x.RequestItems)
                 .FirstOrDefaultAsync(x =>
                     x.Id == serviceRecordId &&
+                    x.WorkshopId == qr.WorkshopId.Value &&
                     x.VehicleId == qr.VehicleId.Value);
 
             if (record is null)

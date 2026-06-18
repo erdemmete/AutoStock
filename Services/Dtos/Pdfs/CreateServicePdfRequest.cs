@@ -32,6 +32,9 @@
 
         public bool IsPublicMasked { get; set; }
 
+        public string? VehicleQrPublicUrl { get; set; }
+        public byte[]? VehicleQrPngBytes { get; set; }
+
         public List<ServicePdfItemDto> Operations { get; set; } = new();
         public List<ServicePdfRequestGroupDto> RequestGroups { get; set; } = new();
         public List<ServicePdfBankAccountDto> BankAccounts { get; set; } = new();

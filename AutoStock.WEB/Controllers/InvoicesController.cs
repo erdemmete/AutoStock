@@ -111,6 +111,10 @@ public class InvoicesController : BaseController
     [HttpPost("Invoices/Cancel/{id:int}")]
     public async Task<IActionResult> Cancel(int id)
     {
+        var ownerAccess = RequireOwnerAccess();
+        if (ownerAccess is not null)
+            return ownerAccess;
+
         var result = await _invoiceApiService.CancelAsync(id);
 
         if (result.IsFailure)

@@ -6,6 +6,7 @@ using AutoStock.Services.Validators.Customers;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Serilog;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,19 @@ builder.Host.UseSerilog((context, services, configuration) =>
 builder.Services.AddValidatorsFromAssemblyContaining<CreateCustomerDtoValidator>();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddControllers();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("public-qr", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
 
 
 builder.Services.AddEndpointsApiExplorer();
@@ -63,6 +77,7 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseMiddleware<AuditContextMiddleware>();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 

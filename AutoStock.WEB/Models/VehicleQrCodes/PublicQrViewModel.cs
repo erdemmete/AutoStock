@@ -4,6 +4,8 @@
     {
         public string Code { get; set; } = null!;
 
+        public string? WorkshopName { get; set; }
+
         public PublicQrVehicleViewModel Vehicle { get; set; } = new();
 
         public List<PublicQrServiceRecordViewModel> Records { get; set; } = new();
@@ -26,10 +28,8 @@
 
         public string? RecordNumber { get; set; }
 
-        public int Status { get; set; }
+        public DateTime ServiceDate { get; set; }
 
-        public DateTime CreatedAt { get; set; }
-
-        public decimal TotalAmount { get; set; }
+        public List<string> Items { get; set; } = new();
     }
 }

@@ -22,6 +22,10 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("AccountingInvoiceRequests/Recipients")]
         public async Task<IActionResult> Recipients()
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var result = await _accountingInvoiceRequestApiService.GetRecipientsAsync();
 
             if (result.IsFailure)
@@ -33,6 +37,10 @@ namespace AutoStock.WEB.Controllers
         [HttpPost("AccountingInvoiceRequests/Recipients")]
         public async Task<IActionResult> SaveRecipient([FromBody] CreateAccountingEmailRecipientDto model)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var result = await _accountingInvoiceRequestApiService.SaveRecipientAsync(model);
 
             if (result.IsFailure)
@@ -44,6 +52,10 @@ namespace AutoStock.WEB.Controllers
         [HttpPost("AccountingInvoiceRequests/Send")]
         public async Task<IActionResult> Send([FromBody] SendAccountingInvoiceRequestViewModel model)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             if (model is null || model.InvoiceId <= 0)
             {
                 return BadRequest(new
@@ -66,6 +78,10 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("AccountingInvoiceRequests/Invoice/{invoiceId:int}/Status")]
         public async Task<IActionResult> InvoiceStatus(int invoiceId)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var result = await _accountingInvoiceRequestApiService.GetInvoiceStatusAsync(invoiceId);
 
             if (result.IsFailure)
@@ -77,6 +93,10 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("AccountingInvoiceRequests/OfficialDocument/{documentId:int}/Download")]
         public async Task<IActionResult> DownloadOfficialDocument(int documentId)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var result = await _accountingInvoiceRequestApiService.DownloadOfficialInvoiceAsync(documentId);
 
             if (!result.IsSuccess)

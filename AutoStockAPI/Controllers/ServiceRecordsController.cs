@@ -1,4 +1,5 @@
 ﻿using AutoStock.Services.Constants;
+using AutoStock.Repositories.Enums;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Services.Interfaces;
@@ -9,7 +10,7 @@ namespace AutoStock.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
+[Authorize(Roles = AppRoles.OwnerOrStaff)]
 public class ServiceRecordsController : BaseApiController
 {
     private readonly IServiceRecordService _serviceRecordService;
@@ -158,6 +159,12 @@ public class ServiceRecordsController : BaseApiController
         int id,
         UpdateServiceRecordStatusRequest request)
     {
+        if (request.Status == (int)ServiceRecordStatus.Cancelled &&
+            !string.Equals(GetCurrentUserRole(), AppRoles.Owner, StringComparison.Ordinal))
+        {
+            return Forbid();
+        }
+
         var workshopIdResult = GetCurrentWorkshopId();
 
         if (workshopIdResult.IsFailure)

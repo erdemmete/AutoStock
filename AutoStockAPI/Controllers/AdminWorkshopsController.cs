@@ -58,10 +58,26 @@ namespace AutoStock.API.Controllers
             return StatusCode((int)result.StatusCode, result);
         }
 
+        [HttpGet("{workshopId:int}/users/{userId:int}")]
+        public async Task<IActionResult> GetUserDetail(int workshopId, int userId)
+        {
+            var result = await _adminWorkshopService.GetUserDetailAsync(workshopId, userId);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
         [HttpPost("{workshopId:int}/users")]
         public async Task<IActionResult> CreateUser(int workshopId, CreateAdminWorkshopUserRequestDto request)
         {
             var result = await _adminWorkshopService.CreateUserAsync(workshopId, request);
+
+            return StatusCode((int)result.StatusCode, result);
+        }
+
+        [HttpPut("{workshopId:int}/users/{userId:int}")]
+        public async Task<IActionResult> UpdateUser(int workshopId, int userId, UpdateAdminWorkshopUserRequestDto request)
+        {
+            var result = await _adminWorkshopService.UpdateUserAsync(workshopId, userId, request);
 
             return StatusCode((int)result.StatusCode, result);
         }

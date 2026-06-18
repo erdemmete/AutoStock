@@ -69,7 +69,7 @@ namespace AutoStock.API.Controllers
             return ToActionResult(result);
         }
 
-        [Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
+        [Authorize(Roles = AppRoles.Owner)]
         [HttpGet("invoices/{invoiceId:int}/status")]
         public async Task<IActionResult> GetInvoiceStatus(int invoiceId)
         {
@@ -85,7 +85,7 @@ namespace AutoStock.API.Controllers
             return ToActionResult(result);
         }
 
-        [Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
+        [Authorize(Roles = AppRoles.Owner)]
         [HttpGet("official-documents/{documentId:int}/download")]
         public async Task<IActionResult> DownloadOfficialInvoice(int documentId)
         {

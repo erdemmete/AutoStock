@@ -7,6 +7,7 @@ using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QRCoder;
 
 namespace AutoStock.API.Controllers
 {
@@ -27,7 +28,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpGet("{serviceRecordId:int}")]
-        public async Task<IActionResult> Create(int serviceRecordId)
+        public async Task<IActionResult> Create(int serviceRecordId, [FromQuery] string? publicBaseUrl)
         {
             var workshopIdResult = GetCurrentWorkshopId();
 
@@ -71,6 +72,19 @@ namespace AutoStock.API.Controllers
                 workshopProfile?.City);
 
             var bankAccounts = await GetServiceFormBankAccountsAsync(workshopId);
+            var activeQrCode = await _context.VehicleQrCodes
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.VehicleId == serviceRecord.VehicleId &&
+                    x.Status == VehicleQrCodeStatus.Assigned)
+                .OrderByDescending(x => x.AssignedAt)
+                .Select(x => x.Code)
+                .FirstOrDefaultAsync();
+
+            var vehicleQrPublicUrl = !string.IsNullOrWhiteSpace(activeQrCode)
+                ? BuildPublicQrUrl(activeQrCode, publicBaseUrl)
+                : null;
 
             var request = new CreateServicePdfRequest
             {
@@ -115,6 +129,10 @@ namespace AutoStock.API.Controllers
                 Note = serviceRecord.ServiceReceptionNote,
 
                 BankAccounts = bankAccounts,
+                VehicleQrPublicUrl = vehicleQrPublicUrl,
+                VehicleQrPngBytes = !string.IsNullOrWhiteSpace(vehicleQrPublicUrl)
+                    ? CreateQrPng(vehicleQrPublicUrl)
+                    : null,
 
                 // ÖNEMLİ:
                 // Servis panelinden oluşturulan belge tam SKF'dir.
@@ -225,6 +243,26 @@ namespace AutoStock.API.Controllers
                 FuelLevel.Full => "Dolu",
                 _ => "-"
             };
+        }
+
+        private static byte[] CreateQrPng(string value)
+        {
+            using var generator = new QRCodeGenerator();
+            using var data = generator.CreateQrCode(value, QRCodeGenerator.ECCLevel.Q);
+            var qrCode = new PngByteQRCode(data);
+            return qrCode.GetGraphic(10);
+        }
+
+        private string BuildPublicQrUrl(string code, string? publicBaseUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(publicBaseUrl) &&
+                Uri.TryCreate(publicBaseUrl.Trim(), UriKind.Absolute, out var baseUri) &&
+                (baseUri.Scheme == Uri.UriSchemeHttps || baseUri.Scheme == Uri.UriSchemeHttp))
+            {
+                return new Uri(baseUri, $"/qr/{Uri.EscapeDataString(code)}").ToString();
+            }
+
+            return $"{Request.Scheme}://{Request.Host}/qr/{Uri.EscapeDataString(code)}";
         }
     }
 }

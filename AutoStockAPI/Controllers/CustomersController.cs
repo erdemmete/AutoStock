@@ -9,7 +9,7 @@ using System.Net;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
+[Authorize(Roles = AppRoles.OwnerOrStaff)]
 public class CustomersController : BaseApiController
 {
     private readonly ICustomerService _customerService;
@@ -35,6 +35,7 @@ public class CustomersController : BaseApiController
     }
 
     [HttpGet]
+    [Authorize(Roles = AppRoles.Owner)]
     public async Task<IActionResult> GetList([FromQuery] CustomerListQueryDto query)
     {
         var workshopIdResult = GetCurrentWorkshopId();
@@ -48,7 +49,19 @@ public class CustomersController : BaseApiController
     }
 
     [HttpPost]
+    [Authorize(Roles = AppRoles.Owner)]
     public async Task<IActionResult> Create(CreateCustomerDto request)
+    {
+        return await CreateCustomerAsync(request);
+    }
+
+    [HttpPost("quick-create")]
+    public async Task<IActionResult> QuickCreate(CreateCustomerDto request)
+    {
+        return await CreateCustomerAsync(request);
+    }
+
+    private async Task<IActionResult> CreateCustomerAsync(CreateCustomerDto request)
     {
         var workshopIdResult = GetCurrentWorkshopId();
 
@@ -61,6 +74,7 @@ public class CustomersController : BaseApiController
     }
 
     [HttpGet("{id:int}")]
+    [Authorize(Roles = AppRoles.Owner)]
     public async Task<IActionResult> GetById(int id)
     {
         var workshopIdResult = GetCurrentWorkshopId();
@@ -74,6 +88,7 @@ public class CustomersController : BaseApiController
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = AppRoles.Owner)]
     public async Task<IActionResult> Update(int id, UpdateCustomerDto request)
     {
         if (id != request.Id)
@@ -96,6 +111,7 @@ public class CustomersController : BaseApiController
     }
 
     [HttpPost("{id:int}/passive")]
+    [Authorize(Roles = AppRoles.Owner)]
     public async Task<IActionResult> SetPassive(int id)
     {
         var workshopIdResult = GetCurrentWorkshopId();

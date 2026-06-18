@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AutoStock.API.Controllers
 {
-    [Authorize(Roles = AppRoles.Owner + "," + AppRoles.Staff)]
+    [Authorize(Roles = AppRoles.OwnerOrStaff)]
     [ApiController]
     [Route("api/[controller]")]
     public class InvoicesController : BaseApiController
@@ -160,6 +160,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost("{invoiceId:int}/cancel")]
+        [Authorize(Roles = AppRoles.Owner)]
         public async Task<IActionResult> Cancel(int invoiceId)
         {
             var workshopIdResult = GetCurrentWorkshopId();

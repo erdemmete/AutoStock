@@ -32,8 +32,10 @@ namespace AutoStock.WEB.Controllers
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", token);
 
+            var publicBaseUrl = Uri.EscapeDataString($"{Request.Scheme}://{Request.Host}");
+
             var response = await client.GetAsync(
-                $"{apiBaseUrl}/api/ServicePdfs/{serviceRecordId}");
+                $"{apiBaseUrl}/api/ServicePdfs/{serviceRecordId}?publicBaseUrl={publicBaseUrl}");
 
             var fileBytes = await response.Content.ReadAsByteArrayAsync();
 

@@ -1,12 +1,27 @@
 @model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
+@using Microsoft.AspNetCore.Http
 
 @{
+    var isOwner = string.Equals(Context.Session.GetString("UserRole"), "Owner", StringComparison.OrdinalIgnoreCase);
+
     string FormatMoney(decimal value) => SenteMoney.Format(value);
 
     var estimatedTotal = Model.RequestItems.Sum(x => x.EstimatedAmount ?? 0);
     var subTotal = Model.TotalAmount;
     var vatTotal = subTotal * 0.20m;
     var grandTotal = subTotal + vatTotal;
+    var publicQrUrl = !string.IsNullOrWhiteSpace(Model.AssignedQrCode)
+        ? $"{Context.Request.Scheme}://{Context.Request.Host}/qr/{Uri.EscapeDataString(Model.AssignedQrCode)}"
+        : string.Empty;
+    var whatsappText = !string.IsNullOrWhiteSpace(publicQrUrl)
+        ? $"Merhaba, aracınızın Sente360 servis geçmişi bağlantısı: {publicQrUrl}"
+        : string.Empty;
+    var whatsappPhone = NormalizePhoneForWhatsApp(Model.CustomerPhone);
+    var whatsappUrl = !string.IsNullOrWhiteSpace(whatsappPhone)
+        ? $"https://wa.me/{whatsappPhone}?text={Uri.EscapeDataString(whatsappText)}"
+        : $"https://wa.me/?text={Uri.EscapeDataString(whatsappText)}";
+    var emailSubject = $"Sente360 araç servis geçmişi - {Model.VehiclePlate}";
+    var emailBody = $"Merhaba,%0D%0A%0D%0AAracınızın Sente360 servis geçmişi bağlantısı:%0D%0A{Uri.EscapeDataString(publicQrUrl)}";
 }
 
 <aside class="srx-side-panel">
@@ -16,7 +31,7 @@
         <div class="srx-summary-card-header">
             <h2>Servis Özeti</h2>
 
-            @if (Model.Status == 1 || Model.Status == 2)
+            @if (isOwner && (Model.Status == 1 || Model.Status == 2))
             {
                 <details class="srx-summary-menu" id="summaryActionMenu">
                     <summary aria-label="Servis özeti işlemleri">…</summary>
@@ -125,64 +140,94 @@
 
             <div class="srx-qr-action-stack"
                  id="qrActionStack"
-                 data-qr-bound="@Model.HasAssignedQrCode.ToString().ToLowerInvariant()">
+                 data-qr-bound="@Model.HasAssignedQrCode.ToString().ToLowerInvariant()"
+                 data-public-url="@publicQrUrl">
                 <button type="button"
-                        class="srx-quick-action-card srx-qr-scan-action @(Model.HasAssignedQrCode ? "is-hidden" : "")"
-                        id="qrScanButton"
-                        onclick="startQrScanner(@Model.VehicleId, this)">
+                        class="srx-quick-action-card srx-qr-create-action @(Model.HasAssignedQrCode ? "is-hidden" : "")"
+                        id="qrCreateButton"
+                        data-action="create-vehicle-qr"
+                        data-vehicle-id="@Model.VehicleId">
                     <span class="srx-quick-icon">QR</span>
                     <span class="srx-quick-copy">
-                        <strong class="srx-quick-title">QR Tara</strong>
-                        <small>Araca kod bağla</small>
+                        <strong class="srx-quick-title">Araç QR'ı Oluştur</strong>
+                        <small>Dijital servis geçmişi</small>
                     </span>
                 </button>
 
-                <div class="srx-quick-action-card srx-qr-bound-control @(Model.HasAssignedQrCode ? "" : "is-hidden")"
-                     id="qrBoundControl">
+                <div class="srx-quick-action-card srx-qr-ready-control @(Model.HasAssignedQrCode ? "" : "is-hidden")"
+                     id="qrReadyControl">
                     <span class="srx-quick-icon success">QR</span>
                     <span class="srx-quick-copy">
-                        <strong class="srx-qr-bound-pill"
-                                id="qrBoundButton">
-                            QR Bağlı
-                        </strong>
+                        <strong class="srx-qr-ready-title">QR Hazır</strong>
+                        <small id="qrPublicLinkText">@(!string.IsNullOrWhiteSpace(publicQrUrl) ? "Araç servis geçmişi bağlantısı hazır" : "Bağlantı hazırlanıyor")</small>
                     </span>
 
-                    <button type="button"
-                            class="srx-qr-change-action"
-                            id="qrChangeButton"
-                            onclick="confirmChangeQrAndStart(@Model.VehicleId, this)">
-                        Değiştir
-                    </button>
-                </div>
-            </div>
+                    <div class="srx-qr-share-actions">
+                        <a class="srx-qr-share-btn"
+                           id="qrWhatsappLink"
+                           href="@whatsappUrl"
+                           target="_blank"
+                           rel="noopener">
+                            WhatsApp
+                        </a>
 
-        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
+                        {
+                            <a class="srx-qr-share-btn"
+                               id="qrEmailLink"
+                               href="mailto:@Model.CustomerEmail?subject=@Uri.EscapeDataString(emailSubject)&body=@emailBody">
+                                E-posta
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="srx-qr-share-btn is-disabled"
+                                  id="qrEmailLink"
+                                  aria-disabled="true">
+                                E-posta
+                            </span>
+                        }
 
-        <div id="qrAssignModal" class="srx-qr-modal" aria-hidden="true">
-            <button type="button"
-                    class="srx-qr-close"
-                    onclick="closeQrAssignModal()"
-                    aria-label="QR kamerayı kapat">
-                ×
-            </button>
+                        <a class="srx-qr-share-btn"
+                           id="qrDownloadLink"
+                           href="/ServiceRecords/VehicleQr/@Model.VehicleId/Download">
+                            İndir
+                        </a>
 
-            <div class="srx-qr-modal-shell" role="dialog" aria-modal="true" aria-label="QR Tara">
-                <div class="srx-qr-scan-panel">
-                    <div id="qr-modal-reader" class="srx-qr-modal-reader"></div>
-                    <div class="srx-qr-scan-frame" aria-hidden="true"></div>
-
-                    <div id="qr-modal-error" class="srx-qr-error-panel" hidden>
-                        <p id="qr-modal-result"></p>
                         <button type="button"
-                                class="srx-qr-retry"
-                                onclick="retryQrAssignScanner()">
-                            Tekrar Dene
+                                class="srx-qr-share-btn danger"
+                                id="qrReplaceButton"
+                                data-action="replace-vehicle-qr"
+                                data-vehicle-id="@Model.VehicleId">
+                            Değiştir
                         </button>
                     </div>
                 </div>
             </div>
+
         </div>
 
     </section>
 
 </aside>
+
+@functions {
+    private static string? NormalizePhoneForWhatsApp(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+            return null;
+
+        var digits = new string(phone.Where(char.IsDigit).ToArray());
+
+        if (string.IsNullOrWhiteSpace(digits))
+            return null;
+
+        if (digits.StartsWith("00"))
+            digits = digits[2..];
+
+        if (digits.StartsWith("0") && digits.Length == 11)
+            digits = "90" + digits[1..];
+
+        return digits;
+    }
+}

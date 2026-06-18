@@ -1,11 +1,14 @@
 @model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
 @using System.Globalization
+@using Microsoft.AspNetCore.Http
 
 @{
     var isDraft = Model.Status == 1;
     var isIssued = Model.Status == 2;
     var isCancelled = Model.Status == 3;
-    var canReceivePayment = true; // API tarafında Owner kontrolü var. Razor User.IsInRole Session token yapısında güvenilir değil.
+    var isOwner = string.Equals(Context.Session.GetString("UserRole"), "Owner", StringComparison.OrdinalIgnoreCase);
+    var canReceivePayment = isOwner;
+    var canUseAccounting = isOwner;
 
     var paidTotal = Model.InvoicePaidTotal < 0 ? 0 : Model.InvoicePaidTotal;
     var remainingAmount = Model.InvoiceRemainingAmount < 0 ? 0 : Model.InvoiceRemainingAmount;
@@ -29,7 +32,10 @@
     var paymentDescription = $"{Model.InvoiceNumber} kalan tahsilatı";
 }
 
-<section class="invoice-action-hub" data-accounting-card data-invoice-id="@Model.Id" data-invoice-status="@Model.Status">
+<section class="invoice-action-hub"
+         data-accounting-card="@(canUseAccounting ? string.Empty : null)"
+         data-invoice-id="@(canUseAccounting ? Model.Id : null)"
+         data-invoice-status="@(canUseAccounting ? Model.Status : null)">
     <div class="invoice-action-hub-main">
         <div class="invoice-action-hub-title">
             <span>Hızlı İşlemler</span>
@@ -48,10 +54,13 @@
                 <small>@BalanceText(Model.CustomerBalance)</small>
             </article>
 
-            <article class="invoice-action-chip accounting" data-accounting-status>
-                <span>Fatura</span>
-                <strong>Kontrol ediliyor</strong>
-            </article>
+            @if (canUseAccounting)
+            {
+                <article class="invoice-action-chip accounting" data-accounting-status>
+                    <span>Fatura</span>
+                    <strong>Kontrol ediliyor</strong>
+                </article>
+            }
         </div>
 
         <div class="invoice-action-hub-buttons">
@@ -98,85 +107,91 @@
         </div>
 
         <div class="invoice-action-drawer-body">
-            <section class="invoice-action-group">
-                <div class="invoice-action-group-head">
-                    <span>Hesap Özeti / Tahsilat</span>
-                    <strong>Ödeme ve ekstre</strong>
-                </div>
-
-                <div class="invoice-action-grid">
-                    <a class="invoice-action-tile"
-                       asp-controller="CurrentAccounts"
-                       asp-action="Customer"
-                       asp-route-customerId="@Model.CustomerId">
-                        <span>₺</span>
-                        <strong>Hesap Özeti</strong>
-                        <small>@BalanceText(Model.CustomerBalance): @Money(Model.CustomerBalance)</small>
-                    </a>
-
-                    @if (isIssued && remainingAmount > 0 && canReceivePayment)
-                    {
-                        <button type="button"
-                                class="invoice-action-tile button"
-                                data-invoice-payment-open
-                                data-amount=""
-                                data-description="@Model.InvoiceNumber kısmi tahsilatı">
-                            <span>＋</span>
-                            <strong>Kısmi Tahsilat</strong>
-                            <small>Manuel tutar gir</small>
-                        </button>
-
-                        <button type="button"
-                                class="invoice-action-tile button green"
-                                data-invoice-payment-open
-                                data-amount="@remainingAmount.ToString(CultureInfo.InvariantCulture)"
-                                data-description="@paymentDescription">
-                            <span>✓</span>
-                            <strong>Tamamını Tahsil Et</strong>
-                            <small>@Money(remainingAmount)</small>
-                        </button>
-                    }
-                    else if (isIssued && remainingAmount <= 0)
-                    {
-                        <div class="invoice-action-info success">
-                            Bu hesap özetinde kalan tahsilat bulunmuyor.
-                        </div>
-                    }
-                    else if (isCancelled)
-                    {
-                        <div class="invoice-action-info muted">
-                            İptal edilen belgede tahsilat alınmaz.
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="invoice-action-info muted">
-                            Tahsilat için hesap özeti onaylanmış olmalıdır.
-                        </div>
-                    }
-                </div>
-            </section>
-
-            <section class="invoice-action-group">
-                <div class="invoice-action-group-head">
-                    <span>Muhasebe</span>
-                    <strong>Fatura hazırlık akışı</strong>
-                </div>
-
-                <div class="invoice-action-accounting-row">
-                    <div class="invoice-action-accounting-status" data-accounting-status>
-                        <strong>Fatura bekleniyor</strong>
-                        <span>Lütfen bekleyin.</span>
+            @if (canReceivePayment)
+            {
+                <section class="invoice-action-group">
+                    <div class="invoice-action-group-head">
+                        <span>Hesap Özeti / Tahsilat</span>
+                        <strong>Ödeme ve ekstre</strong>
                     </div>
 
-                    <button type="button"
-                            class="invoice-action-accounting-send"
-                            data-accounting-open
-                            @(isIssued ? null : "disabled")>
-                        Muhasebeciye Gönder
-                    </button>
-                </div>
-            </section>
+                    <div class="invoice-action-grid">
+                        <a class="invoice-action-tile"
+                           asp-controller="CurrentAccounts"
+                           asp-action="Customer"
+                           asp-route-customerId="@Model.CustomerId">
+                            <span>₺</span>
+                            <strong>Hesap Özeti</strong>
+                            <small>@BalanceText(Model.CustomerBalance): @Money(Model.CustomerBalance)</small>
+                        </a>
+
+                        @if (isIssued && remainingAmount > 0)
+                        {
+                            <button type="button"
+                                    class="invoice-action-tile button"
+                                    data-invoice-payment-open
+                                    data-amount=""
+                                    data-description="@Model.InvoiceNumber kısmi tahsilatı">
+                                <span>＋</span>
+                                <strong>Kısmi Tahsilat</strong>
+                                <small>Manuel tutar gir</small>
+                            </button>
+
+                            <button type="button"
+                                    class="invoice-action-tile button green"
+                                    data-invoice-payment-open
+                                    data-amount="@remainingAmount.ToString(CultureInfo.InvariantCulture)"
+                                    data-description="@paymentDescription">
+                                <span>✓</span>
+                                <strong>Tamamını Tahsil Et</strong>
+                                <small>@Money(remainingAmount)</small>
+                            </button>
+                        }
+                        else if (isIssued && remainingAmount <= 0)
+                        {
+                            <div class="invoice-action-info success">
+                                Bu hesap özetinde kalan tahsilat bulunmuyor.
+                            </div>
+                        }
+                        else if (isCancelled)
+                        {
+                            <div class="invoice-action-info muted">
+                                İptal edilen belgede tahsilat alınmaz.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="invoice-action-info muted">
+                                Tahsilat için hesap özeti onaylanmış olmalıdır.
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+
+            @if (canUseAccounting)
+            {
+                <section class="invoice-action-group">
+                    <div class="invoice-action-group-head">
+                        <span>Muhasebe</span>
+                        <strong>Fatura hazırlık akışı</strong>
+                    </div>
+
+                    <div class="invoice-action-accounting-row">
+                        <div class="invoice-action-accounting-status" data-accounting-status>
+                            <strong>Fatura bekleniyor</strong>
+                            <span>Lütfen bekleyin.</span>
+                        </div>
+
+                        <button type="button"
+                                class="invoice-action-accounting-send"
+                                data-accounting-open
+                                @(isIssued ? null : "disabled")>
+                            Muhasebeciye Gönder
+                        </button>
+                    </div>
+                </section>
+            }
         </div>
     </div>
 </div>

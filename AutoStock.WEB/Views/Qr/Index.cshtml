@@ -5,10 +5,6 @@
 
     var recordCount = Model.Records?.Count() ?? 0;
     var plateText = MaskPlate(Model.Vehicle?.Plate);
-    var customerText = MaskName(
-        TryFirstString(Model, "CustomerName", "OwnerName", "VehicleOwnerName")
-        ?? TryFirstString(Model.Vehicle, "CustomerName", "OwnerName", "VehicleOwnerName"));
-
     var workshopName = TryFirstString(Model, "WorkshopName", "WorkshopDisplayName", "ServiceName") ?? "Servis İşletmesi";
     var workshopAddress = TryFirstString(Model, "WorkshopAddress", "WorkshopAddressText", "AddressText");
     var workshopPhone = TryFirstString(Model, "WorkshopPhone", "WorkshopPhoneText", "PhoneText", "PhoneNumber");
@@ -401,8 +397,8 @@
 
             <section class="identity-strip">
                 <div class="identity-box">
-                    <label>Araç sahibi</label>
-                    <strong>@customerText</strong>
+                    <label>Servis</label>
+                    <strong>@workshopName</strong>
                 </div>
 
                 <div class="identity-box">
@@ -420,7 +416,7 @@
                 <div class="section-head">
                     <div>
                         <h2>Servis Kayıt Formları</h2>
-                        <p>Bu araç için oluşturulan Servis Kayıt Formu (SKF) belgeleri</p>
+                        <p>Bu araç için tamamlanan servis kayıtları</p>
                     </div>
 
                     <span class="count-pill">@recordCount SKF</span>
@@ -439,8 +435,8 @@
                                 <div class="record-icon">SKF</div>
 
                                 <div class="record-main">
-                                    <strong>@record.RecordNumber</strong>
-                                    <span>@record.CreatedAt.ToString("dd.MM.yyyy HH:mm") tarihinde oluşturuldu</span>
+                                    <strong>@(record.Items.Any() ? string.Join(", ", record.Items.Take(2)) : "Servis işlemi")</strong>
+                                    <span>@record.ServiceDate.ToString("dd.MM.yyyy") tarihinde tamamlandı</span>
                                 </div>
 
                                 <span class="record-action">Belgeyi aç →</span>
@@ -491,19 +487,6 @@
     private static string JoinText(params string?[] values)
     {
         return string.Join(" • ", values.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!.Trim()));
-    }
-
-    private static string MaskName(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return "Kayıtlı müşteri";
-
-        var parts = value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-        return string.Join(" ", parts.Select(part =>
-            part.Length <= 1
-                ? "*"
-                : part[0] + new string('*', Math.Min(5, part.Length - 1))));
     }
 
     private static string MaskPlate(string? plate)

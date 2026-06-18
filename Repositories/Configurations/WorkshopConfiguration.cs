@@ -16,6 +16,12 @@ namespace AutoStock.Repositories.Configurations
 
             builder.Property(x => x.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
+
+            builder.Property(x => x.QrGenerationEnabled)
+                .HasDefaultValue(true);
+
+            builder.Property(x => x.QrGenerationLimit)
+                .HasDefaultValue(50);
         }
     }
 }

@@ -21,6 +21,10 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("Customers")]
         public async Task<IActionResult> Index([FromQuery] CustomerListQueryViewModel query)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var pageResult = await _customerPageService.BuildIndexAsync(query);
 
             if (pageResult.HasErrors)
@@ -34,12 +38,20 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("Customers/Create")]
         public IActionResult Create()
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             return View(new CreateCustomerViewModel());
         }
 
         [HttpPost("Customers/Create")]
         public async Task<IActionResult> Create(CreateCustomerViewModel model)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             ValidateCreateModel(model);
 
             if (!ModelState.IsValid)
@@ -61,6 +73,10 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("Customers/Details/{id:int}")]
         public async Task<IActionResult> Details(int id)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var result = await _customerApiService.GetByIdAsync(id);
 
             return ViewObjectResult(
@@ -72,6 +88,10 @@ namespace AutoStock.WEB.Controllers
         [HttpGet("Customers/Edit/{id:int}")]
         public async Task<IActionResult> Edit(int id)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var result = await _customerApiService.GetEditModelAsync(id);
 
             return ViewObjectResult(
@@ -83,6 +103,10 @@ namespace AutoStock.WEB.Controllers
         [HttpPost("Customers/Edit/{id:int}")]
         public async Task<IActionResult> Edit(int id, EditCustomerViewModel model)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             if (id != model.Id)
             {
                 ShowError("Müşteri bilgisi hatalı.");
@@ -110,6 +134,10 @@ namespace AutoStock.WEB.Controllers
         [HttpPost("Customers/Passive/{id:int}")]
         public async Task<IActionResult> SetPassive(int id)
         {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
             var result = await _customerApiService.SetPassiveAsync(id);
 
             return HandleCommandResult(

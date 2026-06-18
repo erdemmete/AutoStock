@@ -453,12 +453,6 @@ const config = window.serviceRecordDetailConfig || {};
     data-status="3">
     Servisi Tamamla
     </button>
-
-    <button type="button"
-    class="srx-secondary-action danger status-btn"
-    data-status="4">
-    İptal Et
-    </button>
     `;
     }
 

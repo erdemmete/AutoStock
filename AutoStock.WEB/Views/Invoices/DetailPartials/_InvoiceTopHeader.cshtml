@@ -1,6 +1,9 @@
 @model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+@using Microsoft.AspNetCore.Http
 
 @{
+    var isOwner = string.Equals(Context.Session.GetString("UserRole"), "Owner", StringComparison.OrdinalIgnoreCase);
+
     string GetStatusText(int status) => status switch
     {
         1 => "Onay Bekliyor",
@@ -47,9 +50,12 @@
                 🖨 Yazdır
             </a>
 
-            <button type="button" class="action-btn danger" onclick="cancelInvoice(@Model.Id)">
-                × İptal Et
-            </button>
+            @if (isOwner)
+            {
+                <button type="button" class="action-btn danger" onclick="cancelInvoice(@Model.Id)">
+                    × İptal Et
+                </button>
+            }
         }
 
         @if (Model.Status == 1)
