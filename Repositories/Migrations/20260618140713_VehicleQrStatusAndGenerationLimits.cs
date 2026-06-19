@@ -146,12 +146,14 @@ namespace AutoStock.Repositories.Migrations
                 defaultValue: 1);
 
             migrationBuilder.Sql("""
-                UPDATE [VehicleQrCodes]
-                SET [Status] = CASE
-                    WHEN [IsAssigned] = 1 THEN 2
-                    ELSE 1
-                END;
-                """);
+    EXEC(N'
+        UPDATE [VehicleQrCodes]
+        SET [Status] = CASE
+            WHEN [IsAssigned] = 1 THEN 2
+            ELSE 1
+        END;
+    ');
+    """);
 
             migrationBuilder.DropColumn(
                 name: "IsAssigned",

@@ -181,7 +181,7 @@ namespace AutoStock.API.Controllers
             recentActivities.AddRange(recentInvoices.Select(x => new DashboardActivityDto
             {
                 Type = "invoice",
-                Title = $"{x.InvoiceNumber} numaralı fatura taslağı oluşturuldu.",
+                Title = $"{x.InvoiceNumber} numaralı servis hesap özeti taslağı oluşturuldu.",
                 Description = x.CustomerTitle,
                 CreatedAt = x.CreatedAt
             }));

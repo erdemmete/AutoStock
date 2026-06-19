@@ -10,6 +10,8 @@ public class InvoiceDetailViewModel
 
     public int? ServiceRecordId { get; set; }
 
+    public string? PublicServiceQrCode { get; set; }
+
     public int Type { get; set; }
 
     public int Status { get; set; }

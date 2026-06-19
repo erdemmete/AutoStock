@@ -30,6 +30,16 @@
     }
 
     var paymentDescription = $"{Model.InvoiceNumber} kalan tahsilatı";
+    var recipientEmail = Model.CustomerEmail?.Trim();
+    var workshopName = !string.IsNullOrWhiteSpace(Model.WorkshopDisplayName)
+        ? Model.WorkshopDisplayName
+        : !string.IsNullOrWhiteSpace(Model.WorkshopLegalTitle)
+            ? Model.WorkshopLegalTitle
+            : "Sente360 Servis";
+    var customerName = Model.CustomerTitle;
+    var secureDocumentUrl = Model.ServiceRecordId.HasValue && !string.IsNullOrWhiteSpace(Model.PublicServiceQrCode)
+        ? $"{Context.Request.Scheme}://{Context.Request.Host}/public/service-pdf/{Uri.EscapeDataString(Model.PublicServiceQrCode)}/{Model.ServiceRecordId.Value}"
+        : null;
 }
 
 <section class="invoice-action-hub"
@@ -66,23 +76,18 @@
         <div class="invoice-action-hub-buttons">
             @if (Model.Status != 3)
             {
-                <form asp-controller="Invoices"
-                      asp-action="SendEmail"
-                      asp-route-id="@Model.Id"
-                      method="post"
-                      class="invoice-action-email-form"
-                      data-sente-confirm
-                      data-sente-confirm-title="Hesap özetini e-posta ile gönder"
-                      data-sente-confirm-message="Hesap özetini e-posta olarak göndermek istiyor musun?"
-                      data-sente-confirm-text="Gönder"
-                      data-sente-confirm-cancel-text="Vazgeç">
-                    @Html.AntiForgeryToken()
-
-                    <button type="submit" class="invoice-action-primary">
-                        <span>✉</span>
-                        E-posta Gönder
-                    </button>
-                </form>
+                <button type="button"
+                        class="invoice-action-primary"
+                        data-invoice-email-draft
+                        data-customer-name="@customerName"
+                        data-recipient-email="@recipientEmail"
+                        data-workshop-name="@workshopName"
+                        data-document-number="@Model.InvoiceNumber"
+                        data-plate="@Model.Plate"
+                        data-secure-url="@secureDocumentUrl">
+                    <span>✉</span>
+                    E-posta Taslağı Aç
+                </button>
             }
 
             <button type="button" class="invoice-action-secondary" data-invoice-action-drawer-open>
@@ -195,6 +200,89 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        if (window.senteInvoiceEmailDraftBound) return;
+        window.senteInvoiceEmailDraftBound = true;
+
+        document.addEventListener("click", async function (event) {
+            const button = event.target.closest("[data-invoice-email-draft]");
+            if (!button) return;
+
+            const customerName = button.dataset.customerName || "Müşteri";
+            const recipientEmail = button.dataset.recipientEmail || "";
+            const workshopName = button.dataset.workshopName || "Sente360 Servis";
+            const documentNumber = button.dataset.documentNumber || "";
+            const plate = button.dataset.plate || "-";
+            const secureUrl = button.dataset.secureUrl || "";
+
+            if (!recipientEmail) {
+                const confirmed = window.SenteConfirm
+                    ? await SenteConfirm.show({
+                        title: "E-posta adresi eksik",
+                        message: "Alıcı e-posta adresi eklenmeden e-posta taslağı açılamaz.",
+                        confirmText: "Bilgileri Düzenle",
+                        cancelText: "Vazgeç"
+                    })
+                    : window.confirm("Alıcı e-posta adresi eksik. Bilgileri düzenlemek ister misiniz?");
+
+                if (confirmed && typeof window.openCustomerModal === "function") {
+                    window.openCustomerModal();
+                }
+
+                return;
+            }
+
+            if (!secureUrl) {
+                showInvoiceDraftMessage("Güvenli belge bağlantısı hazırlanamadı. PDF çıktısını indirip e-postaya manuel ekleyebilirsiniz.", true);
+                return;
+            }
+
+            const confirmed = window.SenteConfirm
+                ? await SenteConfirm.show({
+                    title: "E-posta taslağı açılsın mı?",
+                    message: `${customerName} müşterisinin ${recipientEmail} adresine gönderilmek üzere e-posta taslağı açılsın mı?`,
+                    confirmText: "E-posta Taslağını Aç",
+                    cancelText: "Vazgeç"
+                })
+                : window.confirm(`${customerName} müşterisinin ${recipientEmail} adresine e-posta taslağı açılsın mı?`);
+
+            if (!confirmed) return;
+
+            const subject = `${workshopName} - ${documentNumber} numaralı servis hesap özeti`;
+            const body = [
+                `Merhaba ${customerName},`,
+                "",
+                `${plate || "-"} plakalı aracınıza ait servis işlem ve hesap özetine aşağıdaki bağlantıdan ulaşabilirsiniz:`,
+                "",
+                secureUrl,
+                "",
+                "Bu belge resmî fatura değildir. Resmî e-Fatura/e-Arşiv ayrıca düzenlenir.",
+                "",
+                "İyi günler dileriz.",
+                workshopName
+            ].join("\n");
+
+            window.location.href = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            showInvoiceDraftMessage("E-posta taslağı açıldı. Göndermeden önce bilgileri kontrol edin.", false);
+        });
+
+        function showInvoiceDraftMessage(message, isError) {
+            if (typeof window.showInvoiceOperationError === "function" && isError) {
+                window.showInvoiceOperationError(message);
+                return;
+            }
+
+            if (window.SenteToast) {
+                window.SenteToast.show(message, isError ? "error" : "success");
+                return;
+            }
+
+            console.info(message);
+        }
+    })();
+</script>
 
 @if (isIssued && canReceivePayment)
 {

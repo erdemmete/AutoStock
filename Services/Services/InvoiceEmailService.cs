@@ -40,7 +40,7 @@ public class InvoiceEmailService : IInvoiceEmailService
                 cancellationToken);
 
         if (invoice is null)
-            return ServiceResult<SendInvoiceEmailResponseDto>.Fail("Fatura bulunamadı.");
+            return ServiceResult<SendInvoiceEmailResponseDto>.Fail("Servis hesap özeti bulunamadı.");
 
         var toEmail = !string.IsNullOrWhiteSpace(invoice.CustomerEmail)
             ? invoice.CustomerEmail.Trim()
@@ -59,7 +59,7 @@ public class InvoiceEmailService : IInvoiceEmailService
                 : x.Name)
             .FirstOrDefaultAsync(cancellationToken) ?? "Sente360 Servis";
 
-        var subject = $"{workshopName} - {invoice.InvoiceNumber} numaralı fatura";
+        var subject = $"{workshopName} - {invoice.InvoiceNumber} numaralı servis hesap özeti";
 
         var html = BuildInvoiceHtml(workshopName, invoice, request.Message);
 
@@ -69,11 +69,11 @@ public class InvoiceEmailService : IInvoiceEmailService
             ToName = invoice.CustomerTitle,
             Subject = subject,
             HtmlBody = html,
-            TextBody = $"{invoice.InvoiceNumber} numaralı fatura toplamı: {invoice.GrandTotal:N2} TL"
+            TextBody = $"{invoice.InvoiceNumber} numaralı servis hesap özeti toplamı: {invoice.GrandTotal:N2} TL. Bu belge resmî fatura değildir."
         }, cancellationToken);
 
         if (!mailResult.IsSuccess)
-            return ServiceResult<SendInvoiceEmailResponseDto>.Fail(mailResult.ErrorMessage ?? "Fatura e-postası gönderilemedi.");
+            return ServiceResult<SendInvoiceEmailResponseDto>.Fail(mailResult.ErrorMessage ?? "Servis hesap özeti e-postası gönderilemedi.");
 
         return ServiceResult<SendInvoiceEmailResponseDto>.Success(new SendInvoiceEmailResponseDto
         {
@@ -91,7 +91,7 @@ public class InvoiceEmailService : IInvoiceEmailService
         var statusText = invoice.Status switch
         {
             InvoiceStatus.Draft => "Taslak",
-            InvoiceStatus.Issued => "Kesildi",
+            InvoiceStatus.Issued => "Hazırlandı",
             InvoiceStatus.Cancelled => "İptal",
             _ => invoice.Status.ToString()
         };
@@ -110,7 +110,7 @@ public class InvoiceEmailService : IInvoiceEmailService
         }
 
         var safeMessage = string.IsNullOrWhiteSpace(customMessage)
-            ? "Fatura bilgilerinizi aşağıda bulabilirsiniz."
+            ? "Servis hesap özetinizi aşağıda bulabilirsiniz."
             : WebUtility.HtmlEncode(customMessage).Replace("\n", "<br>");
 
         return $@"
@@ -124,7 +124,7 @@ public class InvoiceEmailService : IInvoiceEmailService
         <div style='background:white;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden'>
             <div style='padding:24px 28px;background:#4f35e8;color:white'>
                 <h1 style='margin:0;font-size:24px'>{WebUtility.HtmlEncode(workshopName)}</h1>
-                <p style='margin:8px 0 0;opacity:.9'>Fatura Bilgilendirmesi</p>
+                <p style='margin:8px 0 0;opacity:.9'>Servis Hesap Özeti</p>
             </div>
 
             <div style='padding:28px'>
@@ -132,7 +132,7 @@ public class InvoiceEmailService : IInvoiceEmailService
 
                 <div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0'>
                     <div style='background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px'>
-                        <small style='color:#64748b;font-weight:bold'>Fatura No</small><br>
+                        <small style='color:#64748b;font-weight:bold'>Belge No</small><br>
                         <strong>{WebUtility.HtmlEncode(invoice.InvoiceNumber)}</strong>
                     </div>
                     <div style='background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px'>
@@ -170,7 +170,8 @@ public class InvoiceEmailService : IInvoiceEmailService
                 </div>
 
                 <p style='margin-top:28px;color:#64748b;font-size:13px;line-height:1.5'>
-                    Bu e-posta {WebUtility.HtmlEncode(workshopName)} tarafından Sente360 üzerinden gönderilmiştir.
+                    Bu belge resmî fatura değildir. Resmî e-Fatura/e-Arşiv ayrıca düzenlenir.<br>
+                    Bu e-posta {WebUtility.HtmlEncode(workshopName)} tarafından Sente360 üzerinden hazırlanmıştır.
                 </p>
             </div>
         </div>

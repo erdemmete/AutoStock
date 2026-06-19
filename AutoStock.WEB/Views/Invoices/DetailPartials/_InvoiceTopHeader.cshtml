@@ -6,18 +6,18 @@
 
     string GetStatusText(int status) => status switch
     {
-        1 => "Onay Bekliyor",
-        2 => "Onaylandı",
-        3 => "İptal Edildi",
+        1 => "Taslak",
+        2 => "Hazırlandı",
+        3 => "İptal",
         _ => "Bilinmiyor"
     };
 
     var title = Model.Status switch
     {
         1 => "Hesap Özeti Taslağı",
-        2 => "Onaylanmış Hesap Özeti",
+        2 => "Hazırlanmış Servis Hesap Özeti",
         3 => "İptal Edilmiş Hesap Özeti",
-        _ => "Hesap Özeti Detayı"
+        _ => "Servis Hesap Özeti Detayı"
     };
 }
 
@@ -30,7 +30,7 @@
 
         <p>
             <span>▧</span>
-            @Model.InvoiceNumber numaralı belge referansı
+            @Model.InvoiceNumber numaralı servis hesap özeti
         </p>
     </div>
 

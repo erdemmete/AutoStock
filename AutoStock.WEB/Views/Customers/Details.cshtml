@@ -1035,7 +1035,7 @@
         return status switch
         {
             "Draft" => "Taslak",
-            "Issued" => "Kesildi",
+            "Issued" => "Hazırlandı",
             "Cancelled" => "İptal",
             _ => status
         };
@@ -1045,7 +1045,7 @@
     {
         return type switch
         {
-            "InvoiceIssued" => "Fatura Kesildi",
+            "InvoiceIssued" => "Servis Hesap Özeti Hazırlandı",
             "InvoiceCancellation" => "Fatura İptali",
             "Payment" => "Tahsilat",
             _ => type

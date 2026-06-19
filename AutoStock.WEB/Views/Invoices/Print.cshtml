@@ -8,7 +8,7 @@
         return status switch
         {
             1 => "Taslak",
-            2 => "Kesildi",
+            2 => "Hazırlandı",
             3 => "İptal",
             _ => "Bilinmiyor"
         };
@@ -105,7 +105,7 @@
 <html lang="tr">
 <head>
     <meta charset="utf-8" />
-    <title>@Model.InvoiceNumber</title>
+    <title>Servis Hesap Özeti - @Model.InvoiceNumber</title>
 
     <style>
         * {
@@ -666,7 +666,7 @@
                 <section>
                     <div class="document-title">
                         <h1>Servis Hesap Özeti</h1>
-                        <p>Matbu belge / ön muhasebe kaydı</p>
+                        <p>Servis işlem ve hesap bilgilendirmesi</p>
                     </div>
 
                     <table class="meta-table">
@@ -754,7 +754,7 @@
                         {
                             <tr>
                                 <td colspan="8" style="text-align:center; padding: 6mm; font-weight:900;">
-                                    Fatura kalemi bulunmuyor.
+                                    Belge kalemi bulunmuyor.
                                 </td>
                             </tr>
                         }
@@ -867,7 +867,7 @@
             </section>
 
             <footer class="legal-note">
-                Bu belge, servis ödeme takibi ve ön muhasebe amacıyla hazırlanmış bilgilendirme çıktısıdır; e-Arşiv/e-Fatura veya resmi mali belge yerine geçmez.
+                Bu belge resmî fatura değildir. Resmî e-Fatura/e-Arşiv ayrıca düzenlenir.
                 Belge içeriği ilgili servis işletmesine aittir. Sente360 yalnızca yazılım altyapısı sağlar.
             </footer>
         </section>

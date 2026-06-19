@@ -200,7 +200,7 @@ public class InvoicesController : BaseController
             result,
             onSuccess: () => RedirectToAction(nameof(Detail), new { id }),
             onFailure: () => RedirectToAction(nameof(Detail), new { id }),
-            defaultErrorMessage: "Fatura e-postası gönderilirken hata oluştu.",
-            successMessage: "Fatura e-postası gönderildi.");
+            defaultErrorMessage: "Servis hesap özeti e-postası gönderilirken hata oluştu.",
+            successMessage: "Servis hesap özeti e-postası gönderildi.");
     }
 }

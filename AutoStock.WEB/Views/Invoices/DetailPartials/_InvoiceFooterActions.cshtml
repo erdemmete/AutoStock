@@ -1,5 +1,17 @@
 @model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
 
+@{
+    var recipientEmail = Model.CustomerEmail?.Trim();
+    var workshopName = !string.IsNullOrWhiteSpace(Model.WorkshopDisplayName)
+        ? Model.WorkshopDisplayName
+        : !string.IsNullOrWhiteSpace(Model.WorkshopLegalTitle)
+            ? Model.WorkshopLegalTitle
+            : "Sente360 Servis";
+    var secureDocumentUrl = Model.ServiceRecordId.HasValue && !string.IsNullOrWhiteSpace(Model.PublicServiceQrCode)
+        ? $"{Context.Request.Scheme}://{Context.Request.Host}/public/service-pdf/{Uri.EscapeDataString(Model.PublicServiceQrCode)}/{Model.ServiceRecordId.Value}"
+        : null;
+}
+
 <footer class="invoice-footer-actions">
     <div class="invoice-footer-left">
         @if (Model.ServiceRecordId.HasValue)
@@ -17,29 +29,24 @@
     <div class="invoice-footer-right">
         @if (Model.Status != 3)
         {
-            <form asp-controller="Invoices"
-                  asp-action="SendEmail"
-                  asp-route-id="@Model.Id"
-                  method="post"
-                  class="invoice-email-form"
-                  data-sente-confirm
-                  data-sente-confirm-title="Faturayı e-posta ile gönder"
-                  data-sente-confirm-message="Bu faturayı müşteriye e-posta olarak göndermek istiyor musun?"
-                  data-sente-confirm-text="Gönder"
-                  data-sente-confirm-cancel-text="Vazgeç">
-                @Html.AntiForgeryToken()
-
-                <button type="submit" class="invoice-email-btn">
-                    <span class="invoice-email-icon">✉</span>
-                    <span>E-posta Gönder</span>
-                </button>
-            </form>
+            <button type="button"
+                    class="invoice-email-btn"
+                    data-invoice-email-draft
+                    data-customer-name="@Model.CustomerTitle"
+                    data-recipient-email="@recipientEmail"
+                    data-workshop-name="@workshopName"
+                    data-document-number="@Model.InvoiceNumber"
+                    data-plate="@Model.Plate"
+                    data-secure-url="@secureDocumentUrl">
+                <span class="invoice-email-icon">✉</span>
+                <span>E-posta Taslağı Aç</span>
+            </button>
         }
 
         <a class="invoice-footer-list-btn"
            asp-controller="Invoices"
            asp-action="Index">
-            Fatura Listesine Dön
+            Hesap Özeti Listesine Dön
         </a>
     </div>
 </footer>

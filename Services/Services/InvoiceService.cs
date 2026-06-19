@@ -324,12 +324,27 @@ namespace AutoStock.Services.Services
                 ? Math.Max(0m, invoice.GrandTotal - invoicePaidTotal)
                 : 0;
 
+            var publicServiceQrCode = invoice.ServiceRecordId.HasValue
+                ? await (
+                    from record in _context.ServiceRecords.AsNoTracking()
+                    join qr in _context.VehicleQrCodes.AsNoTracking()
+                        on record.VehicleId equals qr.VehicleId
+                    where record.Id == invoice.ServiceRecordId.Value &&
+                          record.WorkshopId == workshopId &&
+                          qr.WorkshopId == workshopId &&
+                          qr.Status == VehicleQrCodeStatus.Assigned
+                    orderby qr.AssignedAt descending
+                    select qr.Code)
+                    .FirstOrDefaultAsync()
+                : null;
+
             var dto = new InvoiceDetailDto
             {
                 Id = invoice.Id,
                 WorkshopId = invoice.WorkshopId,
                 CustomerId = invoice.CustomerId,
                 ServiceRecordId = invoice.ServiceRecordId,
+                PublicServiceQrCode = publicServiceQrCode,
 
                 Type = (int)invoice.Type,
                 Status = (int)invoice.Status,
