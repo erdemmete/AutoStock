@@ -362,6 +362,23 @@ function normalizePlate(value) {
         .slice(0, 12);
 }
 
+function normalizeAlphaNumericForComparison(value) {
+    return (value || "")
+        .toString()
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "");
+}
+
+function isCustomerDisplayNameSameAsPlate(customerDisplayName, plate) {
+    const normalizedCustomerDisplayName = normalizeAlphaNumericForComparison(customerDisplayName);
+    const normalizedPlate = normalizeAlphaNumericForComparison(plate);
+
+    return Boolean(normalizedCustomerDisplayName) &&
+        Boolean(normalizedPlate) &&
+        normalizedCustomerDisplayName === normalizedPlate;
+}
+
 function getFuelLevelText(value = null) {
     const fuelValue = value ?? get("FuelLevel")?.value;
 
@@ -2707,6 +2724,8 @@ function validateBeforeSubmit(formData) {
     const customerName = formData.get("CustomerName")?.toString().trim();
     const customerPhone = formData.get("CustomerPhoneNumber")?.toString().trim();
     const plate = formData.get("Plate")?.toString().trim();
+    const finalCustomerType = Number(formData.get("CustomerType"));
+    const companyName = formData.get("CompanyName")?.toString().trim();
 
     if (!customerName) {
         showToast("Müşteri / firma adı zorunludur.", "error");
@@ -2729,14 +2748,25 @@ function validateBeforeSubmit(formData) {
         return false;
     }
 
-    if (requestItems.length <= 0) {
-        showToast("En az bir şikayet / talep eklemelisin.", "error");
-        goToStep(3);
-        showTemporaryInvalid(get("requestInput"));
+    const customerDisplayNameForComparison =
+        finalCustomerType === 1
+            ? customerName
+            : (companyName || customerName);
+
+    if (isCustomerDisplayNameSameAsPlate(customerDisplayNameForComparison, plate)) {
+        showToast("Müşteri adı veya firma unvanı plaka ile aynı olamaz. Lütfen doğru müşteri bilgisini girin.", "error");
+        goToStep(1);
+
+        const invalidInput = finalCustomerType === 1
+            ? getActiveCustomerContainer()?.querySelector(`[name="CustomerName"]`)
+            : (
+                getActiveCustomerContainer()?.querySelector(`[name="CompanyName"]`) ||
+                getActiveCustomerContainer()?.querySelector(`[name="CustomerName"]`)
+            );
+
+        showTemporaryInvalid(invalidInput);
         return false;
     }
-
-    const finalCustomerType = Number(formData.get("CustomerType"));
 
     if (
         (finalCustomerType === 2 || finalCustomerType === 3) &&
@@ -2745,6 +2775,13 @@ function validateBeforeSubmit(formData) {
         showToast("Şahıs/kurumsal müşterilerde aracı getiren / ilgili kişi zorunludur.", "error");
         goToStep(1);
         showTemporaryInvalid(getActiveCustomerContainer()?.querySelector(`[name="VehicleDeliveredBy"]`));
+        return false;
+    }
+
+    if (requestItems.length <= 0) {
+        showToast("En az bir şikayet / talep eklemelisin.", "error");
+        goToStep(3);
+        showTemporaryInvalid(get("requestInput"));
         return false;
     }
 

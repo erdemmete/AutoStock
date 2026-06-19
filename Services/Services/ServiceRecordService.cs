@@ -13,6 +13,9 @@ namespace AutoStock.Services.Services;
 
 public class ServiceRecordService : IServiceRecordService
 {
+    private const string CustomerNameCannotEqualPlateMessage =
+        "Müşteri adı veya firma unvanı plaka ile aynı olamaz. Lütfen doğru müşteri bilgisini girin.";
+
     private readonly AppDbContext _context;
     private readonly IStockItemService _stockItemService;
     private readonly IDateTimeProvider _dateTimeProvider;
@@ -51,6 +54,15 @@ public class ServiceRecordService : IServiceRecordService
             .FirstOrDefaultAsync(x =>
                 x.WorkshopId == workshopId &&
                 x.PhoneNumber == phoneNumber);
+
+        var customerDisplayNameForValidation = customer is null
+            ? ResolveRequestedCustomerDisplayName(request)
+            : ResolveCustomerDisplayName(customer);
+
+        if (AreCustomerDisplayNameAndPlateSame(customerDisplayNameForValidation, plate))
+        {
+            return ServiceResult<CreateServiceRecordResponse>.Fail(CustomerNameCannotEqualPlateMessage);
+        }
 
         if (customer is null)
         {
@@ -1370,6 +1382,49 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
             .Trim()
             .Replace(" ", "")
             .ToUpperInvariant();
+    }
+
+    private static string ResolveRequestedCustomerDisplayName(CreateServiceRecordRequest request)
+    {
+        if (request.CustomerType == CustomerType.Individual)
+            return request.CustomerName.Trim();
+
+        return !string.IsNullOrWhiteSpace(request.CompanyName)
+            ? request.CompanyName.Trim()
+            : request.CustomerName.Trim();
+    }
+
+    private static string ResolveCustomerDisplayName(Customer customer)
+    {
+        if (customer.Type == CustomerType.Individual)
+            return customer.FullName?.Trim() ?? string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(customer.CompanyName))
+            return customer.CompanyName.Trim();
+
+        return customer.FullName?.Trim() ?? string.Empty;
+    }
+
+    private static bool AreCustomerDisplayNameAndPlateSame(string? customerDisplayName, string? plate)
+    {
+        var normalizedCustomerDisplayName = NormalizeComparableAlphaNumeric(customerDisplayName);
+        var normalizedPlate = NormalizeComparableAlphaNumeric(plate);
+
+        return normalizedCustomerDisplayName.Length > 0 &&
+               normalizedPlate.Length > 0 &&
+               normalizedCustomerDisplayName == normalizedPlate;
+    }
+
+    private static string NormalizeComparableAlphaNumeric(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        return new string(
+            value.Trim()
+                .ToUpperInvariant()
+                .Where(char.IsLetterOrDigit)
+                .ToArray());
     }
 
     private static string GenerateRecordNumber(DateTime now)
