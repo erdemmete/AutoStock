@@ -6,6 +6,7 @@
 
     const invoiceState = {
         id: @Model.Id,
+        rowVersion: @Json.Serialize(Model.RowVersion),
         customerId: @Model.CustomerId,
         serviceRecordId: @(Model.ServiceRecordId.HasValue ? Model.ServiceRecordId.Value.ToString() : "null"),
 
@@ -1775,6 +1776,7 @@
             return {
                 id: invoiceState.id,
                 invoiceId: invoiceState.id,
+                rowVersion: invoiceState.rowVersion,
                 customerId: invoiceState.customerId,
                 serviceRecordId: invoiceState.serviceRecordId,
 
@@ -1847,6 +1849,10 @@
 
                 showInvoiceOperationError(message);
                 throw new Error(message);
+            }
+
+            if (result?.data?.rowVersion) {
+                invoiceState.rowVersion = result.data.rowVersion;
             }
 
             return result;

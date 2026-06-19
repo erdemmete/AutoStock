@@ -61,6 +61,8 @@ namespace AutoStock.Repositories.Entities
 
         public DateTime CreatedAt { get; set; } 
 
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
         public Customer Customer { get; set; } = null!;
 
         public ServiceRecord? ServiceRecord { get; set; }

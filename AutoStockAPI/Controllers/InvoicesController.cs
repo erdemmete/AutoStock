@@ -16,12 +16,18 @@ namespace AutoStock.API.Controllers
         private readonly IInvoiceService _invoiceService;
         private readonly IVehicleCatalogService _vehicleCatalogService;
         private readonly IInvoiceEmailService _invoiceEmailService;
+        private readonly IEntityEditLockService _entityEditLockService;
 
-        public InvoicesController(IInvoiceService invoiceService, IVehicleCatalogService vehicleCatalogService, IInvoiceEmailService invoiceEmailService)
+        public InvoicesController(
+            IInvoiceService invoiceService,
+            IVehicleCatalogService vehicleCatalogService,
+            IInvoiceEmailService invoiceEmailService,
+            IEntityEditLockService entityEditLockService)
         {
             _invoiceService = invoiceService;
             _vehicleCatalogService = vehicleCatalogService;
             _invoiceEmailService = invoiceEmailService;
+            _entityEditLockService = entityEditLockService;
         }
 
         [HttpGet("draft/from-service-record/{serviceRecordId:int}")]
@@ -47,6 +53,20 @@ namespace AutoStock.API.Controllers
             if (workshopIdResult.IsFailure)
                 return UnauthorizedResult(workshopIdResult);
 
+            var userIdResult = GetCurrentUserId();
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
+            var lockResult = await _entityEditLockService.ValidateAsync(
+                "ServiceRecord",
+                serviceRecordId,
+                GetEditLockToken(),
+                workshopIdResult.Data,
+                userIdResult.Data);
+
+            if (lockResult.IsFailure)
+                return ToActionResult(lockResult);
+
             var result = await _invoiceService.CreateOrGetDraftFromServiceRecordAsync(
                 serviceRecordId,
                 workshopIdResult.Data);
@@ -61,6 +81,23 @@ namespace AutoStock.API.Controllers
 
             if (workshopIdResult.IsFailure)
                 return UnauthorizedResult(workshopIdResult);
+
+            if (request.ServiceRecordId > 0)
+            {
+                var userIdResult = GetCurrentUserId();
+                if (userIdResult.IsFailure)
+                    return UnauthorizedResult(userIdResult);
+
+                var lockResult = await _entityEditLockService.ValidateAsync(
+                    "ServiceRecord",
+                    request.ServiceRecordId,
+                    GetEditLockToken(),
+                    workshopIdResult.Data,
+                    userIdResult.Data);
+
+                if (lockResult.IsFailure)
+                    return ToActionResult(lockResult);
+            }
 
             var result = await _invoiceService.CreateAsync(
                 request,
@@ -91,6 +128,20 @@ namespace AutoStock.API.Controllers
 
             if (workshopIdResult.IsFailure)
                 return UnauthorizedResult(workshopIdResult);
+
+            var userIdResult = GetCurrentUserId();
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
+            var lockResult = await _entityEditLockService.ValidateAsync(
+                "Invoice",
+                invoiceId,
+                GetEditLockToken(),
+                workshopIdResult.Data,
+                userIdResult.Data);
+
+            if (lockResult.IsFailure)
+                return ToActionResult(lockResult);
 
             var result = await _invoiceService.IssueAsync(
                 invoiceId,
@@ -168,6 +219,20 @@ namespace AutoStock.API.Controllers
             if (workshopIdResult.IsFailure)
                 return UnauthorizedResult(workshopIdResult);
 
+            var userIdResult = GetCurrentUserId();
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
+            var lockResult = await _entityEditLockService.ValidateAsync(
+                "Invoice",
+                invoiceId,
+                GetEditLockToken(),
+                workshopIdResult.Data,
+                userIdResult.Data);
+
+            if (lockResult.IsFailure)
+                return ToActionResult(lockResult);
+
             var result = await _invoiceService.CancelAsync(
                 invoiceId,
                 workshopIdResult.Data);
@@ -182,6 +247,20 @@ namespace AutoStock.API.Controllers
 
             if (workshopIdResult.IsFailure)
                 return UnauthorizedResult(workshopIdResult);
+
+            var userIdResult = GetCurrentUserId();
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
+            var lockResult = await _entityEditLockService.ValidateAsync(
+                "Invoice",
+                invoiceId,
+                GetEditLockToken(),
+                workshopIdResult.Data,
+                userIdResult.Data);
+
+            if (lockResult.IsFailure)
+                return ToActionResult(lockResult);
 
             request.InvoiceId = invoiceId;
 

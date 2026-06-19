@@ -51,6 +51,14 @@ namespace AutoStock.API.Middlewares
                     ex.Message,
                     ex);
             }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex)
+            {
+                await WriteErrorResponseAsync(
+                    context,
+                    HttpStatusCode.Conflict,
+                    "Bu kayıt siz açtıktan sonra değiştirilmiş. Güncel verileri görmek için sayfayı yenileyin.",
+                    ex);
+            }
             catch (Exception ex)
             {
                 await WriteErrorResponseAsync(

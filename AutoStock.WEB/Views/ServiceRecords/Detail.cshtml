@@ -2,12 +2,19 @@
 
 @{
     ViewData["Title"] = "Servis Detayı";
+    var canForceEditLock = string.Equals(Context.Session.GetString("UserRole"), "Owner", StringComparison.Ordinal);
 }
 
+<link rel="stylesheet" href="~/css/entity-edit-lock.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/service-record-detail.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/service-record-detail-clean.css" asp-append-version="true" />
 
-<div class="srx-page srx-clean-detail">
+<div class="srx-page srx-clean-detail"
+     data-entity-edit-lock
+     data-entity-type="ServiceRecord"
+     data-entity-id="@Model.Id"
+     data-service-record-id="@Model.Id"
+     data-can-force-release="@canForceEditLock.ToString().ToLowerInvariant()">
 
     <div id="toastMessage" class="srx-toast"></div>
 
@@ -36,6 +43,7 @@
 @await Html.PartialAsync("~/Views/ServiceRecords/Partials/Detail/_PhotoModal.cshtml", Model)
 
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="~/js/entity-edit-lock.js" asp-append-version="true"></script>
 
 <script>
     window.serviceRecordDetailConfig = {

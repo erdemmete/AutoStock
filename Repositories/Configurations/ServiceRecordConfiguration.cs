@@ -60,5 +60,8 @@ public class ServiceRecordConfiguration : IEntityTypeConfiguration<ServiceRecord
         builder.Property(x => x.EstimatedAmountNote)
             .HasMaxLength(500);
 
+        builder.Property(x => x.RowVersion)
+            .IsRowVersion();
+
     }
 }

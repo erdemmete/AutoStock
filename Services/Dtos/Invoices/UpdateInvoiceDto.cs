@@ -4,6 +4,8 @@ public class UpdateInvoiceDto
 {
     public int InvoiceId { get; set; }
 
+    public string? RowVersion { get; set; }
+
     public string? CustomerTitle { get; set; }
     public string? CustomerTaxOffice { get; set; }
     public string? CustomerTaxNumber { get; set; }

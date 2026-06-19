@@ -336,6 +336,7 @@ namespace AutoStock.Services.Services
 
                 InvoiceNumber = invoice.InvoiceNumber,
                 InvoiceDate = invoice.InvoiceDate,
+                RowVersion = Convert.ToBase64String(invoice.RowVersion),
 
                 CustomerTitle = invoice.CustomerTitle,
                 CustomerTaxOffice = invoice.CustomerTaxOffice,
@@ -860,6 +861,22 @@ namespace AutoStock.Services.Services
             if (invoice.Status != InvoiceStatus.Draft)
                 return ServiceResult<InvoiceDetailDto>.Fail("Sadece taslak faturalar düzenlenebilir.");
 
+            if (!string.IsNullOrWhiteSpace(request.RowVersion))
+            {
+                try
+                {
+                    _context.Entry(invoice)
+                        .Property(x => x.RowVersion)
+                        .OriginalValue = Convert.FromBase64String(request.RowVersion);
+                }
+                catch (FormatException)
+                {
+                    return ServiceResult<InvoiceDetailDto>.Fail(
+                        "Fatura bilgisi güncel değil. Sayfayı yenileyip tekrar deneyin.",
+                        System.Net.HttpStatusCode.Conflict);
+                }
+            }
+
             var oldValues = GetInvoiceAuditValues(invoice);
 
             var validItems = request.Items
@@ -998,7 +1015,16 @@ namespace AutoStock.Services.Services
                 NewValues = GetInvoiceAuditValues(invoice)
             });
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return ServiceResult<InvoiceDetailDto>.Fail(
+                    "Bu kayıt siz açtıktan sonra değiştirilmiş. Güncel verileri görmek için sayfayı yenileyin.",
+                    System.Net.HttpStatusCode.Conflict);
+            }
 
             return await GetDetailAsync(invoice.Id, workshopId);
         }

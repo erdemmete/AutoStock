@@ -8,6 +8,8 @@ namespace AutoStock.Services.Dtos.ServiceRecords
 
         public string RecordNumber { get; set; } = null!;
 
+        public string? RowVersion { get; set; }
+
         public ServiceRecordStatus Status { get; set; }
 
         public string CustomerName { get; set; } = null!;

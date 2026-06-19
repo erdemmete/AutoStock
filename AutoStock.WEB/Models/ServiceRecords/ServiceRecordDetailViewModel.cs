@@ -13,6 +13,8 @@ namespace AutoStock.WEB.Models.ServiceRecords
 
         public string RecordNumber { get; set; } = null!;
 
+        public string? RowVersion { get; set; }
+
         public int Status { get; set; }
 
         public string CustomerName { get; set; } = null!;

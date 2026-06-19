@@ -15,11 +15,16 @@ public class ServiceRecordsController : BaseApiController
 {
     private readonly IServiceRecordService _serviceRecordService;
     private readonly IVehicleService _vehicleService;
+    private readonly IEntityEditLockService _entityEditLockService;
 
-    public ServiceRecordsController(IServiceRecordService serviceRecordService, IVehicleService vehicleService)
+    public ServiceRecordsController(
+        IServiceRecordService serviceRecordService,
+        IVehicleService vehicleService,
+        IEntityEditLockService entityEditLockService)
     {
         _serviceRecordService = serviceRecordService;
         _vehicleService = vehicleService;
+        _entityEditLockService = entityEditLockService;
     }
 
     [HttpPost]
@@ -77,6 +82,10 @@ public class ServiceRecordsController : BaseApiController
         if (workshopIdResult.IsFailure)
             return UnauthorizedResult(workshopIdResult);
 
+        var lockResult = await ValidateRequestItemLockAsync(requestItemId, workshopIdResult.Data);
+        if (lockResult is not null)
+            return lockResult;
+
         var result = await _serviceRecordService.UpdateRequestItemAsync(
             requestItemId,
             request,
@@ -94,6 +103,10 @@ public class ServiceRecordsController : BaseApiController
 
         if (workshopIdResult.IsFailure)
             return UnauthorizedResult(workshopIdResult);
+
+        var lockResult = await ValidateServiceRecordLockAsync(serviceRecordId, workshopIdResult.Data);
+        if (lockResult is not null)
+            return lockResult;
 
         var result = await _serviceRecordService.AddRequestItemAsync(
             serviceRecordId,
@@ -113,6 +126,10 @@ public class ServiceRecordsController : BaseApiController
         if (workshopIdResult.IsFailure)
             return UnauthorizedResult(workshopIdResult);
 
+        var lockResult = await ValidateServiceRecordLockAsync(serviceRecordId, workshopIdResult.Data);
+        if (lockResult is not null)
+            return lockResult;
+
         var result = await _serviceRecordService.AddOperationAsync(
             serviceRecordId,
             request,
@@ -131,6 +148,10 @@ public class ServiceRecordsController : BaseApiController
         if (workshopIdResult.IsFailure)
             return UnauthorizedResult(workshopIdResult);
 
+        var lockResult = await ValidateOperationLockAsync(operationId, workshopIdResult.Data);
+        if (lockResult is not null)
+            return lockResult;
+
         var result = await _serviceRecordService.UpdateOperationAsync(
             operationId,
             request,
@@ -146,6 +167,10 @@ public class ServiceRecordsController : BaseApiController
 
         if (workshopIdResult.IsFailure)
             return UnauthorizedResult(workshopIdResult);
+
+        var lockResult = await ValidateServiceRecordLockAsync(id, workshopIdResult.Data);
+        if (lockResult is not null)
+            return lockResult;
 
         var result = await _serviceRecordService.CompleteAsync(
             id,
@@ -169,6 +194,10 @@ public class ServiceRecordsController : BaseApiController
 
         if (workshopIdResult.IsFailure)
             return UnauthorizedResult(workshopIdResult);
+
+        var lockResult = await ValidateServiceRecordLockAsync(id, workshopIdResult.Data);
+        if (lockResult is not null)
+            return lockResult;
 
         var result = await _serviceRecordService.UpdateStatusAsync(
             id,
@@ -216,6 +245,10 @@ public class ServiceRecordsController : BaseApiController
         if (workshopIdResult.IsFailure)
             return UnauthorizedResult(workshopIdResult);
 
+        var lockResult = await ValidateOperationLockAsync(operationId, workshopIdResult.Data);
+        if (lockResult is not null)
+            return lockResult;
+
         var result = await _serviceRecordService.DeleteOperationAsync(
             operationId,
             workshopIdResult.Data);
@@ -231,6 +264,10 @@ public class ServiceRecordsController : BaseApiController
         if (workshopIdResult.IsFailure)
             return UnauthorizedResult(workshopIdResult);
 
+        var lockResult = await ValidateRequestItemLockAsync(requestItemId, workshopIdResult.Data);
+        if (lockResult is not null)
+            return lockResult;
+
         var result = await _serviceRecordService.DeleteRequestItemAsync(
             requestItemId,
             workshopIdResult.Data);
@@ -245,6 +282,10 @@ public class ServiceRecordsController : BaseApiController
 
         if (workshopIdResult.IsFailure)
             return UnauthorizedResult(workshopIdResult);
+
+        var lockResult = await ValidateRequestItemLockAsync(requestItemId, workshopIdResult.Data);
+        if (lockResult is not null)
+            return lockResult;
 
         var result = await _serviceRecordService.RestoreRequestItemAsync(
             requestItemId,
@@ -264,5 +305,51 @@ public class ServiceRecordsController : BaseApiController
         var result = await _serviceRecordService.GetCreateWorkshopInfoAsync(workshopId);
 
         return ToActionResult(result);
+    }
+
+    private async Task<IActionResult?> ValidateServiceRecordLockAsync(int serviceRecordId, int workshopId)
+    {
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
+            return UnauthorizedResult(userIdResult);
+
+        var result = await _entityEditLockService.ValidateAsync(
+            "ServiceRecord",
+            serviceRecordId,
+            GetEditLockToken(),
+            workshopId,
+            userIdResult.Data);
+
+        return result.IsFailure ? ToActionResult(result) : null;
+    }
+
+    private async Task<IActionResult?> ValidateRequestItemLockAsync(int requestItemId, int workshopId)
+    {
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
+            return UnauthorizedResult(userIdResult);
+
+        var result = await _entityEditLockService.ValidateServiceRequestItemAsync(
+            requestItemId,
+            GetEditLockToken(),
+            workshopId,
+            userIdResult.Data);
+
+        return result.IsFailure ? ToActionResult(result) : null;
+    }
+
+    private async Task<IActionResult?> ValidateOperationLockAsync(int operationId, int workshopId)
+    {
+        var userIdResult = GetCurrentUserId();
+        if (userIdResult.IsFailure)
+            return UnauthorizedResult(userIdResult);
+
+        var result = await _entityEditLockService.ValidateServiceOperationAsync(
+            operationId,
+            GetEditLockToken(),
+            workshopId,
+            userIdResult.Data);
+
+        return result.IsFailure ? ToActionResult(result) : null;
     }
 }

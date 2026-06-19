@@ -12,10 +12,14 @@ namespace AutoStockAPI.Controllers
     public class ServiceRecordImagesController : BaseApiController
     {
         private readonly IServiceRecordImageService _serviceRecordImageService;
+        private readonly IEntityEditLockService _entityEditLockService;
 
-        public ServiceRecordImagesController(IServiceRecordImageService serviceRecordImageService)
+        public ServiceRecordImagesController(
+            IServiceRecordImageService serviceRecordImageService,
+            IEntityEditLockService entityEditLockService)
         {
             _serviceRecordImageService = serviceRecordImageService;
+            _entityEditLockService = entityEditLockService;
         }
 
         [HttpGet("service-record/{serviceRecordId:int}")]
@@ -45,6 +49,10 @@ namespace AutoStockAPI.Controllers
 
             if (workshopResult.IsFailure || workshopResult.Data <= 0)
                 return ToActionResult(workshopResult);
+
+            var lockResult = await ValidateServiceRecordLockAsync(serviceRecordId, workshopResult.Data);
+            if (lockResult is not null)
+                return lockResult;
 
             if (file is null || file.Length <= 0)
                 return BadRequest("Fotoğraf dosyası zorunludur.");
@@ -90,11 +98,46 @@ namespace AutoStockAPI.Controllers
             if (workshopResult.IsFailure || workshopResult.Data <= 0)
                 return ToActionResult(workshopResult);
 
+            var lockResult = await ValidateImageLockAsync(imageId, workshopResult.Data);
+            if (lockResult is not null)
+                return lockResult;
+
             var result = await _serviceRecordImageService.DeleteAsync(
                 workshopResult.Data,
                 imageId);
 
             return ToActionResult(result);
+        }
+
+        private async Task<IActionResult?> ValidateServiceRecordLockAsync(int serviceRecordId, int workshopId)
+        {
+            var userResult = GetCurrentUserId();
+            if (userResult.IsFailure)
+                return ToActionResult(userResult);
+
+            var result = await _entityEditLockService.ValidateAsync(
+                "ServiceRecord",
+                serviceRecordId,
+                GetEditLockToken(),
+                workshopId,
+                userResult.Data);
+
+            return result.IsFailure ? ToActionResult(result) : null;
+        }
+
+        private async Task<IActionResult?> ValidateImageLockAsync(int imageId, int workshopId)
+        {
+            var userResult = GetCurrentUserId();
+            if (userResult.IsFailure)
+                return ToActionResult(userResult);
+
+            var result = await _entityEditLockService.ValidateServiceRecordImageAsync(
+                imageId,
+                GetEditLockToken(),
+                workshopId,
+                userResult.Data);
+
+            return result.IsFailure ? ToActionResult(result) : null;
         }
     }
 }

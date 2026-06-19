@@ -40,6 +40,7 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<IVehicleCatalogSeeder, VehicleCatalogSeeder>();
             services.AddScoped<IAccountingInvoiceRequestService, AccountingInvoiceRequestService>();
             services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IEntityEditLockService, EntityEditLockService>();
 
             return services;
         }

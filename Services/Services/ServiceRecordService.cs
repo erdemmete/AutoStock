@@ -262,6 +262,7 @@ public class ServiceRecordService : IServiceRecordService
         {
             Id = serviceRecord.Id,
             RecordNumber = serviceRecord.RecordNumber,
+            RowVersion = Convert.ToBase64String(serviceRecord.RowVersion),
             VehicleId = serviceRecord.VehicleId,
             HasAssignedQrCode = !string.IsNullOrWhiteSpace(assignedQrCode),
             AssignedQrCode = assignedQrCode,

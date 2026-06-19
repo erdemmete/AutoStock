@@ -1,0 +1,66 @@
+.sente-edit-lock-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    margin: 0 0 18px;
+    border: 1px solid #bfdbfe;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #eff6ff, #ffffff);
+    color: #0f172a;
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.10);
+}
+
+.sente-edit-lock-banner strong,
+.sente-edit-lock-banner span {
+    display: block;
+}
+
+.sente-edit-lock-banner span {
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 0.92rem;
+}
+
+.sente-edit-lock-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sente-edit-lock-actions button {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #1e40af;
+    font-weight: 800;
+}
+
+.sente-edit-lock-actions [data-edit-lock-force] {
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+
+.sente-edit-readonly {
+    position: relative;
+}
+
+.sente-edit-readonly [aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+@media (max-width: 768px) {
+    .sente-edit-lock-banner {
+        align-items: stretch;
+        flex-direction: column;
+        margin: 0 0 14px;
+    }
+
+    .sente-edit-lock-actions button {
+        flex: 1 1 100%;
+    }
+}

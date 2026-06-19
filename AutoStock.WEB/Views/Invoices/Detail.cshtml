@@ -2,9 +2,16 @@
 
 @{
     ViewData["Title"] = "Hesap Özeti Detayı";
+    var canForceEditLock = string.Equals(Context.Session.GetString("UserRole"), "Owner", StringComparison.Ordinal);
 }
 
-<div class="invoice-page">
+<link rel="stylesheet" href="~/css/entity-edit-lock.css" asp-append-version="true" />
+
+<div class="invoice-page"
+     data-entity-edit-lock
+     data-entity-type="Invoice"
+     data-entity-id="@Model.Id"
+     data-can-force-release="@canForceEditLock.ToString().ToLowerInvariant()">
 
     @await Html.PartialAsync("~/Views/Invoices/DetailPartials/_InvoiceTopHeader.cshtml", Model)
 
@@ -30,5 +37,7 @@
 </div>
 
 @await Html.PartialAsync("~/Views/Invoices/DetailPartials/_InvoiceDetailStyles.cshtml", Model)
+
+<script src="~/js/entity-edit-lock.js" asp-append-version="true"></script>
 
 @await Html.PartialAsync("~/Views/Invoices/DetailPartials/_InvoiceDetailScripts.cshtml", Model)

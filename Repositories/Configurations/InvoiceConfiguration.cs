@@ -63,6 +63,9 @@ namespace AutoStock.Repositories.Configurations
             builder.Property(x => x.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 
+            builder.Property(x => x.RowVersion)
+                .IsRowVersion();
+
             builder.HasOne(x => x.Customer)
                 .WithMany()
                 .HasForeignKey(x => x.CustomerId)

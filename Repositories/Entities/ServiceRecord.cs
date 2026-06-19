@@ -52,6 +52,8 @@ namespace AutoStock.Repositories.Entities
         public string? EstimatedAmountNote { get; set; }
         public string? VehicleDeliveredBySnapshot { get; set; }
 
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
         public ICollection<ServiceOperation> Operations { get; set; } = new List<ServiceOperation>();
 
         public ICollection<ServiceRecordImage> Images { get; set; } = new List<ServiceRecordImage>();

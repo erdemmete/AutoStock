@@ -28,17 +28,20 @@ namespace AutoStock.API.Controllers
         private readonly AppDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IAuditLogService _auditLogService;
+        private readonly IEntityEditLockService _entityEditLockService;
         private readonly ILogger<VehicleQrCodesController> _logger;
 
         public VehicleQrCodesController(
             AppDbContext context,
             IDateTimeProvider dateTimeProvider,
             IAuditLogService auditLogService,
+            IEntityEditLockService entityEditLockService,
             ILogger<VehicleQrCodesController> logger)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
             _auditLogService = auditLogService;
+            _entityEditLockService = entityEditLockService;
             _logger = logger;
         }
 
@@ -52,6 +55,13 @@ namespace AutoStock.API.Controllers
             var userIdResult = GetCurrentUserId();
             if (userIdResult.IsFailure)
                 return UnauthorizedResult(userIdResult);
+
+            var serviceRecordLockResult = await ValidateOptionalServiceRecordLockAsync(
+                workshopIdResult.Data,
+                userIdResult.Data);
+
+            if (serviceRecordLockResult is not null)
+                return serviceRecordLockResult;
 
             var result = await CreateOrReplaceAssignedQrAsync(
                 workshopIdResult.Data,
@@ -71,6 +81,13 @@ namespace AutoStock.API.Controllers
             var userIdResult = GetCurrentUserId();
             if (userIdResult.IsFailure)
                 return UnauthorizedResult(userIdResult);
+
+            var serviceRecordLockResult = await ValidateOptionalServiceRecordLockAsync(
+                workshopIdResult.Data,
+                userIdResult.Data);
+
+            if (serviceRecordLockResult is not null)
+                return serviceRecordLockResult;
 
             var normalizedCode = NormalizeQrCode(request.Code);
 
@@ -375,6 +392,22 @@ namespace AutoStock.API.Controllers
                     x.Id == vehicleId &&
                     x.WorkshopId == workshopId &&
                     x.IsActive);
+        }
+
+        private async Task<IActionResult?> ValidateOptionalServiceRecordLockAsync(int workshopId, int userId)
+        {
+            var serviceRecordId = GetServiceRecordIdHeader();
+            if (!serviceRecordId.HasValue)
+                return null;
+
+            var result = await _entityEditLockService.ValidateAsync(
+                "ServiceRecord",
+                serviceRecordId.Value,
+                GetEditLockToken(),
+                workshopId,
+                userId);
+
+            return result.IsFailure ? ToActionResult(result) : null;
         }
 
         private async Task<List<VehicleQrCode>> RetireActiveVehicleQrCodesAsync(

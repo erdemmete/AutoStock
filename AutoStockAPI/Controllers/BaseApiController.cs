@@ -7,6 +7,9 @@ namespace AutoStock.API.Controllers
 {
     public abstract class BaseApiController : ControllerBase
     {
+        protected const string EditLockTokenHeaderName = "X-Sente-Edit-Lock-Token";
+        protected const string ServiceRecordIdHeaderName = "X-Sente-ServiceRecord-Id";
+
         protected ServiceResult<int> GetCurrentWorkshopId()
         {
             var workshopIdClaim =
@@ -46,6 +49,20 @@ namespace AutoStock.API.Controllers
             return User.FindFirst(ClaimTypes.Role)?.Value ??
                    User.FindFirst("role")?.Value ??
                    User.FindFirst("Role")?.Value;
+        }
+
+        protected string? GetEditLockToken()
+        {
+            var value = Request.Headers[EditLockTokenHeaderName].FirstOrDefault();
+            return string.IsNullOrWhiteSpace(value) ? null : value;
+        }
+
+        protected int? GetServiceRecordIdHeader()
+        {
+            var value = Request.Headers[ServiceRecordIdHeaderName].FirstOrDefault();
+            return int.TryParse(value, out var serviceRecordId) && serviceRecordId > 0
+                ? serviceRecordId
+                : null;
         }
 
         protected IActionResult ToActionResult<T>(ServiceResult<T> result)

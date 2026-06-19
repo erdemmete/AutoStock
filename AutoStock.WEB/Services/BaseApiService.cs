@@ -51,7 +51,21 @@ namespace AutoStock.WEB.Services
                     new AuthenticationHeaderValue("Bearer", token);
             }
 
+            ForwardRequestHeader(client, "X-Sente-Edit-Lock-Token");
+            ForwardRequestHeader(client, "X-Sente-ServiceRecord-Id");
+            ForwardRequestHeader(client, "X-Sente-RowVersion");
+
             return client;
+        }
+
+        private void ForwardRequestHeader(HttpClient client, string headerName)
+        {
+            var value = _httpContextAccessor.HttpContext?.Request.Headers[headerName].FirstOrDefault();
+
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                client.DefaultRequestHeaders.TryAddWithoutValidation(headerName, value);
+            }
         }
 
         protected async Task<ApiResponse<TResponse>> SendAsync<TResponse>(

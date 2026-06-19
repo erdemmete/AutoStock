@@ -18,6 +18,8 @@ public class InvoiceDetailDto
 
     public DateTime InvoiceDate { get; set; }
 
+    public string? RowVersion { get; set; }
+
     public string? WorkshopDisplayName { get; set; }
 
     public string? WorkshopLegalTitle { get; set; }

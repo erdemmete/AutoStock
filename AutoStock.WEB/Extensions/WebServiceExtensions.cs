@@ -31,6 +31,7 @@ namespace AutoStock.WEB.Extensions
             services.AddScoped<AuthApiService>();
             services.AddScoped<DashboardApiService>();
             services.AddScoped<VehicleQrCodesApiService>();
+            services.AddScoped<EntityEditLockApiService>();
 
             services.Configure<EmailSettings>(
                 configuration.GetSection("EmailSettings"));
