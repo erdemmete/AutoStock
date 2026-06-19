@@ -17,6 +17,8 @@
     <link rel="stylesheet" href="~/css/site-toast.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/sente-confirm.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AutoStock.WEB.styles.css" asp-append-version="true" />
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <meta name="theme-color" content="#2563eb" />
 </head>
 
 <body>
@@ -29,6 +31,16 @@
     @if (!isAuthPage)
     {
         <partial name="_AdminQuickActions" />
+        <aside class="web-push-optin" data-web-push-optin hidden>
+            <div>
+                <strong>Bildirimleri kaçırmayın</strong>
+                <span>Destek yanıtları ve fatura bildirimlerinden anında haberdar olun.</span>
+            </div>
+            <div class="web-push-optin-actions">
+                <button type="button" data-web-push-open>Bildirimleri Aç</button>
+                <button type="button" data-web-push-dismiss>Şimdi Değil</button>
+            </div>
+        </aside>
     }
 
     <div class="container">
@@ -48,6 +60,7 @@
     <script src="~/js/site-toast.js" asp-append-version="true"></script>
     <script src="~/js/sente-money.js" asp-append-version="true"></script>
     <script src="~/js/sente-confirm.js" asp-append-version="true"></script>
+    <script src="~/js/sente-web-push.js" asp-append-version="true"></script>
 
     @if (TempData["ToastSuccess"] != null)
     {

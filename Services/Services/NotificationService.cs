@@ -4,8 +4,10 @@ using AutoStock.Repositories.Enums;
 using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Notifications;
+using AutoStock.Services.Dtos.WebPush;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AutoStock.Services.Services
 {
@@ -13,13 +15,19 @@ namespace AutoStock.Services.Services
     {
         private readonly AppDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IWebPushSender _webPushSender;
+        private readonly ILogger<NotificationService> _logger;
 
         public NotificationService(
             AppDbContext context,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IWebPushSender webPushSender,
+            ILogger<NotificationService> logger)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
+            _webPushSender = webPushSender;
+            _logger = logger;
         }
 
         public async Task<ServiceResult<bool>> CreateForUsersAsync(
@@ -70,6 +78,8 @@ namespace AutoStock.Services.Services
 
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
+
+            await TrySendWebPushAsync(notification, activeUserIds);
 
             return ServiceResult<bool>.Success(true);
         }
@@ -301,6 +311,62 @@ namespace AutoStock.Services.Services
             return normalized.Length <= maxLength
                 ? normalized
                 : normalized[..maxLength];
+        }
+
+        private async Task TrySendWebPushAsync(Notification notification, IReadOnlyCollection<int> userIds)
+        {
+            var payload = BuildWebPushPayload(notification);
+
+            if (payload is null)
+                return;
+
+            try
+            {
+                await _webPushSender.SendToUsersAsync(userIds, notification, payload);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Web Push delivery failed after in-app notification was saved. NotificationId: {NotificationId}",
+                    notification.Id);
+            }
+        }
+
+        private static WebPushPayloadDto? BuildWebPushPayload(Notification notification)
+        {
+            var url = string.IsNullOrWhiteSpace(notification.ActionUrl)
+                ? "/Notifications"
+                : notification.ActionUrl;
+
+            return notification.Type switch
+            {
+                NotificationType.SupportRequestCreated => new WebPushPayloadDto
+                {
+                    Title = "Yeni Destek Talebi",
+                    Body = "Yeni bir destek talebi oluşturuldu.",
+                    Url = url,
+                    NotificationId = notification.Id,
+                    Tag = $"notification-{notification.Id}"
+                },
+                NotificationType.SupportRequestAnswered => new WebPushPayloadDto
+                {
+                    Title = "Sente360 Destek",
+                    Body = "Destek talebinize yeni bir yanıt geldi.",
+                    Url = url,
+                    NotificationId = notification.Id,
+                    Tag = $"notification-{notification.Id}"
+                },
+                NotificationType.InvoiceDocumentUploaded or NotificationType.InvoiceDocumentReuploaded => new WebPushPayloadDto
+                {
+                    Title = "Fatura Belgesi Hazır",
+                    Body = "Muhasebeciniz talebiniz için fatura belgesini yükledi.",
+                    Url = url,
+                    NotificationId = notification.Id,
+                    Tag = $"notification-{notification.Id}"
+                },
+                _ => null
+            };
         }
     }
 }

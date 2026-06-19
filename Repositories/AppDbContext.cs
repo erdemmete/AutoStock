@@ -45,6 +45,7 @@ namespace AutoStock.Repositories
         public DbSet<UserNotification> UserNotifications { get; set; }
         public DbSet<SupportRequestMessage> SupportRequestMessages { get; set; }
         public DbSet<EntityEditLock> EntityEditLocks { get; set; }
+        public DbSet<WebPushSubscription> WebPushSubscriptions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

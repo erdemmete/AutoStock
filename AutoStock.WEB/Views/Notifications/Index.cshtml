@@ -24,6 +24,17 @@
         <p>Destek yanıtları ve fatura bildirimleri.</p>
     </section>
 
+    <section class="ntf-push-card">
+        <div>
+            <strong>Tarayıcı bildirimleri</strong>
+            <span data-web-push-status>Kontrol ediliyor</span>
+        </div>
+        <div>
+            <button type="button" data-web-push-open>Bildirimleri Aç</button>
+            <button type="button" class="secondary" data-web-push-close-device>Bu Cihazda Kapat</button>
+        </div>
+    </section>
+
     <section class="ntf-filter">
         <a class="@(query.IsRead == null ? "active" : "")" href="/Notifications">Tümü</a>
         <a class="@(query.IsRead == false ? "active" : "")" href="/Notifications?IsRead=false">Okunmamış</a>
@@ -179,6 +190,58 @@
         gap: 6px;
         box-shadow: 0 12px 26px rgba(15, 23, 42, .05);
     }
+
+    .ntf-push-card {
+        margin: 18px 0 0;
+        padding: 16px;
+        border-radius: 22px;
+        background: #ffffff;
+        border: 1px solid #dbe3ef;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .045);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+        .ntf-push-card strong {
+            display: block;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 950;
+        }
+
+        .ntf-push-card span {
+            display: block;
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 850;
+        }
+
+        .ntf-push-card div:last-child {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ntf-push-card button {
+            min-height: 40px;
+            border: none;
+            border-radius: 999px;
+            padding: 0 14px;
+            background: #2563eb;
+            color: #ffffff;
+            font-weight: 950;
+            cursor: pointer;
+        }
+
+            .ntf-push-card button.secondary {
+                background: #f8fafc;
+                color: #475569;
+                border: 1px solid #dbe3ef;
+            }
 
     .ntf-filter a {
         min-height: 38px;

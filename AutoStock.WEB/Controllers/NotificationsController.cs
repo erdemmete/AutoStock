@@ -38,6 +38,15 @@ namespace AutoStock.WEB.Controllers
             });
         }
 
+        [HttpGet("Notifications/Header")]
+        public IActionResult Header()
+        {
+            if (CurrentUserId is null)
+                return Unauthorized();
+
+            return ViewComponent("NotificationBell");
+        }
+
         [HttpPost("Notifications/{id:int}/Read")]
         public async Task<IActionResult> Read(int id, string? returnUrl)
         {

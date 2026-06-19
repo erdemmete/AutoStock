@@ -34,12 +34,16 @@ namespace AutoStock.Services.Extensions
             services.AddScoped<IServiceRecordImageService, ServiceRecordImageService>();
             services.Configure<EmailSettings>(
                 configuration.GetSection("EmailSettings"));
+            services.Configure<WebPushSettings>(
+                configuration.GetSection("WebPushSettings"));
 
             services.AddScoped<IEmailSender, SmtpEmailSender>();
             services.AddScoped<IInvoiceEmailService, InvoiceEmailService>();
             services.AddScoped<IVehicleCatalogSeeder, VehicleCatalogSeeder>();
             services.AddScoped<IAccountingInvoiceRequestService, AccountingInvoiceRequestService>();
             services.AddScoped<INotificationService, NotificationService>();
+            services.AddScoped<IWebPushSubscriptionService, WebPushSubscriptionService>();
+            services.AddScoped<IWebPushSender, WebPushSender>();
             services.AddScoped<IEntityEditLockService, EntityEditLockService>();
 
             return services;

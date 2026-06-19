@@ -40,6 +40,7 @@ namespace AutoStock.WEB.Extensions
             services.AddScoped<AdminWorkshopInviteEmailService>();
             services.AddScoped<AccountingInvoiceRequestApiService>();
             services.AddScoped<NotificationApiService>();
+            services.AddScoped<WebPushApiService>();
 
             return services;
         }
