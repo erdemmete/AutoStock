@@ -24,6 +24,7 @@ namespace AutoStock.WEB.Services
             {
                 ["search"] = query.Search,
                 ["brand"] = query.Brand,
+                ["criticalOnly"] = query.CriticalOnly ? "true" : null,
                 ["pageNumber"] = query.PageNumber.ToString(),
                 ["pageSize"] = query.PageSize.ToString()
             });

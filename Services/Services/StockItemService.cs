@@ -663,6 +663,13 @@ namespace Services.Services.StockItems
                 stockItemsQuery = stockItemsQuery.Where(x => x.Brand == query.Brand);
             }
 
+            if (query.CriticalOnly)
+            {
+                stockItemsQuery = stockItemsQuery.Where(x =>
+                    x.MinimumQuantity > 0 &&
+                    x.Quantity <= x.MinimumQuantity);
+            }
+
             var totalCount = await stockItemsQuery.CountAsync();
 
             var items = await stockItemsQuery

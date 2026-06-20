@@ -10,8 +10,6 @@
         ? "Kullanıcı"
         : Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? Model.FullName;
 
-    string FormatMoney(decimal value) => SenteMoney.Format(value);
-
     string FormatActivityDate(DateTime date)
     {
         if (date == default)
@@ -264,6 +262,19 @@
                 gap: 16px;
                 box-shadow: var(--soft-shadow);
             }
+
+            .stat-card-link {
+                color: inherit;
+                text-decoration: none;
+                transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+            }
+
+                .stat-card-link:hover {
+                    color: inherit;
+                    transform: translateY(-2px);
+                    border-color: rgba(239, 68, 68, .28);
+                    box-shadow: 0 18px 38px rgba(15, 23, 42, .10);
+                }
 
             .stat-icon {
                 width: 52px;
@@ -997,7 +1008,7 @@
                     <p>
                         @if (isOwner)
                         {
-                            <span>Açık servisleri, tahsilatları ve günlük durumu tek ekranda görün.</span>
+                            <span>Açık servisleri ve günlük operasyon durumunu tek ekranda görün.</span>
                         }
                         else
                         {
@@ -1012,43 +1023,66 @@
                     </div>
 
                     <div class="date-badge">
-                        @DateTime.Now.ToString("dd.MM.yyyy")
+                        @Model.TodayDisplayDate
                     </div>
                 </div>
             </header>
 
             <section class="stats-grid">
-                <article class="stat-card">
+                <a class="stat-card stat-card-link"
+                   asp-controller="ServiceRecords"
+                   asp-action="Index"
+                   asp-route-StatusFilter="active">
                     <div class="stat-icon blue">🚗</div>
                     <div class="stat-content">
                         <span>Açık Servis Kayıtları</span>
                         <div class="stat-value">
                             <strong>@Model.ActiveServiceRecordCount</strong>
+                            @if (Model.ActiveServiceRecordCount > 0)
+                            {
+                                <small>İncele</small>
+                            }
                         </div>
                     </div>
-                </article>
+                </a>
 
                 @if (isOwner)
                 {
-                    <article class="stat-card">
+                    <a class="stat-card stat-card-link"
+                       asp-controller="Invoices"
+                       asp-action="Index"
+                       asp-route-Status="1">
                         <div class="stat-icon purple">🧾</div>
                         <div class="stat-content">
-                            <span>Bekleyen Fatura Taslakları</span>
+                            <span>Bekleyen Hesap Özeti Taslakları</span>
                             <div class="stat-value">
                                 <strong>@Model.DraftInvoiceCount</strong>
+                                @if (Model.DraftInvoiceCount > 0)
+                                {
+                                    <small>İncele</small>
+                                }
                             </div>
                         </div>
-                    </article>
+                    </a>
 
-                    <article class="stat-card">
-                        <div class="stat-icon green">₺</div>
+                    <a class="stat-card stat-card-link"
+                       asp-controller="ServiceRecords"
+                       asp-action="Index"
+                       asp-route-StatusFilter="completed"
+                       asp-route-CreatedFrom="@Model.TodayFilterDate"
+                       asp-route-CreatedTo="@Model.TodayFilterDate">
+                        <div class="stat-icon green">✓</div>
                         <div class="stat-content">
-                            <span>Tahsilat Bekleyen</span>
+                            <span>Bugün Tamamlanan Servisler</span>
                             <div class="stat-value">
-                                <strong>@FormatMoney(Model.PendingCollectionAmount)</strong>
+                                <strong>@Model.TodayCompletedServiceRecordCount</strong>
+                                @if (Model.TodayCompletedServiceRecordCount > 0)
+                                {
+                                    <small>İncele</small>
+                                }
                             </div>
                         </div>
-                    </article>
+                    </a>
                 }
                 else
                 {
@@ -1073,7 +1107,10 @@
                     </article>
                 }
 
-                <article class="stat-card">
+                <a class="stat-card stat-card-link"
+                   asp-controller="StockItems"
+                   asp-action="Index"
+                   asp-route-CriticalOnly="true">
                     <div class="stat-icon red">!</div>
                     <div class="stat-content">
                         <span>Kritik Stok Uyarısı</span>
@@ -1085,7 +1122,7 @@
                             }
                         </div>
                     </div>
-                </article>
+                </a>
             </section>
 
             <section class="content-grid">
@@ -1185,7 +1222,7 @@
                             <div class="quick-start-icon">🧾</div>
                             <div class="quick-start-content">
                                 <strong>Bekleyen Taslaklar</strong>
-                                <span>Fatura takip listesi</span>
+                                <span>Hesap özeti takip listesi</span>
                             </div>
                             <div class="quick-start-arrow">›</div>
                         </a>
@@ -1255,15 +1292,15 @@
                             </div>
 
                             <div class="mini-summary-row">
-                                <span>Fatura taslağı</span>
+                                <span>Hesap özeti taslağı</span>
                                 <strong>@Model.DraftInvoiceCount</strong>
                             </div>
 
                             @if (isOwner)
                             {
                                 <div class="mini-summary-row">
-                                    <span>Tahsilat bekleyen</span>
-                                    <strong>@FormatMoney(Model.PendingCollectionAmount)</strong>
+                                    <span>Bugün tamamlanan servis</span>
+                                    <strong>@Model.TodayCompletedServiceRecordCount</strong>
                                 </div>
                             }
                         </div>

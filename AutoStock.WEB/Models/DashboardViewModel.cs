@@ -16,11 +16,15 @@
 
         public int TodayServiceRecordCount { get; set; }
 
+        public int TodayCompletedServiceRecordCount { get; set; }
+
+        public string TodayFilterDate { get; set; } = string.Empty;
+
+        public string TodayDisplayDate { get; set; } = string.Empty;
+
         public int InProgressServiceRecordCount { get; set; }
 
         public int DraftInvoiceCount { get; set; }
-
-        public decimal PendingCollectionAmount { get; set; }
 
         public int CriticalStockItemCount { get; set; }
 

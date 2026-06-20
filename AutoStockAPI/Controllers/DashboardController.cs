@@ -59,7 +59,9 @@ namespace AutoStock.API.Controllers
             {
                 UserId = user.Id,
                 FullName = user.FullName,
-                Role = role
+                Role = role,
+                TodayFilterDate = _dateTimeProvider.Today.ToString("yyyy-MM-dd"),
+                TodayDisplayDate = _dateTimeProvider.Today.ToString("dd.MM.yyyy")
             };
 
             if (role == "Admin")
@@ -102,6 +104,15 @@ namespace AutoStock.API.Controllers
                     x.CreatedAt >= todayStartUtc &&
                     x.CreatedAt < tomorrowStartUtc);
 
+            var todayCompletedServiceRecordCount = await _context.ServiceRecords
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.Status == ServiceRecordStatus.Completed &&
+                    x.CompletedAt.HasValue &&
+                    x.CompletedAt.Value >= todayStartUtc &&
+                    x.CompletedAt.Value < tomorrowStartUtc);
+
             var inProgressServiceRecordCount = await _context.ServiceRecords
                 .AsNoTracking()
                 .CountAsync(x =>
@@ -121,23 +132,6 @@ namespace AutoStock.API.Controllers
                     x.IsActive &&
                     x.MinimumQuantity > 0 &&
                     x.Quantity <= x.MinimumQuantity);
-
-            decimal pendingCollectionAmount = 0;
-
-            if (role == "Owner")
-            {
-                var debitTotal = await _context.CurrentAccountTransactions
-                    .AsNoTracking()
-                    .Where(x => x.WorkshopId == workshopId)
-                    .SumAsync(x => (decimal?)x.Debit) ?? 0;
-
-                var creditTotal = await _context.CurrentAccountTransactions
-                    .AsNoTracking()
-                    .Where(x => x.WorkshopId == workshopId)
-                    .SumAsync(x => (decimal?)x.Credit) ?? 0;
-
-                pendingCollectionAmount = Math.Max(0, debitTotal - creditTotal);
-            }
 
             var recentServiceRecords = await _context.ServiceRecords
                 .AsNoTracking()
@@ -190,9 +184,9 @@ namespace AutoStock.API.Controllers
             response.WorkshopName = workshop.Name;
             response.ActiveServiceRecordCount = activeServiceRecordCount;
             response.TodayServiceRecordCount = todayServiceRecordCount;
+            response.TodayCompletedServiceRecordCount = todayCompletedServiceRecordCount;
             response.InProgressServiceRecordCount = inProgressServiceRecordCount;
             response.DraftInvoiceCount = draftInvoiceCount;
-            response.PendingCollectionAmount = pendingCollectionAmount;
             response.CriticalStockItemCount = criticalStockItemCount;
             response.RecentActivities = recentActivities
                 .OrderByDescending(x => x.CreatedAt)

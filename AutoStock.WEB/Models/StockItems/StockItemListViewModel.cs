@@ -11,6 +11,6 @@
         public decimal Quantity { get; set; }
         public decimal SalePrice { get; set; }
         public decimal MinimumQuantity { get; set; }
-        public bool IsCritical { get; set; }
+        public bool IsCritical => MinimumQuantity > 0 && Quantity <= MinimumQuantity;
     }
 }

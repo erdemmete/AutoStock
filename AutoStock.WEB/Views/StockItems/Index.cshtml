@@ -18,6 +18,7 @@
 
     var hasAdvancedFilter =
         !string.IsNullOrWhiteSpace(query.Brand) ||
+        query.CriticalOnly ||
         pageSize != 10;
 
     string FormatCode(string? code)
@@ -113,6 +114,17 @@
                     </select>
                 </div>
 
+                <label class="stk-critical-filter">
+                    <input type="checkbox"
+                           name="CriticalOnly"
+                           value="true"
+                           checked="@(query.CriticalOnly ? "checked" : null)" />
+                    <span>
+                        <strong>Kritik seviyedeki stoklar</strong>
+                        
+                    </span>
+                </label>
+
                 <div class="stk-filter-actions">
                     <button type="submit" class="stk-apply-btn">Filtrele</button>
 
@@ -151,6 +163,7 @@
                                                       {
                                                           Search = query.Search,
                                                           Brand = query.Brand,
+                                                          CriticalOnly = query.CriticalOnly,
                                                           PageNumber = pageNumber - 1,
                                                           PageSize = pageSize
                                                       })
@@ -170,6 +183,7 @@
                                    {
                                        Search = query.Search,
                                        Brand = query.Brand,
+                                       CriticalOnly = query.CriticalOnly,
                                        PageNumber = number,
                                        PageSize = pageSize
                                    })">
@@ -185,6 +199,7 @@
                                                       {
                                                           Search = query.Search,
                                                           Brand = query.Brand,
+                                                          CriticalOnly = query.CriticalOnly,
                                                           PageNumber = pageNumber + 1,
                                                           PageSize = pageSize
                                                       })
@@ -270,6 +285,7 @@
                                               {
                                                   Search = query.Search,
                                                   Brand = query.Brand,
+                                                  CriticalOnly = query.CriticalOnly,
                                                   PageNumber = pageNumber - 1,
                                                   PageSize = pageSize
                                               })
@@ -289,6 +305,7 @@
                                {
                                    Search = query.Search,
                                    Brand = query.Brand,
+                                   CriticalOnly = query.CriticalOnly,
                                    PageNumber = number,
                                    PageSize = pageSize
                                })">
@@ -304,6 +321,7 @@
                                               {
                                                   Search = query.Search,
                                                   Brand = query.Brand,
+                                                  CriticalOnly = query.CriticalOnly,
                                                   PageNumber = pageNumber + 1,
                                                   PageSize = pageSize
                                               })
@@ -514,7 +532,7 @@
         margin-top: 18px;
         padding-top: 18px;
         border-top: 1px solid #e2e8f0;
-        grid-template-columns: minmax(220px, .8fr) minmax(180px, .45fr) auto;
+        grid-template-columns: minmax(220px, .8fr) minmax(180px, .45fr) minmax(230px, .7fr) auto;
         gap: 14px;
         align-items: end;
     }
@@ -550,6 +568,48 @@
             font-weight: 800;
             outline: none;
             box-sizing: border-box;
+        }
+
+    .stk-critical-filter {
+        min-height: 46px;
+        margin: 0;
+        padding: 9px 12px;
+        border-radius: 15px;
+        border: 1px solid #d4deeb;
+        background: #f8fafc;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+        .stk-critical-filter input {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+            accent-color: #e11d48;
+        }
+
+        .stk-critical-filter span {
+            min-width: 0;
+            display: grid;
+            gap: 2px;
+        }
+
+        .stk-critical-filter strong {
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 950;
+            line-height: 1.1;
+        }
+
+        .stk-critical-filter small {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1.15;
         }
 
     .stk-filter-actions {

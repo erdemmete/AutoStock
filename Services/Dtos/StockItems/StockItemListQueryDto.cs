@@ -6,6 +6,8 @@
 
         public string? Brand { get; set; }
 
+        public bool CriticalOnly { get; set; }
+
         public int PageNumber { get; set; } = 1;
 
         public int PageSize { get; set; } = 10;

@@ -1277,13 +1277,20 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
 
         if (query.CreatedFrom.HasValue)
         {
-            recordsQuery = recordsQuery.Where(x => x.CreatedAt >= query.CreatedFrom.Value.Date);
+            var createdFrom = query.CreatedFrom.Value.Date;
+
+            recordsQuery = statusFilter == "completed"
+                ? recordsQuery.Where(x => x.CompletedAt.HasValue && x.CompletedAt.Value >= createdFrom)
+                : recordsQuery.Where(x => x.CreatedAt >= createdFrom);
         }
 
         if (query.CreatedTo.HasValue)
         {
             var createdToExclusive = query.CreatedTo.Value.Date.AddDays(1);
-            recordsQuery = recordsQuery.Where(x => x.CreatedAt < createdToExclusive);
+
+            recordsQuery = statusFilter == "completed"
+                ? recordsQuery.Where(x => x.CompletedAt.HasValue && x.CompletedAt.Value < createdToExclusive)
+                : recordsQuery.Where(x => x.CreatedAt < createdToExclusive);
         }
 
         var totalCount = await recordsQuery.CountAsync();
