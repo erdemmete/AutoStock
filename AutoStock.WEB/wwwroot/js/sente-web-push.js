@@ -1,21 +1,20 @@
 (function () {
-    const dismissedKey = "sente360_web_push_dismissed";
     let publicKeyCache = null;
+    let serverReadyCache = null;
 
     document.addEventListener("DOMContentLoaded", async function () {
         if (!isAuthenticatedPage()) return;
 
         registerServiceWorker();
-        bindOptInCard();
+        bindPushControls();
         bindLogoutForms();
         bindServiceWorkerMessages();
 
-        if (isPushSupported() && Notification.permission === "granted") {
+        if (isPushSupported() && Notification.permission === "granted" && await isServerConfigured()) {
             await ensureSubscription(false);
         }
 
         await updatePushStatusUI();
-        maybeShowOptIn();
     });
 
     function isAuthenticatedPage() {
@@ -38,21 +37,14 @@
         }
     }
 
-    function bindOptInCard() {
+    function bindPushControls() {
         document.addEventListener("click", async function (event) {
             const openButton = event.target.closest("[data-web-push-open]");
-            const dismissButton = event.target.closest("[data-web-push-dismiss]");
             const closeButton = event.target.closest("[data-web-push-close-device]");
 
             if (openButton) {
                 event.preventDefault();
                 await requestAndSubscribe();
-            }
-
-            if (dismissButton) {
-                event.preventDefault();
-                sessionStorage.setItem(dismissedKey, "1");
-                hideOptIn();
             }
 
             if (closeButton) {
@@ -94,20 +86,28 @@
     }
 
     async function requestAndSubscribe() {
+        if (isIosBrowserTab()) {
+            await updatePushStatusUI(getIosInstallStatus(), getIosInstallHint());
+            return;
+        }
+
         if (!isPushSupported()) {
-            showStatusMessage(getUnsupportedMessage(), "error");
-            await updatePushStatusUI("Bu cihaz desteklemiyor");
+            await updatePushStatusUI("Bu cihaz desteklemiyor", getUnsupportedMessage());
             return;
         }
 
         if (!window.isSecureContext) {
-            showStatusMessage("Tarayıcı bildirimleri için güvenli bağlantı gerekir.", "error");
+            await updatePushStatusUI("Güvenli bağlantı gerekir", "Bildirimleri kullanmak için güvenli bağlantı gerekir.");
             return;
         }
 
         if (Notification.permission === "denied") {
-            showStatusMessage("Tarayıcı bildirimleri tarayıcı ayarlarından engellenmiş.", "error");
-            await updatePushStatusUI("Tarayıcı tarafından engellendi");
+            await updatePushStatusUI("Tarayıcı tarafından engellendi", "Bildirim izni tarayıcı ayarlarından tekrar açılabilir.");
+            return;
+        }
+
+        if (!await isServerConfigured()) {
+            await updatePushStatusUI("Sunucuda yapılandırılmamış", "Bildirim anahtarları henüz tanımlanmamış.");
             return;
         }
 
@@ -116,8 +116,9 @@
             : await Notification.requestPermission();
 
         if (permission !== "granted") {
-            showStatusMessage("Tarayıcı bildirimi izni verilmedi.", "error");
-            await updatePushStatusUI(permission === "denied" ? "Tarayıcı tarafından engellendi" : "Kapalı");
+            await updatePushStatusUI(
+                permission === "denied" ? "Tarayıcı tarafından engellendi" : "Kapalı",
+                "Anlık bildirim almak için izin vermeniz gerekir.");
             return;
         }
 
@@ -139,16 +140,30 @@
 
             await upsertSubscription(subscription);
 
-            hideOptIn();
             await updatePushStatusUI("Açık");
 
             if (showMessage) {
-                showStatusMessage("Tarayıcı bildirimleri açıldı.", "success");
+                showStatusMessage("Anlık bildirimler açıldı.", "success");
             }
         } catch (error) {
             console.info("Sente360 web push subscription failed.", error);
-            showStatusMessage("Tarayıcı bildirimi açılamadı.", "error");
+            if (showMessage) {
+                await updatePushStatusUI(error.userMessage || "Açılamadı", "Bildirimler şu anda açılamadı. Daha sonra tekrar deneyebilirsiniz.");
+            }
         }
+    }
+
+    async function isServerConfigured() {
+        if (serverReadyCache !== null) return serverReadyCache;
+
+        try {
+            const publicKey = await getPublicKey();
+            serverReadyCache = Boolean(publicKey);
+        } catch {
+            serverReadyCache = false;
+        }
+
+        return serverReadyCache;
     }
 
     async function getPublicKey() {
@@ -159,7 +174,10 @@
         });
 
         if (!response.ok) {
-            throw new Error("Public key could not be loaded.");
+            const message = await readErrorMessage(response, "Tarayıcı bildirimleri henüz yapılandırılmamış.");
+            const error = new Error("Public key could not be loaded.");
+            error.userMessage = message;
+            throw error;
         }
 
         const data = await response.json();
@@ -176,7 +194,10 @@
         });
 
         if (!response.ok) {
-            throw new Error("Subscription could not be saved.");
+            const message = await readErrorMessage(response, "Tarayıcı bildirimi açılamadı.");
+            const error = new Error("Subscription could not be saved.");
+            error.userMessage = message;
+            throw error;
         }
     }
 
@@ -197,8 +218,8 @@
             await subscription.unsubscribe().catch(() => {});
         }
 
-        await updatePushStatusUI("Kapalı");
-        showStatusMessage("Bu cihaz için tarayıcı bildirimleri kapatıldı.", "info");
+        await updatePushStatusUI("Kapalı", "Anlık destek ve fatura bildirimleri için açabilirsiniz.");
+        showStatusMessage("Bu cihaz için bildirimler kapatıldı.", "info");
     }
 
     function deactivateSubscriptionBestEffort() {
@@ -215,29 +236,44 @@
             .catch(() => {});
     }
 
-    async function updatePushStatusUI(explicitText) {
+    async function updatePushStatusUI(explicitText, explicitHint) {
         const statusNodes = document.querySelectorAll("[data-web-push-status]");
-        if (!statusNodes.length) return;
+        const hintNodes = document.querySelectorAll("[data-web-push-hint]");
+        if (!statusNodes.length && !hintNodes.length) return;
 
         let text = explicitText;
+        let hint = explicitHint;
 
         if (!text) {
-            if (!isPushSupported()) {
+            if (isIosBrowserTab()) {
+                text = getIosInstallStatus();
+                hint = getIosInstallHint();
+            } else if (!isPushSupported()) {
                 text = "Bu cihaz desteklemiyor";
+                hint = getUnsupportedMessage();
             } else if (Notification.permission === "denied") {
                 text = "Tarayıcı tarafından engellendi";
+                hint = "Bildirim izni tarayıcı ayarlarından tekrar açılabilir.";
             } else if (Notification.permission !== "granted") {
                 text = "Kapalı";
+                hint = "Anlık destek ve fatura bildirimleri için açabilirsiniz.";
             } else {
                 const registration = await navigator.serviceWorker.ready;
                 const subscription = await registration.pushManager.getSubscription();
                 text = subscription ? "Açık" : "Kapalı";
+                hint = subscription
+                    ? "Bu cihazda anlık bildirimler açık."
+                    : "Anlık destek ve fatura bildirimleri için açabilirsiniz.";
             }
         }
 
         statusNodes.forEach(node => {
             node.textContent = text;
             node.dataset.state = text;
+        });
+
+        hintNodes.forEach(node => {
+            node.textContent = hint || "Anlık destek ve fatura bildirimleri için açabilirsiniz.";
         });
     }
 
@@ -262,26 +298,6 @@
         } catch {
             // Header refresh is best-effort.
         }
-    }
-
-    function maybeShowOptIn() {
-        const card = document.querySelector("[data-web-push-optin]");
-        if (!card) return;
-
-        if (!isPushSupported() || Notification.permission === "denied") {
-            card.hidden = true;
-            return;
-        }
-
-        if (Notification.permission === "default" && sessionStorage.getItem(dismissedKey) !== "1") {
-            card.hidden = false;
-        }
-    }
-
-    function hideOptIn() {
-        document.querySelectorAll("[data-web-push-optin]").forEach(card => {
-            card.hidden = true;
-        });
     }
 
     function toSubscriptionRequest(subscription) {
@@ -316,7 +332,38 @@
         }
     }
 
+    async function readErrorMessage(response, fallback) {
+        try {
+            const data = await response.json();
+            return data.message || fallback;
+        } catch {
+            return fallback;
+        }
+    }
+
     function getUnsupportedMessage() {
-        return "Sente360 bildirimlerini kullanmak için Paylaş menüsünden Ana Ekrana Ekle seçeneğini kullanın. Ardından Ana Ekrandaki Sente360 uygulamasını açın.";
+        return "Bu cihazda tarayıcı bildirimi desteklenmiyor.";
+    }
+
+    function getIosInstallStatus() {
+        return "Ana Ekrana ekleyin";
+    }
+
+    function getIosInstallHint() {
+        return "iPhone'da bildirim almak için Safari'deki Paylaş menüsünden Sente360'ı Ana Ekrana ekleyin ve uygulamayı oradan açın.";
+    }
+
+    function isIosBrowserTab() {
+        return isIosDevice() && !isStandaloneApp();
+    }
+
+    function isIosDevice() {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    }
+
+    function isStandaloneApp() {
+        return window.matchMedia?.("(display-mode: standalone)")?.matches ||
+            window.navigator.standalone === true;
     }
 })();
