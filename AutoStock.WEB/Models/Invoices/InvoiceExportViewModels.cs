@@ -10,11 +10,15 @@ public class InvoiceExportQueryViewModel
 
     public string? Preset { get; set; }
 
+    public string? Tab { get; set; }
+
     public bool IncludeCancelled { get; set; }
 
     public string? ToEmail { get; set; }
 
     public string? Message { get; set; }
+
+    public List<int> InvoiceIds { get; set; } = new();
 
     public void Normalize()
     {
@@ -22,6 +26,10 @@ public class InvoiceExportQueryViewModel
         var preset = string.IsNullOrWhiteSpace(Preset)
             ? "this-month"
             : Preset.Trim().ToLowerInvariant();
+
+        Tab = string.IsNullOrWhiteSpace(Tab)
+            ? "prepare"
+            : Tab.Trim().ToLowerInvariant();
 
         if (!StartDate.HasValue || !EndDate.HasValue)
         {
@@ -50,7 +58,9 @@ public class InvoiceExportQueryViewModel
             StartDate = StartDate,
             EndDate = EndDate,
             Preset = Preset,
-            IncludeCancelled = IncludeCancelled
+            Tab = Tab,
+            IncludeCancelled = IncludeCancelled,
+            InvoiceIds = NormalizeInvoiceIds()
         };
     }
 
@@ -63,10 +73,20 @@ public class InvoiceExportQueryViewModel
             StartDate = StartDate,
             EndDate = EndDate,
             Preset = Preset,
+            Tab = Tab,
             IncludeCancelled = IncludeCancelled,
             ToEmail = ToEmail ?? string.Empty,
-            Message = Message
+            Message = Message,
+            InvoiceIds = NormalizeInvoiceIds()
         };
+    }
+
+    private List<int> NormalizeInvoiceIds()
+    {
+        return (InvoiceIds ?? new List<int>())
+            .Where(x => x > 0)
+            .Distinct()
+            .ToList();
     }
 
     private static (DateTime Start, DateTime End) GetThisWeek(DateTime today)
@@ -107,7 +127,7 @@ public class InvoiceExportDownloadResult
 
     public byte[] Content { get; set; } = Array.Empty<byte>();
 
-    public string FileName { get; set; } = "fatura-aktarim.zip";
+    public string FileName { get; set; } = "belgeler.zip";
 
     public string ContentType { get; set; } = "application/zip";
 
@@ -134,7 +154,7 @@ public class InvoiceExportDownloadResult
             messages.Insert(0, errorMessage);
 
         if (!messages.Any())
-            messages.Add("Fatura aktarım paketi indirilemedi.");
+            messages.Add("Belgeler indirilemedi.");
 
         return new InvoiceExportDownloadResult
         {

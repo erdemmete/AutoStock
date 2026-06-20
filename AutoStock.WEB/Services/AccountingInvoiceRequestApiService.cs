@@ -20,7 +20,7 @@ namespace AutoStock.WEB.Services
         {
             return await GetAsync<List<AccountingEmailRecipientDto>>(
                 "/api/accounting-invoice-requests/recipients",
-                "Muhasebeci e-posta adresleri alınırken hata oluştu.");
+                "Fatura hazırlık alıcıları alınırken hata oluştu.");
         }
 
         public async Task<ApiResponse<AccountingEmailRecipientDto>> SaveRecipientAsync(CreateAccountingEmailRecipientDto model)
@@ -28,7 +28,7 @@ namespace AutoStock.WEB.Services
             return await PostJsonAsync<CreateAccountingEmailRecipientDto, AccountingEmailRecipientDto>(
                 "/api/accounting-invoice-requests/recipients",
                 model,
-                "Muhasebeci e-posta adresi kaydedilirken hata oluştu.");
+                "Fatura hazırlık alıcısı kaydedilirken hata oluştu.");
         }
 
         public async Task<ApiResponse<SendAccountingInvoiceRequestResponseDto>> SendAsync(SendAccountingInvoiceRequestViewModel model)
@@ -36,7 +36,15 @@ namespace AutoStock.WEB.Services
             return await PostJsonAsync<SendAccountingInvoiceRequestDto, SendAccountingInvoiceRequestResponseDto>(
                 "/api/accounting-invoice-requests/send",
                 model.ToDto(),
-                "Muhasebeciye gönderim yapılırken hata oluştu.");
+                "Fatura hazırlığına gönderilirken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<SendAccountingInvoiceBatchResponseDto>> SendBatchAsync(SendAccountingInvoiceBatchRequestViewModel model)
+        {
+            return await PostJsonAsync<SendAccountingInvoiceBatchRequestDto, SendAccountingInvoiceBatchResponseDto>(
+                "/api/accounting-invoice-requests/send-batch",
+                model.ToDto(),
+                "Fatura hazırlığına gönderilirken hata oluştu.");
         }
 
         public async Task<ApiResponse<InvoiceAccountingStatusDto>> GetInvoiceStatusAsync(int invoiceId)
@@ -51,6 +59,21 @@ namespace AutoStock.WEB.Services
             return await GetAsync<AccountingInvoiceRequestPublicDto>(
                 $"/api/accounting-invoice-requests/public/{Uri.EscapeDataString(token)}",
                 "Fatura hazırlık talebi alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<AccountingInvoiceBatchPublicDto>> GetPublicBatchRequestAsync(string batchToken)
+        {
+            return await GetAsync<AccountingInvoiceBatchPublicDto>(
+                $"/api/accounting-invoice-requests/public/batches/{Uri.EscapeDataString(batchToken)}",
+                "Fatura yükleme bilgileri alınırken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<OfficialInvoiceDocumentDto>> MarkDeliveredAsync(int documentId, MarkOfficialInvoiceDeliveredDto model)
+        {
+            return await PostJsonAsync<MarkOfficialInvoiceDeliveredDto, OfficialInvoiceDocumentDto>(
+                $"/api/accounting-invoice-requests/official-documents/{documentId}/mark-delivered",
+                model,
+                "İletim bilgisi kaydedilirken hata oluştu.");
         }
 
         public async Task<OfficialInvoiceDownloadResult> DownloadOfficialInvoiceAsync(int documentId)
@@ -71,7 +94,7 @@ namespace AutoStock.WEB.Services
 
                 var content = await response.Content.ReadAsByteArrayAsync();
                 var fileName = ResolveFileName(response.Content.Headers.ContentDisposition)
-                    ?? $"resmi-fatura-{documentId}.pdf";
+                    ?? $"fatura-{documentId}.pdf";
 
                 var contentType = response.Content.Headers.ContentType?.MediaType
                     ?? "application/pdf";

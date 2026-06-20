@@ -9,5 +9,8 @@ public interface IInvoiceExportService
 
     Task<ServiceResult<InvoiceExportFileDto>> CreateZipAsync(InvoiceExportQueryDto query, int workshopId);
 
-    Task<ServiceResult<bool>> SendEmailAsync(SendInvoiceExportEmailRequestDto request, int workshopId);
+    Task<ServiceResult<SendInvoiceExportEmailResponseDto>> SendEmailAsync(
+        SendInvoiceExportEmailRequestDto request,
+        int workshopId,
+        int requestedByUserId);
 }

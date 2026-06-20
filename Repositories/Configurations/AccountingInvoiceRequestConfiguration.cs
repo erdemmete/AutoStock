@@ -14,6 +14,9 @@ namespace AutoStock.Repositories.Configurations
                 .IsRequired()
                 .HasMaxLength(128);
 
+            builder.Property(x => x.BatchToken)
+                .HasMaxLength(128);
+
             builder.Property(x => x.AccountantEmail)
                 .IsRequired()
                 .HasMaxLength(256);
@@ -36,6 +39,8 @@ namespace AutoStock.Repositories.Configurations
 
             builder.HasIndex(x => x.Token)
                 .IsUnique();
+
+            builder.HasIndex(x => x.BatchToken);
 
             builder.HasIndex(x => new { x.WorkshopId, x.InvoiceId, x.Status });
 

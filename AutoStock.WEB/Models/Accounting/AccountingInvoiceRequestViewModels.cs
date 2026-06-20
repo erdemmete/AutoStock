@@ -44,6 +44,41 @@ namespace AutoStock.WEB.Models.Accounting
         public string? UploadError { get; set; }
     }
 
+    public class SendAccountingInvoiceBatchRequestViewModel
+    {
+        public List<int> InvoiceIds { get; set; } = new();
+
+        public string RecipientEmail { get; set; } = null!;
+
+        public string? Message { get; set; }
+
+        public string? PublicBaseUrl { get; set; }
+
+        public SendAccountingInvoiceBatchRequestDto ToDto()
+        {
+            return new SendAccountingInvoiceBatchRequestDto
+            {
+                InvoiceIds = (InvoiceIds ?? new List<int>()).Where(x => x > 0).Distinct().ToList(),
+                RecipientEmail = RecipientEmail,
+                Message = Message,
+                PublicBaseUrl = PublicBaseUrl
+            };
+        }
+    }
+
+    public class AccountingInvoiceBatchPublicViewModel : AccountingInvoiceBatchPublicDto
+    {
+        public string ApiBaseUrl { get; set; } = null!;
+
+        public string ReturnUrl { get; set; } = null!;
+
+        public bool Uploaded { get; set; }
+
+        public bool Completed { get; set; }
+
+        public string? UploadError { get; set; }
+    }
+
     public class OfficialInvoiceDownloadResult
     {
         public bool IsSuccess { get; set; }
@@ -54,7 +89,7 @@ namespace AutoStock.WEB.Models.Accounting
 
         public byte[] Content { get; set; } = Array.Empty<byte>();
 
-        public string FileName { get; set; } = "resmi-fatura.pdf";
+        public string FileName { get; set; } = "fatura.pdf";
 
         public string ContentType { get; set; } = "application/pdf";
 

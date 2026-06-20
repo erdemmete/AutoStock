@@ -40,9 +40,19 @@ namespace AutoStock.Repositories.Configurations
             builder.Property(x => x.Note)
                 .HasMaxLength(1000);
 
+            builder.Property(x => x.ShareToken)
+                .IsRequired()
+                .HasMaxLength(128);
+
+            builder.Property(x => x.CustomerDeliveryChannel)
+                .HasMaxLength(40);
+
             builder.HasIndex(x => new { x.WorkshopId, x.InvoiceId });
 
             builder.HasIndex(x => new { x.WorkshopId, x.OfficialInvoiceNumber });
+
+            builder.HasIndex(x => x.ShareToken)
+                .IsUnique();
 
             builder.HasOne(x => x.Workshop)
                 .WithMany()

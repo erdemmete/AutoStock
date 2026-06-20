@@ -5,14 +5,14 @@
         <div>
             <span class="inv-accounting-kicker">MUHASEBE AKIŞI</span>
             <h3>Fatura Takibi</h3>
-            <p>Hesap özetini muhasebeciye gönderin, fatura PDF’i yüklendiğinde buradan takip edin.</p>
+            <p>Hesap özetini fatura hazırlığına gönderin, fatura PDF’i yüklendiğinde buradan takip edin.</p>
         </div>
 
         <button type="button"
                 class="inv-accounting-send-btn"
                 data-accounting-open
                 @(Model.Status == 2 ? null : "disabled")>
-            Muhasebeciye Gönder
+            Fatura Hazırlığına Gönder
         </button>
     </div>
 
@@ -26,7 +26,7 @@
         <div class="inv-accounting-modal-head">
             <div>
                 <span class="inv-accounting-kicker">FATURA HAZIRLIK TALEBİ</span>
-                <h3>Muhasebeciye Gönder</h3>
+                <h3>Fatura Hazırlığına Gönder</h3>
             </div>
             <button type="button" class="inv-accounting-close" data-accounting-close>×</button>
         </div>
@@ -36,7 +36,7 @@
             <div class="inv-accounting-success" data-accounting-success hidden></div>
 
             <div class="inv-accounting-section">
-                <label>Kayıtlı muhasebe adresleri</label>
+                <label>Kayıtlı alıcılar</label>
                 <div class="inv-accounting-recipient-list" data-accounting-recipient-list>
                     <span class="inv-accounting-muted">Adresler yükleniyor...</span>
                 </div>
@@ -45,22 +45,22 @@
             <div class="inv-accounting-section two-col">
                 <div>
                     <label>Yeni e-posta</label>
-                    <input type="email" data-accounting-new-email placeholder="muhasebe@firma.com" />
+                    <input type="email" data-accounting-new-email placeholder="ornek@firma.com" />
                 </div>
                 <div>
                     <label>Kayıt adı</label>
-                    <input type="text" data-accounting-new-name placeholder="Muhasebe" />
+                    <input type="text" data-accounting-new-name placeholder="Fatura hazırlık" />
                 </div>
             </div>
 
             <label class="inv-accounting-checkline">
                 <input type="checkbox" data-accounting-save-new />
-                <span>Yeni e-posta adresini kayıtlı muhasebe adreslerine ekle</span>
+                <span>Yeni e-posta adresini kayıtlı alıcılara ekle</span>
             </label>
 
             <div class="inv-accounting-section">
                 <label>Mesaj</label>
-                <textarea data-accounting-message placeholder="Muhasebeciye iletilecek kısa not..."></textarea>
+                <textarea data-accounting-message placeholder="İsteğe bağlı kısa not..."></textarea>
             </div>
         </div>
 
@@ -421,7 +421,7 @@
             const lastSentAt = data?.lastSentAt || data?.LastSentAt;
             const lastSentToEmail = data?.lastSentToEmail || data?.LastSentToEmail;
 
-            let subText = "Henüz muhasebeciden fatura PDF’i yüklenmedi.";
+            let subText = "Henüz fatura PDF’i yüklenmedi.";
             let action = "";
 
             if (doc) {
@@ -494,7 +494,7 @@
             const message = document.querySelector("[data-accounting-message]")?.value || "";
 
             if (selectedEmails.length === 0 && !newEmail.trim()) {
-                showError("En az bir muhasebeci e-posta adresi seçiniz veya yeni adres yazınız.");
+                showError("En az bir alıcı e-posta adresi seçiniz veya yeni adres yazınız.");
                 return;
             }
 
@@ -517,7 +517,7 @@
 
                 if (!response.ok) throw new Error(await readError(response));
 
-                showSuccess("Fatura hazırlık talebi muhasebeciye gönderildi.");
+                showSuccess("Fatura hazırlık talebi gönderildi.");
                 await loadStatus();
 
                 setTimeout(() => {

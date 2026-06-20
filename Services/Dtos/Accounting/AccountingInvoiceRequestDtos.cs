@@ -33,6 +33,25 @@ namespace AutoStock.Services.Dtos.Accounting
         public List<string> SentEmails { get; set; } = new();
     }
 
+    public class SendAccountingInvoiceBatchRequestDto
+    {
+        public List<int> InvoiceIds { get; set; } = new();
+        public string RecipientEmail { get; set; } = null!;
+        public string? Message { get; set; }
+        public string? PublicBaseUrl { get; set; }
+    }
+
+    public class SendAccountingInvoiceBatchResponseDto
+    {
+        public string BatchToken { get; set; } = null!;
+        public string RecipientEmail { get; set; } = null!;
+        public int RequestedCount { get; set; }
+        public int SentCount { get; set; }
+        public int SkippedCount { get; set; }
+        public string UploadUrl { get; set; } = null!;
+        public List<string> Messages { get; set; } = new();
+    }
+
     public class InvoiceAccountingStatusDto
     {
         public int InvoiceId { get; set; }
@@ -78,6 +97,49 @@ namespace AutoStock.Services.Dtos.Accounting
         public OfficialInvoiceDocumentDto? OfficialInvoiceDocument { get; set; }
     }
 
+    public class AccountingInvoiceBatchPublicDto
+    {
+        public string BatchToken { get; set; } = null!;
+        public string WorkshopName { get; set; } = null!;
+        public string RecipientEmail { get; set; } = null!;
+        public string? Message { get; set; }
+        public DateTime SentAt { get; set; }
+        public DateTime ExpiresAt { get; set; }
+        public bool CanUpload { get; set; }
+        public int TotalCount { get; set; }
+        public int UploadedCount { get; set; }
+        public int PendingCount { get; set; }
+        public string StatusText { get; set; } = null!;
+        public List<AccountingInvoiceBatchItemDto> Items { get; set; } = new();
+    }
+
+    public class AccountingInvoiceBatchItemDto
+    {
+        public int RequestId { get; set; }
+        public int InvoiceId { get; set; }
+        public string InvoiceNumber { get; set; } = null!;
+        public DateTime InvoiceDate { get; set; }
+        public string CustomerTitle { get; set; } = null!;
+        public string? Plate { get; set; }
+        public decimal GrandTotal { get; set; }
+        public string StatusText { get; set; } = null!;
+        public bool CanUpload { get; set; }
+        public OfficialInvoiceDocumentDto? OfficialInvoiceDocument { get; set; }
+    }
+
+    public class CompleteAccountingInvoiceBatchUploadResponseDto
+    {
+        public int TotalCount { get; set; }
+        public int UploadedCount { get; set; }
+        public int PendingCount { get; set; }
+        public string Message { get; set; } = null!;
+    }
+
+    public class MarkOfficialInvoiceDeliveredDto
+    {
+        public string Channel { get; set; } = null!;
+    }
+
     public class AccountingInvoiceRequestItemDto
     {
         public int ItemType { get; set; }
@@ -119,6 +181,9 @@ namespace AutoStock.Services.Dtos.Accounting
         public DateTime UploadedAt { get; set; }
         public string UploadedByEmail { get; set; } = null!;
         public string? Note { get; set; }
+        public string ShareToken { get; set; } = null!;
+        public DateTime? CustomerDeliveredAt { get; set; }
+        public string? CustomerDeliveryChannel { get; set; }
     }
 
     public class OfficialInvoiceFileDto

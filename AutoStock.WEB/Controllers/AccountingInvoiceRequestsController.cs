@@ -75,6 +75,47 @@ namespace AutoStock.WEB.Controllers
             return Ok(result);
         }
 
+        [HttpPost("AccountingInvoiceRequests/SendBatch")]
+        public async Task<IActionResult> SendBatch([FromBody] SendAccountingInvoiceBatchRequestViewModel model)
+        {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
+            if (model is null || model.InvoiceIds is null || !model.InvoiceIds.Any())
+            {
+                return BadRequest(new
+                {
+                    isSuccess = false,
+                    errorMessage = "En az bir servis hesap özeti seçiniz."
+                });
+            }
+
+            model.PublicBaseUrl = BuildPublicBaseUrl();
+
+            var result = await _accountingInvoiceRequestApiService.SendBatchAsync(model);
+
+            if (result.IsFailure)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        [HttpPost("AccountingInvoiceRequests/OfficialDocument/{documentId:int}/MarkDelivered")]
+        public async Task<IActionResult> MarkDelivered(int documentId, [FromBody] MarkOfficialInvoiceDeliveredDto model)
+        {
+            var ownerAccess = RequireOwnerAccess();
+            if (ownerAccess is not null)
+                return ownerAccess;
+
+            var result = await _accountingInvoiceRequestApiService.MarkDeliveredAsync(documentId, model);
+
+            if (result.IsFailure)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
         [HttpGet("AccountingInvoiceRequests/Invoice/{invoiceId:int}/Status")]
         public async Task<IActionResult> InvoiceStatus(int invoiceId)
         {
@@ -131,6 +172,39 @@ namespace AutoStock.WEB.Controllers
             return View(model);
         }
 
+        [AllowAnonymous]
+        [HttpGet("Accounting/InvoiceUpload/{batchToken}")]
+        public async Task<IActionResult> PublicBatch(
+            string batchToken,
+            [FromQuery] bool uploaded = false,
+            [FromQuery] bool completed = false,
+            [FromQuery] string? uploadError = null)
+        {
+            var result = await _accountingInvoiceRequestApiService.GetPublicBatchRequestAsync(batchToken);
+
+            if (result.IsFailure || result.Data is null)
+            {
+                return View("PublicError", result.ErrorMessage ?? "Fatura yükleme bağlantısı bulunamadı.");
+            }
+
+            var model = ToBatchPublicViewModel(result.Data);
+            model.ApiBaseUrl = ResolveApiBaseUrl().TrimEnd('/');
+            model.ReturnUrl = $"{BuildPublicBaseUrl()}{Request.Path}";
+            model.Uploaded = uploaded;
+            model.Completed = completed;
+            model.UploadError = uploadError;
+
+            return View("PublicBatch", model);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("Accounting/InvoiceFile/{shareToken}")]
+        public IActionResult PublicInvoiceFile(string shareToken)
+        {
+            var apiUrl = $"{ResolveApiBaseUrl().TrimEnd('/')}/api/accounting-invoice-requests/public-documents/{Uri.EscapeDataString(shareToken)}/download";
+            return Redirect(apiUrl);
+        }
+
         private AccountingInvoiceRequestPublicViewModel ToPublicViewModel(AccountingInvoiceRequestPublicDto dto)
         {
             return new AccountingInvoiceRequestPublicViewModel
@@ -160,6 +234,25 @@ namespace AutoStock.WEB.Controllers
                 RemainingAmount = dto.RemainingAmount,
                 Items = dto.Items,
                 OfficialInvoiceDocument = dto.OfficialInvoiceDocument
+            };
+        }
+
+        private AccountingInvoiceBatchPublicViewModel ToBatchPublicViewModel(AccountingInvoiceBatchPublicDto dto)
+        {
+            return new AccountingInvoiceBatchPublicViewModel
+            {
+                BatchToken = dto.BatchToken,
+                WorkshopName = dto.WorkshopName,
+                RecipientEmail = dto.RecipientEmail,
+                Message = dto.Message,
+                SentAt = dto.SentAt,
+                ExpiresAt = dto.ExpiresAt,
+                CanUpload = dto.CanUpload,
+                TotalCount = dto.TotalCount,
+                UploadedCount = dto.UploadedCount,
+                PendingCount = dto.PendingCount,
+                StatusText = dto.StatusText,
+                Items = dto.Items
             };
         }
 

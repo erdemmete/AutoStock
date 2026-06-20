@@ -62,9 +62,15 @@ public class InvoiceExportsController : BaseApiController
         if (workshopIdResult.IsFailure)
             return UnauthorizedResult(workshopIdResult);
 
+        var userIdResult = GetCurrentUserId();
+
+        if (userIdResult.IsFailure)
+            return UnauthorizedResult(userIdResult);
+
         var result = await _invoiceExportService.SendEmailAsync(
             request,
-            workshopIdResult.Data);
+            workshopIdResult.Data,
+            userIdResult.Data);
 
         return ToActionResult(result);
     }

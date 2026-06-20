@@ -70,6 +70,28 @@ namespace AutoStock.API.Controllers
         }
 
         [Authorize(Roles = AppRoles.Owner)]
+        [HttpPost("send-batch")]
+        public async Task<IActionResult> SendBatch(SendAccountingInvoiceBatchRequestDto request)
+        {
+            var workshopIdResult = GetCurrentWorkshopId();
+
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
+
+            var userIdResult = GetCurrentUserId();
+
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
+            var result = await _accountingInvoiceRequestService.SendAccountingBatchRequestAsync(
+                request,
+                workshopIdResult.Data,
+                userIdResult.Data);
+
+            return ToActionResult(result);
+        }
+
+        [Authorize(Roles = AppRoles.Owner)]
         [HttpGet("invoices/{invoiceId:int}/status")]
         public async Task<IActionResult> GetInvoiceStatus(int invoiceId)
         {
@@ -107,11 +129,58 @@ namespace AutoStock.API.Controllers
                 result.Data.FileName);
         }
 
+        [Authorize(Roles = AppRoles.Owner)]
+        [HttpPost("official-documents/{documentId:int}/mark-delivered")]
+        public async Task<IActionResult> MarkDelivered(int documentId, MarkOfficialInvoiceDeliveredDto request)
+        {
+            var workshopIdResult = GetCurrentWorkshopId();
+
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
+
+            var userIdResult = GetCurrentUserId();
+
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
+            var result = await _accountingInvoiceRequestService.MarkOfficialInvoiceDeliveredAsync(
+                documentId,
+                workshopIdResult.Data,
+                userIdResult.Data,
+                request);
+
+            return ToActionResult(result);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("public-documents/{shareToken}/download")]
+        public async Task<IActionResult> DownloadPublicOfficialInvoice(string shareToken)
+        {
+            var result = await _accountingInvoiceRequestService.GetOfficialInvoiceFileByShareTokenAsync(shareToken);
+
+            if (result.IsFailure || result.Data is null)
+                return ToActionResult(result);
+
+            return File(
+                result.Data.Content,
+                result.Data.ContentType,
+                result.Data.FileName);
+        }
+
         [AllowAnonymous]
         [HttpGet("public/{token}")]
         public async Task<IActionResult> GetPublicRequest(string token)
         {
             var result = await _accountingInvoiceRequestService.GetPublicRequestAsync(token);
+
+            return ToActionResult(result);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("public/batches/{batchToken}")]
+        public async Task<IActionResult> GetPublicBatchRequest(string batchToken)
+        {
+            var result = await _accountingInvoiceRequestService.GetPublicBatchRequestAsync(batchToken);
 
             return ToActionResult(result);
         }
@@ -162,12 +231,81 @@ namespace AutoStock.API.Controllers
             return Redirect(AddQueryParameter(safeReturnUrl, "uploaded", "1"));
         }
 
+        [AllowAnonymous]
+        [HttpPost("public/batches/{batchToken}/items/{requestId:int}/upload")]
+        [RequestSizeLimit(12 * 1024 * 1024)]
+        public async Task<IActionResult> UploadOfficialInvoiceForBatchItem(
+            string batchToken,
+            int requestId,
+            [FromForm] string officialInvoiceNumber,
+            [FromForm] DateTime officialInvoiceDate,
+            [FromForm] string? ettnOrUuid,
+            [FromForm] string uploadedByEmail,
+            [FromForm] string? note,
+            [FromForm] string? returnUrl,
+            [FromForm] IFormFile file)
+        {
+            if (file is null)
+                return BadRequest("PDF dosyası seçiniz.");
+
+            await using var stream = file.OpenReadStream();
+
+            var result = await _accountingInvoiceRequestService.UploadOfficialInvoiceForBatchItemAsync(
+                batchToken,
+                requestId,
+                new UploadOfficialInvoiceDto
+                {
+                    OfficialInvoiceNumber = officialInvoiceNumber,
+                    OfficialInvoiceDate = officialInvoiceDate,
+                    EttnOrUuid = ettnOrUuid,
+                    UploadedByEmail = uploadedByEmail,
+                    Note = note,
+                    FileName = file.FileName,
+                    ContentType = file.ContentType,
+                    FileSizeBytes = file.Length,
+                    FileContent = stream
+                });
+
+            var safeReturnUrl = ResolveSafeReturnUrl(returnUrl, batchToken, Request, preferBatchFallback: true);
+
+            if (result.IsFailure)
+            {
+                return Redirect(AddQueryParameter(
+                    safeReturnUrl,
+                    "uploadError",
+                    result.ErrorMessage ?? "Yükleme başarısız."));
+            }
+
+            return Redirect(AddQueryParameter(safeReturnUrl, "uploaded", "1"));
+        }
+
+        [AllowAnonymous]
+        [HttpPost("public/batches/{batchToken}/complete")]
+        public async Task<IActionResult> CompleteBatchUpload(string batchToken, [FromForm] string? returnUrl)
+        {
+            var result = await _accountingInvoiceRequestService.CompleteBatchUploadAsync(batchToken);
+            var safeReturnUrl = ResolveSafeReturnUrl(returnUrl, batchToken, Request, preferBatchFallback: true);
+
+            if (result.IsFailure)
+            {
+                return Redirect(AddQueryParameter(
+                    safeReturnUrl,
+                    "uploadError",
+                    result.ErrorMessage ?? "İşlem tamamlanamadı."));
+            }
+
+            return Redirect(AddQueryParameter(safeReturnUrl, "completed", "1"));
+        }
+
         private static string ResolveSafeReturnUrl(
             string? returnUrl,
             string token,
-            HttpRequest request)
+            HttpRequest request,
+            bool preferBatchFallback = false)
         {
-            var fallback = $"/Accounting/InvoiceRequest/{Uri.EscapeDataString(token)}";
+            var fallback = preferBatchFallback || IsBatchTokenReturn(returnUrl)
+                ? $"/Accounting/InvoiceUpload/{Uri.EscapeDataString(token)}"
+                : $"/Accounting/InvoiceRequest/{Uri.EscapeDataString(token)}";
 
             if (string.IsNullOrWhiteSpace(returnUrl))
                 return fallback;
@@ -209,7 +347,16 @@ namespace AutoStock.API.Controllers
         {
             return path.Contains(
                 "/Accounting/InvoiceRequest/",
-                StringComparison.OrdinalIgnoreCase);
+                StringComparison.OrdinalIgnoreCase) ||
+                path.Contains(
+                    "/Accounting/InvoiceUpload/",
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsBatchTokenReturn(string? returnUrl)
+        {
+            return !string.IsNullOrWhiteSpace(returnUrl) &&
+                   returnUrl.Contains("/Accounting/InvoiceUpload/", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string AddQueryParameter(string url, string key, string value)

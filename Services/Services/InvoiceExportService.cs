@@ -1,6 +1,7 @@
 using AutoStock.Repositories;
 using AutoStock.Repositories.Entities;
 using AutoStock.Repositories.Enums;
+using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.Emails;
 using AutoStock.Services.Dtos.Invoices;
@@ -21,20 +22,24 @@ public class InvoiceExportService : IInvoiceExportService
 {
     private const string PaymentCancellationDocumentPrefix = "PAY-CANCEL-";
     private const int MaxExportDayRange = 370;
+    private const int MaxSelectedInvoiceExportCount = 100;
     private static readonly CultureInfo TrCulture = CultureInfo.GetCultureInfo("tr-TR");
 
     private readonly AppDbContext _context;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IEmailSender _emailSender;
+    private readonly IAuditLogService _auditLogService;
 
     public InvoiceExportService(
         AppDbContext context,
         IDateTimeProvider dateTimeProvider,
-        IEmailSender emailSender)
+        IEmailSender emailSender,
+        IAuditLogService auditLogService)
     {
         _context = context;
         _dateTimeProvider = dateTimeProvider;
         _emailSender = emailSender;
+        _auditLogService = auditLogService;
     }
 
     public async Task<ServiceResult<InvoiceExportPreviewDto>> GetPreviewAsync(InvoiceExportQueryDto query, int workshopId)
@@ -47,43 +52,57 @@ public class InvoiceExportService : IInvoiceExportService
         var period = periodResult.Data!;
 
         var invoices = await GetInvoicesAsync(period.StartDate, period.EndDate, query.IncludeCancelled, workshopId);
-        var preview = await BuildPreviewAsync(invoices, period.StartDate, period.EndDate, query.IncludeCancelled, workshopId);
+        var workflow = await GetWorkflowSnapshotAsync(invoices.Select(x => x.Id).ToList(), workshopId);
+        var tab = NormalizeWorkflowTab(query.Tab);
+        var filteredInvoices = FilterInvoicesByWorkflowTab(invoices, workflow, tab);
+        var preview = await BuildPreviewAsync(filteredInvoices, period.StartDate, period.EndDate, query.IncludeCancelled, workshopId, tab, workflow);
 
         return ServiceResult<InvoiceExportPreviewDto>.Success(preview);
     }
 
     public async Task<ServiceResult<InvoiceExportFileDto>> CreateZipAsync(InvoiceExportQueryDto query, int workshopId)
     {
-        var periodResult = ResolvePeriod(query);
+        var selectionResult = await ResolveInvoiceSelectionAsync(query, workshopId);
 
-        if (!periodResult.IsSuccess)
-            return ServiceResult<InvoiceExportFileDto>.Fail(periodResult.ErrorMessage);
+        if (!selectionResult.IsSuccess || selectionResult.Data is null)
+            return ServiceResult<InvoiceExportFileDto>.Fail(selectionResult.ErrorMessage);
 
-        var period = periodResult.Data!;
-        var invoices = await GetInvoicesAsync(period.StartDate, period.EndDate, query.IncludeCancelled, workshopId);
+        var selection = selectionResult.Data;
 
-        if (!invoices.Any())
-            return ServiceResult<InvoiceExportFileDto>.Fail("Seçilen tarih aralığında aktarılacak fatura bulunamadı.");
+        if (!selection.Invoices.Any())
+            return ServiceResult<InvoiceExportFileDto>.Fail(selection.IsSelectedExport
+                ? "Seçilen faturalar muhasebe aktarımı için uygun değil."
+                : "Seçilen tarih aralığında aktarılacak fatura bulunamadı.");
 
-        var preview = await BuildPreviewAsync(invoices, period.StartDate, period.EndDate, query.IncludeCancelled, workshopId);
+        var preview = await BuildPreviewAsync(
+            selection.Invoices,
+            selection.StartDate,
+            selection.EndDate,
+            selection.IncludeCancelled,
+            workshopId,
+            "prepare",
+            await GetWorkflowSnapshotAsync(selection.Invoices.Select(x => x.Id).ToList(), workshopId));
         var workshop = await GetWorkshopInfoAsync(workshopId);
-        var zipContent = BuildZip(invoices, preview, workshop);
+        var zipContent = BuildZip(selection.Invoices, preview, workshop);
 
         return ServiceResult<InvoiceExportFileDto>.Success(new InvoiceExportFileDto
         {
-            FileName = BuildExportZipFileName(workshop.DisplayName, period.StartDate, period.EndDate),
+            FileName = BuildExportZipFileName(workshop.DisplayName, selection.StartDate, selection.EndDate),
             ContentType = "application/zip",
             Content = zipContent
         });
     }
 
-    public async Task<ServiceResult<bool>> SendEmailAsync(SendInvoiceExportEmailRequestDto request, int workshopId)
+    public async Task<ServiceResult<SendInvoiceExportEmailResponseDto>> SendEmailAsync(
+        SendInvoiceExportEmailRequestDto request,
+        int workshopId,
+        int requestedByUserId)
     {
         if (request is null)
-            return ServiceResult<bool>.Fail("Aktarım bilgisi alınamadı.");
+            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail("Aktarım bilgisi alınamadı.");
 
         if (string.IsNullOrWhiteSpace(request.ToEmail))
-            return ServiceResult<bool>.Fail("Muhasebeci e-posta adresi zorunludur.");
+            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail("Muhasebeci e-posta adresi zorunludur.");
 
         try
         {
@@ -91,43 +110,85 @@ public class InvoiceExportService : IInvoiceExportService
         }
         catch
         {
-            return ServiceResult<bool>.Fail("Geçerli bir e-posta adresi giriniz.");
+            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail("Geçerli bir e-posta adresi giriniz.");
         }
 
-        var zipResult = await CreateZipAsync(request, workshopId);
+        var selectionResult = await ResolveInvoiceSelectionAsync(request, workshopId);
 
-        if (!zipResult.IsSuccess || zipResult.Data is null)
-            return ServiceResult<bool>.Fail(zipResult.ErrorMessage ?? "Fatura aktarım paketi oluşturulamadı.");
+        if (!selectionResult.IsSuccess || selectionResult.Data is null)
+            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail(selectionResult.ErrorMessage ?? "Fatura aktarım paketi oluşturulamadı.");
 
-        var periodResult = ResolvePeriod(request);
-        var periodText = periodResult.IsSuccess && periodResult.Data is not null
-            ? BuildPeriodText(periodResult.Data.StartDate, periodResult.Data.EndDate)
-            : "seçilen dönem";
+        var selection = selectionResult.Data;
 
+        if (!selection.Invoices.Any())
+            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail(selection.IsSelectedExport
+                ? BuildNoSelectedInvoiceMessage(selection)
+                : "Fatura aktarım paketi oluşturulamadı.");
+
+        var preview = await BuildPreviewAsync(
+            selection.Invoices,
+            selection.StartDate,
+            selection.EndDate,
+            selection.IncludeCancelled,
+            workshopId,
+            "prepare",
+            await GetWorkflowSnapshotAsync(selection.Invoices.Select(x => x.Id).ToList(), workshopId));
         var workshop = await GetWorkshopInfoAsync(workshopId);
+        var zipContent = BuildZip(selection.Invoices, preview, workshop);
+        var fileName = BuildExportZipFileName(workshop.DisplayName, selection.StartDate, selection.EndDate);
+        var periodText = preview.PeriodText;
         var subject = $"{periodText} Fatura Aktarımı - {workshop.DisplayName}";
         var htmlBody = BuildEmailBody(workshop.DisplayName, periodText, request.Message);
+        var response = new SendInvoiceExportEmailResponseDto
+        {
+            RequestedCount = selection.RequestedCount,
+            SkippedCount = selection.SkippedCount,
+            Messages = selection.Messages.ToList()
+        };
 
         var emailResult = await _emailSender.SendAsync(new EmailMessageDto
         {
             ToEmail = request.ToEmail.Trim(),
+            FromName = BuildAccountingEmailFromName(workshop.WorkshopName),
             Subject = subject,
             HtmlBody = htmlBody,
             Attachments = new List<EmailAttachmentDto>
             {
                 new()
                 {
-                    FileName = zipResult.Data.FileName,
-                    ContentType = zipResult.Data.ContentType,
-                    Content = zipResult.Data.Content
+                    FileName = fileName,
+                    ContentType = "application/zip",
+                    Content = zipContent
                 }
             }
         });
 
         if (!emailResult.IsSuccess)
-            return ServiceResult<bool>.Fail(emailResult.ErrorMessage ?? "E-posta gönderilemedi.");
+        {
+            response.FailedCount = preview.InvoiceCount;
+            response.SummaryMessage = "Fatura aktarım e-postası gönderilemedi.";
 
-        return ServiceResult<bool>.Success(true);
+            await WriteExportAuditAsync(
+                workshopId,
+                requestedByUserId,
+                request.ToEmail.Trim(),
+                response,
+                false);
+
+            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail(emailResult.ErrorMessage ?? "E-posta gönderilemedi.");
+        }
+
+        response.SentCount = preview.InvoiceCount;
+        response.SummaryMessage = BuildSendSummaryMessage(response);
+
+        await WriteExportAuditAsync(
+            workshopId,
+            requestedByUserId,
+            request.ToEmail.Trim(),
+            response,
+            true);
+
+        return ServiceResult<SendInvoiceExportEmailResponseDto>.Success(response);
     }
 
     private async Task<List<Invoice>> GetInvoicesAsync(
@@ -156,12 +217,93 @@ public class InvoiceExportService : IInvoiceExportService
             .ToListAsync();
     }
 
+    private async Task<ServiceResult<InvoiceExportSelection>> ResolveInvoiceSelectionAsync(
+        InvoiceExportQueryDto query,
+        int workshopId)
+    {
+        var periodResult = ResolvePeriod(query);
+
+        if (!periodResult.IsSuccess || periodResult.Data is null)
+            return ServiceResult<InvoiceExportSelection>.Fail(periodResult.ErrorMessage);
+
+        var period = periodResult.Data;
+        var selectedIds = NormalizeSelectedInvoiceIds(query.InvoiceIds);
+
+        if (!selectedIds.Any())
+        {
+            var invoices = await GetInvoicesAsync(
+                period.StartDate,
+                period.EndDate,
+                query.IncludeCancelled,
+                workshopId);
+
+            return ServiceResult<InvoiceExportSelection>.Success(new InvoiceExportSelection
+            {
+                StartDate = period.StartDate,
+                EndDate = period.EndDate,
+                IncludeCancelled = query.IncludeCancelled,
+                RequestedCount = invoices.Count,
+                Invoices = invoices
+            });
+        }
+
+        if (selectedIds.Count > MaxSelectedInvoiceExportCount)
+        {
+            return ServiceResult<InvoiceExportSelection>.Fail(
+                $"Tek seferde en fazla {MaxSelectedInvoiceExportCount} fatura seçilebilir.");
+        }
+
+        var endExclusive = period.EndDate.Date.AddDays(1);
+
+        var foundInvoices = await _context.Invoices
+            .AsNoTracking()
+            .Include(x => x.Items)
+            .Where(x =>
+                x.WorkshopId == workshopId &&
+                selectedIds.Contains(x.Id) &&
+                x.InvoiceDate >= period.StartDate.Date &&
+                x.InvoiceDate < endExclusive)
+            .OrderBy(x => x.InvoiceDate)
+            .ThenBy(x => x.InvoiceNumber)
+            .ToListAsync();
+
+        var foundIds = foundInvoices.Select(x => x.Id).ToHashSet();
+        var inaccessibleCount = selectedIds.Count(x => !foundIds.Contains(x));
+        var skippedMessages = new List<string>();
+
+        if (inaccessibleCount > 0)
+            skippedMessages.Add($"{inaccessibleCount} kayıt bulunamadı veya erişilemiyor.");
+
+        var eligibleInvoices = foundInvoices
+            .Where(x => x.Status == InvoiceStatus.Issued)
+            .ToList();
+
+        var ineligibleCount = foundInvoices.Count - eligibleInvoices.Count;
+
+        if (ineligibleCount > 0)
+            skippedMessages.Add($"{ineligibleCount} kayıt uygun durumda olmadığı için atlandı.");
+
+        return ServiceResult<InvoiceExportSelection>.Success(new InvoiceExportSelection
+        {
+            StartDate = period.StartDate,
+            EndDate = period.EndDate,
+            IncludeCancelled = false,
+            IsSelectedExport = true,
+            RequestedCount = selectedIds.Count,
+            SkippedCount = inaccessibleCount + ineligibleCount,
+            Messages = skippedMessages,
+            Invoices = eligibleInvoices
+        });
+    }
+
     private async Task<InvoiceExportPreviewDto> BuildPreviewAsync(
         List<Invoice> invoices,
         DateTime startDate,
         DateTime endDate,
         bool includeCancelled,
-        int workshopId)
+        int workshopId,
+        string tab,
+        Dictionary<int, InvoiceWorkflowInfo> workflow)
     {
         var invoiceIds = invoices.Select(x => x.Id).ToList();
         var paidTotals = invoiceIds.Any()
@@ -193,9 +335,19 @@ public class InvoiceExportService : IInvoiceExportService
                 VatTotal = invoice.VatTotal,
                 GrandTotal = invoice.GrandTotal,
                 PaidTotal = isCancelled ? 0m : paidTotal,
-                RemainingAmount = remaining
+                RemainingAmount = remaining,
+                AccountingRequestId = workflow.TryGetValue(invoice.Id, out var info) ? info.AccountingRequestId : null,
+                BatchToken = workflow.TryGetValue(invoice.Id, out info) ? info.BatchToken : null,
+                OfficialInvoiceDocumentId = workflow.TryGetValue(invoice.Id, out info) ? info.OfficialInvoiceDocumentId : null,
+                OfficialInvoiceNumber = workflow.TryGetValue(invoice.Id, out info) ? info.OfficialInvoiceNumber : null,
+                OfficialInvoiceShareToken = workflow.TryGetValue(invoice.Id, out info) ? info.OfficialInvoiceShareToken : null,
+                CustomerDeliveredAt = workflow.TryGetValue(invoice.Id, out info) ? info.CustomerDeliveredAt : null,
+                RecipientEmail = workflow.TryGetValue(invoice.Id, out info) ? info.RecipientEmail : null,
+                AccountingSentAt = workflow.TryGetValue(invoice.Id, out info) ? info.AccountingSentAt : null
             };
         }).ToList();
+
+        var allWorkflowValues = workflow.Values.ToList();
 
         return new InvoiceExportPreviewDto
         {
@@ -203,6 +355,11 @@ public class InvoiceExportService : IInvoiceExportService
             EndDate = endDate.Date,
             PeriodText = BuildPeriodText(startDate, endDate),
             IncludeCancelled = includeCancelled,
+            Tab = tab,
+            PrepareCount = allWorkflowValues.Count(x => x.Stage == "prepare"),
+            WaitingCount = allWorkflowValues.Count(x => x.Stage == "waiting"),
+            CustomerShareCount = allWorkflowValues.Count(x => x.Stage == "customer"),
+            CompletedCount = allWorkflowValues.Count(x => x.Stage == "completed"),
             InvoiceCount = items.Count,
             IssuedInvoiceCount = items.Count(x => x.Status == (int)InvoiceStatus.Issued),
             CancelledInvoiceCount = items.Count(x => x.Status == (int)InvoiceStatus.Cancelled),
@@ -250,6 +407,78 @@ public class InvoiceExportService : IInvoiceExportService
                     g.Where(x => x.Type == CurrentAccountTransactionType.Cancel).Sum(x => x.Debit)));
     }
 
+    private async Task<Dictionary<int, InvoiceWorkflowInfo>> GetWorkflowSnapshotAsync(List<int> invoiceIds, int workshopId)
+    {
+        if (!invoiceIds.Any())
+            return new Dictionary<int, InvoiceWorkflowInfo>();
+
+        var now = _dateTimeProvider.Now;
+        var latestRequests = await _context.Set<AccountingInvoiceRequest>()
+            .AsNoTracking()
+            .Where(x =>
+                x.WorkshopId == workshopId &&
+                invoiceIds.Contains(x.InvoiceId))
+            .GroupBy(x => x.InvoiceId)
+            .Select(g => g.OrderByDescending(x => x.SentAt).First())
+            .ToListAsync();
+
+        var latestDocuments = await _context.Set<OfficialInvoiceDocument>()
+            .AsNoTracking()
+            .Where(x =>
+                x.WorkshopId == workshopId &&
+                invoiceIds.Contains(x.InvoiceId))
+            .GroupBy(x => x.InvoiceId)
+            .Select(g => g.OrderByDescending(x => x.UploadedAt).First())
+            .ToListAsync();
+
+        var requestsByInvoice = latestRequests.ToDictionary(x => x.InvoiceId, x => x);
+        var documentsByInvoice = latestDocuments.ToDictionary(x => x.InvoiceId, x => x);
+        var result = new Dictionary<int, InvoiceWorkflowInfo>();
+
+        foreach (var invoiceId in invoiceIds)
+        {
+            requestsByInvoice.TryGetValue(invoiceId, out var request);
+            documentsByInvoice.TryGetValue(invoiceId, out var document);
+
+            var hasActiveRequest = request is not null &&
+                                   request.Status == AccountingInvoiceRequestStatus.Pending &&
+                                   request.ExpiresAt > now;
+            var hasDocument = document is not null;
+            var isDelivered = document?.CustomerDeliveredAt is not null;
+            var stage = hasDocument
+                ? isDelivered ? "completed" : "customer"
+                : hasActiveRequest ? "waiting" : "prepare";
+
+            result[invoiceId] = new InvoiceWorkflowInfo
+            {
+                Stage = stage,
+                AccountingRequestId = request?.Id,
+                BatchToken = request?.BatchToken,
+                RecipientEmail = request?.AccountantEmail,
+                AccountingSentAt = request?.SentAt,
+                OfficialInvoiceDocumentId = document?.Id,
+                OfficialInvoiceNumber = document?.OfficialInvoiceNumber,
+                OfficialInvoiceShareToken = document?.ShareToken,
+                CustomerDeliveredAt = document?.CustomerDeliveredAt
+            };
+        }
+
+        return result;
+    }
+
+    private static List<Invoice> FilterInvoicesByWorkflowTab(
+        List<Invoice> invoices,
+        Dictionary<int, InvoiceWorkflowInfo> workflow,
+        string tab)
+    {
+        return invoices
+            .Where(invoice =>
+                workflow.TryGetValue(invoice.Id, out var info)
+                    ? info.Stage == tab
+                    : tab == "prepare")
+            .ToList();
+    }
+
     private byte[] BuildZip(List<Invoice> invoices, InvoiceExportPreviewDto preview, WorkshopExportInfo workshop)
     {
         using var memory = new MemoryStream();
@@ -260,13 +489,13 @@ public class InvoiceExportService : IInvoiceExportService
 
             AddTextEntry(
                 archive,
-                $"{rootFolder}/fatura-ozet.csv",
+                $"{rootFolder}/belge-ozeti.csv",
                 BuildCsv(preview),
                 "text/csv");
 
             AddTextEntry(
                 archive,
-                $"{rootFolder}/fatura-ozet.html",
+                $"{rootFolder}/belge-ozeti.html",
                 BuildHtmlSummary(preview, workshop),
                 "text/html");
 
@@ -284,7 +513,7 @@ public class InvoiceExportService : IInvoiceExportService
 
                 AddBinaryEntry(
                     archive,
-                    $"{rootFolder}/Faturalar/{fileName}",
+                    $"{rootFolder}/servis-hesap-ozetleri/{fileName}",
                     pdf,
                     "application/pdf");
             }
@@ -991,6 +1220,7 @@ public class InvoiceExportService : IInvoiceExportService
 
         return new WorkshopExportInfo
         {
+            WorkshopName = workshopName,
             DisplayName = displayName,
             LegalTitle = profile?.LegalTitle,
             TaxOffice = profile?.TaxOffice,
@@ -1087,7 +1317,7 @@ public class InvoiceExportService : IInvoiceExportService
     private static string BuildExportZipFileName(string? workshopName, DateTime startDate, DateTime endDate)
     {
         var safeWorkshop = SafeFilePart(workshopName ?? "Servis");
-        return $"{safeWorkshop}-Fatura-Aktarim-{startDate:yyyyMMdd}-{endDate:yyyyMMdd}.zip";
+        return $"{safeWorkshop}-Belgeler-{startDate:yyyyMMdd}-{endDate:yyyyMMdd}.zip";
     }
 
     private static string BuildInvoicePdfFileName(Invoice invoice)
@@ -1133,9 +1363,22 @@ public class InvoiceExportService : IInvoiceExportService
         return status switch
         {
             InvoiceStatus.Draft => "Taslak",
-            InvoiceStatus.Issued => "Kesildi",
+            InvoiceStatus.Issued => "Hazırlandı",
             InvoiceStatus.Cancelled => "İptal",
             _ => status.ToString()
+        };
+    }
+
+    private static string NormalizeWorkflowTab(string? value)
+    {
+        var tab = NormalizeNullable(value)?.ToLowerInvariant();
+
+        return tab switch
+        {
+            "waiting" => "waiting",
+            "customer" => "customer",
+            "completed" => "completed",
+            _ => "prepare"
         };
     }
 
@@ -1187,10 +1430,149 @@ public class InvoiceExportService : IInvoiceExportService
         return System.Net.WebUtility.HtmlEncode(value ?? string.Empty);
     }
 
+    private static List<int> NormalizeSelectedInvoiceIds(IEnumerable<int>? invoiceIds)
+    {
+        return (invoiceIds ?? Array.Empty<int>())
+            .Where(x => x > 0)
+            .Distinct()
+            .ToList();
+    }
+
+    private static string BuildNoSelectedInvoiceMessage(InvoiceExportSelection selection)
+    {
+        if (selection.Messages.Any())
+            return string.Join(" ", selection.Messages);
+
+        return "Seçilen faturalar muhasebe aktarımı için uygun değil.";
+    }
+
+    private static string BuildSendSummaryMessage(SendInvoiceExportEmailResponseDto response)
+    {
+        if (response.SkippedCount > 0)
+        {
+            var message = $"{response.RequestedCount} faturadan {response.SentCount}'i muhasebeye gönderildi. {response.SkippedCount} kayıt atlandı.";
+
+            if (response.Messages.Any())
+                message += " " + string.Join(" ", response.Messages);
+
+            return message;
+        }
+
+        return response.SentCount == 1
+            ? "1 fatura muhasebeye gönderildi."
+            : $"{response.SentCount} fatura muhasebeye gönderildi.";
+    }
+
+    private async Task WriteExportAuditAsync(
+        int workshopId,
+        int requestedByUserId,
+        string toEmail,
+        SendInvoiceExportEmailResponseDto response,
+        bool isSuccess)
+    {
+        await _auditLogService.AddAsync(new AuditLogCreateDto
+        {
+            WorkshopId = workshopId,
+            UserId = requestedByUserId,
+            ActionType = AuditActionType.Update,
+            EntityType = AuditEntityType.Invoice,
+            Description = isSuccess
+                ? "Fatura aktarım paketi muhasebeye e-posta ile gönderildi."
+                : "Fatura aktarım paketi muhasebeye e-posta ile gönderilemedi.",
+            NewValues = new
+            {
+                ToEmail = MaskEmail(toEmail),
+                response.RequestedCount,
+                response.SentCount,
+                response.SkippedCount,
+                response.FailedCount,
+                response.Messages
+            }
+        });
+    }
+
+    private static string BuildAccountingEmailFromName(string? workshopName)
+    {
+        var safeWorkshopName = SanitizeEmailHeaderText(workshopName);
+
+        return string.IsNullOrWhiteSpace(safeWorkshopName)
+            ? "Sente360 Muhasebe"
+            : $"{safeWorkshopName} | Sente360";
+    }
+
+    private static string? SanitizeEmailHeaderText(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var sanitized = value
+            .Replace("\r", string.Empty, StringComparison.Ordinal)
+            .Replace("\n", string.Empty, StringComparison.Ordinal)
+            .Trim();
+
+        sanitized = Regex.Replace(sanitized, @"\s{2,}", " ");
+
+        if (string.IsNullOrWhiteSpace(sanitized))
+            return null;
+
+        return sanitized.Length <= 80
+            ? sanitized
+            : sanitized[..80].Trim();
+    }
+
+    private static string MaskEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+            return "***";
+
+        var parts = email.Split('@', 2);
+        var local = parts[0];
+        var domain = parts[1];
+
+        var maskedLocal = local.Length <= 2
+            ? new string('*', local.Length)
+            : $"{local[0]}***{local[^1]}";
+
+        return $"{maskedLocal}@{domain}";
+    }
+
+    private sealed class InvoiceExportSelection
+    {
+        public DateTime StartDate { get; set; }
+
+        public DateTime EndDate { get; set; }
+
+        public bool IncludeCancelled { get; set; }
+
+        public bool IsSelectedExport { get; set; }
+
+        public int RequestedCount { get; set; }
+
+        public int SkippedCount { get; set; }
+
+        public List<string> Messages { get; set; } = new();
+
+        public List<Invoice> Invoices { get; set; } = new();
+    }
+
+    private sealed class InvoiceWorkflowInfo
+    {
+        public string Stage { get; set; } = "prepare";
+        public int? AccountingRequestId { get; set; }
+        public string? BatchToken { get; set; }
+        public int? OfficialInvoiceDocumentId { get; set; }
+        public string? OfficialInvoiceNumber { get; set; }
+        public string? OfficialInvoiceShareToken { get; set; }
+        public DateTime? CustomerDeliveredAt { get; set; }
+        public string? RecipientEmail { get; set; }
+        public DateTime? AccountingSentAt { get; set; }
+    }
+
     private sealed record ExportPeriod(DateTime StartDate, DateTime EndDate);
 
     private sealed class WorkshopExportInfo
     {
+        public string? WorkshopName { get; set; }
         public string DisplayName { get; set; } = null!;
         public string? LegalTitle { get; set; }
         public string? TaxOffice { get; set; }

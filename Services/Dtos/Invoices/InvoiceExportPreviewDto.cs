@@ -10,6 +10,16 @@ public class InvoiceExportPreviewDto
 
     public bool IncludeCancelled { get; set; }
 
+    public string Tab { get; set; } = "prepare";
+
+    public int PrepareCount { get; set; }
+
+    public int WaitingCount { get; set; }
+
+    public int CustomerShareCount { get; set; }
+
+    public int CompletedCount { get; set; }
+
     public int InvoiceCount { get; set; }
 
     public int IssuedInvoiceCount { get; set; }
@@ -58,4 +68,20 @@ public class InvoiceExportItemDto
     public decimal PaidTotal { get; set; }
 
     public decimal RemainingAmount { get; set; }
+
+    public int? AccountingRequestId { get; set; }
+
+    public string? BatchToken { get; set; }
+
+    public int? OfficialInvoiceDocumentId { get; set; }
+
+    public string? OfficialInvoiceNumber { get; set; }
+
+    public string? OfficialInvoiceShareToken { get; set; }
+
+    public DateTime? CustomerDeliveredAt { get; set; }
+
+    public string? RecipientEmail { get; set; }
+
+    public DateTime? AccountingSentAt { get; set; }
 }

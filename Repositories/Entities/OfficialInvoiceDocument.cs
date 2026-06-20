@@ -32,6 +32,14 @@ namespace AutoStock.Repositories.Entities
 
         public string? Note { get; set; }
 
+        public string ShareToken { get; set; } = null!;
+
+        public DateTime? CustomerDeliveredAt { get; set; }
+
+        public int? CustomerDeliveredByUserId { get; set; }
+
+        public string? CustomerDeliveryChannel { get; set; }
+
         public Workshop Workshop { get; set; } = null!;
 
         public Invoice Invoice { get; set; } = null!;

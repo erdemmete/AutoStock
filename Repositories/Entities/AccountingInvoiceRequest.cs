@@ -12,9 +12,13 @@ namespace AutoStock.Repositories.Entities
 
         public string Token { get; set; } = null!;
 
+        public string? BatchToken { get; set; }
+
         public string AccountantEmail { get; set; } = null!;
 
         public string? Message { get; set; }
+
+        public int? RequestedByUserId { get; set; }
 
         public AccountingInvoiceRequestStatus Status { get; set; } = AccountingInvoiceRequestStatus.Pending;
 
@@ -23,6 +27,8 @@ namespace AutoStock.Repositories.Entities
         public DateTime ExpiresAt { get; set; }
 
         public DateTime? CompletedAt { get; set; }
+
+        public DateTime? BatchCompletedAt { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

@@ -40,7 +40,7 @@ public class InvoiceExportPageService
                 model,
                 previewResult.ErrorMessages.Any()
                     ? previewResult.ErrorMessages
-                    : new[] { previewResult.ErrorMessage ?? "Fatura aktarım önizlemesi alınırken hata oluştu." });
+                    : new[] { previewResult.ErrorMessage ?? "Belgeler alınırken hata oluştu." });
         }
 
         return PageViewResult<InvoiceExportIndexViewModel>.Success(model);

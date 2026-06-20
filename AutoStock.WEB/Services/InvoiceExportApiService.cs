@@ -22,7 +22,7 @@ public class InvoiceExportApiService : BaseApiService
 
         return await GetAsync<InvoiceExportPreviewDto>(
             BuildExportUrl("/api/invoices/export/preview", query),
-            "Fatura aktarım önizlemesi alınırken hata oluştu.");
+            "Belgeler alınırken hata oluştu.");
     }
 
     public async Task<InvoiceExportDownloadResult> DownloadAsync(InvoiceExportQueryViewModel query)
@@ -40,7 +40,7 @@ public class InvoiceExportApiService : BaseApiService
             {
                 var apiError = await ReadApiResponseAsync<object>(
                     response,
-                    "Fatura aktarım paketi indirilemedi.");
+                    "Belgeler indirilemedi.");
 
                 return InvoiceExportDownloadResult.Fail(
                     apiError.ErrorMessage,
@@ -49,7 +49,7 @@ public class InvoiceExportApiService : BaseApiService
 
             var content = await response.Content.ReadAsByteArrayAsync();
             var fileName = ResolveFileName(response.Content.Headers.ContentDisposition)
-                ?? $"fatura-aktarim-{DateTime.Now:yyyyMMddHHmm}.zip";
+                ?? $"belgeler-{DateTime.Now:yyyyMMddHHmm}.zip";
 
             var contentType = response.Content.Headers.ContentType?.MediaType
                 ?? "application/zip";
@@ -59,15 +59,15 @@ public class InvoiceExportApiService : BaseApiService
         catch (Exception ex)
         {
             return InvoiceExportDownloadResult.Fail(
-                $"Fatura aktarım paketi indirilemedi: {ex.Message}");
+                $"Belgeler indirilemedi: {ex.Message}");
         }
     }
 
-    public async Task<ApiResponse<object>> SendEmailAsync(InvoiceExportQueryViewModel query)
+    public async Task<ApiResponse<SendInvoiceExportEmailResponseDto>> SendEmailAsync(InvoiceExportQueryViewModel query)
     {
         query.Normalize();
 
-        return await PostJsonAsync<SendInvoiceExportEmailRequestDto, object>(
+        return await PostJsonAsync<SendInvoiceExportEmailRequestDto, SendInvoiceExportEmailResponseDto>(
             "/api/invoices/export/send-email",
             query.ToEmailDto(),
             "Fatura aktarım e-postası gönderilirken hata oluştu.");
@@ -75,13 +75,25 @@ public class InvoiceExportApiService : BaseApiService
 
     private static string BuildExportUrl(string baseUrl, InvoiceExportQueryViewModel query)
     {
-        return BuildUrlWithQuery(baseUrl, new Dictionary<string, string?>
+        var url = BuildUrlWithQuery(baseUrl, new Dictionary<string, string?>
         {
             ["startDate"] = query.StartDate?.ToString("yyyy-MM-dd"),
             ["endDate"] = query.EndDate?.ToString("yyyy-MM-dd"),
             ["preset"] = query.Preset,
+            ["tab"] = query.Tab,
             ["includeCancelled"] = query.IncludeCancelled.ToString().ToLowerInvariant()
         });
+
+        var ids = (query.InvoiceIds ?? new List<int>())
+            .Where(x => x > 0)
+            .Distinct()
+            .ToList();
+
+        if (!ids.Any())
+            return url;
+
+        var separator = url.Contains('?') ? '&' : '?';
+        return url + separator + string.Join("&", ids.Select(id => $"invoiceIds={id}"));
     }
 
     private static string? ResolveFileName(ContentDispositionHeaderValue? contentDisposition)

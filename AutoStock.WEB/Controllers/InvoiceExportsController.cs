@@ -8,13 +8,16 @@ public class InvoiceExportsController : BaseController
 {
     private readonly InvoiceExportApiService _invoiceExportApiService;
     private readonly InvoiceExportPageService _invoiceExportPageService;
+    private readonly AccountingInvoiceRequestApiService _accountingInvoiceRequestApiService;
 
     public InvoiceExportsController(
         InvoiceExportApiService invoiceExportApiService,
-        InvoiceExportPageService invoiceExportPageService)
+        InvoiceExportPageService invoiceExportPageService,
+        AccountingInvoiceRequestApiService accountingInvoiceRequestApiService)
     {
         _invoiceExportApiService = invoiceExportApiService;
         _invoiceExportPageService = invoiceExportPageService;
+        _accountingInvoiceRequestApiService = accountingInvoiceRequestApiService;
     }
 
     [HttpGet("Invoices/Export")]
@@ -47,13 +50,14 @@ public class InvoiceExportsController : BaseController
         {
             ShowErrors(result.ErrorMessages.Any()
                 ? result.ErrorMessages
-                : new[] { result.ErrorMessage ?? "Fatura aktarım paketi indirilemedi." });
+                : new[] { result.ErrorMessage ?? "Belgeler indirilemedi." });
 
             return RedirectToAction(nameof(Index), new
             {
                 query.StartDate,
                 query.EndDate,
                 query.Preset,
+                query.Tab,
                 query.IncludeCancelled
             });
         }
@@ -71,36 +75,61 @@ public class InvoiceExportsController : BaseController
 
         if (string.IsNullOrWhiteSpace(query.ToEmail))
         {
-            ShowError("Muhasebeci e-posta adresi zorunludur.");
+            ShowError("Faturayı hazırlayacak kişinin e-posta adresi zorunludur.");
 
             return RedirectToAction(nameof(Index), new
             {
                 query.StartDate,
                 query.EndDate,
                 query.Preset,
+                query.Tab,
                 query.IncludeCancelled
             });
         }
 
-        var result = await _invoiceExportApiService.SendEmailAsync(query);
+        if (query.InvoiceIds is null || !query.InvoiceIds.Any())
+        {
+            ShowError("En az bir servis hesap özeti seçiniz.");
 
-        return HandleCommandResult(
-            result,
-            onSuccess: () => RedirectToAction(nameof(Index), new
+            return RedirectToAction(nameof(Index), new
             {
                 query.StartDate,
                 query.EndDate,
                 query.Preset,
+                query.Tab,
                 query.IncludeCancelled
-            }),
-            onFailure: () => RedirectToAction(nameof(Index), new
-            {
-                query.StartDate,
-                query.EndDate,
-                query.Preset,
-                query.IncludeCancelled
-            }),
-            defaultErrorMessage: "Fatura aktarım e-postası gönderilirken hata oluştu.",
-            successMessage: "Fatura aktarım paketi e-posta ile gönderildi.");
+            });
+        }
+
+        var result = await _accountingInvoiceRequestApiService.SendBatchAsync(new AutoStock.WEB.Models.Accounting.SendAccountingInvoiceBatchRequestViewModel
+        {
+            InvoiceIds = query.InvoiceIds,
+            RecipientEmail = query.ToEmail,
+            Message = query.Message,
+            PublicBaseUrl = $"{Request.Scheme}://{Request.Host}"
+        });
+
+        if (result.IsSuccess)
+        {
+            var sentCount = result.Data?.SentCount ?? 0;
+            ShowSuccess(sentCount == 1
+                ? "1 servis hesap özeti fatura hazırlığına gönderildi."
+                : $"{sentCount} servis hesap özeti fatura hazırlığına gönderildi.");
+        }
+        else
+        {
+            ShowErrors(result.ErrorMessages.Any()
+                ? result.ErrorMessages
+                : new[] { result.ErrorMessage ?? "Fatura hazırlığına gönderilirken hata oluştu." });
+        }
+
+        return RedirectToAction(nameof(Index), new
+        {
+            query.StartDate,
+            query.EndDate,
+            query.Preset,
+            query.Tab,
+            query.IncludeCancelled
+        });
     }
 }

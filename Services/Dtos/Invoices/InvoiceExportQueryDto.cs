@@ -8,5 +8,9 @@ public class InvoiceExportQueryDto
 
     public string? Preset { get; set; }
 
+    public string? Tab { get; set; }
+
     public bool IncludeCancelled { get; set; } = false;
+
+    public List<int> InvoiceIds { get; set; } = new();
 }

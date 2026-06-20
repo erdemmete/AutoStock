@@ -155,7 +155,7 @@ namespace AutoStock.Services.Services
                 return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("Geçerli bir hesap özeti seçiniz.");
 
             if (string.IsNullOrWhiteSpace(request.PublicBaseUrl))
-                return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("Muhasebeci bağlantısı oluşturulamadı.");
+                return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("Fatura yükleme bağlantısı oluşturulamadı.");
 
             var invoice = await _context.Invoices
                 .Include(x => x.Items)
@@ -167,10 +167,10 @@ namespace AutoStock.Services.Services
                 return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("Hesap özeti bulunamadı.");
 
             if (invoice.Status == InvoiceStatus.Draft)
-                return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("Taslak hesap özeti muhasebeciye gönderilemez. Önce onaylayınız.");
+                return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("Taslak hesap özeti fatura hazırlığına gönderilemez. Önce onaylayınız.");
 
             if (invoice.Status == InvoiceStatus.Cancelled)
-                return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("İptal edilmiş hesap özeti muhasebeciye gönderilemez.");
+                return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("İptal edilmiş hesap özeti fatura hazırlığına gönderilemez.");
 
             var recipientEmailsResult = NormalizeRecipients(request);
 
@@ -180,7 +180,7 @@ namespace AutoStock.Services.Services
             var recipientEmails = recipientEmailsResult.Data ?? new List<string>();
 
             if (!recipientEmails.Any())
-                return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("En az bir muhasebeci e-posta adresi seçiniz.");
+                return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Fail("En az bir alıcı e-posta adresi seçiniz.");
 
             if (request.SaveNewRecipient && !string.IsNullOrWhiteSpace(request.NewRecipientEmail))
             {
@@ -224,6 +224,7 @@ namespace AutoStock.Services.Services
                         Token = CreateToken(),
                         AccountantEmail = email,
                         Message = NormalizeNullable(request.Message),
+                        RequestedByUserId = requestedByUserId,
                         Status = AccountingInvoiceRequestStatus.Pending,
                         SentAt = now,
                         ExpiresAt = now.AddDays(TokenValidDays),
@@ -345,6 +346,204 @@ namespace AutoStock.Services.Services
             return ServiceResult<SendAccountingInvoiceRequestResponseDto>.Success(response);
         }
 
+        public async Task<ServiceResult<SendAccountingInvoiceBatchResponseDto>> SendAccountingBatchRequestAsync(
+            SendAccountingInvoiceBatchRequestDto request,
+            int workshopId,
+            int requestedByUserId)
+        {
+            if (request is null)
+                return ServiceResult<SendAccountingInvoiceBatchResponseDto>.Fail("Gönderim bilgisi alınamadı.");
+
+            if (requestedByUserId <= 0)
+                return ServiceResult<SendAccountingInvoiceBatchResponseDto>.Fail("Kullanıcı bilgisi bulunamadı.");
+
+            if (string.IsNullOrWhiteSpace(request.PublicBaseUrl))
+                return ServiceResult<SendAccountingInvoiceBatchResponseDto>.Fail("Fatura yükleme bağlantısı oluşturulamadı.");
+
+            var emailResult = NormalizeEmail(request.RecipientEmail);
+
+            if (!emailResult.IsSuccess)
+                return ServiceResult<SendAccountingInvoiceBatchResponseDto>.Fail(emailResult.ErrorMessage);
+
+            var selectedIds = (request.InvoiceIds ?? new List<int>())
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList();
+
+            if (!selectedIds.Any())
+                return ServiceResult<SendAccountingInvoiceBatchResponseDto>.Fail("En az bir servis hesap özeti seçiniz.");
+
+            if (selectedIds.Count > 100)
+                return ServiceResult<SendAccountingInvoiceBatchResponseDto>.Fail("Tek seferde en fazla 100 kayıt gönderilebilir.");
+
+            var now = _dateTimeProvider.Now;
+            var invoices = await _context.Invoices
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    selectedIds.Contains(x.Id))
+                .OrderBy(x => x.InvoiceDate)
+                .ThenBy(x => x.InvoiceNumber)
+                .ToListAsync();
+
+            var foundIds = invoices.Select(x => x.Id).ToHashSet();
+            var missingCount = selectedIds.Count(x => !foundIds.Contains(x));
+            var messages = new List<string>();
+
+            if (missingCount > 0)
+                messages.Add($"{missingCount} kayıt bulunamadı veya erişilemiyor.");
+
+            var candidateIds = invoices
+                .Where(x => x.Status == InvoiceStatus.Issued)
+                .Select(x => x.Id)
+                .ToList();
+
+            var ineligibleCount = invoices.Count - candidateIds.Count;
+
+            if (ineligibleCount > 0)
+                messages.Add($"{ineligibleCount} kayıt uygun durumda olmadığı için atlandı.");
+
+            var alreadyRequestedIds = await _context.Set<AccountingInvoiceRequest>()
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    candidateIds.Contains(x.InvoiceId) &&
+                    x.Status == AccountingInvoiceRequestStatus.Pending &&
+                    x.ExpiresAt > now)
+                .Select(x => x.InvoiceId)
+                .Distinct()
+                .ToListAsync();
+
+            if (alreadyRequestedIds.Any())
+                messages.Add($"{alreadyRequestedIds.Count} kayıt zaten aktif bir fatura hazırlık gönderiminde.");
+
+            var alreadyDocumentedIds = await _context.Set<OfficialInvoiceDocument>()
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    candidateIds.Contains(x.InvoiceId))
+                .Select(x => x.InvoiceId)
+                .Distinct()
+                .ToListAsync();
+
+            if (alreadyDocumentedIds.Any())
+                messages.Add($"{alreadyDocumentedIds.Count} kayıt için fatura daha önce yüklenmiş.");
+
+            var eligibleInvoices = invoices
+                .Where(x =>
+                    candidateIds.Contains(x.Id) &&
+                    !alreadyRequestedIds.Contains(x.Id) &&
+                    !alreadyDocumentedIds.Contains(x.Id))
+                .ToList();
+
+            if (!eligibleInvoices.Any())
+            {
+                return ServiceResult<SendAccountingInvoiceBatchResponseDto>.Fail(
+                    messages.Any()
+                        ? string.Join(" ", messages)
+                        : "Seçilen kayıtlar fatura hazırlığına göndermek için uygun değil.");
+            }
+
+            var workshop = await GetWorkshopInfoAsync(workshopId);
+            var batchToken = CreateToken();
+            var recipientEmail = emailResult.Data!;
+            var expiresAt = now.AddDays(TokenValidDays);
+            var requests = eligibleInvoices.Select(invoice => new AccountingInvoiceRequest
+            {
+                WorkshopId = workshopId,
+                InvoiceId = invoice.Id,
+                Token = CreateToken(),
+                BatchToken = batchToken,
+                AccountantEmail = recipientEmail,
+                Message = NormalizeNullable(request.Message),
+                RequestedByUserId = requestedByUserId,
+                Status = AccountingInvoiceRequestStatus.Pending,
+                SentAt = now,
+                ExpiresAt = expiresAt,
+                CreatedAt = now
+            }).ToList();
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            _context.Set<AccountingInvoiceRequest>().AddRange(requests);
+
+            var savedRecipient = await _context.Set<WorkshopEmailRecipient>()
+                .FirstOrDefaultAsync(x =>
+                    x.WorkshopId == workshopId &&
+                    x.RecipientType == EmailRecipientType.Accounting &&
+                    x.Email == recipientEmail &&
+                    x.IsActive);
+
+            if (savedRecipient is not null)
+                savedRecipient.LastUsedAt = now;
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            var uploadUrl = BuildBatchPublicLink(request.PublicBaseUrl!, batchToken);
+            var subject = $"{BuildAccountingEmailSubjectPrefix(workshop.WorkshopName)} - {requests.Count} Fatura Hazırlık Talebi";
+            var htmlBody = BuildAccountingBatchRequestEmailBody(
+                workshop.DisplayName,
+                requests.Count,
+                uploadUrl,
+                request.Message);
+
+            var sendResult = await _emailSender.SendAsync(new EmailMessageDto
+            {
+                ToEmail = recipientEmail,
+                FromName = BuildAccountingEmailFromName(workshop.WorkshopName),
+                Subject = subject,
+                HtmlBody = htmlBody
+            });
+
+            if (!sendResult.IsSuccess)
+            {
+                _logger.LogWarning(
+                    "Accounting invoice batch email failed after DB save. BatchToken: {BatchToken}, WorkshopId: {WorkshopId}, Error: {ErrorMessage}",
+                    batchToken,
+                    workshopId,
+                    sendResult.ErrorMessage);
+
+                return ServiceResult<SendAccountingInvoiceBatchResponseDto>.Fail(
+                    sendResult.ErrorMessage ?? "Fatura hazırlık e-postası gönderilemedi.");
+            }
+
+            try
+            {
+                CreateAccountingRequestAuditLogs(
+                    requests.Select(x => new AccountingInvoiceEmailWorkItem(
+                        recipientEmail,
+                        eligibleInvoices.First(i => i.Id == x.InvoiceId).InvoiceNumber,
+                        subject,
+                        htmlBody,
+                        BuildAccountingEmailFromName(workshop.WorkshopName),
+                        x)),
+                    requestedByUserId,
+                    workshopId,
+                    _dateTimeProvider.Now);
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Accounting invoice batch audit log could not be created. BatchToken: {BatchToken}, WorkshopId: {WorkshopId}",
+                    batchToken,
+                    workshopId);
+            }
+
+            return ServiceResult<SendAccountingInvoiceBatchResponseDto>.Success(new SendAccountingInvoiceBatchResponseDto
+            {
+                BatchToken = batchToken,
+                RecipientEmail = recipientEmail,
+                RequestedCount = selectedIds.Count,
+                SentCount = requests.Count,
+                SkippedCount = selectedIds.Count - requests.Count,
+                UploadUrl = uploadUrl,
+                Messages = messages
+            });
+        }
+
         public async Task<ServiceResult<AccountingInvoiceRequestPublicDto>> GetPublicRequestAsync(string token)
         {
             token = NormalizeToken(token);
@@ -416,6 +615,76 @@ namespace AutoStock.Services.Services
             };
 
             return ServiceResult<AccountingInvoiceRequestPublicDto>.Success(dto);
+        }
+
+        public async Task<ServiceResult<AccountingInvoiceBatchPublicDto>> GetPublicBatchRequestAsync(string batchToken)
+        {
+            batchToken = NormalizeToken(batchToken);
+
+            if (string.IsNullOrWhiteSpace(batchToken))
+                return ServiceResult<AccountingInvoiceBatchPublicDto>.Fail("Bağlantı geçersiz.");
+
+            var requests = await _context.Set<AccountingInvoiceRequest>()
+                .AsNoTracking()
+                .Include(x => x.Invoice)
+                .Where(x => x.BatchToken == batchToken)
+                .OrderBy(x => x.Invoice.InvoiceDate)
+                .ThenBy(x => x.Invoice.InvoiceNumber)
+                .ToListAsync();
+
+            if (!requests.Any())
+                return ServiceResult<AccountingInvoiceBatchPublicDto>.Fail("Fatura yükleme bağlantısı bulunamadı.");
+
+            var first = requests.First();
+            var now = _dateTimeProvider.Now;
+            var isExpired = requests.All(x => x.ExpiresAt < now || x.Status == AccountingInvoiceRequestStatus.Expired);
+            var canUpload = !isExpired && requests.Any(x => x.Status != AccountingInvoiceRequestStatus.Cancelled);
+            var workshop = await GetWorkshopInfoAsync(first.WorkshopId);
+            var requestIds = requests.Select(x => x.Id).ToList();
+            var documents = await _context.Set<OfficialInvoiceDocument>()
+                .AsNoTracking()
+                .Where(x => x.AccountingInvoiceRequestId.HasValue && requestIds.Contains(x.AccountingInvoiceRequestId.Value))
+                .GroupBy(x => x.AccountingInvoiceRequestId!.Value)
+                .Select(g => g.OrderByDescending(x => x.UploadedAt).First())
+                .ToDictionaryAsync(x => x.AccountingInvoiceRequestId!.Value, x => x);
+
+            var items = requests.Select(accountingRequest =>
+            {
+                documents.TryGetValue(accountingRequest.Id, out var document);
+
+                return new AccountingInvoiceBatchItemDto
+                {
+                    RequestId = accountingRequest.Id,
+                    InvoiceId = accountingRequest.InvoiceId,
+                    InvoiceNumber = accountingRequest.Invoice.InvoiceNumber,
+                    InvoiceDate = accountingRequest.Invoice.InvoiceDate,
+                    CustomerTitle = accountingRequest.Invoice.CustomerTitle,
+                    Plate = accountingRequest.Invoice.Plate,
+                    GrandTotal = accountingRequest.Invoice.GrandTotal,
+                    StatusText = document is null ? "Fatura bekliyor" : "Fatura yüklendi",
+                    CanUpload = canUpload && accountingRequest.Status != AccountingInvoiceRequestStatus.Cancelled,
+                    OfficialInvoiceDocument = document is null ? null : ToDocumentDto(document)
+                };
+            }).ToList();
+
+            var uploadedCount = items.Count(x => x.OfficialInvoiceDocument is not null);
+            var pendingCount = Math.Max(0, items.Count - uploadedCount);
+
+            return ServiceResult<AccountingInvoiceBatchPublicDto>.Success(new AccountingInvoiceBatchPublicDto
+            {
+                BatchToken = batchToken,
+                WorkshopName = workshop.DisplayName,
+                RecipientEmail = first.AccountantEmail,
+                Message = first.Message,
+                SentAt = first.SentAt,
+                ExpiresAt = requests.Max(x => x.ExpiresAt),
+                CanUpload = canUpload,
+                TotalCount = items.Count,
+                UploadedCount = uploadedCount,
+                PendingCount = pendingCount,
+                StatusText = pendingCount == 0 ? "Tamamlandı" : uploadedCount > 0 ? "Kısmen yüklendi" : "Fatura bekleniyor",
+                Items = items
+            });
         }
 
         public async Task<ServiceResult<OfficialInvoiceDocumentDto>> UploadOfficialInvoiceAsync(
@@ -501,7 +770,8 @@ namespace AutoStock.Services.Services
                 FileSizeBytes = request.FileSizeBytes,
                 UploadedAt = now,
                 UploadedByEmail = uploadedByResult.Data!,
-                Note = NormalizeNullable(request.Note)
+                Note = NormalizeNullable(request.Note),
+                ShareToken = CreateToken()
             };
 
             _context.Set<OfficialInvoiceDocument>().Add(document);
@@ -536,6 +806,172 @@ namespace AutoStock.Services.Services
             return ServiceResult<OfficialInvoiceDocumentDto>.Success(ToDocumentDto(document));
         }
 
+        public async Task<ServiceResult<OfficialInvoiceDocumentDto>> UploadOfficialInvoiceForBatchItemAsync(
+            string batchToken,
+            int accountingRequestId,
+            UploadOfficialInvoiceDto request)
+        {
+            batchToken = NormalizeToken(batchToken);
+
+            if (string.IsNullOrWhiteSpace(batchToken))
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Bağlantı geçersiz.");
+
+            if (accountingRequestId <= 0)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Kayıt bilgisi alınamadı.");
+
+            if (request is null)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Yükleme bilgisi alınamadı.");
+
+            if (string.IsNullOrWhiteSpace(request.OfficialInvoiceNumber))
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Fatura numarası zorunludur.");
+
+            if (request.OfficialInvoiceDate == default)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Fatura tarihi zorunludur.");
+
+            if (string.IsNullOrWhiteSpace(request.UploadedByEmail))
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Yükleyen e-posta adresi zorunludur.");
+
+            var uploadedByResult = NormalizeEmail(request.UploadedByEmail);
+
+            if (!uploadedByResult.IsSuccess)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail(uploadedByResult.ErrorMessage);
+
+            if (request.FileContent is null || request.FileSizeBytes <= 0)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("PDF dosyası seçiniz.");
+
+            if (request.FileSizeBytes > MaxOfficialInvoicePdfBytes)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("PDF dosyası en fazla 10 MB olabilir.");
+
+            if (!IsPdfFile(request.FileName, request.ContentType))
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Sadece PDF dosyası yükleyebilirsiniz.");
+
+            var accountingRequest = await _context.Set<AccountingInvoiceRequest>()
+                .Include(x => x.Invoice)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == accountingRequestId &&
+                    x.BatchToken == batchToken);
+
+            if (accountingRequest is null)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Fatura hazırlık kaydı bulunamadı.");
+
+            if (accountingRequest.ExpiresAt < _dateTimeProvider.Now)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Bu bağlantının süresi dolmuş.");
+
+            if (accountingRequest.Status == AccountingInvoiceRequestStatus.Cancelled)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Bu talep iptal edilmiş.");
+
+            var now = _dateTimeProvider.Now;
+            var safeOriginalFileName = SanitizeFileName(request.FileName);
+            var storedFileName = $"official-invoice-{accountingRequest.InvoiceId}-{Guid.NewGuid():N}.pdf";
+            var relativePath = Path.Combine(
+                "official-invoices",
+                accountingRequest.WorkshopId.ToString(),
+                accountingRequest.InvoiceId.ToString(),
+                storedFileName);
+
+            var fullPath = BuildOfficialInvoiceFullPath(relativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+
+            await using (var output = File.Create(fullPath))
+            {
+                await request.FileContent.CopyToAsync(output);
+            }
+
+            var document = new OfficialInvoiceDocument
+            {
+                WorkshopId = accountingRequest.WorkshopId,
+                InvoiceId = accountingRequest.InvoiceId,
+                AccountingInvoiceRequestId = accountingRequest.Id,
+                OfficialInvoiceNumber = request.OfficialInvoiceNumber.Trim(),
+                OfficialInvoiceDate = request.OfficialInvoiceDate.Date,
+                EttnOrUuid = NormalizeNullable(request.EttnOrUuid),
+                OriginalFileName = safeOriginalFileName,
+                StoredFileName = storedFileName,
+                RelativePath = relativePath.Replace('\\', '/'),
+                ContentType = "application/pdf",
+                FileSizeBytes = request.FileSizeBytes,
+                UploadedAt = now,
+                UploadedByEmail = uploadedByResult.Data!,
+                Note = NormalizeNullable(request.Note),
+                ShareToken = CreateToken()
+            };
+
+            _context.Set<OfficialInvoiceDocument>().Add(document);
+
+            accountingRequest.Status = AccountingInvoiceRequestStatus.Uploaded;
+            accountingRequest.CompletedAt = now;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                TryDeleteFile(fullPath);
+
+                _logger.LogError(
+                    ex,
+                    "Batch official invoice document DB save failed after file write. BatchToken: {BatchToken}, AccountingRequestId: {AccountingRequestId}",
+                    batchToken,
+                    accountingRequestId);
+
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail(
+                    "Fatura dosyası yüklendi ancak kayıt bilgileri kaydedilemedi. Lütfen tekrar deneyin.");
+            }
+
+            return ServiceResult<OfficialInvoiceDocumentDto>.Success(ToDocumentDto(document));
+        }
+
+        public async Task<ServiceResult<CompleteAccountingInvoiceBatchUploadResponseDto>> CompleteBatchUploadAsync(string batchToken)
+        {
+            batchToken = NormalizeToken(batchToken);
+
+            if (string.IsNullOrWhiteSpace(batchToken))
+                return ServiceResult<CompleteAccountingInvoiceBatchUploadResponseDto>.Fail("Bağlantı geçersiz.");
+
+            var requests = await _context.Set<AccountingInvoiceRequest>()
+                .Include(x => x.Invoice)
+                .Where(x => x.BatchToken == batchToken)
+                .ToListAsync();
+
+            if (!requests.Any())
+                return ServiceResult<CompleteAccountingInvoiceBatchUploadResponseDto>.Fail("Fatura yükleme bağlantısı bulunamadı.");
+
+            var requestIds = requests.Select(x => x.Id).ToList();
+            var uploadedRequestIds = await _context.Set<OfficialInvoiceDocument>()
+                .AsNoTracking()
+                .Where(x => x.AccountingInvoiceRequestId.HasValue && requestIds.Contains(x.AccountingInvoiceRequestId.Value))
+                .Select(x => x.AccountingInvoiceRequestId!.Value)
+                .Distinct()
+                .ToListAsync();
+
+            var now = _dateTimeProvider.Now;
+            var uploadedCount = uploadedRequestIds.Count;
+            var totalCount = requests.Count;
+            var pendingCount = Math.Max(0, totalCount - uploadedCount);
+
+            foreach (var accountingRequest in requests.Where(x => uploadedRequestIds.Contains(x.Id)))
+            {
+                accountingRequest.BatchCompletedAt = now;
+            }
+
+            await _context.SaveChangesAsync();
+
+            await NotifyWorkshopBatchOfficialInvoicesUploadedAsync(requests, uploadedCount, pendingCount);
+
+            var message = pendingCount == 0
+                ? $"{uploadedCount} fatura yüklendi."
+                : $"{totalCount} faturadan {uploadedCount}'ü yüklendi. {pendingCount} fatura bekliyor.";
+
+            return ServiceResult<CompleteAccountingInvoiceBatchUploadResponseDto>.Success(new CompleteAccountingInvoiceBatchUploadResponseDto
+            {
+                TotalCount = totalCount,
+                UploadedCount = uploadedCount,
+                PendingCount = pendingCount,
+                Message = message
+            });
+        }
+
         public async Task<ServiceResult<InvoiceAccountingStatusDto>> GetInvoiceAccountingStatusAsync(
             int invoiceId,
             int workshopId)
@@ -561,7 +997,7 @@ namespace AutoStock.Services.Services
             var statusText = latestOfficialDocument is not null
                 ? "Fatura yüklendi"
                 : hasPendingRequest
-                    ? "Muhasebeciye gönderildi"
+                    ? "Fatura hazırlığına gönderildi"
                     : "Fatura bekleniyor";
 
             var dto = new InvoiceAccountingStatusDto
@@ -606,6 +1042,80 @@ namespace AutoStock.Services.Services
             });
         }
 
+        public async Task<ServiceResult<OfficialInvoiceFileDto>> GetOfficialInvoiceFileByShareTokenAsync(string shareToken)
+        {
+            shareToken = NormalizeToken(shareToken);
+
+            if (string.IsNullOrWhiteSpace(shareToken))
+                return ServiceResult<OfficialInvoiceFileDto>.Fail("Bağlantı geçersiz.");
+
+            var document = await _context.Set<OfficialInvoiceDocument>()
+                .AsNoTracking()
+                .Include(x => x.Workshop)
+                .FirstOrDefaultAsync(x =>
+                    x.ShareToken == shareToken &&
+                    x.Workshop.IsActive);
+
+            if (document is null)
+                return ServiceResult<OfficialInvoiceFileDto>.Fail("Fatura dosyası bulunamadı.");
+
+            var fullPath = BuildOfficialInvoiceFullPath(document.RelativePath);
+
+            if (!File.Exists(fullPath))
+                return ServiceResult<OfficialInvoiceFileDto>.Fail("Fatura dosyası sunucuda bulunamadı.");
+
+            var content = await File.ReadAllBytesAsync(fullPath);
+
+            return ServiceResult<OfficialInvoiceFileDto>.Success(new OfficialInvoiceFileDto
+            {
+                FileName = document.OriginalFileName,
+                ContentType = document.ContentType,
+                Content = content
+            });
+        }
+
+        public async Task<ServiceResult<OfficialInvoiceDocumentDto>> MarkOfficialInvoiceDeliveredAsync(
+            int officialInvoiceDocumentId,
+            int workshopId,
+            int userId,
+            MarkOfficialInvoiceDeliveredDto request)
+        {
+            if (officialInvoiceDocumentId <= 0)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Fatura bilgisi alınamadı.");
+
+            var document = await _context.Set<OfficialInvoiceDocument>()
+                .FirstOrDefaultAsync(x =>
+                    x.Id == officialInvoiceDocumentId &&
+                    x.WorkshopId == workshopId);
+
+            if (document is null)
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail("Fatura dosyası bulunamadı.");
+
+            var channel = NormalizeDeliveryChannel(request?.Channel);
+
+            document.CustomerDeliveredAt = _dateTimeProvider.Now;
+            document.CustomerDeliveredByUserId = userId;
+            document.CustomerDeliveryChannel = channel;
+
+            _context.AuditLogs.Add(new AuditLog
+            {
+                WorkshopId = workshopId,
+                UserId = userId,
+                ActionType = AuditActionType.Update,
+                EntityType = AuditEntityType.AccountingInvoiceRequest,
+                EntityId = document.AccountingInvoiceRequestId,
+                Description = $"Fatura müşteriye iletildi olarak işaretlendi. Kanal: {channel}",
+                NewValuesJson = $$"""
+                {"officialInvoiceDocumentId":{{document.Id}},"channel":"{{JsonEscape(channel)}}"}
+                """,
+                CreatedAt = _dateTimeProvider.Now
+            });
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<OfficialInvoiceDocumentDto>.Success(ToDocumentDto(document));
+        }
+
         private async Task<OfficialInvoiceDocumentDto?> GetLatestOfficialInvoiceDocumentAsync(int invoiceId, int workshopId)
         {
             var document = await _context.Set<OfficialInvoiceDocument>()
@@ -630,7 +1140,10 @@ namespace AutoStock.Services.Services
                 FileSizeBytes = document.FileSizeBytes,
                 UploadedAt = document.UploadedAt,
                 UploadedByEmail = document.UploadedByEmail,
-                Note = document.Note
+                Note = document.Note,
+                ShareToken = document.ShareToken,
+                CustomerDeliveredAt = document.CustomerDeliveredAt,
+                CustomerDeliveryChannel = document.CustomerDeliveryChannel
             };
         }
 
@@ -754,6 +1267,76 @@ namespace AutoStock.Services.Services
             }
         }
 
+        private async Task NotifyWorkshopBatchOfficialInvoicesUploadedAsync(
+            List<AccountingInvoiceRequest> requests,
+            int uploadedCount,
+            int pendingCount)
+        {
+            try
+            {
+                var first = requests.FirstOrDefault();
+
+                if (first is null)
+                    return;
+
+                var requesterUserIds = requests
+                    .Where(x => x.RequestedByUserId.HasValue && x.RequestedByUserId.Value > 0)
+                    .Select(x => x.RequestedByUserId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                if (!requesterUserIds.Any())
+                {
+                    var requestIds = requests.Select(x => x.Id).ToList();
+                    requesterUserIds = await _context.AuditLogs
+                        .AsNoTracking()
+                        .Where(x =>
+                            x.EntityType == AuditEntityType.AccountingInvoiceRequest &&
+                            x.EntityId.HasValue &&
+                            requestIds.Contains(x.EntityId.Value) &&
+                            x.ActionType == AuditActionType.Create &&
+                            x.UserId.HasValue &&
+                            x.UserId.Value > 0)
+                        .Select(x => x.UserId!.Value)
+                        .Distinct()
+                        .ToListAsync();
+                }
+
+                var totalCount = requests.Count;
+                var message = pendingCount == 0
+                    ? $"{uploadedCount} fatura yüklendi."
+                    : $"{totalCount} faturadan {uploadedCount}'ü yüklendi. {pendingCount} fatura bekliyor.";
+
+                var notificationResult = await _notificationService.CreateForWorkshopOwnersAndUsersAsync(
+                    first.WorkshopId,
+                    requesterUserIds,
+                    new CreateNotificationDto
+                    {
+                        WorkshopId = first.WorkshopId,
+                        Type = NotificationType.InvoiceDocumentUploaded,
+                        Title = "Faturalar yüklendi",
+                        Message = message,
+                        RelatedEntityType = NotificationRelatedEntityType.AccountingInvoiceRequest,
+                        RelatedEntityId = first.Id,
+                        ActionUrl = "/Invoices/Export?Tab=customer"
+                    });
+
+                if (notificationResult.IsFailure)
+                {
+                    _logger.LogWarning(
+                        "Accounting invoice batch upload notification returned failure. BatchToken: {BatchToken}, Error: {ErrorMessage}",
+                        first.BatchToken,
+                        notificationResult.ErrorMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Accounting invoice batch upload notification failed.");
+            }
+        }
+
         private void CreateAccountingRequestAuditLogs(
             IEnumerable<AccountingInvoiceEmailWorkItem> emailWorkItems,
             int requestedByUserId,
@@ -769,7 +1352,7 @@ namespace AutoStock.Services.Services
                     ActionType = AuditActionType.Create,
                     EntityType = AuditEntityType.AccountingInvoiceRequest,
                     EntityId = item.AccountingRequest.Id,
-                    Description = $"Muhasebeciye fatura hazırlık talebi gönderildi. Fatura: {item.InvoiceNumber}, Alıcı: {item.Email}",
+                    Description = $"Fatura hazırlık talebi gönderildi. Belge: {item.InvoiceNumber}, Alıcı: {item.Email}",
                     NewValuesJson = $$"""
                     {"invoiceId":{{item.AccountingRequest.InvoiceId}},"accountantEmail":"{{JsonEscape(item.Email)}}"}
                     """,
@@ -804,7 +1387,7 @@ namespace AutoStock.Services.Services
                         ? NotificationType.InvoiceDocumentReuploaded
                         : NotificationType.InvoiceDocumentUploaded,
                     Title = title,
-                    Message = $"{invoiceText} için e-Arşiv fatura PDF'i muhasebeci tarafından sisteme {actionText}.",
+                    Message = $"{invoiceText} için fatura PDF'i sisteme {actionText}.",
                     RelatedEntityType = NotificationRelatedEntityType.AccountingInvoiceRequest,
                     RelatedEntityId = accountingRequest.Id,
                     ActionUrl = $"/Invoices/Detail/{accountingRequest.InvoiceId}"
@@ -850,7 +1433,7 @@ namespace AutoStock.Services.Services
             return $@"
 <div style='font-family:Arial,sans-serif;font-size:14px;color:#0f172a;line-height:1.55'>
   <h2 style='margin:0 0 12px'>Fatura hazırlık talebi</h2>
-  <p><strong>{HtmlEncode(workshopName)}</strong> tarafından aşağıdaki servis hesap özeti için resmi e-Arşiv/e-Fatura düzenlenmesi talep edilmiştir.</p>
+  <p><strong>{HtmlEncode(workshopName)}</strong> tarafından aşağıdaki servis hesap özeti için fatura hazırlanması talep edilmiştir.</p>
   <table cellpadding='6' cellspacing='0' style='border-collapse:collapse;border:1px solid #e2e8f0;margin:14px 0;width:100%;max-width:620px'>
     <tr><td style='border:1px solid #e2e8f0;background:#f8fafc'><strong>Belge No</strong></td><td style='border:1px solid #e2e8f0'>{HtmlEncode(invoice.InvoiceNumber)}</td></tr>
     <tr><td style='border:1px solid #e2e8f0;background:#f8fafc'><strong>Müşteri</strong></td><td style='border:1px solid #e2e8f0'>{HtmlEncode(invoice.CustomerTitle)}</td></tr>
@@ -864,6 +1447,28 @@ namespace AutoStock.Services.Services
     <a href='{HtmlEncode(publicLink)}' style='display:inline-block;padding:12px 18px;background:#4f46e5;color:#fff;text-decoration:none;border-radius:12px;font-weight:bold'>Bilgileri Görüntüle ve Fatura Yükle</a>
   </p>
   <p style='font-size:12px;color:#64748b'>Bu bağlantı yalnızca ilgili hesap özeti için geçerlidir ve süresi dolduğunda yükleme yapılamaz.</p>
+</div>";
+        }
+
+        private static string BuildAccountingBatchRequestEmailBody(
+            string workshopName,
+            int invoiceCount,
+            string publicLink,
+            string? customMessage)
+        {
+            var noteHtml = string.IsNullOrWhiteSpace(customMessage)
+                ? string.Empty
+                : $"<p style='padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px'><strong>Not:</strong><br>{HtmlEncode(customMessage)}</p>";
+
+            return $@"
+<div style='font-family:Arial,sans-serif;font-size:14px;color:#0f172a;line-height:1.55'>
+  <h2 style='margin:0 0 12px'>Fatura hazırlık talebi</h2>
+  <p><strong>{HtmlEncode(workshopName)}</strong> tarafından {invoiceCount} servis hesap özeti için fatura yükleme bağlantısı oluşturuldu.</p>
+  {noteHtml}
+  <p>
+    <a href='{HtmlEncode(publicLink)}' style='display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:12px;font-weight:bold'>Faturaları Yükle</a>
+  </p>
+  <p style='font-size:12px;color:#64748b'>Bağlantı yalnızca bu gönderimdeki kayıtları gösterir ve süresi dolduğunda yükleme yapılamaz.</p>
 </div>";
         }
 
@@ -915,6 +1520,11 @@ namespace AutoStock.Services.Services
         private static string BuildPublicLink(string publicBaseUrl, string token)
         {
             return $"{publicBaseUrl.TrimEnd('/')}/Accounting/InvoiceRequest/{token}";
+        }
+
+        private static string BuildBatchPublicLink(string publicBaseUrl, string batchToken)
+        {
+            return $"{publicBaseUrl.TrimEnd('/')}/Accounting/InvoiceUpload/{batchToken}";
         }
 
         private static string CreateToken()
@@ -996,6 +1606,21 @@ namespace AutoStock.Services.Services
         private static string? NormalizeNullable(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        private static string NormalizeDeliveryChannel(string? value)
+        {
+            var channel = string.IsNullOrWhiteSpace(value)
+                ? "Diğer"
+                : value.Trim();
+
+            return channel switch
+            {
+                "WhatsApp" => "WhatsApp",
+                "E-posta" => "E-posta",
+                "Elden / Diğer" => "Elden / Diğer",
+                _ => "Diğer"
+            };
         }
 
         private static string JoinText(params string?[] values)
