@@ -6,6 +6,8 @@ public class EmailMessageDto
 
     public string? ToName { get; set; }
 
+    public string? FromName { get; set; }
+
     public string Subject { get; set; } = null!;
 
     public string HtmlBody { get; set; } = null!;

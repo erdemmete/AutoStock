@@ -194,6 +194,8 @@ namespace AutoStock.Services.Services
 
             var now = _dateTimeProvider.Now;
             var workshop = await GetWorkshopInfoAsync(workshopId);
+            var accountingEmailFromName = BuildAccountingEmailFromName(workshop.WorkshopName);
+            var accountingEmailSubjectPrefix = BuildAccountingEmailSubjectPrefix(workshop.WorkshopName);
             var paidTotal = await GetInvoicePaidTotalAsync(invoice.Id, workshopId);
             var remaining = Math.Max(0m, invoice.GrandTotal - paidTotal);
 
@@ -246,7 +248,7 @@ namespace AutoStock.Services.Services
                     savedRecipient.LastUsedAt = now;
 
                 var publicLink = BuildPublicLink(request.PublicBaseUrl!, accountingRequest.Token);
-                var subject = $"Sente360 - Fatura Hazırlık Talebi - {invoice.InvoiceNumber}";
+                var subject = $"{accountingEmailSubjectPrefix} - Fatura Hazırlık Talebi - {invoice.InvoiceNumber}";
                 var htmlBody = BuildAccountingRequestEmailBody(
                     workshop.DisplayName,
                     invoice,
@@ -260,6 +262,7 @@ namespace AutoStock.Services.Services
                     invoice.InvoiceNumber,
                     subject,
                     htmlBody,
+                    accountingEmailFromName,
                     accountingRequest));
             }
 
@@ -274,6 +277,7 @@ namespace AutoStock.Services.Services
                 var emailResult = await _emailSender.SendAsync(new EmailMessageDto
                 {
                     ToEmail = item.Email,
+                    FromName = item.FromName,
                     Subject = item.Subject,
                     HtmlBody = item.HtmlBody
                 });
@@ -681,6 +685,7 @@ namespace AutoStock.Services.Services
 
             return new WorkshopInfo
             {
+                WorkshopName = workshop?.Name,
                 DisplayName = displayName,
                 NotificationEmail = profile?.Email,
                 TaxOffice = profile?.TaxOffice,
@@ -1028,6 +1033,40 @@ namespace AutoStock.Services.Services
             return System.Net.WebUtility.HtmlEncode(value ?? string.Empty);
         }
 
+        private static string BuildAccountingEmailFromName(string? workshopName)
+        {
+            var safeWorkshopName = SanitizeEmailHeaderText(workshopName);
+
+            return string.IsNullOrWhiteSpace(safeWorkshopName)
+                ? "Sente360 Muhasebe"
+                : $"{safeWorkshopName} | Sente360";
+        }
+
+        private static string BuildAccountingEmailSubjectPrefix(string? workshopName)
+        {
+            return SanitizeEmailHeaderText(workshopName) ?? "Sente360 Muhasebe";
+        }
+
+        private static string? SanitizeEmailHeaderText(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            var sanitized = value
+                .Replace("\r", string.Empty, StringComparison.Ordinal)
+                .Replace("\n", string.Empty, StringComparison.Ordinal)
+                .Trim();
+
+            sanitized = Regex.Replace(sanitized, @"\s{2,}", " ");
+
+            if (string.IsNullOrWhiteSpace(sanitized))
+                return null;
+
+            return sanitized.Length <= 80
+                ? sanitized
+                : sanitized[..80].Trim();
+        }
+
         private static string JsonEscape(string? value)
         {
             return (value ?? string.Empty)
@@ -1037,6 +1076,8 @@ namespace AutoStock.Services.Services
 
         private sealed class WorkshopInfo
         {
+            public string? WorkshopName { get; set; }
+
             public string DisplayName { get; set; } = null!;
 
             public string? NotificationEmail { get; set; }
@@ -1051,6 +1092,7 @@ namespace AutoStock.Services.Services
             string InvoiceNumber,
             string Subject,
             string HtmlBody,
+            string FromName,
             AccountingInvoiceRequest AccountingRequest);
     }
 }

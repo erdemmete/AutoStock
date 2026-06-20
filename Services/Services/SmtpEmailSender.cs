@@ -61,11 +61,11 @@ namespace AutoStock.Services.Services
 
                 using var mail = new MailMessage();
 
+                var fromDisplayName = ResolveFromDisplayName(message.FromName);
+
                 mail.From = new MailAddress(
                     _settings.FromEmail,
-                    string.IsNullOrWhiteSpace(_settings.FromName)
-                        ? _settings.FromEmail
-                        : _settings.FromName,
+                    fromDisplayName,
                     Encoding.UTF8);
 
                 mail.To.Add(new MailAddress(
@@ -127,10 +127,11 @@ namespace AutoStock.Services.Services
                 await smtp.SendMailAsync(mail, cancellationToken);
 
                 _logger.LogInformation(
-                    "Email sent successfully. ToEmail: {ToEmail}, Subject: {Subject}, FromEmail: {FromEmail}, Host: {Host}, Port: {Port}",
+                    "Email sent successfully. ToEmail: {ToEmail}, Subject: {Subject}, FromEmail: {FromEmail}, FromName: {FromName}, Host: {Host}, Port: {Port}",
                     message.ToEmail,
                     message.Subject,
                     _settings.FromEmail,
+                    fromDisplayName,
                     _settings.Host,
                     _settings.Port);
 
@@ -185,6 +186,35 @@ namespace AutoStock.Services.Services
                 errors.Add(nameof(_settings.FromEmail));
 
             return errors;
+        }
+
+        private string ResolveFromDisplayName(string? messageFromName)
+        {
+            var displayName = SanitizeHeaderText(messageFromName);
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+                return displayName;
+
+            displayName = SanitizeHeaderText(_settings.FromName);
+
+            return string.IsNullOrWhiteSpace(displayName)
+                ? _settings.FromEmail
+                : displayName;
+        }
+
+        private static string? SanitizeHeaderText(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            var sanitized = value
+                .Replace("\r", string.Empty, StringComparison.Ordinal)
+                .Replace("\n", string.Empty, StringComparison.Ordinal)
+                .Trim();
+
+            return sanitized.Length <= 100
+                ? sanitized
+                : sanitized[..100].Trim();
         }
 
         private static string CreateMessageId(string fromEmail)
