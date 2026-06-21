@@ -198,6 +198,36 @@ namespace AutoStock.WEB.Controllers
         }
 
         [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        [HttpPost("Accounting/InvoiceUpload/{batchToken}/Items/{requestId:int}/Upload")]
+        [RequestSizeLimit(12 * 1024 * 1024)]
+        public async Task<IActionResult> PublicBatchUploadItem(
+            string batchToken,
+            int requestId,
+            [FromForm] PublicBatchUploadItemViewModel model)
+        {
+            var result = await _accountingInvoiceRequestApiService.UploadBatchItemAsync(batchToken, requestId, model);
+
+            if (result.IsFailure)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        [HttpPost("Accounting/InvoiceUpload/{batchToken}/Complete")]
+        public async Task<IActionResult> PublicBatchComplete(string batchToken)
+        {
+            var result = await _accountingInvoiceRequestApiService.CompleteBatchUploadAsync(batchToken);
+
+            if (result.IsFailure)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        [AllowAnonymous]
         [HttpGet("Accounting/InvoiceFile/{shareToken}")]
         public IActionResult PublicInvoiceFile(string shareToken)
         {

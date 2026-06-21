@@ -68,6 +68,58 @@ namespace AutoStock.WEB.Services
                 "Fatura yükleme bilgileri alınırken hata oluştu.");
         }
 
+        public async Task<ApiResponse<OfficialInvoiceDocumentDto>> UploadBatchItemAsync(
+            string batchToken,
+            int requestId,
+            PublicBatchUploadItemViewModel model)
+        {
+            if (model.File is null || model.File.Length == 0)
+                return ApiResponse<OfficialInvoiceDocumentDto>.Fail("PDF dosyası seçiniz.");
+
+            return await SendAsync<OfficialInvoiceDocumentDto>(
+                $"/api/accounting-invoice-requests/public/batches/{Uri.EscapeDataString(batchToken)}/items/{requestId}/upload",
+                async client =>
+                {
+                    using var content = new MultipartFormDataContent();
+                    content.Add(new StringContent(model.OfficialInvoiceNumber ?? string.Empty), "officialInvoiceNumber");
+                    content.Add(new StringContent(model.OfficialInvoiceDate.ToString("yyyy-MM-dd")), "officialInvoiceDate");
+                    content.Add(new StringContent(model.UploadedByEmail ?? string.Empty), "uploadedByEmail");
+
+                    if (!string.IsNullOrWhiteSpace(model.Note))
+                        content.Add(new StringContent(model.Note), "note");
+
+                    await using var stream = model.File.OpenReadStream();
+                    using var fileContent = new StreamContent(stream);
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrWhiteSpace(model.File.ContentType)
+                        ? "application/pdf"
+                        : model.File.ContentType);
+                    content.Add(fileContent, "file", model.File.FileName);
+
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Requested-With", "XMLHttpRequest");
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                    return await client.PostAsync(
+                        $"/api/accounting-invoice-requests/public/batches/{Uri.EscapeDataString(batchToken)}/items/{requestId}/upload",
+                        content);
+                },
+                "Fatura PDF'i yüklenirken hata oluştu.");
+        }
+
+        public async Task<ApiResponse<CompleteAccountingInvoiceBatchUploadResponseDto>> CompleteBatchUploadAsync(string batchToken)
+        {
+            return await SendAsync<CompleteAccountingInvoiceBatchUploadResponseDto>(
+                $"/api/accounting-invoice-requests/public/batches/{Uri.EscapeDataString(batchToken)}/complete",
+                client =>
+                {
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("X-Requested-With", "XMLHttpRequest");
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    return client.PostAsync(
+                        $"/api/accounting-invoice-requests/public/batches/{Uri.EscapeDataString(batchToken)}/complete",
+                        new FormUrlEncodedContent(new Dictionary<string, string>()));
+                },
+                "Yükleme durumu tamamlanırken hata oluştu.");
+        }
+
         public async Task<ApiResponse<OfficialInvoiceDocumentDto>> MarkDeliveredAsync(int documentId, MarkOfficialInvoiceDeliveredDto model)
         {
             return await PostJsonAsync<MarkOfficialInvoiceDeliveredDto, OfficialInvoiceDocumentDto>(

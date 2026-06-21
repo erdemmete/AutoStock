@@ -950,6 +950,10 @@ namespace AutoStock.Services.Services
             var totalCount = requests.Count;
             var pendingCount = Math.Max(0, totalCount - uploadedCount);
 
+            var shouldNotify = requests.Any(x =>
+                uploadedRequestIds.Contains(x.Id) &&
+                x.BatchCompletedAt is null);
+
             foreach (var accountingRequest in requests.Where(x => uploadedRequestIds.Contains(x.Id)))
             {
                 accountingRequest.BatchCompletedAt = now;
@@ -957,7 +961,8 @@ namespace AutoStock.Services.Services
 
             await _context.SaveChangesAsync();
 
-            await NotifyWorkshopBatchOfficialInvoicesUploadedAsync(requests, uploadedCount, pendingCount);
+            if (shouldNotify)
+                await NotifyWorkshopBatchOfficialInvoicesUploadedAsync(requests, uploadedCount, pendingCount);
 
             var message = pendingCount == 0
                 ? $"{uploadedCount} fatura yüklendi."

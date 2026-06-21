@@ -1,5 +1,6 @@
 using AutoStock.Services.Constants;
 using AutoStock.Services.Dtos.Accounting;
+using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -199,7 +200,10 @@ namespace AutoStock.API.Controllers
             [FromForm] IFormFile file)
         {
             if (file is null)
-                return BadRequest("PDF dosyası seçiniz.");
+            {
+                var fail = ServiceResult<OfficialInvoiceDocumentDto>.Fail("PDF dosyası seçiniz.");
+                return WantsJsonResponse() ? ToActionResult(fail) : BadRequest("PDF dosyası seçiniz.");
+            }
 
             await using var stream = file.OpenReadStream();
 
@@ -219,6 +223,9 @@ namespace AutoStock.API.Controllers
                 });
 
             var safeReturnUrl = ResolveSafeReturnUrl(returnUrl, token, Request);
+
+            if (WantsJsonResponse())
+                return ToActionResult(result);
 
             if (result.IsFailure)
             {
@@ -246,7 +253,10 @@ namespace AutoStock.API.Controllers
             [FromForm] IFormFile file)
         {
             if (file is null)
-                return BadRequest("PDF dosyası seçiniz.");
+            {
+                var fail = ServiceResult<OfficialInvoiceDocumentDto>.Fail("PDF dosyası seçiniz.");
+                return WantsJsonResponse() ? ToActionResult(fail) : BadRequest("PDF dosyası seçiniz.");
+            }
 
             await using var stream = file.OpenReadStream();
 
@@ -268,6 +278,9 @@ namespace AutoStock.API.Controllers
 
             var safeReturnUrl = ResolveSafeReturnUrl(returnUrl, batchToken, Request, preferBatchFallback: true);
 
+            if (WantsJsonResponse())
+                return ToActionResult(result);
+
             if (result.IsFailure)
             {
                 return Redirect(AddQueryParameter(
@@ -285,6 +298,9 @@ namespace AutoStock.API.Controllers
         {
             var result = await _accountingInvoiceRequestService.CompleteBatchUploadAsync(batchToken);
             var safeReturnUrl = ResolveSafeReturnUrl(returnUrl, batchToken, Request, preferBatchFallback: true);
+
+            if (WantsJsonResponse())
+                return ToActionResult(result);
 
             if (result.IsFailure)
             {
@@ -357,6 +373,14 @@ namespace AutoStock.API.Controllers
         {
             return !string.IsNullOrWhiteSpace(returnUrl) &&
                    returnUrl.Contains("/Accounting/InvoiceUpload/", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool WantsJsonResponse()
+        {
+            return Request.Headers["X-Requested-With"].Any(x =>
+                       string.Equals(x, "XMLHttpRequest", StringComparison.OrdinalIgnoreCase)) ||
+                   Request.Headers.Accept.Any(x =>
+                       x?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true);
         }
 
         private static string AddQueryParameter(string url, string key, string value)

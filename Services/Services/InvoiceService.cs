@@ -155,7 +155,7 @@ namespace AutoStock.Services.Services
                 Type = InvoiceType.Manual,
                 Status = InvoiceStatus.Draft,
 
-                InvoiceNumber = $"MAT-{_dateTimeProvider.Now:yyyyMMddHHmmss}",
+                InvoiceNumber = $"SHO-{_dateTimeProvider.Now:yyyyMMddHHmmss}",
                 InvoiceDate = _dateTimeProvider.Now,
 
                 CustomerTitle = string.IsNullOrWhiteSpace(request.CustomerTitle)

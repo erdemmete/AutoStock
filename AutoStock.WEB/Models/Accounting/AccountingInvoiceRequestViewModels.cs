@@ -79,6 +79,19 @@ namespace AutoStock.WEB.Models.Accounting
         public string? UploadError { get; set; }
     }
 
+    public class PublicBatchUploadItemViewModel
+    {
+        public string OfficialInvoiceNumber { get; set; } = null!;
+
+        public DateTime OfficialInvoiceDate { get; set; }
+
+        public string UploadedByEmail { get; set; } = null!;
+
+        public string? Note { get; set; }
+
+        public IFormFile? File { get; set; }
+    }
+
     public class OfficialInvoiceDownloadResult
     {
         public bool IsSuccess { get; set; }

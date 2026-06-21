@@ -99,10 +99,10 @@ public class InvoiceExportService : IInvoiceExportService
         int requestedByUserId)
     {
         if (request is null)
-            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail("Aktarım bilgisi alınamadı.");
+            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail("Gönderim bilgisi alınamadı.");
 
         if (string.IsNullOrWhiteSpace(request.ToEmail))
-            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail("Muhasebeci e-posta adresi zorunludur.");
+            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail("Alıcı e-posta adresi zorunludur.");
 
         try
         {
@@ -116,14 +116,14 @@ public class InvoiceExportService : IInvoiceExportService
         var selectionResult = await ResolveInvoiceSelectionAsync(request, workshopId);
 
         if (!selectionResult.IsSuccess || selectionResult.Data is null)
-            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail(selectionResult.ErrorMessage ?? "Fatura aktarım paketi oluşturulamadı.");
+            return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail(selectionResult.ErrorMessage ?? "Servis hesap özeti dosyaları oluşturulamadı.");
 
         var selection = selectionResult.Data;
 
         if (!selection.Invoices.Any())
             return ServiceResult<SendInvoiceExportEmailResponseDto>.Fail(selection.IsSelectedExport
                 ? BuildNoSelectedInvoiceMessage(selection)
-                : "Fatura aktarım paketi oluşturulamadı.");
+                : "Servis hesap özeti dosyaları oluşturulamadı.");
 
         var preview = await BuildPreviewAsync(
             selection.Invoices,
@@ -137,7 +137,7 @@ public class InvoiceExportService : IInvoiceExportService
         var zipContent = BuildZip(selection.Invoices, preview, workshop);
         var fileName = BuildExportZipFileName(workshop.DisplayName, selection.StartDate, selection.EndDate);
         var periodText = preview.PeriodText;
-        var subject = $"{periodText} Fatura Aktarımı - {workshop.DisplayName}";
+        var subject = $"{periodText} Servis Hesap Özetleri - {workshop.DisplayName}";
         var htmlBody = BuildEmailBody(workshop.DisplayName, periodText, request.Message);
         var response = new SendInvoiceExportEmailResponseDto
         {
@@ -166,7 +166,7 @@ public class InvoiceExportService : IInvoiceExportService
         if (!emailResult.IsSuccess)
         {
             response.FailedCount = preview.InvoiceCount;
-            response.SummaryMessage = "Fatura aktarım e-postası gönderilemedi.";
+            response.SummaryMessage = "Servis hesap özeti e-postası gönderilemedi.";
 
             await WriteExportAuditAsync(
                 workshopId,
@@ -614,7 +614,7 @@ public class InvoiceExportService : IInvoiceExportService
             row.RelativeItem(.82f).Column(right =>
             {
                 right.Spacing(2.4f);
-                right.Item().AlignRight().Text("FATURA HESAP ÖZETİ")
+                right.Item().AlignRight().Text("SERVİS HESAP ÖZETİ")
                     .FontSize(18.0f)
                     .Bold()
                     .FontColor(Colors.Blue.Darken3);
@@ -642,7 +642,7 @@ public class InvoiceExportService : IInvoiceExportService
             row.RelativeItem(1.05f).Column(left =>
             {
                 left.Spacing(1.7f);
-                AddExportSectionTitle(left, "FATURA KESİLEN");
+                AddExportSectionTitle(left, "ALICI");
                 left.Item().Text(GetValue(invoice.CustomerTitle).ToUpperInvariant())
                     .FontSize(11.0f)
                     .Bold()
@@ -1127,7 +1127,7 @@ public class InvoiceExportService : IInvoiceExportService
     {
         var builder = new StringBuilder();
 
-        builder.AppendLine("SENTE360 FATURA AKTARIM PAKETİ");
+        builder.AppendLine("SENTE360 SERVİS HESAP ÖZETLERİ");
         builder.AppendLine("================================");
         builder.AppendLine($"Servis: {workshop.DisplayName}");
         builder.AppendLine($"Dönem: {preview.PeriodText}");
@@ -1135,13 +1135,13 @@ public class InvoiceExportService : IInvoiceExportService
         builder.AppendLine($"İptal faturalar dahil: {(preview.IncludeCancelled ? "Evet" : "Hayır")}");
         builder.AppendLine();
         builder.AppendLine($"Fatura Sayısı: {preview.InvoiceCount}");
-        builder.AppendLine($"Kesilmiş Fatura: {preview.IssuedInvoiceCount}");
-        builder.AppendLine($"İptal Fatura: {preview.CancelledInvoiceCount}");
+        builder.AppendLine($"Hazırlanan Özet: {preview.IssuedInvoiceCount}");
+        builder.AppendLine($"İptal Edilen Özet: {preview.CancelledInvoiceCount}");
         builder.AppendLine($"Genel Toplam: {FormatMoney(preview.GrandTotal)}");
         builder.AppendLine($"Tahsil Edilen: {FormatMoney(preview.PaidTotal)}");
         builder.AppendLine($"Kalan: {FormatMoney(preview.RemainingTotal)}");
         builder.AppendLine();
-        builder.AppendLine("Not: Bu paket Sente360 içindeki servis/fatura kayıtlarından oluşturulmuştur. Resmi e-Fatura/e-Arşiv entegrasyonu değildir.");
+        builder.AppendLine("Not: Bu dosya Sente360 içindeki servis hesap özeti kayıtlarından oluşturulmuştur. Fatura entegrasyonu değildir.");
 
         return builder.ToString();
     }
@@ -1158,11 +1158,11 @@ public class InvoiceExportService : IInvoiceExportService
 <div style=""font-family:Arial,sans-serif;background:#f8fafc;padding:24px;color:#0f172a;"">
   <div style=""max-width:620px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;padding:24px;"">
     <div style=""font-size:12px;font-weight:800;color:#2563eb;letter-spacing:.2px;margin-bottom:8px;"">SENTE360</div>
-    <h2 style=""margin:0 0 8px;font-size:22px;color:#0f172a;"">Fatura aktarım paketi</h2>
-    <p style=""margin:0 0 16px;color:#64748b;line-height:1.55;"">{safeWorkshopName} işletmesine ait {safePeriodText} fatura aktarım paketi ekte yer almaktadır.</p>
+    <h2 style=""margin:0 0 8px;font-size:22px;color:#0f172a;"">Servis hesap özetleri</h2>
+    <p style=""margin:0 0 16px;color:#64748b;line-height:1.55;"">{safeWorkshopName} işletmesine ait {safePeriodText} servis hesap özeti dosyaları ekte yer almaktadır.</p>
     {safeMessage}
     <div style=""padding:14px 16px;border-radius:14px;background:#f1f5f9;color:#334155;font-size:13px;line-height:1.5;"">
-      ZIP dosyası içinde fatura PDF'leri, fatura-ozet.html, fatura-ozet.csv ve aktarım bilgisi dosyası bulunur.
+      Ek dosyada servis hesap özeti PDF'leri, özet HTML/CSV dosyaları ve dönem bilgisi bulunur.
     </div>
     <p style=""margin:18px 0 0;color:#94a3b8;font-size:12px;"">Bu e-posta Sente360 üzerinden oluşturulmuştur.</p>
   </div>
@@ -1268,7 +1268,7 @@ public class InvoiceExportService : IInvoiceExportService
             return ServiceResult<ExportPeriod>.Fail("Bitiş tarihi başlangıç tarihinden küçük olamaz.");
 
         if ((endDate - startDate).TotalDays > MaxExportDayRange)
-            return ServiceResult<ExportPeriod>.Fail($"Tek seferde en fazla {MaxExportDayRange} günlük fatura aktarımı yapılabilir.");
+            return ServiceResult<ExportPeriod>.Fail($"Tek seferde en fazla {MaxExportDayRange} günlük servis hesap özeti alınabilir.");
 
         return ServiceResult<ExportPeriod>.Success(new ExportPeriod(startDate, endDate));
     }
@@ -1477,8 +1477,8 @@ public class InvoiceExportService : IInvoiceExportService
             ActionType = AuditActionType.Update,
             EntityType = AuditEntityType.Invoice,
             Description = isSuccess
-                ? "Fatura aktarım paketi muhasebeye e-posta ile gönderildi."
-                : "Fatura aktarım paketi muhasebeye e-posta ile gönderilemedi.",
+                ? "Servis hesap özeti dosyaları e-posta ile gönderildi."
+                : "Servis hesap özeti dosyaları e-posta ile gönderilemedi.",
             NewValues = new
             {
                 ToEmail = MaskEmail(toEmail),

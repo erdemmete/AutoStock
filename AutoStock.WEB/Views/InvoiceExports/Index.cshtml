@@ -25,82 +25,125 @@
         Tab = tab
     }) ?? "#";
 
-    string StatusClass(int status) => status switch
+    string DisplayDocumentNo(string? value)
     {
-        2 => "issued",
-        3 => "cancelled",
-        _ => "draft"
+        if (string.IsNullOrWhiteSpace(value))
+            return "-";
+
+        var trimmed = value.Trim();
+        return trimmed.StartsWith("MAT-", StringComparison.OrdinalIgnoreCase) ||
+               trimmed.StartsWith("FAT-", StringComparison.OrdinalIgnoreCase)
+            ? $"SHO-{trimmed[4..]}"
+            : trimmed;
+    }
+
+    string TabLabel(string tab) => tab switch
+    {
+        "waiting" => "Fatura Bekleyenler",
+        "customer" => "Müşteriye İletilecekler",
+        "completed" => "Tamamlananlar",
+        _ => "Gönderilecek Özetler"
+    };
+
+    int TabCount(string tab) => tab switch
+    {
+        "waiting" => preview.WaitingCount,
+        "customer" => preview.CustomerShareCount,
+        "completed" => preview.CompletedCount,
+        _ => preview.PrepareCount
     };
 }
 
 <div class="invexp-page">
-    <section class="invexp-head">
-        <div>
-            <a asp-controller="Invoices" asp-action="Index" class="invexp-back">‹</a>
-            <span class="invexp-eyebrow">FATURALAR</span>
-            <h1>Fatura Hazırlık Akışı</h1>
+    <section class="invexp-topbar">
+        <div class="invexp-titleline">
+            <a asp-controller="Invoices" asp-action="Index" class="invexp-back" aria-label="Geri dön">‹</a>
+            <h1>Faturalar</h1>
         </div>
-        <form method="get" asp-controller="InvoiceExports" asp-action="Download" id="downloadDocumentsForm">
-            <input type="hidden" name="StartDate" value="@DateValue(query.StartDate)" />
-            <input type="hidden" name="EndDate" value="@DateValue(query.EndDate)" />
-            <input type="hidden" name="Preset" value="@query.Preset" />
-            <input type="hidden" name="Tab" value="@query.Tab" />
-            <div data-invexp-download-inputs></div>
-            <button type="submit" class="btn-secondary-action" data-invexp-download disabled>
-                Belgeleri İndir
-            </button>
-        </form>
     </section>
 
-    <section class="invexp-tabs">
-        <a class="@TabClass("prepare")" href="@TabUrl("prepare")">Hazırlanacaklar <span>@preview.PrepareCount</span></a>
-        <a class="@TabClass("waiting")" href="@TabUrl("waiting")">Fatura Bekleyenler <span>@preview.WaitingCount</span></a>
-        <a class="@TabClass("customer")" href="@TabUrl("customer")">Müşteriye İletilecekler <span>@preview.CustomerShareCount</span></a>
-        <a class="@TabClass("completed")" href="@TabUrl("completed")">Tamamlananlar <span>@preview.CompletedCount</span></a>
-    </section>
-
-    <section class="invexp-filter-shell">
-        <div class="invexp-quick-presets">
-            <a class="@PresetClass("this-week")" href="@Url.Action("Index", "InvoiceExports", new { Preset = "this-week", Tab = activeTab })">Bu Hafta</a>
-            <a class="@PresetClass("this-month")" href="@Url.Action("Index", "InvoiceExports", new { Preset = "this-month", Tab = activeTab })">Bu Ay</a>
-            <a class="@PresetClass("last-month")" href="@Url.Action("Index", "InvoiceExports", new { Preset = "last-month", Tab = activeTab })">Geçen Ay</a>
+    <section class="invexp-controls">
+        <div class="invexp-mobile-tab">
+            <label for="invoiceExportTabSelect">Durum</label>
+            <select id="invoiceExportTabSelect" data-tab-select>
+                <option value="@TabUrl("prepare")" selected="@(activeTab == "prepare")">Gönderilecek Özetler (@preview.PrepareCount)</option>
+                <option value="@TabUrl("waiting")" selected="@(activeTab == "waiting")">Fatura Bekleyenler (@preview.WaitingCount)</option>
+                <option value="@TabUrl("customer")" selected="@(activeTab == "customer")">Müşteriye İletilecekler (@preview.CustomerShareCount)</option>
+                <option value="@TabUrl("completed")" selected="@(activeTab == "completed")">Tamamlananlar (@preview.CompletedCount)</option>
+            </select>
         </div>
 
-        <form method="get" asp-controller="InvoiceExports" asp-action="Index" class="invexp-filter-form">
-            <input type="hidden" name="Preset" value="custom" />
-            <input type="hidden" name="Tab" value="@activeTab" />
+        <nav class="invexp-tabs" aria-label="Fatura durumları">
+            <a class="@TabClass("prepare")" href="@TabUrl("prepare")">Gönderilecek Özetler <span>@preview.PrepareCount</span></a>
+            <a class="@TabClass("waiting")" href="@TabUrl("waiting")">Fatura Bekleyenler <span>@preview.WaitingCount</span></a>
+            <a class="@TabClass("customer")" href="@TabUrl("customer")">Müşteriye İletilecekler <span>@preview.CustomerShareCount</span></a>
+            <a class="@TabClass("completed")" href="@TabUrl("completed")">Tamamlananlar <span>@preview.CompletedCount</span></a>
+        </nav>
 
-            <div class="invexp-date-field">
-                <label>Başlangıç</label>
-                <input type="date" name="StartDate" value="@DateValue(query.StartDate)" />
+        <button type="button" class="invexp-filter-toggle" data-filter-toggle>Filtrele</button>
+
+        <div class="invexp-filter-shell" data-filter-panel>
+            <div class="invexp-quick-presets">
+                <a class="@PresetClass("this-week")" href="@Url.Action("Index", "InvoiceExports", new { Preset = "this-week", Tab = activeTab })">Bu Hafta</a>
+                <a class="@PresetClass("this-month")" href="@Url.Action("Index", "InvoiceExports", new { Preset = "this-month", Tab = activeTab })">Bu Ay</a>
+                <a class="@PresetClass("last-month")" href="@Url.Action("Index", "InvoiceExports", new { Preset = "last-month", Tab = activeTab })">Geçen Ay</a>
             </div>
 
-            <div class="invexp-date-field">
-                <label>Bitiş</label>
-                <input type="date" name="EndDate" value="@DateValue(query.EndDate)" />
-            </div>
+            <form method="get" asp-controller="InvoiceExports" asp-action="Index" class="invexp-filter-form">
+                <input type="hidden" name="Preset" value="custom" />
+                <input type="hidden" name="Tab" value="@activeTab" />
 
-            <button type="submit" class="btn-dark-action">Uygula</button>
-        </form>
+                <label class="invexp-date-field">
+                    <span>Başlangıç</span>
+                    <input type="date" name="StartDate" value="@DateValue(query.StartDate)" />
+                </label>
+
+                <label class="invexp-date-field">
+                    <span>Bitiş</span>
+                    <input type="date" name="EndDate" value="@DateValue(query.EndDate)" />
+                </label>
+
+                <button type="submit" class="btn-dark-action">Uygula</button>
+            </form>
+        </div>
     </section>
 
-    <section class="invexp-table-shell">
+    <section class="invexp-list-shell">
         <div class="invexp-bulk-bar">
-            <label class="invexp-select-page">
-                <input type="checkbox" data-invexp-select-page />
-                <span>Bu sayfadakileri seç</span>
-            </label>
+            @if (activeTab == "prepare")
+            {
+                <label class="invexp-select-page">
+                    <input type="checkbox" data-invexp-select-page />
+                    <span>Bu sayfayı seç</span>
+                </label>
 
-            <div class="invexp-selected-count" data-invexp-selected-count>0 kayıt seçildi</div>
+                <div class="invexp-selected-count" data-invexp-selected-count>0 kayıt seçildi</div>
 
-            <button type="button"
-                    class="btn-primary-action"
-                    data-bs-toggle="modal"
-                    data-bs-target="#sendPreparationModal"
-                    data-invexp-selected-send
-                    disabled>
-                Fatura Hazırlığına Gönder
-            </button>
+                <div class="invexp-bulk-actions">
+                    <form method="get" asp-controller="InvoiceExports" asp-action="Download" id="downloadDocumentsForm">
+                        <input type="hidden" name="StartDate" value="@DateValue(query.StartDate)" />
+                        <input type="hidden" name="EndDate" value="@DateValue(query.EndDate)" />
+                        <input type="hidden" name="Preset" value="@query.Preset" />
+                        <input type="hidden" name="Tab" value="@query.Tab" />
+                        <div data-invexp-download-inputs></div>
+                        <button type="submit" class="btn-secondary-action" data-invexp-download disabled>Belgeleri İndir</button>
+                    </form>
+
+                    <button type="button"
+                            class="btn-primary-action"
+                            data-bs-toggle="modal"
+                            data-bs-target="#sendPreparationModal"
+                            data-invexp-selected-send
+                            disabled>
+                        Fatura İçin Gönder
+                    </button>
+                </div>
+            }
+            else
+            {
+                <strong>@TabLabel(activeTab)</strong>
+                <span>@TabCount(activeTab) kayıt</span>
+            }
         </div>
 
         @if (!items.Any())
@@ -108,7 +151,7 @@
             <div class="invexp-empty">
                 <div>⌕</div>
                 <strong>Kayıt bulunamadı</strong>
-                <span>Tarih aralığını veya sekmeyi değiştirerek tekrar deneyebilirsiniz.</span>
+                <span>Tarih aralığını veya durumu değiştirerek tekrar deneyebilirsiniz.</span>
             </div>
         }
         else
@@ -117,12 +160,14 @@
                 <table class="invexp-table">
                     <thead>
                         <tr>
-                            <th class="select-col"></th>
+                            @if (activeTab == "prepare")
+                            {
+                                <th class="select-col"></th>
+                            }
                             <th>Belge No</th>
                             <th>Tarih</th>
                             <th>Müşteri</th>
                             <th>Plaka</th>
-                            <th>Durum</th>
                             <th class="num">Tutar</th>
                             @if (activeTab == "waiting")
                             {
@@ -141,43 +186,44 @@
                         @foreach (var item in items)
                         {
                             var canSelect = activeTab == "prepare" && item.Status == 2;
+                            var displayNo = DisplayDocumentNo(item.InvoiceNumber);
                             var shareUrl = !string.IsNullOrWhiteSpace(item.OfficialInvoiceShareToken)
                                 ? $"{Context.Request.Scheme}://{Context.Request.Host}{Url.Action("PublicInvoiceFile", "AccountingInvoiceRequests", new { shareToken = item.OfficialInvoiceShareToken })}"
                                 : string.Empty;
                             var whatsappText = Uri.EscapeDataString($"Merhaba, aracınıza ait faturaya aşağıdaki bağlantıdan ulaşabilirsiniz.\n\n{shareUrl}");
 
                             <tr>
-                                <td class="select-col">
-                                    @if (canSelect)
-                                    {
-                                        <input type="checkbox"
-                                               class="invexp-row-check"
-                                               value="@item.InvoiceId"
-                                               aria-label="@item.InvoiceNumber seç" />
-                                    }
-                                </td>
-                                <td>
-                                    <a href="/Invoices/Detail/@item.InvoiceId" class="invexp-link">@item.InvoiceNumber</a>
-                                </td>
+                                @if (activeTab == "prepare")
+                                {
+                                    <td class="select-col">
+                                        @if (canSelect)
+                                        {
+                                            <input type="checkbox"
+                                                   class="invexp-row-check"
+                                                   value="@item.InvoiceId"
+                                                   aria-label="@displayNo seç" />
+                                        }
+                                    </td>
+                                }
+                                <td><a href="/Invoices/Detail/@item.InvoiceId" class="invexp-link">@displayNo</a></td>
                                 <td>@item.InvoiceDate.ToString("dd.MM.yyyy")</td>
                                 <td><strong>@item.CustomerTitle</strong></td>
                                 <td>@(string.IsNullOrWhiteSpace(item.Plate) ? "-" : item.Plate)</td>
-                                <td><span class="invexp-status @StatusClass(item.Status)">@item.StatusText</span></td>
                                 <td class="num strong">@SenteMoney.Format(item.GrandTotal)</td>
-                            @if (activeTab == "waiting")
-                            {
-                                var uploadUrl = !string.IsNullOrWhiteSpace(item.BatchToken)
-                                    ? $"{Context.Request.Scheme}://{Context.Request.Host}{Url.Action("PublicBatch", "AccountingInvoiceRequests", new { batchToken = item.BatchToken })}"
-                                    : string.Empty;
-                                <td>@(item.RecipientEmail ?? "-")</td>
-                                <td>@(item.AccountingSentAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
-                                <td>
-                                    @if (!string.IsNullOrWhiteSpace(uploadUrl))
-                                    {
-                                        <button type="button" class="mini-btn" data-copy-text="@uploadUrl">Bağlantıyı Kopyala</button>
-                                    }
-                                </td>
-                            }
+                                @if (activeTab == "waiting")
+                                {
+                                    var uploadUrl = !string.IsNullOrWhiteSpace(item.BatchToken)
+                                        ? $"{Context.Request.Scheme}://{Context.Request.Host}{Url.Action("PublicBatch", "AccountingInvoiceRequests", new { batchToken = item.BatchToken })}"
+                                        : string.Empty;
+                                    <td>@(item.RecipientEmail ?? "-")</td>
+                                    <td>@(item.AccountingSentAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(uploadUrl))
+                                        {
+                                            <button type="button" class="mini-btn" data-copy-text="@uploadUrl">Bağlantıyı Kopyala</button>
+                                        }
+                                    </td>
+                                }
                                 @if (activeTab == "customer" || activeTab == "completed")
                                 {
                                     <td>@(item.OfficialInvoiceNumber ?? "-")</td>
@@ -185,7 +231,7 @@
                                         @if (!string.IsNullOrWhiteSpace(shareUrl))
                                         {
                                             <a class="mini-btn primary" href="https://wa.me/?text=@whatsappText" target="_blank">WhatsApp</a>
-                                            <a class="mini-btn" href="mailto:?subject=@Uri.EscapeDataString($"{item.InvoiceNumber} fatura bağlantısı")&body=@Uri.EscapeDataString($"Merhaba,\n\nFaturaya aşağıdaki bağlantıdan ulaşabilirsiniz:\n\n{shareUrl}")">E-posta</a>
+                                            <a class="mini-btn" href="mailto:?subject=@Uri.EscapeDataString($"{displayNo} fatura bağlantısı")&body=@Uri.EscapeDataString($"Merhaba,\n\nFaturaya aşağıdaki bağlantıdan ulaşabilirsiniz:\n\n{shareUrl}")">E-posta</a>
                                             <a class="mini-btn" href="@shareUrl" target="_blank">Görüntüle</a>
                                             <button type="button" class="mini-btn" data-copy-text="@shareUrl">Kopyala</button>
                                             @if (activeTab == "customer" && item.OfficialInvoiceDocumentId.HasValue)
@@ -206,9 +252,87 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="invexp-mobile-list">
+                @foreach (var item in items)
+                {
+                    var canSelect = activeTab == "prepare" && item.Status == 2;
+                    var displayNo = DisplayDocumentNo(item.InvoiceNumber);
+                    var shareUrl = !string.IsNullOrWhiteSpace(item.OfficialInvoiceShareToken)
+                        ? $"{Context.Request.Scheme}://{Context.Request.Host}{Url.Action("PublicInvoiceFile", "AccountingInvoiceRequests", new { shareToken = item.OfficialInvoiceShareToken })}"
+                        : string.Empty;
+                    var uploadUrl = !string.IsNullOrWhiteSpace(item.BatchToken)
+                        ? $"{Context.Request.Scheme}://{Context.Request.Host}{Url.Action("PublicBatch", "AccountingInvoiceRequests", new { batchToken = item.BatchToken })}"
+                        : string.Empty;
+                    var whatsappText = Uri.EscapeDataString($"Merhaba, aracınıza ait faturaya aşağıdaki bağlantıdan ulaşabilirsiniz.\n\n{shareUrl}");
+
+                    <article class="invexp-mobile-row">
+                        <div class="mobile-mainline">
+                            @if (canSelect)
+                            {
+                                <input type="checkbox"
+                                       class="invexp-row-check"
+                                       value="@item.InvoiceId"
+                                       aria-label="@displayNo seç" />
+                            }
+                            <a href="/Invoices/Detail/@item.InvoiceId">@displayNo</a>
+                            <strong>@SenteMoney.Format(item.GrandTotal)</strong>
+                        </div>
+                        <div class="mobile-subline">
+                            <span>@item.CustomerTitle</span>
+                            <span>@(string.IsNullOrWhiteSpace(item.Plate) ? "-" : item.Plate)</span>
+                        </div>
+                        <div class="mobile-date">@item.InvoiceDate.ToString("dd.MM.yyyy")</div>
+
+                        @if (activeTab == "waiting")
+                        {
+                            <div class="mobile-actions">
+                                <span>@(item.RecipientEmail ?? "-")</span>
+                                @if (!string.IsNullOrWhiteSpace(uploadUrl))
+                                {
+                                    <button type="button" class="mini-btn" data-copy-text="@uploadUrl">Bağlantıyı Kopyala</button>
+                                }
+                            </div>
+                        }
+
+                        @if ((activeTab == "customer" || activeTab == "completed") && !string.IsNullOrWhiteSpace(shareUrl))
+                        {
+                            <div class="mobile-actions">
+                                <a class="mini-btn primary" href="https://wa.me/?text=@whatsappText" target="_blank">WhatsApp</a>
+                                <a class="mini-btn" href="mailto:?subject=@Uri.EscapeDataString($"{displayNo} fatura bağlantısı")&body=@Uri.EscapeDataString($"Merhaba,\n\nFaturaya aşağıdaki bağlantıdan ulaşabilirsiniz:\n\n{shareUrl}")">E-posta</a>
+                                <a class="mini-btn" href="@shareUrl" target="_blank">Görüntüle</a>
+                                @if (activeTab == "customer" && item.OfficialInvoiceDocumentId.HasValue)
+                                {
+                                    <button type="button"
+                                            class="mini-btn"
+                                            data-mark-delivered
+                                            data-document-id="@item.OfficialInvoiceDocumentId"
+                                            data-channel="WhatsApp">
+                                        İletildi
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </article>
+                }
+            </div>
         }
     </section>
 </div>
+
+@if (activeTab == "prepare")
+{
+    <div class="invexp-sticky-actions" data-invexp-sticky hidden>
+        <span data-invexp-sticky-count>0 kayıt seçildi</span>
+        <button type="submit" form="downloadDocumentsForm" class="btn-secondary-action">İndir</button>
+        <button type="button"
+                class="btn-primary-action"
+                data-bs-toggle="modal"
+                data-bs-target="#sendPreparationModal">
+            Fatura İçin Gönder
+        </button>
+    </div>
+}
 
 <div class="modal fade" id="sendPreparationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -223,8 +347,8 @@
 
                 <div class="modal-header">
                     <div>
-                        <span class="modal-eyebrow">FATURA HAZIRLIĞI</span>
-                        <h5 class="modal-title">Fatura Hazırlığına Gönder</h5>
+                        <span class="modal-eyebrow">FATURA</span>
+                        <h5 class="modal-title">Fatura İçin Gönder</h5>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -237,7 +361,7 @@
                     </div>
                     <div class="field">
                         <label>Not</label>
-                        <textarea name="Message" rows="4" placeholder="İsteğe bağlı kısa not"></textarea>
+                        <textarea name="Message" rows="3" placeholder="İsteğe bağlı kısa not"></textarea>
                     </div>
                 </div>
 
@@ -251,56 +375,65 @@
 </div>
 
 <style>
-    .invexp-page{width:min(1280px,calc(100% - 56px));margin:0 auto;padding:30px 0 64px;color:#0f172a}
-    .invexp-head{margin-bottom:18px;padding:24px;border-radius:28px;background:#fff;border:1px solid #dbe3ef;box-shadow:0 16px 42px rgba(15,23,42,.07);display:flex;align-items:center;justify-content:space-between;gap:18px}
-    .invexp-back{width:42px;height:42px;margin-right:10px;display:inline-grid;place-items:center;border-radius:14px;background:#eff6ff;color:#2563eb;text-decoration:none;font-size:28px;font-weight:950;vertical-align:middle}
-    .invexp-eyebrow,.modal-eyebrow{display:block;color:#2563eb;font-size:12px;font-weight:950;margin-bottom:5px}
-    .invexp-head h1{margin:0;font-size:clamp(28px,4vw,40px);font-weight:950;letter-spacing:-.9px}
-    .btn-primary-action,.btn-secondary-action,.btn-dark-action{min-height:44px;border:0;border-radius:14px;padding:0 16px;font-size:13px;font-weight:950;white-space:nowrap}
-    .btn-primary-action{background:#2563eb;color:#fff;box-shadow:0 12px 24px rgba(37,99,235,.18)}
-    .btn-secondary-action{background:#f8fafc;color:#334155;border:1px solid #dbe3ef}
+    .invexp-page{width:min(1280px,calc(100% - 44px));margin:0 auto;padding:18px 0 76px;color:#0f172a}
+    .invexp-topbar{margin-bottom:12px}
+    .invexp-titleline{display:flex;align-items:center;gap:12px}
+    .invexp-titleline h1{margin:0;font-size:30px;font-weight:950;letter-spacing:-.5px}
+    .invexp-back{width:38px;height:38px;display:inline-grid;place-items:center;border-radius:13px;background:#eff6ff;color:#2563eb;text-decoration:none;font-size:26px;font-weight:950}
+    .btn-primary-action,.btn-secondary-action,.btn-dark-action{min-height:40px;border:0;border-radius:13px;padding:0 14px;font-size:13px;font-weight:950;white-space:nowrap}
+    .btn-primary-action{background:#2563eb;color:#fff;box-shadow:0 10px 20px rgba(37,99,235,.16)}
+    .btn-secondary-action{background:#fff;color:#334155;border:1px solid #dbe3ef}
     .btn-dark-action{background:#0f172a;color:#fff}
     button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
-    .invexp-tabs{margin-bottom:16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-    .invexp-tabs a{min-height:52px;padding:0 14px;border-radius:18px;background:#fff;border:1px solid #dbe3ef;color:#334155;text-decoration:none;font-size:13px;font-weight:950;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .invexp-controls{display:grid;gap:10px;margin-bottom:12px}
+    .invexp-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .invexp-tabs a{min-height:44px;padding:0 12px;border-radius:15px;background:#fff;border:1px solid #dbe3ef;color:#334155;text-decoration:none;font-size:12px;font-weight:950;display:flex;align-items:center;justify-content:space-between;gap:8px}
     .invexp-tabs a.active{background:#eff6ff;border-color:#bfdbfe;color:#2563eb}
-    .invexp-tabs span{min-width:28px;height:28px;border-radius:999px;background:#f1f5f9;display:grid;place-items:center;color:#64748b}
-    .invexp-filter-shell{margin-bottom:18px;padding:16px;border-radius:24px;background:#fff;border:1px solid #dbe3ef;display:flex;align-items:end;justify-content:space-between;gap:14px;box-shadow:0 14px 34px rgba(15,23,42,.055)}
-    .invexp-quick-presets{display:flex;gap:8px;flex-wrap:wrap}
-    .invexp-quick-presets a{min-height:38px;padding:0 13px;border-radius:999px;background:#f8fafc;border:1px solid #dbe3ef;color:#334155;text-decoration:none;font-size:13px;font-weight:900;display:inline-flex;align-items:center}
+    .invexp-tabs span{min-width:26px;height:26px;border-radius:999px;background:#f1f5f9;display:grid;place-items:center;color:#64748b}
+    .invexp-mobile-tab{display:none}
+    .invexp-filter-toggle{display:none}
+    .invexp-filter-shell{padding:10px;border-radius:18px;background:#fff;border:1px solid #dbe3ef;display:flex;align-items:end;justify-content:space-between;gap:10px;box-shadow:0 12px 30px rgba(15,23,42,.05)}
+    .invexp-quick-presets{display:flex;gap:7px;flex-wrap:wrap}
+    .invexp-quick-presets a{min-height:34px;padding:0 12px;border-radius:999px;background:#f8fafc;border:1px solid #dbe3ef;color:#334155;text-decoration:none;font-size:12px;font-weight:900;display:inline-flex;align-items:center}
     .invexp-quick-presets a.active{background:#eff6ff;color:#2563eb;border-color:#bfdbfe}
-    .invexp-filter-form{display:grid;grid-template-columns:repeat(2,minmax(160px,210px)) auto;gap:10px;align-items:end}
-    .invexp-date-field label,.field label{display:block;margin-bottom:6px;color:#64748b;font-size:12px;font-weight:950}
-    .invexp-date-field input,.field input,.field textarea{width:100%;min-height:42px;border-radius:14px;border:1px solid #dbe3ef;background:#f8fafc;padding:0 12px;color:#0f172a;font-size:14px;font-weight:800;outline:none}
-    .field textarea{min-height:96px;padding-top:10px;resize:vertical}
-    .invexp-table-shell{border-radius:26px;background:#fff;border:1px solid #dbe3ef;box-shadow:0 18px 42px rgba(15,23,42,.07);overflow:hidden}
-    .invexp-bulk-bar{padding:14px 18px;border-bottom:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-    .invexp-select-page{min-height:40px;display:inline-flex;align-items:center;gap:9px;padding:0 13px;border-radius:14px;background:#fff;border:1px solid #dbe3ef;color:#334155;font-size:13px;font-weight:900;cursor:pointer}
+    .invexp-filter-form{display:grid;grid-template-columns:repeat(2,minmax(138px,180px)) auto;gap:8px;align-items:end}
+    .invexp-date-field span,.field label{display:block;margin-bottom:4px;color:#64748b;font-size:11px;font-weight:950}
+    .invexp-date-field input,.field input,.field textarea{width:100%;min-height:38px;border-radius:12px;border:1px solid #dbe3ef;background:#f8fafc;padding:0 11px;color:#0f172a;font-size:13px;font-weight:800;outline:none}
+    .field textarea{min-height:78px;padding-top:10px;resize:vertical}
+    .invexp-list-shell{border-radius:22px;background:#fff;border:1px solid #dbe3ef;box-shadow:0 16px 38px rgba(15,23,42,.065);overflow:hidden}
+    .invexp-bulk-bar{min-height:58px;padding:10px 14px;border-bottom:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .invexp-bulk-bar strong{font-weight:950}.invexp-bulk-bar span{color:#64748b;font-size:13px;font-weight:850}
+    .invexp-select-page{min-height:36px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:13px;background:#fff;border:1px solid #dbe3ef;color:#334155;font-size:12px;font-weight:900;cursor:pointer}
     .invexp-select-page input,.invexp-row-check{width:18px;height:18px;accent-color:#2563eb}
     .invexp-selected-count{color:#64748b;font-size:13px;font-weight:900}
-    .invexp-bulk-bar .btn-primary-action{margin-left:auto}
-    .invexp-table-wrap{overflow-x:auto}
-    .invexp-table{width:100%;min-width:860px;border-collapse:collapse}
-    .invexp-table th,.invexp-table td{padding:14px 16px;border-bottom:1px solid #edf2f7;text-align:left;vertical-align:middle;font-size:13px}
-    .invexp-table th{background:#fff;color:#64748b;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.3px}
+    .invexp-bulk-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .invexp-table{width:100%;border-collapse:collapse}
+    .invexp-table th,.invexp-table td{padding:12px 14px;border-bottom:1px solid #edf2f7;text-align:left;vertical-align:middle;font-size:13px}
+    .invexp-table th{background:#fff;color:#64748b;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.25px}
     .invexp-table td{color:#334155;font-weight:800}
-    .invexp-table .select-col{width:48px;text-align:center}
+    .invexp-table .select-col{width:44px;text-align:center}
     .invexp-table .num{text-align:right;white-space:nowrap}
     .strong{font-weight:950;color:#0f172a}
     .invexp-link{color:#2563eb;font-weight:950;text-decoration:none}
-    .invexp-status{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 10px;border-radius:999px;font-size:11px;font-weight:950}
-    .invexp-status.issued{background:#dcfce7;color:#15803d}.invexp-status.cancelled{background:#fee2e2;color:#b91c1c}.invexp-status.draft{background:#f1f5f9;color:#475569}
     .action-cell{white-space:nowrap}
-    .mini-btn{min-height:32px;margin:2px;padding:0 10px;border-radius:10px;border:1px solid #dbe3ef;background:#fff;color:#334155;text-decoration:none;font-size:12px;font-weight:950;display:inline-flex;align-items:center}
+    .mini-btn{min-height:32px;margin:2px;padding:0 10px;border-radius:10px;border:1px solid #dbe3ef;background:#fff;color:#334155;text-decoration:none;font-size:12px;font-weight:950;display:inline-flex;align-items:center;justify-content:center}
     .mini-btn.primary{background:#22c55e;color:#fff;border-color:#22c55e}
-    .invexp-empty{padding:56px 20px;display:grid;place-items:center;text-align:center;color:#64748b}
-    .invexp-empty div{width:58px;height:58px;margin-bottom:12px;border-radius:20px;display:grid;place-items:center;background:#f1f5f9;color:#94a3b8;font-size:28px}
+    .invexp-mobile-list{display:none}
+    .invexp-empty{padding:46px 20px;display:grid;place-items:center;text-align:center;color:#64748b}
+    .invexp-empty div{width:54px;height:54px;margin-bottom:10px;border-radius:18px;display:grid;place-items:center;background:#f1f5f9;color:#94a3b8;font-size:26px}
     .invexp-empty strong{display:block;color:#0f172a;font-size:18px;font-weight:950;margin-bottom:4px}
-    .invexp-modal{border:0;border-radius:24px;overflow:hidden;box-shadow:0 24px 80px rgba(15,23,42,.25)}
-    .modal-header,.modal-footer{border-color:#e2e8f0}.modal-info{padding:14px;border-radius:16px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;font-size:13px;font-weight:850}.modal-body{display:grid;gap:14px}
-    .modal-btn{min-height:42px;border-radius:14px;padding:0 16px;border:0;font-size:13px;font-weight:950}.modal-btn.soft{background:#f1f5f9;color:#334155}.modal-btn.primary{background:#2563eb;color:#fff}
-    @@media(max-width:900px){.invexp-page{width:min(100% - 28px,1280px);padding-top:18px}.invexp-head,.invexp-filter-shell{align-items:stretch;flex-direction:column}.invexp-tabs{grid-template-columns:1fr 1fr}.invexp-filter-form{grid-template-columns:1fr}.btn-secondary-action,.btn-dark-action,.invexp-head form{width:100%}}
-    @@media(max-width:560px){.invexp-tabs{grid-template-columns:1fr}.invexp-bulk-bar{align-items:stretch;flex-direction:column}.invexp-select-page,.invexp-bulk-bar .btn-primary-action{width:100%;justify-content:center;margin-left:0}.invexp-selected-count{text-align:center}}
+    .invexp-modal{border:0;border-radius:22px;overflow:hidden;box-shadow:0 24px 80px rgba(15,23,42,.25)}
+    .modal-eyebrow{display:block;color:#2563eb;font-size:11px;font-weight:950;margin-bottom:4px}
+    .modal-header,.modal-footer{border-color:#e2e8f0}.modal-info{padding:13px;border-radius:15px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;font-size:13px;font-weight:850}.modal-body{display:grid;gap:12px}
+    .modal-btn{min-height:40px;border-radius:13px;padding:0 15px;border:0;font-size:13px;font-weight:950}.modal-btn.soft{background:#f1f5f9;color:#334155}.modal-btn.primary{background:#2563eb;color:#fff}
+    .invexp-sticky-actions{position:fixed;left:12px;right:12px;bottom:12px;z-index:1030;min-height:58px;padding:10px;border-radius:18px;background:#0f172a;color:#fff;box-shadow:0 18px 52px rgba(15,23,42,.28);display:none;align-items:center;gap:8px}
+    .invexp-sticky-actions span{margin-right:auto;font-size:13px;font-weight:950}.invexp-sticky-actions .btn-secondary-action{background:#1e293b;color:#fff;border-color:#334155}
+    @@media(max-width:900px){.invexp-page{width:min(100% - 24px,1280px);padding-top:12px}.invexp-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.invexp-filter-shell{align-items:stretch;flex-direction:column}.invexp-filter-form{grid-template-columns:1fr 1fr auto}}
+    @@media(max-width:720px){
+        .invexp-page{width:100%;padding:10px 10px 92px}.invexp-titleline h1{font-size:26px}.invexp-tabs{display:none}.invexp-mobile-tab{display:grid;gap:5px}.invexp-mobile-tab label{font-size:11px;font-weight:950;color:#64748b}.invexp-mobile-tab select{width:100%;height:44px;border-radius:15px;border:1px solid #dbe3ef;background:#fff;padding:0 12px;font-size:14px;font-weight:950;color:#0f172a}
+        .invexp-filter-toggle{display:block;width:100%;height:40px;border-radius:14px;border:1px solid #dbe3ef;background:#fff;color:#334155;font-size:13px;font-weight:950}.invexp-filter-shell{display:none}.invexp-filter-shell.open{display:flex}.invexp-filter-form{grid-template-columns:1fr}.invexp-quick-presets a{flex:1;justify-content:center}
+        .invexp-bulk-bar{min-height:50px}.invexp-bulk-actions{display:none}.invexp-table-wrap{display:none}.invexp-mobile-list{display:grid;gap:0}.invexp-mobile-row{padding:12px 14px;border-bottom:1px solid #edf2f7;background:#fff}.mobile-mainline{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:9px}.mobile-mainline a{min-width:0;color:#2563eb;text-decoration:none;font-size:14px;font-weight:950;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mobile-mainline strong{font-size:14px;font-weight:950;white-space:nowrap}.mobile-subline{margin-top:7px;display:flex;align-items:center;gap:8px;color:#475569;font-size:12px;font-weight:850}.mobile-subline span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mobile-date{margin-top:4px;color:#94a3b8;font-size:11px;font-weight:900}.mobile-actions{margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}.mobile-actions>span{font-size:12px;color:#64748b;font-weight:850}.mini-btn{min-height:34px}.invexp-sticky-actions:not([hidden]){display:flex}
+    }
 </style>
 
 <script>
@@ -316,10 +449,12 @@
         const modalSummary = document.querySelector("[data-invexp-modal-summary]");
         const form = document.getElementById("sendPreparationForm");
         const submitButton = form?.querySelector("button[type='submit']");
+        const sticky = document.querySelector("[data-invexp-sticky]");
+        const stickyCount = document.querySelector("[data-invexp-sticky-count]");
         let submitInProgress = false;
 
         function selectedIds() {
-            return rowChecks.filter(x => x.checked).map(x => Number(x.value)).filter(x => Number.isInteger(x) && x > 0);
+            return [...new Set(rowChecks.filter(x => x.checked).map(x => Number(x.value)).filter(x => Number.isInteger(x) && x > 0))];
         }
 
         function setHiddenInputs(target, ids) {
@@ -334,29 +469,52 @@
             });
         }
 
+        function syncDuplicateChecks(source) {
+            rowChecks
+                .filter(x => x !== source && x.value === source.value)
+                .forEach(x => x.checked = source.checked);
+        }
+
         function update() {
             const ids = selectedIds();
             const count = ids.length;
-            if (selectedCount) selectedCount.textContent = count === 1 ? "1 kayıt seçildi" : `${count} kayıt seçildi`;
+            const text = count === 1 ? "1 kayıt seçildi" : `${count} kayıt seçildi`;
+            if (selectedCount) selectedCount.textContent = text;
+            if (stickyCount) stickyCount.textContent = text;
             if (sendButton) {
                 sendButton.disabled = count === 0;
-                sendButton.textContent = count ? `Fatura Hazırlığına Gönder (${count})` : "Fatura Hazırlığına Gönder";
+                sendButton.textContent = count ? `Fatura İçin Gönder (${count})` : "Fatura İçin Gönder";
             }
             if (downloadButton) {
                 downloadButton.disabled = count === 0;
                 downloadButton.textContent = count ? `Belgeleri İndir (${count})` : "Belgeleri İndir";
             }
             if (selectPage) {
-                selectPage.checked = rowChecks.length > 0 && rowChecks.every(x => x.checked);
-                selectPage.indeterminate = count > 0 && count < rowChecks.length;
+                const uniqueValues = [...new Set(rowChecks.map(x => x.value))];
+                selectPage.checked = uniqueValues.length > 0 && uniqueValues.every(value => rowChecks.some(x => x.value === value && x.checked));
+                selectPage.indeterminate = count > 0 && !selectPage.checked;
             }
+            if (sticky) sticky.hidden = count === 0;
             setHiddenInputs(downloadInputs, ids);
         }
 
-        rowChecks.forEach(check => check.addEventListener("change", update));
+        rowChecks.forEach(check => check.addEventListener("change", () => {
+            syncDuplicateChecks(check);
+            update();
+        }));
+
         selectPage?.addEventListener("change", () => {
             rowChecks.forEach(check => check.checked = selectPage.checked);
             update();
+        });
+
+        document.querySelector("[data-tab-select]")?.addEventListener("change", event => {
+            const url = event.target.value;
+            if (url) window.location.href = url;
+        });
+
+        document.querySelector("[data-filter-toggle]")?.addEventListener("click", () => {
+            document.querySelector("[data-filter-panel]")?.classList.toggle("open");
         });
 
         modal?.addEventListener("show.bs.modal", () => {
