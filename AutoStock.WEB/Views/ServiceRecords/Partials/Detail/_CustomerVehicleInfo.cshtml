@@ -1,4 +1,5 @@
 @model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
+@using AutoStock.WEB.Models.Shared
 
 @{
     var brandModelText = JoinText(Model.VehicleBrandName, Model.VehicleModelName);
@@ -53,7 +54,17 @@
                 <strong>@Model.CustomerName</strong>
 
                 <span>Telefon</span>
-                <strong>@Model.CustomerPhone</strong>
+                <strong class="sente-contact-line">
+                    <span>@Model.CustomerPhone</span>
+                    @await Html.PartialAsync("_ContactActions", new ContactActionsViewModel
+                    {
+                        PhoneNumber = Model.CustomerPhone,
+                        CustomerName = Model.CustomerName,
+                        Plate = Model.VehiclePlate,
+                        ServiceStatus = Model.Status == 3 ? "Completed" : Model.Status.ToString(),
+                        Variant = "compact"
+                    })
+                </strong>
 
                 @if (!string.IsNullOrWhiteSpace(Model.CustomerEmail))
                 {

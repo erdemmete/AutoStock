@@ -64,6 +64,8 @@ public class InvoiceDetailDto
 
     public string? CustomerEmail { get; set; }
 
+    public string? CustomerPhone { get; set; }
+
     public string? CustomerAddressLine { get; set; }
 
     public string? CustomerAddressCity { get; set; }

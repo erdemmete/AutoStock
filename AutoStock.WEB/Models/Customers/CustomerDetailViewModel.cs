@@ -78,6 +78,17 @@ namespace AutoStock.WEB.Models.Customers
         public string? Plate { get; set; }
         public decimal GrandTotal { get; set; }
         public DateTime InvoiceDate { get; set; }
+        public CustomerOfficialInvoiceSummaryViewModel? OfficialInvoice { get; set; }
+    }
+
+    public class CustomerOfficialInvoiceSummaryViewModel
+    {
+        public int Id { get; set; }
+        public string OfficialInvoiceNumber { get; set; } = null!;
+        public DateTime OfficialInvoiceDate { get; set; }
+        public DateTime UploadedAt { get; set; }
+        public string ShareToken { get; set; } = null!;
+        public DateTime? CustomerDeliveredAt { get; set; }
     }
 
     public class CustomerCurrentAccountSummaryViewModel

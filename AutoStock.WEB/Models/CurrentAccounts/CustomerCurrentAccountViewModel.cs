@@ -6,6 +6,8 @@ namespace AutoStock.WEB.Models.CurrentAccounts
 
         public string CustomerName { get; set; } = null!;
 
+        public string? CustomerPhone { get; set; }
+
         public decimal Balance { get; set; }
 
         public decimal InvoiceTotal { get; set; }

@@ -1,0 +1,95 @@
+.sente-contact-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    vertical-align: middle;
+}
+
+.sente-contact-btn,
+.sente-contact-add {
+    min-height: 34px;
+    padding: 0 11px;
+    border-radius: 999px;
+    border: 1px solid #d8e2ef;
+    background: #fff;
+    color: #334155;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 950;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    transition: transform .14s ease, border-color .14s ease, background-color .14s ease, color .14s ease, box-shadow .14s ease;
+}
+
+.sente-contact-btn:hover,
+.sente-contact-btn:focus-visible,
+.sente-contact-add:hover,
+.sente-contact-add:focus-visible {
+    transform: translateY(-1px);
+    border-color: #bfdbfe;
+    box-shadow: 0 10px 20px rgba(37, 99, 235, .10);
+    outline: none;
+}
+
+.sente-contact-btn--call {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+
+.sente-contact-btn--whatsapp {
+    background: #ecfdf5;
+    border-color: #bbf7d0;
+    color: #047857;
+}
+
+.sente-contact-btn--copy,
+.sente-contact-add {
+    background: #f8fafc;
+    color: #475569;
+}
+
+.sente-contact-actions--full .sente-contact-btn {
+    min-height: 42px;
+    padding: 0 15px;
+    font-size: 13px;
+}
+
+.sente-contact-add {
+    min-height: 32px;
+    color: #2563eb;
+}
+
+.sente-contact-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.sente-contact-line > span:first-child,
+.sente-contact-line > strong:first-child {
+    min-width: 0;
+}
+
+.cust-contact-actions-row {
+    margin-top: 10px;
+}
+
+@media (max-width: 560px) {
+    .sente-contact-actions {
+        gap: 5px;
+    }
+
+    .sente-contact-btn,
+    .sente-contact-add {
+        min-height: 38px;
+        padding: 0 10px;
+        font-size: 12px;
+    }
+}

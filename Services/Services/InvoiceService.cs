@@ -361,6 +361,7 @@ namespace AutoStock.Services.Services
                 CustomerEmail = !string.IsNullOrWhiteSpace(invoice.CustomerEmail)
                     ? invoice.CustomerEmail
                     : invoice.Customer.Email,
+                CustomerPhone = invoice.Customer.PhoneNumber,
 
                 Plate = invoice.Plate,
                 ChassisNumber = invoice.ChassisNumber,

@@ -1,0 +1,66 @@
+@model AutoStock.WEB.Models.Shared.ContactActionsViewModel
+
+@{
+    var normalizedPhone = NormalizeTurkishPhone(Model.PhoneNumber);
+    var hasPhone = !string.IsNullOrWhiteSpace(normalizedPhone);
+    var variant = string.IsNullOrWhiteSpace(Model.Variant) ? "compact" : Model.Variant.Trim();
+}
+
+@if (hasPhone)
+{
+    <span class="sente-contact-actions sente-contact-actions--@variant"
+          data-sente-contact
+          data-phone="@normalizedPhone"
+          data-tel="+@normalizedPhone"
+          data-name="@Model.CustomerName"
+          data-plate="@Model.Plate"
+          data-status="@Model.ServiceStatus">
+        <span role="button"
+              tabindex="0"
+              class="sente-contact-btn sente-contact-btn--call"
+              data-sente-contact-action="call"
+              aria-label="Ara">
+            Ara
+        </span>
+        <span role="button"
+              tabindex="0"
+              class="sente-contact-btn sente-contact-btn--whatsapp"
+              data-sente-contact-action="whatsapp"
+              aria-label="WhatsApp'ta Aç">
+            WhatsApp
+        </span>
+        <span role="button"
+              tabindex="0"
+              class="sente-contact-btn sente-contact-btn--copy"
+              data-sente-contact-action="copy"
+              aria-label="Numarayı Kopyala">
+            Kopyala
+        </span>
+    </span>
+}
+else if (!string.IsNullOrWhiteSpace(Model.EditUrl))
+{
+    <a class="sente-contact-add" href="@Model.EditUrl">Telefon Ekle</a>
+}
+
+@functions {
+    private static string? NormalizeTurkishPhone(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+
+        if (digits.StartsWith("0090") && digits.Length >= 14)
+            digits = digits[2..];
+
+        if (digits.Length == 11 && digits.StartsWith("0"))
+            digits = "90" + digits[1..];
+        else if (digits.Length == 10)
+            digits = "90" + digits;
+
+        return digits.Length == 12 && digits.StartsWith("90")
+            ? digits
+            : null;
+    }
+}

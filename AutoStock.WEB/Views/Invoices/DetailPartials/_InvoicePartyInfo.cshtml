@@ -1,4 +1,5 @@
 @model AutoStock.WEB.Models.Invoices.InvoiceDetailViewModel
+@using AutoStock.WEB.Models.Shared
 
 <section class="info-section">
 
@@ -44,6 +45,22 @@
                 <span>@@</span>
                 E-posta:
                 <strong id="customerEmailView">@(Model.CustomerEmail ?? "-")</strong>
+            </p>
+
+            <p>
+                <span>☎</span>
+                Telefon:
+                <strong class="sente-contact-line">
+                    <span>@(string.IsNullOrWhiteSpace(Model.CustomerPhone) ? "-" : Model.CustomerPhone)</span>
+                    @await Html.PartialAsync("_ContactActions", new ContactActionsViewModel
+                    {
+                        PhoneNumber = Model.CustomerPhone,
+                        CustomerName = Model.CustomerTitle,
+                        Plate = Model.Plate,
+                        ServiceStatus = Model.Status == 2 ? "Completed" : Model.Status.ToString(),
+                        Variant = "compact"
+                    })
+                </strong>
             </p>
 
             <p>

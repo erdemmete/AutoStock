@@ -323,6 +323,47 @@ namespace AutoStock.Services.Services
                 .Take(6)
                 .ToListAsync();
 
+            var recentInvoiceIds = recentInvoices
+                .Select(x => x.Id)
+                .ToList();
+
+            if (recentInvoiceIds.Count > 0)
+            {
+                var latestOfficialDocuments = await context.Set<OfficialInvoiceDocument>()
+                    .AsNoTracking()
+                    .Where(x =>
+                        x.WorkshopId == workshopId &&
+                        recentInvoiceIds.Contains(x.InvoiceId))
+                    .OrderByDescending(x => x.UploadedAt)
+                    .ThenByDescending(x => x.Id)
+                    .Select(x => new
+                    {
+                        x.InvoiceId,
+                        Document = new CustomerOfficialInvoiceSummaryDto
+                        {
+                            Id = x.Id,
+                            OfficialInvoiceNumber = x.OfficialInvoiceNumber,
+                            OfficialInvoiceDate = x.OfficialInvoiceDate,
+                            UploadedAt = x.UploadedAt,
+                            ShareToken = x.ShareToken,
+                            CustomerDeliveredAt = x.CustomerDeliveredAt
+                        }
+                    })
+                    .ToListAsync();
+
+                var officialDocumentsByInvoiceId = latestOfficialDocuments
+                    .GroupBy(x => x.InvoiceId)
+                    .ToDictionary(x => x.Key, x => x.First().Document);
+
+                foreach (var invoice in recentInvoices)
+                {
+                    if (officialDocumentsByInvoiceId.TryGetValue(invoice.Id, out var document))
+                    {
+                        invoice.OfficialInvoice = document;
+                    }
+                }
+            }
+
             var recentCurrentAccountMovements = await context.CurrentAccountTransactions
                 .AsNoTracking()
                 .Where(x =>

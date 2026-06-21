@@ -1,5 +1,7 @@
 ﻿@model AutoStock.Web.Models.ServiceRecords.ServiceRecordIndexViewModel
 
+@using AutoStock.WEB.Models.Shared
+
 @{
     ViewData["Title"] = "Servis Kayıtları";
 
@@ -269,6 +271,14 @@
                         <div class="srv-info-line">
                             <span class="srv-mini-icon">☎</span>
                             <span>@record.CustomerPhone</span>
+                            @await Html.PartialAsync("_ContactActions", new ContactActionsViewModel
+                            {
+                                PhoneNumber = record.CustomerPhone,
+                                CustomerName = record.CustomerName,
+                                Plate = record.VehiclePlate,
+                                ServiceStatus = record.Status == 3 ? "Completed" : record.Status.ToString(),
+                                Variant = "compact"
+                            })
                         </div>
 
                         <div class="srv-info-line srv-date-line">

@@ -78,6 +78,17 @@ namespace AutoStock.Services.Dtos.Customers
         public string? Plate { get; set; }
         public decimal GrandTotal { get; set; }
         public DateTime InvoiceDate { get; set; }
+        public CustomerOfficialInvoiceSummaryDto? OfficialInvoice { get; set; }
+    }
+
+    public class CustomerOfficialInvoiceSummaryDto
+    {
+        public int Id { get; set; }
+        public string OfficialInvoiceNumber { get; set; } = null!;
+        public DateTime OfficialInvoiceDate { get; set; }
+        public DateTime UploadedAt { get; set; }
+        public string ShareToken { get; set; } = null!;
+        public DateTime? CustomerDeliveredAt { get; set; }
     }
 
     public class CustomerCurrentAccountSummaryDto

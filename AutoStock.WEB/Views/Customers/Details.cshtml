@@ -1,5 +1,6 @@
 @model AutoStock.WEB.Models.Customers.CustomerDetailViewModel
 @using AutoStock.Repositories.Enums
+@using AutoStock.WEB.Models.Shared
 
 @{
     ViewData["Title"] = "Müşteri Detayı";
@@ -12,148 +13,148 @@
                 ? Model.CompanyName
                 : $"Müşteri #{Model.Id}";
 
-    var searchValue = Uri.EscapeDataString(displayName);
+    var recentServiceRecords = Model.RecentServiceRecords
+        .OrderByDescending(x => x.CreatedAt)
+        .ThenByDescending(x => x.Id)
+        .ToList();
+
+    var visibleGeneralServices = recentServiceRecords.Take(3).ToList();
+    var addressText = JoinText(", ", Model.Address, Model.AddressDistrict, Model.AddressCity);
+    var hasAddress = !string.IsNullOrWhiteSpace(addressText);
 }
 
-<div class="cust-detail-page">
-    <section class="cust-hero">
-        <div class="cust-hero-main">
-            <a class="cust-back" asp-controller="Customers" asp-action="Index" aria-label="Müşteri listesine dön">←</a>
+<div class="customer-detail-shell">
+    <section class="customer-topbar">
+        <div class="customer-identity">
+            <a class="customer-back" asp-controller="Customers" asp-action="Index" aria-label="Müşteri listesine dön">←</a>
 
-            <div class="cust-avatar">
-                @GetInitial(displayName)
-            </div>
-
-            <div class="cust-title-block">
-                <div class="cust-kicker">Müşteri Merkezi</div>
-                <h1>@displayName</h1>
-
-                <div class="cust-hero-meta">
-                    <span class="cust-type-pill">@GetCustomerTypeText(Model.Type)</span>
-                    <span class="cust-status-pill @(Model.IsActive ? "active" : "passive")">
-                        @(Model.IsActive ? "Aktif" : "Pasif")
-                    </span>
-                    <span>@FormatPhone(Model.PhoneNumber)</span>
-                    @if (!string.IsNullOrWhiteSpace(Model.Email))
+            <div class="customer-title">
+                <h1>
+                    <span>@displayName</span>
+                    @if (!Model.IsActive)
                     {
-                        <span>@Model.Email</span>
+                        <span class="customer-passive-badge">Pasif</span>
+                    }
+                </h1>
+
+                <div class="customer-phone-line">@FormatPhone(Model.PhoneNumber)</div>
+
+                <div class="customer-contact-row">
+                    @await Html.PartialAsync("_ContactActions", new ContactActionsViewModel
+                    {
+                        PhoneNumber = Model.PhoneNumber,
+                        CustomerName = displayName,
+                        Variant = "compact",
+                        EditUrl = Url.Action("Edit", "Customers", new { id = Model.Id })
+                    })
+                </div>
+            </div>
+        </div>
+
+        <div class="customer-actions">
+            <a class="customer-action primary" href="/ServiceRecords/Create?customerId=@Model.Id">Yeni Servis Kaydı</a>
+            <a class="customer-action soft" asp-controller="Customers" asp-action="Edit" asp-route-id="@Model.Id">Düzenle</a>
+
+            <div class="customer-more">
+                <button type="button"
+                        class="customer-more-btn"
+                        data-customer-more-toggle
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-label="Diğer işlemler">
+                    …
+                </button>
+
+                <div class="customer-more-menu" data-customer-more-menu hidden>
+                    @if (Model.IsActive)
+                    {
+                        <form asp-controller="Customers"
+                              asp-action="SetPassive"
+                              asp-route-id="@Model.Id"
+                              method="post"
+                              onsubmit="return confirm('Bu müşteriyi pasife almak istediğinize emin misiniz?');">
+                            <button type="submit">Müşteriyi Pasife Al</button>
+                        </form>
                     }
                 </div>
             </div>
         </div>
-
-        <div class="cust-hero-actions">
-            <a class="cust-action primary" asp-controller="Customers" asp-action="Edit" asp-route-id="@Model.Id">
-                Düzenle
-            </a>
-
-            <a class="cust-action" href="/ServiceRecords/Create?customerId=@Model.Id">
-                Yeni Servis Kaydı
-            </a>
-
-            <a class="cust-action" href="/Invoices?search=@searchValue">
-                Faturalar
-            </a>
-
-            @if (Model.IsActive)
-            {
-                <form asp-controller="Customers"
-                      asp-action="SetPassive"
-                      asp-route-id="@Model.Id"
-                      method="post"
-                      onsubmit="return confirm('Bu müşteriyi pasife almak istediğinize emin misiniz?');">
-                    <button type="submit" class="cust-action danger">
-                        Pasife Al
-                    </button>
-                </form>
-            }
-        </div>
     </section>
 
-    <section class="cust-metrics">
-        <div class="cust-metric-card balance @(Model.Balance > 0 ? "debt" : Model.Balance < 0 ? "credit" : "zero")">
-            <span>Hesap Bakiyesi</span>
-            <strong>@Money(Model.Balance)</strong>
-            <small>@GetBalanceDescription(Model.Balance)</small>
+    <section class="customer-section-switcher" aria-label="Müşteri detay bölümleri">
+        <div class="customer-tabs" role="tablist">
+            <button type="button" class="active" data-customer-tab="general">Genel</button>
+            <button type="button" data-customer-tab="service-history">Servis Geçmişi</button>
+            <button type="button" data-customer-tab="finance">Finans</button>
+            <button type="button" data-customer-tab="details">Bilgiler</button>
         </div>
 
-        <div class="cust-metric-card">
-            <span>Araç</span>
-            <strong>@Model.VehicleCount</strong>
-            <small>kayıtlı araç</small>
-        </div>
-
-        <div class="cust-metric-card">
-            <span>Servis Kaydı</span>
-            <strong>@Model.ServiceRecordCount</strong>
-            <small>@(Model.LastServiceDate.HasValue ? $"Son: {Model.LastServiceDate.Value:dd.MM.yyyy}" : "Henüz servis yok")</small>
-        </div>
-
-        <div class="cust-metric-card">
-            <span>Fatura</span>
-            <strong>@Model.InvoiceCount</strong>
-            <small>müşteriye ait belge</small>
-        </div>
+        <select class="customer-tab-select" data-customer-tab-select aria-label="Bölüm seç">
+            <option value="general">Genel</option>
+            <option value="service-history">Servis Geçmişi</option>
+            <option value="finance">Finans</option>
+            <option value="details">Bilgiler</option>
+        </select>
     </section>
 
-    <div class="cust-layout">
-        <main class="cust-main">
-            <section class="cust-card">
-                <div class="cust-section-head">
+    <section class="customer-panel active" data-customer-panel="general">
+        <div class="customer-mini-stats">
+            <article>
+                <span>Araç</span>
+                <strong>@Model.VehicleCount</strong>
+                <small>kayıtlı araç</small>
+            </article>
+
+            <article>
+                <span>Servis Kaydı</span>
+                <strong>@Model.ServiceRecordCount</strong>
+                <small>@(Model.LastServiceDate.HasValue ? $"Son: {Model.LastServiceDate.Value:dd.MM.yyyy}" : "Henüz servis yok")</small>
+            </article>
+        </div>
+
+        <div class="customer-two-col">
+            <section class="customer-card">
+                <div class="customer-card-head">
                     <div>
-                        <span class="cust-section-kicker">Araçlar</span>
+                        <span>Araçlar</span>
                         <h2>Kayıtlı Araçlar</h2>
                     </div>
-                    <a href="/ServiceRecords/Create?customerId=@Model.Id">Servis kaydı aç</a>
                 </div>
 
                 @if (!Model.Vehicles.Any())
                 {
-                    <div class="cust-empty">
-                        <strong>Bu müşteriye bağlı araç yok.</strong>
+                    <div class="customer-empty">
+                        <strong>Kayıtlı araç yok</strong>
                         <span>İlk servis kaydında araç bilgisi oluşacaktır.</span>
                     </div>
                 }
                 else
                 {
-                    <div class="cust-vehicle-list">
+                    <div class="customer-vehicle-grid">
                         @foreach (var vehicle in Model.Vehicles)
                         {
                             var vehicleName = BuildVehicleName(vehicle.BrandName, vehicle.ModelName, vehicle.ModelYear);
 
-                            <article class="cust-vehicle-card">
+                            <article class="customer-vehicle-card">
                                 <div class="plate-box">
                                     <span>TR</span>
                                     <strong>@vehicle.Plate</strong>
                                 </div>
 
-                                <div class="vehicle-info">
+                                <div>
                                     <strong>@(string.IsNullOrWhiteSpace(vehicleName) ? "Araç bilgisi belirtilmemiş" : vehicleName)</strong>
-                                    <span>
-                                        @if (vehicle.Mileage.HasValue)
-                                        {
-                                            @($"{vehicle.Mileage.Value:N0} km")
-                                        }
-                                        else
-                                        {
-                                            @("Kilometre yok")
-                                        }
-
+                                    <small>
+                                        @(vehicle.Mileage.HasValue ? $"{vehicle.Mileage.Value:N0} km" : "Kilometre yok")
                                         @if (!string.IsNullOrWhiteSpace(vehicle.ChassisNumber))
                                         {
                                             <text> · Şasi: @vehicle.ChassisNumber</text>
                                         }
-                                    </span>
+                                    </small>
                                 </div>
 
-                                <div class="vehicle-stat">
-                                    <strong>@vehicle.ServiceRecordCount</strong>
-                                    <span>servis</span>
-                                </div>
-
-                                <div class="vehicle-stat hide-mobile">
-                                    <strong>@(vehicle.LastServiceDate.HasValue ? vehicle.LastServiceDate.Value.ToString("dd.MM.yyyy") : "-")</strong>
-                                    <span>son servis</span>
+                                <div class="customer-vehicle-foot">
+                                    <span>@vehicle.ServiceRecordCount servis</span>
+                                    <span>@(vehicle.LastServiceDate.HasValue ? vehicle.LastServiceDate.Value.ToString("dd.MM.yyyy") : "Servis yok")</span>
                                 </div>
                             </article>
                         }
@@ -161,591 +162,899 @@
                 }
             </section>
 
-            <section class="cust-card">
-                <div class="cust-section-head">
+            <section class="customer-card">
+                <div class="customer-card-head">
                     <div>
-                        <span class="cust-section-kicker">Servis geçmişi</span>
+                        <span>Son kayıtlar</span>
                         <h2>Son Servis Kayıtları</h2>
                     </div>
-                    <a href="/ServiceRecords?search=@searchValue">Tümünü gör</a>
+
+                    @if (recentServiceRecords.Count > visibleGeneralServices.Count)
+                    {
+                        <button type="button" class="customer-section-link" data-customer-tab-link="service-history">Tümünü Gör</button>
+                    }
                 </div>
 
-                @if (!Model.RecentServiceRecords.Any())
+                @if (!visibleGeneralServices.Any())
                 {
-                    <div class="cust-empty compact">
-                        <strong>Servis kaydı yok.</strong>
+                    <div class="customer-empty compact">
+                        <strong>Servis kaydı yok</strong>
                         <span>Bu müşteri için henüz servis işlemi açılmamış.</span>
                     </div>
                 }
                 else
                 {
-                    <div class="cust-timeline-list">
-                        @foreach (var record in Model.RecentServiceRecords)
+                    <div class="customer-service-list compact">
+                        @foreach (var record in visibleGeneralServices)
                         {
-                            <a class="cust-history-row" asp-controller="ServiceRecords" asp-action="Detail" asp-route-id="@record.Id">
-                                <div class="history-left">
-                                    <strong>@record.RecordNumber</strong>
-                                    <span>@record.VehiclePlate · @BuildVehicleName(record.VehicleBrandName, record.VehicleModelName, null)</span>
-                                    @if (!string.IsNullOrWhiteSpace(record.ComplaintTitle))
-                                    {
-                                        <small>@record.ComplaintTitle</small>
-                                    }
+                            @RenderServiceRecord(record, showAmount: false)
+                        }
+                    </div>
+                }
+            </section>
+        </div>
+    </section>
+
+    <section class="customer-panel" data-customer-panel="service-history">
+        <section class="customer-card">
+            <div class="customer-card-head">
+                <div>
+                    <span>Servis geçmişi</span>
+                    <h2>Servis Kayıtları</h2>
+                </div>
+            </div>
+
+            @if (!recentServiceRecords.Any())
+            {
+                <div class="customer-empty">
+                    <strong>Servis kaydı yok</strong>
+                    <span>Bu müşteri için henüz servis işlemi açılmamış.</span>
+                </div>
+            }
+            else
+            {
+                <div class="customer-service-list">
+                    @foreach (var record in recentServiceRecords)
+                    {
+                        @RenderServiceRecord(record, showAmount: true)
+                    }
+                </div>
+            }
+        </section>
+    </section>
+
+    <section class="customer-panel" data-customer-panel="finance">
+        <div class="customer-finance-grid">
+            <article class="customer-finance-card balance @(Model.Balance > 0 ? "debt" : Model.Balance < 0 ? "credit" : "zero")">
+                <span>Hesap Bakiyesi</span>
+                <strong>@Money(Model.Balance)</strong>
+                <small>@GetBalanceDescription(Model.Balance)</small>
+            </article>
+
+            <article class="customer-finance-card">
+                <span>Servis Hesap Özeti</span>
+                <strong>@Model.InvoiceCount</strong>
+                <small>oluşturulan belge</small>
+            </article>
+        </div>
+
+        <div class="customer-two-col finance">
+            <section class="customer-card">
+                <div class="customer-card-head">
+                    <div>
+                        <span>Belgeler</span>
+                        <h2>Servis Hesap Özetleri ve Faturalar</h2>
+                    </div>
+                </div>
+
+                @if (!Model.RecentInvoices.Any())
+                {
+                    <div class="customer-empty compact">
+                        <strong>Belge yok</strong>
+                        <span>Bu müşteri adına henüz servis hesap özeti oluşturulmamış.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="customer-document-list">
+                        @foreach (var invoice in Model.RecentInvoices)
+                        {
+                            var serviceSummaryUrl = Url.Action("Detail", "Invoices", new { invoiceId = invoice.Id }) ?? $"/Invoices/Detail/{invoice.Id}";
+                            var serviceSummaryPrintUrl = Url.Action("Print", "Invoices", new { invoiceId = invoice.Id }) ?? $"/Invoices/Print/{invoice.Id}";
+                            var officialInvoiceUrl = invoice.OfficialInvoice is not null
+                                ? $"{Context.Request.Scheme}://{Context.Request.Host}{Url.Action("PublicInvoiceFile", "AccountingInvoiceRequests", new { shareToken = invoice.OfficialInvoice.ShareToken })}"
+                                : null;
+                            var officialInvoiceWhatsappText = officialInvoiceUrl is not null
+                                ? Uri.EscapeDataString($"{invoice.InvoiceNumber} numaralı servis hesabına ait fatura: {officialInvoiceUrl}")
+                                : null;
+
+                            <article class="customer-document-card">
+                                <div class="customer-document-main">
+                                    <div>
+                                        <span>Belge No</span>
+                                        <strong>@invoice.InvoiceNumber</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>Plaka</span>
+                                        <strong>@(string.IsNullOrWhiteSpace(invoice.Plate) ? "-" : invoice.Plate)</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>Tarih</span>
+                                        <strong>@invoice.InvoiceDate.ToString("dd.MM.yyyy")</strong>
+                                    </div>
+
+                                    <div>
+                                        <span>Tutar</span>
+                                        <strong>@Money(invoice.GrandTotal)</strong>
+                                    </div>
                                 </div>
 
-                                <div class="history-right">
-                                    <span class="status-chip @StatusClass(record.StatusText)">@GetServiceStatusText(record.StatusText)</span>
-                                    <strong>@Money(record.TotalAmount)</strong>
-                                    <small>@record.CreatedAt.ToString("dd.MM.yyyy")</small>
+                                <div class="customer-document-actions">
+                                    <div>
+                                        <strong>Servis Hesap Özeti</strong>
+                                        <span class="customer-document-badge @InvoiceStatusClass(invoice.StatusText)">@GetInvoiceStatusText(invoice.StatusText)</span>
+                                    </div>
+
+                                    <div class="customer-document-buttons">
+                                        <a href="@serviceSummaryUrl">Görüntüle</a>
+                                        <a href="@serviceSummaryPrintUrl" target="_blank" rel="noopener">PDF</a>
+                                    </div>
                                 </div>
-                            </a>
+
+                                <div class="customer-document-actions official">
+                                    @if (invoice.OfficialInvoice is null)
+                                    {
+                                        <div>
+                                            <strong>Fatura</strong>
+                                            <span class="customer-document-muted">Fatura bekleniyor</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div>
+                                            <strong>Fatura</strong>
+                                            <span class="customer-document-badge success">Fatura yüklendi</span>
+                                            <small>@invoice.OfficialInvoice.OfficialInvoiceNumber · @invoice.OfficialInvoice.OfficialInvoiceDate.ToString("dd.MM.yyyy")</small>
+                                        </div>
+
+                                        <div class="customer-document-buttons">
+                                            <a href="@officialInvoiceUrl" target="_blank" rel="noopener">Görüntüle</a>
+                                            <a href="@Url.Action("DownloadOfficialDocument", "AccountingInvoiceRequests", new { documentId = invoice.OfficialInvoice.Id })">İndir</a>
+                                            <a href="https://wa.me/?text=@officialInvoiceWhatsappText" target="_blank" rel="noopener">Paylaş</a>
+                                        </div>
+                                    }
+                                </div>
+                            </article>
                         }
                     </div>
                 }
             </section>
 
-            <section class="cust-two-columns">
-                <div class="cust-card">
-                    <div class="cust-section-head slim">
-                        <div>
-                            <span class="cust-section-kicker">Faturalar</span>
-                            <h2>Son Faturalar</h2>
-                        </div>
-                        <a href="/Invoices?search=@searchValue">Tümü</a>
-                    </div>
-
-                    @if (!Model.RecentInvoices.Any())
-                    {
-                        <div class="cust-empty compact">
-                            <strong>Fatura yok.</strong>
-                            <span>Bu müşteri adına henüz fatura oluşturulmamış.</span>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="mini-list">
-                            @foreach (var invoice in Model.RecentInvoices)
-                            {
-                                <a class="mini-row" asp-controller="Invoices" asp-action="Detail" asp-route-invoiceId="@invoice.Id">
-                                    <div>
-                                        <strong>@invoice.InvoiceNumber</strong>
-                                        <span>@(string.IsNullOrWhiteSpace(invoice.Plate) ? "Plaka yok" : invoice.Plate) · @invoice.InvoiceDate.ToString("dd.MM.yyyy")</span>
-                                    </div>
-
-                                    <div class="mini-right">
-                                        <span class="status-chip @InvoiceStatusClass(invoice.StatusText)">@GetInvoiceStatusText(invoice.StatusText)</span>
-                                        <strong>@Money(invoice.GrandTotal)</strong>
-                                    </div>
-                                </a>
-                            }
-                        </div>
-                    }
-                </div>
-
-                <div class="cust-card">
-                    <div class="cust-section-head slim">
-                        <div>
-                            <span class="cust-section-kicker">Hesap Hareketleri</span>
-                            <h2>Son Hareketler</h2>
-                        </div>
-                    </div>
-
-                    @if (!Model.RecentCurrentAccountMovements.Any())
-                    {
-                        <div class="cust-empty compact">
-                            <strong>Hesap hareketi yok.</strong>
-                            <span>Kesilmiş fatura veya ödeme hareketi bulunamadı.</span>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="mini-list">
-                            @foreach (var movement in Model.RecentCurrentAccountMovements)
-                            {
-                                <div class="mini-row movement">
-                                    <div>
-                                        <strong>@GetMovementTypeText(movement.TypeText)</strong>
-                                        <span>@movement.TransactionDate.ToString("dd.MM.yyyy") · @(movement.DocumentNumber ?? movement.Description)</span>
-                                    </div>
-
-                                    <div class="mini-right">
-                                        <strong class="@(movement.BalanceEffect >= 0 ? "money-debit" : "money-credit")">
-                                            @Money(movement.BalanceEffect)
-                                        </strong>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                </div>
-            </section>
-        </main>
-
-        <aside class="cust-side">
-            <section class="cust-card sticky-card">
-                <div class="cust-section-head slim no-link">
+            <section class="customer-card">
+                <div class="customer-card-head">
                     <div>
-                        <span class="cust-section-kicker">Müşteri kartı</span>
-                        <h2>Detaylı Bilgiler</h2>
+                        <span>Hesap</span>
+                        <h2>Son Hesap Hareketleri</h2>
                     </div>
                 </div>
 
-                <div class="info-block">
-                    <h3>Kimlik ve Firma</h3>
-                    <dl>
-                        <div><dt>Tip</dt><dd>@GetCustomerTypeText(Model.Type)</dd></div>
-                        <div><dt>Resmi Ad / Ünvan</dt><dd>@ValueOrDash(Model.FullName)</dd></div>
-                        <div><dt>Tabela / Firma</dt><dd>@ValueOrDash(Model.CompanyName)</dd></div>
-                        <div><dt>Yetkili Kişi</dt><dd>@ValueOrDash(Model.AuthorizedPersonName)</dd></div>
-                        <div><dt>TC Kimlik No</dt><dd>@ValueOrDash(Model.NationalIdentityNumber)</dd></div>
-                        <div><dt>Vergi No</dt><dd>@ValueOrDash(Model.TaxNumber)</dd></div>
-                        <div><dt>Vergi Dairesi</dt><dd>@ValueOrDash(Model.TaxOffice)</dd></div>
-                    </dl>
-                </div>
+                @if (!Model.RecentCurrentAccountMovements.Any())
+                {
+                    <div class="customer-empty compact">
+                        <strong>Hareket yok</strong>
+                        <span>Bu müşteri için henüz hesap hareketi oluşmamış.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="customer-mini-list">
+                        @foreach (var movement in Model.RecentCurrentAccountMovements)
+                        {
+                            <div class="customer-mini-row">
+                                <div>
+                                    <strong>@GetMovementTypeText(movement.TypeText)</strong>
+                                    <span>@movement.TransactionDate.ToString("dd.MM.yyyy") · @(movement.DocumentNumber ?? movement.Description)</span>
+                                </div>
 
-                <div class="info-block">
-                    <h3>İletişim</h3>
-                    <dl>
-                        <div><dt>Telefon</dt><dd>@FormatPhone(Model.PhoneNumber)</dd></div>
-                        <div><dt>E-posta</dt><dd>@ValueOrDash(Model.Email)</dd></div>
-                    </dl>
-                </div>
-
-                <div class="info-block">
-                    <h3>Adres</h3>
-                    <dl>
-                        <div><dt>İl</dt><dd>@ValueOrDash(Model.AddressCity)</dd></div>
-                        <div><dt>İlçe</dt><dd>@ValueOrDash(Model.AddressDistrict)</dd></div>
-                        <div class="full"><dt>Açık Adres</dt><dd>@ValueOrDash(Model.Address)</dd></div>
-                    </dl>
-                </div>
+                                <div>
+                                    <strong class="@(movement.BalanceEffect >= 0 ? "money-debit" : "money-credit")">@Money(movement.BalanceEffect)</strong>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </section>
-        </aside>
-    </div>
+        </div>
+    </section>
+
+    <section class="customer-panel" data-customer-panel="details">
+        <div class="customer-details-grid">
+            <section class="customer-card">
+                <div class="customer-card-head">
+                    <div>
+                        <span>Kimlik / Firma</span>
+                        <h2>Temel Bilgiler</h2>
+                    </div>
+                </div>
+
+                <dl class="customer-info-list">
+                    <div><dt>Tip</dt><dd>@GetCustomerTypeText(Model.Type)</dd></div>
+                    @RenderInfo("Ad / Ünvan", Model.FullName)
+                    @RenderInfo("Tabela / Firma", Model.CompanyName)
+                    @RenderInfo("Yetkili Kişi", Model.AuthorizedPersonName)
+                    <div><dt>Kayıt Tarihi</dt><dd>@Model.CreatedAt.ToString("dd.MM.yyyy")</dd></div>
+                </dl>
+            </section>
+
+            <section class="customer-card">
+                <div class="customer-card-head">
+                    <div>
+                        <span>İletişim</span>
+                        <h2>Telefon ve E-posta</h2>
+                    </div>
+                </div>
+
+                <dl class="customer-info-list">
+                    <div><dt>Telefon</dt><dd>@FormatPhone(Model.PhoneNumber)</dd></div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Email))
+                    {
+                        <div><dt>E-posta</dt><dd><a href="mailto:@Model.Email">@Model.Email</a></dd></div>
+                    }
+                    else
+                    {
+                        <div><dt>E-posta</dt><dd>Belirtilmemiş</dd></div>
+                    }
+                </dl>
+            </section>
+
+            <section class="customer-card">
+                <div class="customer-card-head">
+                    <div>
+                        <span>Adres</span>
+                        <h2>Adres Bilgileri</h2>
+                    </div>
+                    @if (hasAddress)
+                    {
+                        <a class="customer-section-link" href="https://www.google.com/maps/search/?api=1&query=@Uri.EscapeDataString(addressText)" target="_blank" rel="noopener">Haritada Aç</a>
+                    }
+                </div>
+
+                <dl class="customer-info-list">
+                    @RenderInfo("İl", Model.AddressCity)
+                    @RenderInfo("İlçe", Model.AddressDistrict)
+                    @RenderInfo("Açık Adres", Model.Address)
+                    @if (!hasAddress)
+                    {
+                        <div><dt>Adres</dt><dd>Belirtilmemiş</dd></div>
+                    }
+                </dl>
+            </section>
+
+            <section class="customer-card">
+                <div class="customer-card-head">
+                    <div>
+                        <span>Vergi</span>
+                        <h2>Vergi Bilgileri</h2>
+                    </div>
+                </div>
+
+                <dl class="customer-info-list">
+                    @RenderInfo("TC Kimlik No", Model.NationalIdentityNumber)
+                    @RenderInfo("Vergi No", Model.TaxNumber)
+                    @RenderInfo("Vergi Dairesi", Model.TaxOffice)
+                    @if (string.IsNullOrWhiteSpace(Model.NationalIdentityNumber)
+                        && string.IsNullOrWhiteSpace(Model.TaxNumber)
+                        && string.IsNullOrWhiteSpace(Model.TaxOffice))
+                    {
+                        <div><dt>Vergi bilgileri</dt><dd>Belirtilmemiş</dd></div>
+                    }
+                </dl>
+            </section>
+        </div>
+    </section>
 </div>
 
 <style>
-    .cust-detail-page {
-        max-width: 1380px;
+    .customer-detail-shell {
+        width: min(1360px, calc(100% - 48px));
         margin: 0 auto;
-        padding: 34px 24px 72px;
-        color: #061936;
+        padding: 24px 0 64px;
+        color: #0f172a;
     }
 
-    .cust-hero {
-        display: flex;
-        justify-content: space-between;
-        gap: 22px;
-        padding: 26px;
-        border: 1px solid #dbe6f4;
-        border-radius: 30px;
-        background:
-            radial-gradient(circle at top right, rgba(79, 70, 229, .22), transparent 34%),
-            linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
-        box-shadow: 0 22px 60px rgba(15, 23, 42, .08);
-    }
-
-    .cust-hero-main {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        min-width: 0;
-    }
-
-    .cust-back {
-        width: 46px;
-        height: 46px;
-        border-radius: 999px;
-        border: 1px solid #d4dfed;
-        background: #fff;
-        color: #64748b;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        font-weight: 900;
-        flex: 0 0 auto;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, .07);
-    }
-
-    .cust-avatar {
-        width: 76px;
-        height: 76px;
-        border-radius: 24px;
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
-        color: white;
-        display: grid;
-        place-items: center;
-        font-size: 28px;
-        font-weight: 950;
-        box-shadow: 0 18px 34px rgba(79, 70, 229, .28);
-        flex: 0 0 auto;
-    }
-
-    .cust-title-block {
-        min-width: 0;
-    }
-
-    .cust-kicker,
-    .cust-section-kicker {
-        color: #64748b;
-        font-size: 13px;
-        font-weight: 950;
-        letter-spacing: .03em;
-        text-transform: uppercase;
-    }
-
-    .cust-title-block h1 {
-        margin: 4px 0 10px;
-        font-size: clamp(34px, 4vw, 56px);
-        line-height: .96;
-        letter-spacing: -.045em;
-        font-weight: 950;
-    }
-
-    .cust-hero-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        color: #51627a;
-        font-weight: 850;
-    }
-
-    .cust-hero-meta span {
-        min-height: 32px;
-        display: inline-flex;
-        align-items: center;
-        padding: 0 12px;
-        border-radius: 999px;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-    }
-
-    .cust-type-pill {
-        background: #eef2ff !important;
-        color: #4f46e5 !important;
-        border-color: #dcdfff !important;
-    }
-
-    .cust-status-pill.active {
-        background: #ecfdf5 !important;
-        color: #047857 !important;
-        border-color: #bbf7d0 !important;
-    }
-
-    .cust-status-pill.passive {
-        background: #fff1f2 !important;
-        color: #be123c !important;
-        border-color: #fecdd3 !important;
-    }
-
-    .cust-hero-actions {
+    .customer-topbar {
         display: flex;
         align-items: flex-start;
-        justify-content: flex-end;
-        flex-wrap: wrap;
-        gap: 10px;
-        max-width: 430px;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px;
+        border: 1px solid #dbe6f4;
+        border-radius: 26px;
+        background: linear-gradient(135deg, #ffffff 0%, #f6f9ff 100%);
+        box-shadow: 0 18px 48px rgba(15, 23, 42, .075);
     }
 
-    .cust-action {
-        min-height: 48px;
-        padding: 0 18px;
-        border-radius: 16px;
-        border: 1px solid #d4dfed;
-        background: #fff;
-        color: #10284a;
+    .customer-identity {
+        min-width: 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .customer-back {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+        border-radius: 15px;
+        display: grid;
+        place-items: center;
         text-decoration: none;
         font-weight: 950;
+    }
+
+    .customer-back {
+        background: #ffffff;
+        border: 1px solid #d8e2ef;
+        color: #64748b;
+        font-size: 22px;
+    }
+
+    .customer-title {
+        min-width: 0;
+    }
+
+    .customer-title h1 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 1px 0 5px;
+        font-size: clamp(25px, 3.2vw, 38px);
+        line-height: 1.02;
+        font-weight: 950;
+        letter-spacing: -.04em;
+    }
+
+    .customer-title h1 span:first-child {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .customer-phone-line {
+        color: #475569;
+        font-size: 15px;
+        font-weight: 850;
+        line-height: 1.35;
+    }
+
+    .customer-passive-badge {
+        min-height: 24px;
+        padding: 0 9px;
+        border-radius: 999px;
+        border: 1px solid #fecdd3;
+        background: #fff1f2;
+        color: #be123c;
+        display: inline-flex;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: 0;
+    }
+
+    .customer-contact-row {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        flex-wrap: wrap;
+    }
+
+    .customer-contact-row {
+        margin-top: 8px;
+    }
+
+    .customer-actions {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .customer-action,
+    .customer-more-btn {
+        min-height: 42px;
+        border-radius: 15px;
+        border: 1px solid #d8e2ef;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        text-decoration: none;
+        color: #0f172a;
+        background: #ffffff;
+        font-size: 13px;
+        font-weight: 950;
         cursor: pointer;
     }
 
-    .cust-action.primary {
-        background: #4f46e5;
-        color: #fff;
-        border-color: #4f46e5;
-        box-shadow: 0 14px 28px rgba(79, 70, 229, .22);
+    .customer-action {
+        padding: 0 15px;
     }
 
-    .cust-action.danger {
-        color: #be123c;
+    .customer-action.primary {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 14px 28px rgba(37, 99, 235, .20);
+    }
+
+    .customer-action.soft {
+        background: #f8fafc;
+    }
+
+    .customer-more {
+        position: relative;
+    }
+
+    .customer-more-btn {
+        width: 44px;
+        font-size: 24px;
+        line-height: 1;
+    }
+
+    .customer-more-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        z-index: 20;
+        min-width: 220px;
+        padding: 7px;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        box-shadow: 0 22px 48px rgba(15, 23, 42, .16);
+    }
+
+    .customer-more-menu button {
+        width: 100%;
+        min-height: 42px;
+        border: none;
+        border-radius: 12px;
         background: #fff1f2;
-        border-color: #fecdd3;
+        color: #be123c;
+        font-weight: 950;
+        cursor: pointer;
+        text-align: left;
+        padding: 0 12px;
     }
 
-    .cust-metrics {
+    .customer-section-switcher {
+        margin: 18px 0;
+        padding: 8px;
+        border: 1px solid #dbe6f4;
+        border-radius: 20px;
+        background: #ffffff;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .045);
+    }
+
+    .customer-tabs {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 16px;
-        margin: 22px 0;
+        gap: 7px;
     }
 
-    .cust-metric-card {
+    .customer-tabs button {
+        min-height: 42px;
+        border: none;
+        border-radius: 14px;
+        background: transparent;
+        color: #64748b;
+        font-weight: 950;
+        cursor: pointer;
+    }
+
+    .customer-tabs button.active {
+        background: #eef2ff;
+        color: #2563eb;
+    }
+
+    .customer-tab-select {
+        display: none;
+        width: 100%;
+        height: 46px;
+        border: 1px solid #d8e2ef;
+        border-radius: 15px;
+        background: #f8fafc;
+        color: #0f172a;
+        padding: 0 13px;
+        font-weight: 950;
+    }
+
+    .customer-panel {
+        display: none;
+    }
+
+    .customer-panel.active {
+        display: block;
+    }
+
+    .customer-mini-stats,
+    .customer-finance-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+    .customer-mini-stats article,
+    .customer-finance-card {
+        padding: 18px;
+        border-radius: 22px;
         border: 1px solid #dbe6f4;
-        border-radius: 24px;
-        background: #fff;
-        padding: 22px;
-        box-shadow: 0 12px 34px rgba(15, 23, 42, .05);
+        background: #ffffff;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, .055);
     }
 
-    .cust-metric-card span,
-    .cust-metric-card small {
+    .customer-mini-stats span,
+    .customer-finance-card span {
         display: block;
         color: #64748b;
-        font-weight: 900;
+        font-size: 12px;
+        font-weight: 950;
     }
 
-    .cust-metric-card strong {
+    .customer-mini-stats strong,
+    .customer-finance-card strong {
         display: block;
         margin: 8px 0 4px;
-        font-size: 30px;
+        color: #0f172a;
+        font-size: 26px;
         line-height: 1;
         font-weight: 950;
-        color: #061936;
     }
 
-    .cust-metric-card.balance.debt {
-        background: linear-gradient(135deg, #fff 0%, #fff7ed 100%);
+    .customer-mini-stats small,
+    .customer-finance-card small {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 850;
     }
 
-    .cust-metric-card.balance.credit {
-        background: linear-gradient(135deg, #fff 0%, #ecfdf5 100%);
+    .customer-finance-card.balance.debt {
+        background: linear-gradient(135deg, #ffffff 0%, #fff7ed 100%);
+        border-color: #fed7aa;
     }
 
-    .cust-metric-card.balance.zero {
-        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    .customer-finance-card.balance.credit {
+        background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+        border-color: #bbf7d0;
     }
 
-    .cust-layout {
+    .customer-two-col,
+    .customer-details-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 390px;
-        gap: 22px;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+        gap: 14px;
         align-items: start;
     }
 
-    .cust-main,
-    .cust-side {
-        display: grid;
-        gap: 22px;
+    .customer-two-col.finance,
+    .customer-details-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .cust-card {
-        background: #fff;
+    .customer-card {
+        min-width: 0;
+        padding: 18px;
+        border-radius: 24px;
         border: 1px solid #dbe6f4;
-        border-radius: 26px;
-        padding: 24px;
-        box-shadow: 0 12px 36px rgba(15, 23, 42, .055);
+        background: #ffffff;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, .055);
     }
 
-    .sticky-card {
-        position: sticky;
-        top: 18px;
-    }
-
-    .cust-section-head {
+    .customer-card-head {
+        margin-bottom: 14px;
         display: flex;
         justify-content: space-between;
-        gap: 16px;
+        gap: 12px;
         align-items: flex-start;
-        margin-bottom: 18px;
     }
 
-    .cust-section-head h2 {
-        margin: 2px 0 0;
-        font-size: 26px;
+    .customer-card-head span {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .customer-card-head h2 {
+        margin: 3px 0 0;
+        color: #0f172a;
+        font-size: 21px;
         font-weight: 950;
         letter-spacing: -.03em;
     }
 
-    .cust-section-head a {
-        color: #4f46e5;
-        font-weight: 950;
-        text-decoration: none;
-        padding: 10px 14px;
+    .customer-section-link {
+        border: none;
         border-radius: 999px;
+        padding: 9px 12px;
         background: #eef2ff;
+        color: #2563eb;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 950;
+        cursor: pointer;
         white-space: nowrap;
     }
 
-    .cust-section-head.slim h2 {
-        font-size: 22px;
+    .customer-vehicle-grid,
+    .customer-service-list,
+    .customer-mini-list {
+        display: grid;
+        gap: 10px;
     }
 
-    .cust-section-head.no-link {
-        margin-bottom: 8px;
-    }
-
-    .cust-vehicle-list,
-    .cust-timeline-list,
-    .mini-list {
+    .customer-vehicle-card,
+    .customer-service-row,
+    .customer-mini-row {
         display: grid;
         gap: 12px;
-    }
-
-    .cust-vehicle-card,
-    .cust-history-row,
-    .mini-row {
-        display: grid;
-        align-items: center;
-        gap: 14px;
-        padding: 16px;
+        padding: 14px;
         border: 1px solid #e2eaf5;
-        border-radius: 20px;
+        border-radius: 18px;
         background: #fbfdff;
-        text-decoration: none;
         color: inherit;
+        text-decoration: none;
     }
 
-    .cust-vehicle-card {
-        grid-template-columns: auto minmax(0, 1fr) 92px 110px;
+    .customer-vehicle-card {
+        grid-template-columns: auto minmax(0, 1fr);
     }
 
     .plate-box {
+        width: fit-content;
+        max-width: 100%;
         display: inline-flex;
         align-items: stretch;
         border: 2px solid #0f172a;
-        border-radius: 10px;
+        border-radius: 9px;
         overflow: hidden;
-        background: #fff;
-        width: fit-content;
-        max-width: 100%;
+        background: #ffffff;
     }
 
     .plate-box span {
-        background: #2563eb;
-        color: white;
-        font-size: 12px;
-        font-weight: 950;
-        padding: 8px 9px;
         display: grid;
         place-items: center;
+        padding: 7px 8px;
+        background: #2563eb;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 950;
     }
 
     .plate-box strong {
-        padding: 8px 14px;
-        font-size: 20px;
-        letter-spacing: .06em;
+        padding: 7px 12px;
+        color: #020617;
+        font-size: 18px;
         font-weight: 950;
+        letter-spacing: .05em;
         white-space: nowrap;
     }
 
-    .vehicle-info,
-    .history-left,
-    .mini-row div:first-child {
+    .customer-vehicle-card > div:nth-child(2),
+    .customer-service-row > div,
+    .customer-mini-row > div {
         min-width: 0;
     }
 
-    .vehicle-info strong,
-    .history-left strong,
-    .mini-row strong {
+    .customer-vehicle-card strong,
+    .customer-service-row strong,
+    .customer-mini-row strong {
         display: block;
-        font-size: 16px;
+        color: #0f172a;
         font-weight: 950;
     }
 
-    .vehicle-info span,
-    .history-left span,
-    .history-left small,
-    .mini-row span {
-        color: #64748b;
-        font-size: 13px;
-        font-weight: 850;
+    .customer-vehicle-card small,
+    .customer-service-row span,
+    .customer-service-row small,
+    .customer-mini-row span {
         display: block;
         margin-top: 4px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 820;
+        line-height: 1.35;
     }
 
-    .vehicle-stat {
-        text-align: right;
-    }
-
-    .vehicle-stat strong {
-        display: block;
-        font-size: 18px;
-        font-weight: 950;
-    }
-
-    .vehicle-stat span {
-        display: block;
+    .customer-vehicle-foot {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
         color: #64748b;
         font-size: 12px;
         font-weight: 900;
     }
 
-    .cust-history-row {
+    .customer-service-row {
         grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
     }
 
-    .history-right,
-    .mini-right {
+    .customer-service-list.compact .customer-service-row {
+        padding: 13px;
+    }
+
+    .customer-service-side,
+    .customer-mini-row > div:last-child {
         display: grid;
         justify-items: end;
-        gap: 6px;
         text-align: right;
+        gap: 5px;
     }
 
-    .history-right strong,
-    .mini-right strong {
-        color: #061936;
-        font-size: 15px;
-    }
-
-    .history-right small {
-        color: #64748b;
-        font-weight: 850;
-    }
-
-    .status-chip {
-        min-height: 28px;
+    .customer-status,
+    .customer-mini-row em {
+        min-height: 27px;
         padding: 0 10px;
         border-radius: 999px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: #eef2ff;
-        color: #4f46e5;
+        font-style: normal;
         font-size: 12px;
         font-weight: 950;
         white-space: nowrap;
     }
 
-    .status-chip.open,
-    .status-chip.draft {
+    .customer-status.open,
+    .customer-mini-row em.draft {
         background: #eef2ff;
-        color: #4f46e5;
+        color: #2563eb;
     }
 
-    .status-chip.progress,
-    .status-chip.issued {
+    .customer-status.progress,
+    .customer-mini-row em.issued {
         background: #ecfeff;
         color: #0891b2;
     }
 
-    .status-chip.completed {
+    .customer-status.completed {
         background: #ecfdf5;
         color: #047857;
     }
 
-    .status-chip.cancelled {
+    .customer-status.cancelled,
+    .customer-mini-row em.cancelled {
         background: #fff1f2;
         color: #be123c;
     }
 
-    .cust-two-columns {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 22px;
-    }
-
-    .mini-row {
+    .customer-mini-row {
         grid-template-columns: minmax(0, 1fr) auto;
-        padding: 14px;
+        align-items: center;
     }
 
-    .mini-row.movement {
-        cursor: default;
+    .customer-document-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .customer-document-card {
+        padding: 14px;
+        border: 1px solid #e2eaf5;
+        border-radius: 18px;
+        background: #fbfdff;
+        display: grid;
+        gap: 12px;
+    }
+
+    .customer-document-main {
+        display: grid;
+        grid-template-columns: 1.2fr .9fr .8fr .9fr;
+        gap: 10px;
+        align-items: start;
+    }
+
+    .customer-document-main span,
+    .customer-document-actions span,
+    .customer-document-actions small {
+        display: block;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.35;
+    }
+
+    .customer-document-main strong,
+    .customer-document-actions strong {
+        display: block;
+        margin-top: 3px;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 950;
+        overflow-wrap: anywhere;
+    }
+
+    .customer-document-actions {
+        padding: 12px;
+        border-radius: 15px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .customer-document-actions.official {
+        background: #f8fafc;
+    }
+
+    .customer-document-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 7px;
+    }
+
+    .customer-document-buttons a {
+        min-height: 34px;
+        padding: 0 11px;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #2563eb;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 950;
+    }
+
+    .customer-document-actions.official .customer-document-buttons a {
+        background: #ecfdf5;
+        color: #047857;
+    }
+
+    .customer-document-badge,
+    .customer-document-muted {
+        width: fit-content;
+        margin-top: 6px;
+        min-height: 24px;
+        padding: 0 9px;
+        border-radius: 999px;
+        display: inline-flex !important;
+        align-items: center;
+        font-size: 11px !important;
+        font-weight: 950 !important;
+    }
+
+    .customer-document-badge.draft {
+        background: #eef2ff;
+        color: #2563eb;
+    }
+
+    .customer-document-badge.issued,
+    .customer-document-badge.success {
+        background: #ecfdf5;
+        color: #047857;
+    }
+
+    .customer-document-badge.cancelled {
+        background: #fff1f2;
+        color: #be123c;
+    }
+
+    .customer-document-muted {
+        background: #f1f5f9;
+        color: #64748b;
     }
 
     .money-debit {
@@ -756,184 +1065,285 @@
         color: #047857 !important;
     }
 
-    .cust-empty {
-        min-height: 160px;
+    .customer-empty {
+        min-height: 126px;
+        padding: 22px;
         border: 1px dashed #cbd8ea;
-        border-radius: 22px;
+        border-radius: 18px;
+        background: #f8fafc;
         display: grid;
         place-items: center;
         text-align: center;
-        padding: 24px;
-        background: #f8fafc;
-    }
-
-    .cust-empty.compact {
-        min-height: 116px;
-    }
-
-    .cust-empty strong {
-        display: block;
-        font-size: 18px;
-        font-weight: 950;
-    }
-
-    .cust-empty span {
-        display: block;
         color: #64748b;
-        font-weight: 850;
-        margin-top: 6px;
     }
 
-    .info-block {
-        border-top: 1px solid #edf2f7;
-        padding-top: 18px;
-        margin-top: 18px;
+    .customer-empty.compact {
+        min-height: 96px;
     }
 
-    .info-block h3 {
-        margin: 0 0 12px;
+    .customer-empty strong {
+        display: block;
+        color: #0f172a;
         font-size: 17px;
         font-weight: 950;
     }
 
-    .info-block dl {
+    .customer-empty span {
+        display: block;
+        margin-top: 5px;
+        font-weight: 800;
+    }
+
+    .customer-info-list {
         display: grid;
-        gap: 10px;
+        gap: 9px;
         margin: 0;
     }
 
-    .info-block dl div {
-        padding: 12px 14px;
+    .customer-info-list div {
+        padding: 12px 13px;
         border: 1px solid #e2eaf5;
+        border-radius: 15px;
         background: #f8fafc;
-        border-radius: 16px;
     }
 
-    .info-block dt {
+    .customer-info-list dt {
+        margin: 0 0 5px;
         color: #64748b;
         font-size: 12px;
         font-weight: 950;
-        margin-bottom: 5px;
     }
 
-    .info-block dd {
+    .customer-info-list dd {
         margin: 0;
-        font-weight: 950;
-        color: #061936;
+        color: #0f172a;
+        font-weight: 920;
         overflow-wrap: anywhere;
     }
 
-    @@media (max-width: 1180px) {
-        .cust-layout {
-            grid-template-columns: 1fr;
-        }
-
-        .sticky-card {
-            position: static;
-        }
+    .customer-info-list a {
+        color: #2563eb;
+        text-decoration: none;
     }
 
-    @@media (max-width: 900px) {
-        .cust-detail-page {
-            padding: 18px 14px 54px;
+    @@media (max-width: 980px) {
+        .customer-detail-shell {
+            width: min(100% - 24px, 1360px);
+            padding-top: 14px;
         }
 
-        .cust-hero {
+        .customer-topbar {
             flex-direction: column;
-            padding: 20px;
-            border-radius: 24px;
         }
 
-        .cust-hero-main {
-            align-items: flex-start;
-        }
-
-        .cust-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 20px;
-            font-size: 22px;
-        }
-
-        .cust-title-block h1 {
-            font-size: 34px;
-        }
-
-        .cust-hero-actions {
-            max-width: none;
+        .customer-actions {
             width: 100%;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            justify-content: flex-start;
         }
 
-        .cust-hero-actions form,
-        .cust-action {
-            width: 100%;
+        .customer-action.primary {
+            flex: 1 1 180px;
         }
 
-        .cust-metrics {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        .customer-action.soft {
+            flex: 0 0 auto;
         }
 
-        .cust-two-columns {
-            grid-template-columns: 1fr;
-        }
-
-        .cust-vehicle-card {
-            grid-template-columns: 1fr;
-        }
-
-        .vehicle-stat {
-            text-align: left;
-        }
-
-        .hide-mobile {
+        .customer-tabs {
             display: none;
+        }
+
+        .customer-tab-select {
+            display: block;
+        }
+
+        .customer-two-col,
+        .customer-two-col.finance,
+        .customer-details-grid,
+        .customer-mini-stats,
+        .customer-finance-grid {
+            grid-template-columns: 1fr;
         }
     }
 
     @@media (max-width: 560px) {
-        .cust-hero-main {
-            display: grid;
-            grid-template-columns: auto 1fr;
+        .customer-detail-shell {
+            width: min(100% - 18px, 1360px);
         }
 
-        .cust-avatar {
-            display: none;
-        }
-
-        .cust-hero-actions,
-        .cust-metrics {
-            grid-template-columns: 1fr;
-        }
-
-        .cust-card {
-            padding: 18px;
+        .customer-topbar {
+            padding: 14px;
             border-radius: 22px;
         }
 
-        .cust-history-row,
-        .mini-row {
+        .customer-identity {
+            gap: 10px;
+        }
+
+        .customer-back {
+            width: 40px;
+            height: 40px;
+            flex-basis: 40px;
+        }
+
+        .customer-title h1 {
+            font-size: 26px;
+        }
+
+        .customer-actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+        }
+
+        .customer-action {
+            min-height: 44px;
+            padding: 0 12px;
+        }
+
+        .customer-action.soft {
+            width: 44px;
+            overflow: hidden;
+            color: transparent;
+            position: relative;
+        }
+
+        .customer-action.soft::after {
+            content: "Düzenle";
+            color: #0f172a;
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            font-size: 11px;
+        }
+
+        .customer-more-menu {
+            right: 0;
+            max-width: calc(100vw - 32px);
+        }
+
+        .customer-card {
+            padding: 14px;
+            border-radius: 20px;
+        }
+
+        .customer-card-head {
+            align-items: center;
+        }
+
+        .customer-card-head h2 {
+            font-size: 19px;
+        }
+
+        .customer-vehicle-card,
+        .customer-service-row,
+        .customer-mini-row,
+        .customer-document-main,
+        .customer-document-actions {
             grid-template-columns: 1fr;
         }
 
-        .history-right,
-        .mini-right {
+        .customer-service-side,
+        .customer-mini-row > div:last-child,
+        .customer-document-buttons {
             justify-items: start;
             text-align: left;
+            justify-content: flex-start;
         }
 
         .plate-box strong {
-            font-size: 18px;
+            font-size: 17px;
         }
     }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tabs = Array.from(document.querySelectorAll("[data-customer-tab]"));
+        const panels = Array.from(document.querySelectorAll("[data-customer-panel]"));
+        const select = document.querySelector("[data-customer-tab-select]");
+        const sectionLinks = document.querySelectorAll("[data-customer-tab-link]");
+        const moreToggle = document.querySelector("[data-customer-more-toggle]");
+        const moreMenu = document.querySelector("[data-customer-more-menu]");
+        const validTabs = ["general", "service-history", "finance", "details"];
+
+        function showTab(tabName, updateHash) {
+            const target = validTabs.includes(tabName) ? tabName : "general";
+
+            tabs.forEach(tab => {
+                tab.classList.toggle("active", tab.dataset.customerTab === target);
+            });
+
+            panels.forEach(panel => {
+                panel.classList.toggle("active", panel.dataset.customerPanel === target);
+            });
+
+            if (select) {
+                select.value = target;
+            }
+
+            if (updateHash) {
+                history.replaceState(null, "", "#" + target);
+            }
+        }
+
+        tabs.forEach(tab => {
+            tab.addEventListener("click", function () {
+                showTab(tab.dataset.customerTab || "general", true);
+            });
+        });
+
+        select?.addEventListener("change", function () {
+            showTab(select.value, true);
+        });
+
+        sectionLinks.forEach(link => {
+            link.addEventListener("click", function () {
+                showTab(link.dataset.customerTabLink || "general", true);
+            });
+        });
+
+        moreToggle?.addEventListener("click", function (event) {
+            event.stopPropagation();
+            const isHidden = moreMenu?.hasAttribute("hidden");
+
+            if (!moreMenu) {
+                return;
+            }
+
+            moreMenu.toggleAttribute("hidden", !isHidden);
+            moreToggle.setAttribute("aria-expanded", isHidden ? "true" : "false");
+        });
+
+        document.addEventListener("click", function (event) {
+            if (!moreMenu || moreMenu.hasAttribute("hidden")) {
+                return;
+            }
+
+            if (!event.target.closest(".customer-more")) {
+                moreMenu.setAttribute("hidden", "");
+                moreToggle?.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && moreMenu && !moreMenu.hasAttribute("hidden")) {
+                moreMenu.setAttribute("hidden", "");
+                moreToggle?.setAttribute("aria-expanded", "false");
+                moreToggle?.focus();
+            }
+        });
+
+        const initialHash = (window.location.hash || "").replace("#", "");
+        showTab(initialHash, false);
+    });
+</script>
 
 @functions {
     private static string ValueOrDash(string? value)
     {
         return string.IsNullOrWhiteSpace(value)
-            ? "-"
+            ? "Belirtilmemiş"
             : value;
     }
 
@@ -960,6 +1370,11 @@
             return $"{digits[..4]} {digits.Substring(4, 3)} {digits.Substring(7, 2)} {digits.Substring(9, 2)}";
 
         return value;
+    }
+
+    private static string JoinText(string separator, params string?[] values)
+    {
+        return string.Join(separator, values.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!.Trim()));
     }
 
     private static string GetBalanceDescription(decimal balance)
@@ -1045,10 +1460,53 @@
     {
         return type switch
         {
-            "InvoiceIssued" => "Servis Hesap Özeti Hazırlandı",
-            "InvoiceCancellation" => "Fatura İptali",
+            "InvoiceDebit" => "Servis Hesap Özeti",
+            "InvoiceIssued" => "Servis Hesap Özeti",
             "Payment" => "Tahsilat",
+            "Refund" => "İade",
+            "Adjustment" => "Düzeltme",
+            "Cancel" => "İptal",
+            "InvoiceCancellation" => "Belge İptali",
             _ => type
         };
+    }
+
+    private static Microsoft.AspNetCore.Html.IHtmlContent RenderInfo(string label, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return new Microsoft.AspNetCore.Html.HtmlString(string.Empty);
+        }
+
+        var html = $"<div><dt>{System.Net.WebUtility.HtmlEncode(label)}</dt><dd>{System.Net.WebUtility.HtmlEncode(value)}</dd></div>";
+
+        return new Microsoft.AspNetCore.Html.HtmlString(html);
+    }
+
+    private static Microsoft.AspNetCore.Html.IHtmlContent RenderServiceRecord(
+        AutoStock.WEB.Models.Customers.CustomerServiceRecordSummaryViewModel record,
+        bool showAmount)
+    {
+        var vehicleName = BuildVehicleName(record.VehicleBrandName, record.VehicleModelName, null);
+        var statusClass = StatusClass(record.StatusText);
+        var complaint = string.IsNullOrWhiteSpace(record.ComplaintTitle) ? "Servis kaydı" : record.ComplaintTitle;
+        var amount = showAmount ? $"<strong>{System.Net.WebUtility.HtmlEncode(Money(record.TotalAmount))}</strong>" : string.Empty;
+
+        var html = $"""
+            <a class="customer-service-row" href="/ServiceRecords/Detail/{record.Id}">
+                <div>
+                    <strong>{System.Net.WebUtility.HtmlEncode(record.RecordNumber)}</strong>
+                    <span>{System.Net.WebUtility.HtmlEncode(record.VehiclePlate)} · {System.Net.WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(vehicleName) ? "Araç bilgisi yok" : vehicleName)}</span>
+                    <small>{System.Net.WebUtility.HtmlEncode(complaint)}</small>
+                </div>
+                <div class="customer-service-side">
+                    <span class="customer-status {statusClass}">{System.Net.WebUtility.HtmlEncode(GetServiceStatusText(record.StatusText))}</span>
+                    {amount}
+                    <small>{record.CreatedAt:dd.MM.yyyy}</small>
+                </div>
+            </a>
+            """;
+
+        return new Microsoft.AspNetCore.Html.HtmlString(html);
     }
 }

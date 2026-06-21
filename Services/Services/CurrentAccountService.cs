@@ -44,7 +44,8 @@ namespace AutoStock.Services.Services
                 {
                     x.Id,
                     x.FullName,
-                    x.CompanyName
+                    x.CompanyName,
+                    x.PhoneNumber
                 })
                 .FirstOrDefaultAsync();
 
@@ -260,7 +261,8 @@ namespace AutoStock.Services.Services
                 {
                     x.Id,
                     x.FullName,
-                    x.CompanyName
+                    x.CompanyName,
+                    x.PhoneNumber
                 })
                 .FirstOrDefaultAsync();
 
@@ -384,6 +386,7 @@ namespace AutoStock.Services.Services
             {
                 CustomerId = customer.Id,
                 CustomerName = ResolveCustomerName(customer.FullName, customer.CompanyName),
+                CustomerPhone = customer.PhoneNumber,
                 Balance = runningBalance,
                 InvoiceTotal = invoiceTotal,
                 PaymentTotal = Math.Max(0m, paymentTotal),

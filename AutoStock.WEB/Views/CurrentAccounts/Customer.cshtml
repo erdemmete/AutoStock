@@ -1,5 +1,6 @@
 @model AutoStock.WEB.Models.CurrentAccounts.CustomerCurrentAccountViewModel
 @using System.Globalization
+@using AutoStock.WEB.Models.Shared
 
 @{
     ViewData["Title"] = "Hesap Özeti";
@@ -62,6 +63,12 @@
             <div>
                 <span class="ca-customer-eyebrow">Hesap Özeti</span>
                 <h1>@Model.CustomerName</h1>
+                @await Html.PartialAsync("_ContactActions", new ContactActionsViewModel
+                {
+                    PhoneNumber = Model.CustomerPhone,
+                    CustomerName = Model.CustomerName,
+                    Variant = "compact"
+                })
                 <p>Faturalar, tahsilatlar ve açık bakiye tek ekranda.</p>
             </div>
         </div>
