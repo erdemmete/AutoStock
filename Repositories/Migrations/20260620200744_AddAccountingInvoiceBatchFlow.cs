@@ -38,10 +38,17 @@ namespace AutoStock.Repositories.Migrations
                 nullable: true);
 
             migrationBuilder.Sql("""
-                UPDATE OfficialInvoiceDocuments
-                SET ShareToken = LOWER(REPLACE(CONVERT(nvarchar(36), NEWID()), '-', '') + REPLACE(CONVERT(nvarchar(36), NEWID()), '-', ''))
-                WHERE ShareToken IS NULL OR LTRIM(RTRIM(ShareToken)) = ''
-                """);
+    EXEC(N'
+        UPDATE [OfficialInvoiceDocuments]
+        SET [ShareToken] =
+            LOWER(
+                REPLACE(CONVERT(nvarchar(36), NEWID()), ''-'', '''') +
+                REPLACE(CONVERT(nvarchar(36), NEWID()), ''-'', '''')
+            )
+        WHERE [ShareToken] IS NULL
+           OR LTRIM(RTRIM([ShareToken])) = '''';
+    ');
+    """);
 
             migrationBuilder.AlterColumn<string>(
                 name: "ShareToken",

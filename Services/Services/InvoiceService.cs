@@ -34,6 +34,9 @@ namespace AutoStock.Services.Services
             var serviceRecord = await _context.ServiceRecords
                 .Include(x => x.Customer)
                 .Include(x => x.Vehicle)
+                    .ThenInclude(x => x!.VehicleBrand)
+                .Include(x => x.Vehicle)
+                    .ThenInclude(x => x!.VehicleModel)
                 .Include(x => x.Operations)
                 .FirstOrDefaultAsync(x =>
                     x.Id == serviceRecordId &&
@@ -71,8 +74,12 @@ namespace AutoStock.Services.Services
 
                 Plate = serviceRecord.VehiclePlateSnapshot,
                 ChassisNumber = serviceRecord.Vehicle?.ChassisNumber,
-                VehicleBrandName = serviceRecord.VehicleBrandNameSnapshot,
-                VehicleModelName = serviceRecord.VehicleModelNameSnapshot,
+                VehicleBrandName = !string.IsNullOrWhiteSpace(serviceRecord.Vehicle?.VehicleBrand?.Name)
+                    ? serviceRecord.Vehicle.VehicleBrand.Name
+                    : serviceRecord.VehicleBrandNameSnapshot,
+                VehicleModelName = !string.IsNullOrWhiteSpace(serviceRecord.Vehicle?.VehicleModel?.Name)
+                    ? serviceRecord.Vehicle.VehicleModel.Name
+                    : serviceRecord.VehicleModelNameSnapshot,
                 VehicleModelYear = serviceRecord.Vehicle?.ModelYear,
                 Mileage = serviceRecord.MileageSnapshot
             };
@@ -254,6 +261,12 @@ namespace AutoStock.Services.Services
             var invoice = await _context.Invoices
                 .Include(x => x.Customer)
                 .Include(x => x.Items)
+                .Include(x => x.ServiceRecord)
+                    .ThenInclude(x => x!.Vehicle)
+                        .ThenInclude(x => x!.VehicleBrand)
+                .Include(x => x.ServiceRecord)
+                    .ThenInclude(x => x!.Vehicle)
+                        .ThenInclude(x => x!.VehicleModel)
                 .FirstOrDefaultAsync(x =>
                     x.Id == invoiceId &&
                     x.WorkshopId == workshopId);
@@ -366,9 +379,20 @@ namespace AutoStock.Services.Services
                 Plate = invoice.Plate,
                 ChassisNumber = invoice.ChassisNumber,
                 Mileage = invoice.Mileage,
-                VehicleBrandName = invoice.VehicleBrandName,
-                VehicleModelName = invoice.VehicleModelName,
-                VehicleModelYear = invoice.VehicleModelYear,
+                VehicleBrandId = invoice.ServiceRecord?.Vehicle?.VehicleBrandId,
+                VehicleModelId = invoice.ServiceRecord?.Vehicle?.VehicleModelId,
+                VehicleBrandName = !string.IsNullOrWhiteSpace(invoice.VehicleBrandName)
+                    ? invoice.VehicleBrandName
+                    : !string.IsNullOrWhiteSpace(invoice.ServiceRecord?.Vehicle?.VehicleBrand?.Name)
+                        ? invoice.ServiceRecord.Vehicle.VehicleBrand.Name
+                        : invoice.ServiceRecord?.VehicleBrandNameSnapshot,
+                VehicleModelName = !string.IsNullOrWhiteSpace(invoice.VehicleModelName)
+                    ? invoice.VehicleModelName
+                    : !string.IsNullOrWhiteSpace(invoice.ServiceRecord?.Vehicle?.VehicleModel?.Name)
+                        ? invoice.ServiceRecord.Vehicle.VehicleModel.Name
+                        : invoice.ServiceRecord?.VehicleModelNameSnapshot,
+                VehicleModelYear = invoice.VehicleModelYear
+                    ?? invoice.ServiceRecord?.Vehicle?.ModelYear,
                 WorkshopDisplayName = workshopProfile?.DisplayName,
                 WorkshopLegalTitle = workshopProfile?.LegalTitle,
                 WorkshopTaxOffice = workshopProfile?.TaxOffice,

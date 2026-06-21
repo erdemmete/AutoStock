@@ -49,6 +49,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Sente360 | @Model.WorkshopName</title>
+    @if (isOwner || isStaff)
+    {
+        <link rel="stylesheet" href="~/css/release-announcement.css" asp-append-version="true" />
+    }
 
     <style>
             * {
@@ -1309,7 +1313,15 @@
             </section>
         </main>
     </div>
+    @if (isOwner || isStaff)
+    {
+        <partial name="_ReleaseAnnouncement" model="Model.UserId" />
+    }
     <partial name="_QrScannerModal" />
+    @if (isOwner || isStaff)
+    {
+        <script src="~/js/release-announcement.js" asp-append-version="true"></script>
+    }
     <script>
             const mobileMenuButton = document.getElementById("mobileMenuButton");
             const sidebar = document.getElementById("sidebar");

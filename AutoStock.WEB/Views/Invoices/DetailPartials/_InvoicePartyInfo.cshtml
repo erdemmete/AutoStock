@@ -47,11 +47,15 @@
                 <strong id="customerEmailView">@(Model.CustomerEmail ?? "-")</strong>
             </p>
 
-            <p>
+            <p class="invoice-phone-line">
                 <span>☎</span>
                 Telefon:
-                <strong class="sente-contact-line">
-                    <span>@(string.IsNullOrWhiteSpace(Model.CustomerPhone) ? "-" : Model.CustomerPhone)</span>
+                <strong id="customerPhoneView">@(string.IsNullOrWhiteSpace(Model.CustomerPhone) ? "-" : Model.CustomerPhone)</strong>
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(Model.CustomerPhone))
+            {
+                <div class="invoice-contact-actions-row">
                     @await Html.PartialAsync("_ContactActions", new ContactActionsViewModel
                     {
                         PhoneNumber = Model.CustomerPhone,
@@ -60,8 +64,8 @@
                         ServiceStatus = Model.Status == 2 ? "Completed" : Model.Status.ToString(),
                         Variant = "compact"
                     })
-                </strong>
-            </p>
+                </div>
+            }
 
             <p>
                 <span>⌖</span>

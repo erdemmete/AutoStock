@@ -1,4 +1,12 @@
 ﻿<!DOCTYPE html>
+@{
+    var layoutUserRole = Context.Session.GetString("UserRole");
+    var layoutUserId = Context.Session.GetInt32("UserId");
+    var shouldShowReleaseAnnouncement =
+        layoutUserId.HasValue &&
+        (string.Equals(layoutUserRole, "Owner", StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(layoutUserRole, "Staff", StringComparison.OrdinalIgnoreCase));
+}
 <html lang="tr">
 <head>
     <meta charset="utf-8" />
@@ -17,6 +25,10 @@
     <link rel="stylesheet" href="~/css/site-toast.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/sente-confirm.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/sente-contact-actions.css" asp-append-version="true" />
+    @if (shouldShowReleaseAnnouncement)
+    {
+        <link rel="stylesheet" href="~/css/release-announcement.css" asp-append-version="true" />
+    }
     <link rel="stylesheet" href="~/AutoStock.WEB.styles.css" asp-append-version="true" />
     <link rel="manifest" href="~/manifest.webmanifest" />
     <meta name="theme-color" content="#2563eb" />
@@ -44,6 +56,11 @@
         © Sente360
     </footer>
 
+    @if (shouldShowReleaseAnnouncement)
+    {
+        <partial name="_ReleaseAnnouncement" model="layoutUserId!.Value" />
+    }
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -53,6 +70,10 @@
     <script src="~/js/sente-confirm.js" asp-append-version="true"></script>
     <script src="~/js/sente-contact-actions.js" asp-append-version="true"></script>
     <script src="~/js/sente-web-push.js" asp-append-version="true"></script>
+    @if (shouldShowReleaseAnnouncement)
+    {
+        <script src="~/js/release-announcement.js" asp-append-version="true"></script>
+    }
 
     @if (TempData["ToastSuccess"] != null)
     {

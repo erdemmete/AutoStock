@@ -1,0 +1,87 @@
+@model int
+
+@{
+    const string announcementKey = "2026-06-21-invoice-ux-update";
+}
+
+<div class="s360-release-announcement"
+     data-release-announcement
+     data-announcement-key="@announcementKey"
+     data-user-id="@Model"
+     hidden
+     aria-hidden="true">
+    <div class="s360-release-announcement__backdrop" data-release-later></div>
+
+    <section class="s360-release-announcement__dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="releaseAnnouncementTitle"
+             aria-describedby="releaseAnnouncementIntro">
+        <header class="s360-release-announcement__header">
+            <div>
+                <span class="s360-release-announcement__eyebrow">Sente360</span>
+                <h2 id="releaseAnnouncementTitle">Sente360 Güncellendi 🚀</h2>
+            </div>
+
+            <button type="button"
+                    class="s360-release-announcement__close"
+                    data-release-later
+                    aria-label="Daha sonra göster">
+                ×
+            </button>
+        </header>
+
+        <div class="s360-release-announcement__body">
+            <p id="releaseAnnouncementIntro" class="s360-release-announcement__intro">
+                Sente360'ı günlük servis işlemlerinde daha hızlı ve kolay kullanabilmeniz için yeni geliştirmeler yayınlandı.
+            </p>
+
+            <div class="s360-release-announcement__items">
+                <article>
+                    <span>1</span>
+                    <div>
+                        <h3>Yeni bildirim sistemi</h3>
+                        <p>Destek talepleri ve fatura işlemleriyle ilgili önemli gelişmelerden, Sente360 açık olmasa bile tarayıcı bildirimiyle haberdar olabilirsiniz.</p>
+                    </div>
+                </article>
+
+                <article>
+                    <span>2</span>
+                    <div>
+                        <h3>Fatura işlemleri yenilendi</h3>
+                        <p>Tamamlanan Servis Hesap Özetlerini toplu olarak seçebilir ve faturayı hazırlayacak kişiye tek seferde gönderebilirsiniz. Hazırlanan faturalar aynı bağlantı üzerinden yüklenebilir ve Sente360 içerisinden takip edilebilir.</p>
+                    </div>
+                </article>
+
+                <article>
+                    <span>3</span>
+                    <div>
+                        <h3>Müşteriye hızlı ulaşım</h3>
+                        <p>Müşteri ve servis kaydı ekranlarından müşteriyi tek dokunuşla arayabilir, WhatsApp görüşmesini açabilir veya telefon numarasını kopyalayabilirsiniz.</p>
+                    </div>
+                </article>
+
+                <article>
+                    <span>4</span>
+                    <div>
+                        <h3>Kullanım kolaylığı iyileştirmeleri</h3>
+                        <p>Müşteri detayları, Servis Hesap Özeti ekranları, mobil görünümler ve günlük işlem akışları daha sade ve hızlı hale getirildi.</p>
+                    </div>
+                </article>
+            </div>
+
+            <p class="s360-release-announcement__note">
+                Geri bildirimleriniz Sente360'ın gelişimine doğrudan katkı sağlıyor. İhtiyaçlarınızı ve önerilerinizi Destek Talepleri üzerinden bizimle paylaşabilirsiniz.
+            </p>
+        </div>
+
+        <footer class="s360-release-announcement__actions">
+            <button type="button" class="s360-release-announcement__secondary" data-release-later>
+                Daha Sonra
+            </button>
+            <button type="button" class="s360-release-announcement__primary" data-release-seen>
+                Tamam, gördüm
+            </button>
+        </footer>
+    </section>
+</div>

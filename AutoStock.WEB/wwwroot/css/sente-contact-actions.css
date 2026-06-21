@@ -3,11 +3,17 @@
     align-items: center;
     gap: 6px;
     flex-wrap: wrap;
+    flex-direction: row;
+    width: auto;
+    max-width: 100%;
     vertical-align: middle;
 }
 
 .sente-contact-btn,
 .sente-contact-add {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: none;
     min-height: 34px;
     padding: 0 11px;
     border-radius: 999px;
@@ -21,6 +27,7 @@
     font-size: 12px;
     font-weight: 950;
     line-height: 1;
+    white-space: nowrap;
     cursor: pointer;
     user-select: none;
     transition: transform .14s ease, border-color .14s ease, background-color .14s ease, color .14s ease, box-shadow .14s ease;

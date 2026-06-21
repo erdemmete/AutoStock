@@ -218,10 +218,39 @@
             font-weight: 650;
         }
 
-        .info-lines span {
+        .info-lines > p > span:first-child {
             display: inline-block;
             width: 22px;
             color: #94a3b8;
+        }
+
+    .invoice-phone-line strong {
+        overflow-wrap: anywhere;
+    }
+
+    .invoice-contact-actions-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: -2px 0 2px 22px;
+    }
+
+        .invoice-contact-actions-row .sente-contact-actions {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
+            flex-direction: row;
+            width: auto;
+        }
+
+        .invoice-contact-actions-row .sente-contact-btn {
+            flex: 0 0 auto;
+            width: auto;
+            min-height: 32px;
+            padding: 0 10px;
+            font-size: 11px;
+            white-space: nowrap;
         }
 
     .vehicle-grid {
