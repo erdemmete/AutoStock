@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="~/css/site-toast.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/sente-confirm.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/sente-contact-actions.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
     @if (shouldShowReleaseAnnouncement)
     {
         <link rel="stylesheet" href="~/css/release-announcement.css" asp-append-version="true" />
@@ -39,11 +40,18 @@
 
     @{
         var isAuthPage = Context.Request.Path.StartsWithSegments("/Auth");
+        var isAccountPage = Context.Request.Path.StartsWithSegments("/Account");
     }
 
     @if (!isAuthPage)
     {
         <partial name="_AdminQuickActions" />
+        @if (!isAccountPage)
+        {
+            <div class="layout-account-menu">
+                <partial name="_AccountMenu" />
+            </div>
+        }
     }
 
     <div class="container">

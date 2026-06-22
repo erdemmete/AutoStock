@@ -1,0 +1,116 @@
+.s360-account-menu {
+    position: relative;
+    display: inline-block;
+    z-index: 60;
+}
+
+.layout-account-menu {
+    position: fixed;
+    top: 18px;
+    right: 22px;
+    z-index: 70;
+}
+
+.s360-account-menu summary {
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 5px 10px 5px 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .9);
+    color: #334155;
+    cursor: pointer;
+    font-weight: 800;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .045);
+    transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.s360-account-menu summary:hover,
+.s360-account-menu summary:focus-visible {
+    border-color: #bfdbfe;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .08);
+    outline: none;
+}
+
+.s360-account-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.s360-account-avatar {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    color: #1d4ed8;
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.s360-account-name {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+}
+
+.s360-account-chevron {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.s360-account-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    width: 210px;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 24px 54px rgba(15, 23, 42, .16);
+}
+
+.s360-account-dropdown a,
+.s360-account-dropdown button {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #334155;
+    text-decoration: none;
+    font: inherit;
+    font-weight: 850;
+    cursor: pointer;
+}
+
+.s360-account-dropdown a:hover {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.s360-account-dropdown button {
+    color: #b91c1c;
+}
+
+.s360-account-dropdown button:hover {
+    background: #fee2e2;
+}
+
+@media (max-width: 640px) {
+    .s360-account-name {
+        display: none;
+    }
+}

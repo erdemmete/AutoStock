@@ -107,5 +107,21 @@ namespace AutoStock.WEB.Services
                 requestBody,
                 "Şifre sıfırlanırken hata oluştu.");
         }
+
+        public async Task<ApiResponse<bool>> RequestPasswordResetAsync(
+            ForgotPasswordViewModel model,
+            string resetUrlBase)
+        {
+            var requestBody = new
+            {
+                userName = model.UserName,
+                resetUrlBase
+            };
+
+            return await PostJsonAsync<object, bool>(
+                "/api/Auth/password-reset/request",
+                requestBody,
+                "Şifre yenileme işlemi başlatılamadı.");
+        }
     }
 }

@@ -1,0 +1,625 @@
+@model AutoStock.WEB.Models.Account.AccountPageViewModel
+
+@{
+    ViewData["Title"] = "Hesabım";
+
+    var emailSummary = string.IsNullOrWhiteSpace(Model.Overview.Email)
+        ? "E-posta adresi eklenmemiş"
+        : Model.Overview.Email;
+
+    var phoneSummary = string.IsNullOrWhiteSpace(Model.Overview.PhoneNumber)
+        ? "Telefon numarası eklenmemiş"
+        : FormatPhone(Model.Overview.PhoneNumber);
+
+    var profileContact = string.Join(" · ", new[]
+        {
+            Model.Overview.Email,
+            string.IsNullOrWhiteSpace(Model.Overview.PhoneNumber) ? null : FormatPhone(Model.Overview.PhoneNumber)
+        }
+        .Where(x => !string.IsNullOrWhiteSpace(x)));
+
+    var serviceSummary = Model.WorkshopProfile is null
+        ? Model.Overview.WorkshopName
+        : string.Join(" · ", new[]
+            {
+                string.IsNullOrWhiteSpace(Model.WorkshopProfile.DisplayName)
+                    ? Model.Overview.WorkshopName
+                    : Model.WorkshopProfile.DisplayName,
+                string.Join(" / ", new[]
+                {
+                    Model.WorkshopProfile.District,
+                    Model.WorkshopProfile.City
+                }.Where(x => !string.IsNullOrWhiteSpace(x)))
+            }
+            .Where(x => !string.IsNullOrWhiteSpace(x)));
+
+    var membershipSummary = Model.Membership is null
+        ? "Üyelik bilgisi bulunmuyor"
+        : Model.Membership.SummaryText;
+}
+
+<link rel="stylesheet" href="~/css/account-management.css" asp-append-version="true" />
+
+<div class="account-page">
+    <a class="account-back" asp-controller="Dashboard" asp-action="Index">← Ana Sayfa</a>
+
+    <header class="account-hero">
+        <h1>Hesabım</h1>
+        <p>Profil ve güvenlik ayarları.</p>
+    </header>
+
+    <section class="account-profile-card" aria-label="Profil özeti">
+        <div>
+            <h2>@Model.Overview.FullName</h2>
+            <p>@Model.Overview.WorkshopName</p>
+            <span>@@@Model.Overview.UserName</span>
+            @if (!string.IsNullOrWhiteSpace(profileContact))
+            {
+                <small data-account-profile-contact>@profileContact</small>
+            }
+        </div>
+    </section>
+
+    <section class="account-dashboard">
+        <div class="account-settings-card">
+            <h2>Hesap Ayarları</h2>
+
+            <div class="account-settings-list">
+                <button type="button"
+                        class="account-setting-row"
+                        data-account-drawer-open="emailDrawer"
+                        aria-controls="emailDrawer"
+                        aria-expanded="false">
+                    <span class="account-setting-icon">@@</span>
+                    <span class="account-setting-copy">
+                        <strong>E-posta</strong>
+                        <small data-account-email-summary>@emailSummary</small>
+                    </span>
+                    <span class="account-setting-chevron">›</span>
+                </button>
+
+                <button type="button"
+                        class="account-setting-row"
+                        data-account-drawer-open="phoneDrawer"
+                        aria-controls="phoneDrawer"
+                        aria-expanded="false">
+                    <span class="account-setting-icon">☎</span>
+                    <span class="account-setting-copy">
+                        <strong>Telefon</strong>
+                        <small data-account-phone-summary>@phoneSummary</small>
+                    </span>
+                    <span class="account-setting-chevron">›</span>
+                </button>
+
+                <button type="button"
+                        class="account-setting-row"
+                        data-account-drawer-open="passwordDrawer"
+                        aria-controls="passwordDrawer"
+                        aria-expanded="false">
+                    <span class="account-setting-icon">••</span>
+                    <span class="account-setting-copy">
+                        <strong>Şifre</strong>
+                        <small>Güvenlik ayarı</small>
+                    </span>
+                    <span class="account-setting-chevron">›</span>
+                </button>
+
+                @if (Model.IsOwner && Model.WorkshopProfile is not null)
+                {
+                    <button type="button"
+                            class="account-setting-row"
+                            data-account-drawer-open="workshopDrawer"
+                            aria-controls="workshopDrawer"
+                            aria-expanded="false">
+                        <span class="account-setting-icon">▦</span>
+                        <span class="account-setting-copy">
+                            <strong>Servis Bilgileri</strong>
+                            <small data-account-service-summary>@serviceSummary</small>
+                        </span>
+                        <span class="account-setting-chevron">›</span>
+                    </button>
+
+                    <button type="button"
+                            class="account-setting-row"
+                            data-account-drawer-open="membershipDrawer"
+                            aria-controls="membershipDrawer"
+                            aria-expanded="false">
+                        <span class="account-setting-icon">✓</span>
+                        <span class="account-setting-copy">
+                            <strong>Üyelik Bilgileri</strong>
+                            <small>@membershipSummary</small>
+                        </span>
+                        <span class="account-setting-chevron">›</span>
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (Model.IsOwner && Model.Membership is not null)
+        {
+            <aside class="account-membership-summary">
+                <h2>Üyelik Özeti</h2>
+                <div class="membership-status-pill">@Model.Membership.StatusText</div>
+                <dl>
+                    <div>
+                        <dt>Üyelik başlangıcı</dt>
+                        <dd>@Model.Membership.SubscriptionStartDateText</dd>
+                    </div>
+                    <div>
+                        <dt>Geçerlilik</dt>
+                        <dd>@Model.Membership.ValidityText</dd>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Membership.RemainingText))
+                    {
+                        <div>
+                            <dt>Kalan süre</dt>
+                            <dd>@Model.Membership.RemainingText</dd>
+                        </div>
+                    }
+                    <div>
+                        <dt>Aktif kullanıcı sayısı</dt>
+                        <dd>@Model.Membership.ActiveUserCountText</dd>
+                    </div>
+                </dl>
+            </aside>
+        }
+    </section>
+</div>
+
+<div class="account-drawer-shell" data-account-drawer-shell hidden>
+    <div class="account-drawer-backdrop" data-account-drawer-close></div>
+
+    <aside class="account-drawer" id="emailDrawer" role="dialog" aria-modal="true" aria-labelledby="emailDrawerTitle" hidden>
+        <header class="account-drawer-header">
+            <div>
+                <h2 id="emailDrawerTitle">E-posta Adresi</h2>
+                <p>E-posta adresiniz, şifre yenileme bağlantılarını alabilmeniz için kullanılır.</p>
+            </div>
+            <button type="button" class="account-drawer-close" data-account-drawer-close aria-label="Kapat">×</button>
+        </header>
+
+        <form asp-controller="Account" asp-action="UpdateEmail" method="post" class="account-drawer-form" data-account-ajax-form data-account-form-type="email">
+            @Html.AntiForgeryToken()
+            <div class="account-form-error" data-account-form-error hidden></div>
+
+            <div class="account-current-value">
+                <span>Mevcut e-posta</span>
+                <strong data-account-current-email>@(string.IsNullOrWhiteSpace(Model.Overview.Email) ? "Tanımlı değil" : Model.Overview.Email)</strong>
+            </div>
+
+            <label>
+                <span>Yeni e-posta adresi</span>
+                <input name="Email" type="email" value="@Model.EmailForm.Email" autocomplete="email" placeholder="ornek@sente360.com" />
+            </label>
+
+            <label>
+                <span>Mevcut şifre</span>
+                <input name="CurrentPassword" type="password" autocomplete="current-password" />
+            </label>
+
+            <p class="account-inline-note">
+                E-posta adresiniz olmadığında otomatik şifre yenileme bağlantısı alamazsınız.
+            </p>
+
+            <footer class="account-drawer-footer">
+                <button type="button" class="account-danger-link" data-account-remove-email>E-posta adresini kaldır</button>
+                <button type="submit" class="account-primary-button">Kaydet</button>
+            </footer>
+        </form>
+    </aside>
+
+    <aside class="account-drawer" id="phoneDrawer" role="dialog" aria-modal="true" aria-labelledby="phoneDrawerTitle" hidden>
+        <header class="account-drawer-header">
+            <div>
+                <h2 id="phoneDrawerTitle">Telefon Numarası</h2>
+            </div>
+            <button type="button" class="account-drawer-close" data-account-drawer-close aria-label="Kapat">×</button>
+        </header>
+
+        <form asp-controller="Account" asp-action="UpdatePhone" method="post" class="account-drawer-form" data-account-ajax-form data-account-form-type="phone">
+            @Html.AntiForgeryToken()
+            <div class="account-form-error" data-account-form-error hidden></div>
+
+            <div class="account-current-value">
+                <span>Mevcut telefon</span>
+                <strong data-account-current-phone>@(string.IsNullOrWhiteSpace(Model.Overview.PhoneNumber) ? "Tanımlı değil" : FormatPhone(Model.Overview.PhoneNumber))</strong>
+            </div>
+
+            <label>
+                <span>Yeni telefon numarası</span>
+                <input name="PhoneNumber" value="@Model.PhoneForm.PhoneNumber" inputmode="tel" autocomplete="tel" placeholder="05xx xxx xx xx" data-account-phone-input />
+            </label>
+
+            <label>
+                <span>Mevcut şifre</span>
+                <input name="CurrentPassword" type="password" autocomplete="current-password" />
+            </label>
+
+            <footer class="account-drawer-footer">
+                <button type="button"
+                        class="account-danger-link"
+                        data-account-remove-phone
+                        hidden="@(string.IsNullOrWhiteSpace(Model.Overview.PhoneNumber) ? "hidden" : null)">
+                    Telefonu kaldır
+                </button>
+                <button type="submit" class="account-primary-button">Telefonu Kaydet</button>
+            </footer>
+        </form>
+    </aside>
+
+    <aside class="account-drawer" id="passwordDrawer" role="dialog" aria-modal="true" aria-labelledby="passwordDrawerTitle" hidden>
+        <header class="account-drawer-header">
+            <div>
+                <h2 id="passwordDrawerTitle">Şifreyi Değiştir</h2>
+                <p>Şifrenizi değiştirdikten sonra yeniden giriş yapmanız gerekir.</p>
+            </div>
+            <button type="button" class="account-drawer-close" data-account-drawer-close aria-label="Kapat">×</button>
+        </header>
+
+        <form asp-controller="Account" asp-action="ChangePassword" method="post" class="account-drawer-form" data-account-ajax-form data-account-form-type="password">
+            @Html.AntiForgeryToken()
+            <div class="account-form-error" data-account-form-error hidden></div>
+
+            <label>
+                <span>Mevcut şifre</span>
+                <input name="CurrentPassword" type="password" autocomplete="current-password" />
+            </label>
+
+            <label>
+                <span>Yeni şifre</span>
+                <input name="NewPassword" type="password" autocomplete="new-password" />
+            </label>
+
+            <label>
+                <span>Yeni şifre tekrar</span>
+                <input name="ConfirmNewPassword" type="password" autocomplete="new-password" />
+            </label>
+
+            <footer class="account-drawer-footer">
+                <button type="submit" class="account-primary-button">Şifreyi Değiştir</button>
+            </footer>
+        </form>
+    </aside>
+
+    @if (Model.IsOwner && Model.WorkshopProfile is not null)
+    {
+        <aside class="account-drawer account-drawer-wide" id="workshopDrawer" role="dialog" aria-modal="true" aria-labelledby="workshopDrawerTitle" hidden>
+            <header class="account-drawer-header">
+                <div>
+                    <h2 id="workshopDrawerTitle">Servis Bilgileri</h2>
+                    <p>Müşteri belgelerinde ve servis bilgilerinde kullanılacak işletme bilgilerini yönetin.</p>
+                </div>
+                <button type="button" class="account-drawer-close" data-account-drawer-close aria-label="Kapat">×</button>
+            </header>
+
+            <div class="account-drawer-body account-workshop-drawer-body">
+                <form asp-controller="Account" asp-action="UpdateWorkshop" method="post" class="account-inline-form" data-account-ajax-form data-account-form-type="workshop">
+                    @Html.AntiForgeryToken()
+                    <div class="account-form-error" data-account-form-error hidden></div>
+
+                    <section class="account-form-section">
+                        <h3>Genel Bilgiler</h3>
+                        <div class="account-form-grid">
+                            <label>
+                                <span>Görünen servis adı</span>
+                                <input name="DisplayName" value="@Model.WorkshopProfile.DisplayName" />
+                            </label>
+                            <label>
+                                <span>Fatura adı / yasal unvan</span>
+                                <input name="LegalTitle" value="@Model.WorkshopProfile.LegalTitle" />
+                            </label>
+                            <label>
+                                <span>Web sitesi</span>
+                                <input name="Website" value="@Model.WorkshopProfile.Website" />
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="account-form-section">
+                        <h3>Ticari Bilgiler</h3>
+                        <div class="account-form-grid">
+                            <label>
+                                <span>Vergi dairesi ili</span>
+                                <select id="workshopTaxOfficeCityInput">
+                                    <option value="">İl seçiniz</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Vergi dairesi</span>
+                                <select name="TaxOffice"
+                                        id="workshopTaxOfficeInput"
+                                        data-current-value="@Model.WorkshopProfile.TaxOffice">
+                                    <option value="">Önce vergi dairesi ilini seçiniz</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Vergi numarası</span>
+                                <input name="TaxNumber" value="@Model.WorkshopProfile.TaxNumber" />
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="account-form-section">
+                        <h3>İletişim</h3>
+                        <div class="account-form-grid">
+                            <label>
+                                <span>E-posta</span>
+                                <input name="Email" type="email" value="@Model.WorkshopProfile.Email" />
+                            </label>
+                            <label>
+                                <span>Telefon</span>
+                                <input name="PhoneNumber" value="@Model.WorkshopProfile.PhoneNumber" />
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="account-form-section">
+                        <h3>Adres</h3>
+                        <div class="account-form-grid">
+                            <label>
+                                <span>İl</span>
+                                <select name="City"
+                                        id="workshopCityInput"
+                                        data-current-value="@Model.WorkshopProfile.City">
+                                    <option value="">İl seçiniz</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>İlçe</span>
+                                <select name="District"
+                                        id="workshopDistrictInput"
+                                        data-current-value="@Model.WorkshopProfile.District">
+                                    <option value="">Önce il seçiniz</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Posta kodu</span>
+                                <input name="PostalCode" value="@Model.WorkshopProfile.PostalCode" />
+                            </label>
+                            <label class="account-form-full">
+                                <span>Açık adres</span>
+                                <textarea name="AddressLine" rows="3">@Model.WorkshopProfile.AddressLine</textarea>
+                            </label>
+                        </div>
+                    </section>
+
+                    <input type="hidden" name="Country" value="@(Model.WorkshopProfile.Country ?? "Türkiye")" />
+
+                    <footer class="account-inline-footer">
+                        <button type="submit" class="account-primary-button">Servis Bilgilerini Kaydet</button>
+                    </footer>
+                </form>
+
+                <section class="account-form-section account-bank-section">
+                    <div class="account-section-heading">
+                        <div>
+                            <h3>Banka / IBAN Bilgileri</h3>
+                            <p>Servis hesap özetlerinde göstermek istediğiniz IBAN bilgilerini yönetin.</p>
+                        </div>
+                        <button type="button" class="account-secondary-button account-bank-add-toggle" data-account-bank-add-toggle>+ IBAN Ekle</button>
+                    </div>
+
+                    @if (Model.WorkshopProfile.BankAccounts.Any())
+                    {
+                        <div class="account-bank-list">
+                            @foreach (var account in Model.WorkshopProfile.BankAccounts)
+                            {
+                                <article class="account-bank-card">
+                                    <div class="account-bank-summary">
+                                        <button type="button" class="account-bank-summary-main" data-account-bank-toggle aria-expanded="false">
+                                            <strong>@account.BankName</strong>
+                                            <span>@FormatIban(account.Iban)</span>
+                                        </button>
+                                        <div class="account-bank-badges">
+                                            <span>@(account.CurrencyCode ?? "TRY")</span>
+                                            @if (account.IsDefault)
+                                            {
+                                                <span>Varsayılan</span>
+                                            }
+                                        </div>
+                                        <div class="account-bank-row-actions">
+                                            <button type="button" class="account-secondary-button" data-account-bank-toggle aria-expanded="false">Düzenle</button>
+                                            <button type="submit"
+                                                    class="account-danger-link"
+                                                    form="deleteBankAccountForm-@account.Id"
+                                                    data-account-bank-delete-trigger>
+                                                Kaldır
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <form asp-controller="Account" asp-action="UpdateWorkshopBankAccount" method="post" class="account-inline-form account-bank-form account-bank-edit-form" data-account-ajax-form data-account-form-type="workshop-bank-update" hidden>
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="BankAccountId" value="@account.Id" />
+                                        <input type="hidden" name="AccountHolder" value="@account.AccountHolder" />
+                                        <input type="hidden" name="BranchName" value="@account.BranchName" />
+                                        <input type="hidden" name="AccountNumber" value="@account.AccountNumber" />
+                                        <input type="hidden" name="Description" value="@account.Description" />
+                                        <input type="hidden" name="ShowOnServiceForms" value="@account.ShowOnServiceForms.ToString().ToLowerInvariant()" />
+                                        <input type="hidden" name="SortOrder" value="@account.SortOrder" />
+                                        <div class="account-form-error" data-account-form-error hidden></div>
+
+                                        <div class="account-form-grid account-bank-compact-grid">
+                                            <label>
+                                                <span>Banka adı</span>
+                                                <input name="BankName" value="@account.BankName" />
+                                            </label>
+                                            <label>
+                                                <span>Para birimi</span>
+                                                <select name="CurrencyCode">
+                                                    <option value="TRY" selected="@(account.CurrencyCode == "TRY")">TL hesabı</option>
+                                                    <option value="USD" selected="@(account.CurrencyCode == "USD")">USD</option>
+                                                    <option value="EUR" selected="@(account.CurrencyCode == "EUR")">EUR</option>
+                                                </select>
+                                            </label>
+                                            <label class="account-form-full">
+                                                <span>IBAN</span>
+                                                <input name="Iban" value="@FormatIban(account.Iban)" autocomplete="off" />
+                                            </label>
+                                        </div>
+
+                                        <div class="account-check-grid account-check-grid-compact">
+                                            <label class="account-check-card">
+                                                <input type="checkbox" name="IsDefault" value="true" checked="@account.IsDefault" />
+                                                <span>Varsayılan hesap</span>
+                                            </label>
+                                            <label class="account-check-card">
+                                                <input type="checkbox" name="ShowOnInvoices" value="true" checked="@account.ShowOnInvoices" />
+                                                <span>Hesap özetlerinde göster</span>
+                                            </label>
+                                        </div>
+
+                                        <footer class="account-bank-actions">
+                                            <button type="submit" class="account-secondary-button">Güncelle</button>
+                                            <button type="button" class="account-secondary-button" data-account-bank-cancel>Vazgeç</button>
+                                        </footer>
+                                    </form>
+
+                                    <form id="deleteBankAccountForm-@account.Id" asp-controller="Account" asp-action="DeleteWorkshopBankAccount" method="post" data-account-ajax-form data-account-form-type="workshop-bank-delete" hidden>
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="bankAccountId" value="@account.Id" />
+                                    </form>
+                                </article>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="account-empty-bank-note">Henüz banka hesabı eklenmemiş.</div>
+                    }
+
+                    <form asp-controller="Account" asp-action="AddWorkshopBankAccount" method="post" class="account-inline-form account-bank-form account-bank-add-form" data-account-ajax-form data-account-form-type="workshop-bank-add" hidden>
+                        @Html.AntiForgeryToken()
+                        <div class="account-form-error" data-account-form-error hidden></div>
+                        <h4>Yeni banka hesabı</h4>
+                        <input type="hidden" name="AccountHolder" value="@(Model.WorkshopProfile.LegalTitle ?? Model.WorkshopProfile.DisplayName ?? Model.WorkshopProfile.WorkshopName)" />
+                        <input type="hidden" name="BranchName" value="" />
+                        <input type="hidden" name="AccountNumber" value="" />
+                        <input type="hidden" name="Description" value="" />
+                        <input type="hidden" name="ShowOnServiceForms" value="false" />
+                        <input type="hidden" name="SortOrder" value="0" />
+                        <div class="account-form-grid account-bank-compact-grid">
+                            <label>
+                                <span>Banka adı</span>
+                                <input name="BankName" autocomplete="organization" />
+                            </label>
+                            <label>
+                                <span>Para birimi</span>
+                                <select name="CurrencyCode">
+                                    <option value="TRY" selected>TL hesabı</option>
+                                    <option value="USD">USD</option>
+                                    <option value="EUR">EUR</option>
+                                </select>
+                            </label>
+                            <label class="account-form-full">
+                                <span>IBAN</span>
+                                <input name="Iban" autocomplete="off" placeholder="TR00 0000 0000 0000 0000 0000 00" />
+                            </label>
+                        </div>
+                        <div class="account-check-grid account-check-grid-compact">
+                            <label class="account-check-card">
+                                <input type="checkbox" name="IsDefault" value="true" checked="@(!Model.WorkshopProfile.BankAccounts.Any())" />
+                                <span>Varsayılan hesap</span>
+                            </label>
+                            <label class="account-check-card">
+                                <input type="checkbox" name="ShowOnInvoices" value="true" checked />
+                                <span>Hesap özetlerinde göster</span>
+                            </label>
+                        </div>
+                        <footer class="account-inline-footer">
+                            <button type="submit" class="account-primary-button">Banka Hesabı Ekle</button>
+                            <button type="button" class="account-secondary-button" data-account-bank-add-cancel>Vazgeç</button>
+                        </footer>
+                    </form>
+                </section>
+            </div>
+        </aside>
+
+        <aside class="account-drawer" id="membershipDrawer" role="dialog" aria-modal="true" aria-labelledby="membershipDrawerTitle" hidden>
+            <header class="account-drawer-header">
+                <div>
+                    <h2 id="membershipDrawerTitle">Üyelik Durumu</h2>
+                </div>
+                <button type="button" class="account-drawer-close" data-account-drawer-close aria-label="Kapat">×</button>
+            </header>
+
+            <div class="account-drawer-body">
+                @if (Model.Membership is not null)
+                {
+                    <section class="membership-state-card">
+                        <span class="membership-status-pill">@Model.Membership.StatusText</span>
+                        <p>@Model.Membership.StatusDescription</p>
+                    </section>
+
+                    <dl class="membership-detail-list">
+                        <div>
+                            <dt>Üyelik başlangıcı</dt>
+                            <dd>@Model.Membership.SubscriptionStartDateText</dd>
+                        </div>
+                        <div>
+                            <dt>Geçerlilik</dt>
+                            <dd>@Model.Membership.ValidityText</dd>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.Membership.RemainingText))
+                        {
+                            <div>
+                                <dt>Kalan süre</dt>
+                                <dd>@Model.Membership.RemainingText</dd>
+                            </div>
+                        }
+                        <div>
+                            <dt>Aktif kullanıcı sayısı</dt>
+                            <dd>@Model.Membership.ActiveUserCountText</dd>
+                        </div>
+                    </dl>
+
+                    <p class="membership-managed-note">Üyelik süresi ve durumu Sente360 tarafından yönetilir.</p>
+                }
+            </div>
+        </aside>
+    }
+</div>
+
+@functions {
+    private static string FormatPhone(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+
+        if (digits.StartsWith("90", StringComparison.Ordinal) && digits.Length == 12)
+            digits = digits[2..];
+
+        if (digits.StartsWith("5", StringComparison.Ordinal) && digits.Length == 10)
+            digits = $"0{digits}";
+
+        if (digits.Length != 11)
+            return value.Trim();
+
+        return $"{digits[..4]} {digits.Substring(4, 3)} {digits.Substring(7, 2)} {digits.Substring(9, 2)}";
+    }
+
+    private static string FormatIban(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        var normalized = new string(value.Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
+
+        if (normalized.Length <= 4)
+            return normalized;
+
+        return string.Join(" ", Enumerable.Range(0, (normalized.Length + 3) / 4)
+            .Select(i =>
+            {
+                var start = i * 4;
+                var length = Math.Min(4, normalized.Length - start);
+                return normalized.Substring(start, length);
+            }));
+    }
+}
+
+@section Scripts {
+    <script src="~/js/account-management.js" asp-append-version="true"></script>
+}

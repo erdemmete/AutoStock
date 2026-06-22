@@ -1,0 +1,839 @@
+.account-page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 28px 0 52px;
+    color: #0f172a;
+}
+
+.account-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.account-back:hover,
+.account-back:focus-visible {
+    color: #2563eb;
+}
+
+.account-hero {
+    margin-bottom: 20px;
+}
+
+.account-hero h1 {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 44px);
+    line-height: 1.06;
+    letter-spacing: -1.2px;
+    font-weight: 900;
+}
+
+.account-hero p {
+    margin: 10px 0 0;
+    color: #64748b;
+    font-size: 16px;
+    line-height: 1.5;
+    font-weight: 600;
+}
+
+.account-profile-card,
+.account-settings-card,
+.account-membership-summary {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, .055);
+}
+
+.account-profile-card {
+    padding: 20px 22px;
+    margin-bottom: 18px;
+}
+
+.account-profile-card h2 {
+    margin: 0;
+    font-size: 25px;
+    line-height: 1.15;
+    letter-spacing: -.5px;
+    font-weight: 900;
+}
+
+.account-profile-card p {
+    margin: 6px 0 8px;
+    color: #475569;
+    font-weight: 700;
+}
+
+.account-profile-card span,
+.account-profile-card small {
+    display: block;
+    color: #64748b;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.account-profile-card span {
+    font-size: 14px;
+    font-weight: 750;
+}
+
+.account-profile-card small {
+    margin-top: 5px;
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.account-dashboard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
+    align-items: start;
+}
+
+.account-settings-card,
+.account-membership-summary {
+    padding: 18px;
+}
+
+.account-settings-card h2,
+.account-membership-summary h2 {
+    margin: 0 0 14px;
+    font-size: 18px;
+    letter-spacing: -.2px;
+    font-weight: 900;
+}
+
+.account-settings-list {
+    display: grid;
+    gap: 8px;
+}
+
+.account-setting-row {
+    width: 100%;
+    min-height: 74px;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 22px;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #fff;
+    padding: 13px 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .16s ease, background .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+
+.account-setting-row:hover,
+.account-setting-row:focus-visible {
+    background: #f8fbff;
+    border-color: #bfdbfe;
+    box-shadow: 0 12px 26px rgba(37, 99, 235, .08);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.account-setting-icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 15px;
+    font-weight: 900;
+}
+
+.account-setting-copy {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.account-setting-copy strong {
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 900;
+}
+
+.account-setting-copy small {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.35;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.account-setting-chevron {
+    color: #94a3b8;
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 800;
+}
+
+.membership-status-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #047857;
+    font-size: 13px;
+    font-weight: 850;
+    margin-bottom: 12px;
+}
+
+.account-membership-summary dl,
+.membership-detail-list {
+    margin: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.account-membership-summary dl div,
+.membership-detail-list div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.account-membership-summary dl div:last-child,
+.membership-detail-list div:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.account-membership-summary dt,
+.membership-detail-list dt {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.account-membership-summary dd,
+.membership-detail-list dd {
+    margin: 0;
+    color: #0f172a;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 850;
+}
+
+.account-drawer-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+}
+
+.account-drawer-shell[hidden],
+.account-drawer[hidden] {
+    display: none !important;
+}
+
+.account-drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, .46);
+    backdrop-filter: blur(4px);
+}
+
+.account-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(480px, calc(100vw - 24px));
+    height: 100dvh;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    background: #fff;
+    border-left: 1px solid #e2e8f0;
+    box-shadow: -28px 0 70px rgba(15, 23, 42, .2);
+    transform: translateX(0);
+    animation: accountDrawerIn .18s ease-out;
+}
+
+.account-drawer-wide {
+    width: min(680px, calc(100vw - 24px));
+}
+
+@keyframes accountDrawerIn {
+    from {
+        transform: translateX(24px);
+        opacity: .7;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.account-drawer-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 24px 18px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.account-drawer-header h2 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 24px;
+    letter-spacing: -.4px;
+    font-weight: 900;
+}
+
+.account-drawer-header p {
+    margin: 8px 0 0;
+    color: #64748b;
+    line-height: 1.45;
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.account-drawer-close {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.account-drawer-form,
+.account-drawer-body {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px 24px 88px;
+}
+
+.account-drawer-form,
+.account-inline-form {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+}
+
+.account-inline-form {
+    overflow: visible;
+    padding: 0;
+}
+
+.account-drawer-form label,
+.account-inline-form label {
+    display: grid;
+    gap: 7px;
+}
+
+.account-drawer-form label span,
+.account-inline-form label span {
+    color: #334155;
+    font-size: 13px;
+    font-weight: 850;
+}
+
+.account-drawer-form input,
+.account-drawer-form select,
+.account-drawer-form textarea,
+.account-inline-form input,
+.account-inline-form select,
+.account-inline-form textarea {
+    width: 100%;
+    border: 1px solid #d7e0ec;
+    border-radius: 14px;
+    background: #f8fafc;
+    color: #0f172a;
+    padding: 13px 14px;
+    font: inherit;
+    font-weight: 650;
+    outline: none;
+}
+
+.account-drawer-form input:focus,
+.account-drawer-form select:focus,
+.account-drawer-form textarea:focus,
+.account-inline-form input:focus,
+.account-inline-form select:focus,
+.account-inline-form textarea:focus {
+    border-color: #2563eb;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, .11);
+}
+
+.account-drawer-form select:disabled,
+.account-inline-form select:disabled {
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.account-current-value {
+    display: grid;
+    gap: 4px;
+    padding: 13px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+.account-current-value span,
+.account-inline-note {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 650;
+}
+
+.account-current-value strong {
+    color: #0f172a;
+    font-weight: 850;
+    overflow-wrap: anywhere;
+}
+
+.account-inline-note {
+    margin: 0;
+}
+
+.account-form-section {
+    display: grid;
+    gap: 12px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.account-form-section:last-of-type {
+    border-bottom: 0;
+}
+
+.account-form-section h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 900;
+}
+
+.account-section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.account-section-heading p {
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 650;
+}
+
+.account-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.account-form-full {
+    grid-column: 1 / -1;
+}
+
+.account-drawer-footer {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 14px 24px;
+    background: rgba(255, 255, 255, .94);
+    border-top: 1px solid #e2e8f0;
+    backdrop-filter: blur(10px);
+}
+
+.account-inline-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 2px;
+}
+
+.account-workshop-drawer-body {
+    display: grid;
+    align-content: start;
+    gap: 18px;
+}
+
+.account-bank-section {
+    border-bottom: 0;
+}
+
+.account-bank-list {
+    display: grid;
+    gap: 8px;
+}
+
+.account-bank-card,
+.account-bank-add-form {
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #f8fbff;
+    padding: 10px;
+}
+
+.account-bank-add-form h4 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.account-bank-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.account-bank-summary-main {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+    flex: 1 1 auto;
+    border: 0;
+    background: transparent;
+    padding: 4px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.account-bank-summary-main strong {
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 900;
+}
+
+.account-bank-summary-main span {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.35;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+.account-bank-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.account-bank-badges span {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #3730a3;
+    padding: 5px 9px;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.account-bank-badges span:nth-child(2) {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.account-bank-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.account-bank-edit-form {
+    margin-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 12px;
+}
+
+.account-bank-compact-grid {
+    gap: 10px;
+}
+
+.account-bank-add-toggle {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.account-empty-bank-note {
+    border: 1px dashed #cbd5e1;
+    border-radius: 14px;
+    background: #f8fafc;
+    color: #64748b;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.account-check-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.account-check-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-check-card {
+    min-height: 44px;
+    display: flex !important;
+    align-items: center;
+    gap: 9px !important;
+    border: 1px solid #e2e8f0;
+    border-radius: 13px;
+    background: #fff;
+    padding: 10px 11px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.account-check-card input {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    padding: 0;
+}
+
+.account-bank-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.account-primary-button {
+    min-height: 44px;
+    border: 0;
+    border-radius: 13px;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 900;
+    padding: 11px 18px;
+    cursor: pointer;
+    transition: background .16s ease, opacity .16s ease;
+}
+
+.account-secondary-button {
+    min-height: 40px;
+    border: 1px solid #d7e0ec;
+    border-radius: 12px;
+    background: #fff;
+    color: #334155;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 850;
+    padding: 9px 13px;
+    cursor: pointer;
+}
+
+.account-secondary-button:hover,
+.account-secondary-button:focus-visible {
+    border-color: #bfdbfe;
+    color: #2563eb;
+    outline: none;
+}
+
+.account-primary-button:hover,
+.account-primary-button:focus-visible {
+    background: #1d4ed8;
+}
+
+.account-primary-button:disabled {
+    opacity: .68;
+    cursor: wait;
+}
+
+.account-danger-link {
+    border: 0;
+    background: transparent;
+    color: #b91c1c;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 850;
+    cursor: pointer;
+    padding: 8px 4px;
+}
+
+.account-form-error {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 800;
+}
+
+.account-unsaved-prompt {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid #fed7aa;
+    border-radius: 16px;
+    background: #fff7ed;
+}
+
+.account-unsaved-prompt[hidden] {
+    display: none !important;
+}
+
+.account-unsaved-prompt p {
+    margin: 0;
+    color: #9a3412;
+    font-size: 14px;
+    font-weight: 850;
+}
+
+.account-unsaved-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.account-unsaved-actions .account-primary-button,
+.account-unsaved-actions .account-secondary-button {
+    min-height: 40px;
+    padding: 9px 13px;
+    font-size: 13px;
+}
+
+.membership-state-card {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #f8fbff;
+}
+
+.membership-state-card .membership-status-pill {
+    margin: 0;
+    width: max-content;
+}
+
+.membership-state-card p,
+.membership-managed-note {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.45;
+    font-weight: 650;
+}
+
+.membership-managed-note {
+    margin-top: 18px;
+}
+
+body.account-drawer-open {
+    overflow: hidden;
+}
+
+@media (max-width: 980px) {
+    .account-dashboard {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .account-page {
+        padding: 20px 0 38px;
+    }
+
+    .account-profile-card,
+    .account-settings-card,
+    .account-membership-summary {
+        border-radius: 18px;
+    }
+
+    .account-drawer,
+    .account-drawer-wide {
+        width: 100vw;
+        height: 100dvh;
+    }
+
+    .account-drawer-header {
+        padding: calc(18px + env(safe-area-inset-top)) 18px 16px;
+    }
+
+    .account-drawer-form,
+    .account-drawer-body {
+        padding: 18px 18px calc(94px + env(safe-area-inset-bottom));
+    }
+
+    .account-drawer-footer {
+        padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+    }
+
+    .account-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .account-check-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .account-section-heading,
+    .account-bank-summary {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .account-bank-row-actions {
+        justify-content: flex-end;
+    }
+
+    .account-inline-footer,
+    .account-bank-actions {
+        justify-content: stretch;
+    }
+
+    .account-inline-footer button,
+    .account-bank-actions button {
+        flex: 1 1 150px;
+    }
+
+    .account-setting-row {
+        min-height: 70px;
+    }
+
+    .account-unsaved-actions {
+        justify-content: stretch;
+    }
+
+    .account-unsaved-actions button {
+        flex: 1 1 160px;
+    }
+}

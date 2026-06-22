@@ -291,6 +291,17 @@
                 font-weight: 800;
             }
 
+            .success {
+                margin-top: 18px;
+                padding: 13px 15px;
+                border-radius: 14px;
+                background: #dcfce7;
+                border: 1px solid #bbf7d0;
+                color: #166534;
+                font-size: 14px;
+                font-weight: 800;
+            }
+
             .footer-note {
                 margin-top: 26px;
                 text-align: center;
@@ -360,6 +371,13 @@
                 .invite-code-link:hover {
                     text-decoration: underline;
                 }
+
+            .login-secondary-links {
+                display: flex;
+                justify-content: space-between;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
 
             .landing-back-link {
                 display: inline-flex;
@@ -442,14 +460,27 @@
                         </button>
                     </form>
 
-                    <a href="/Auth/InviteCode" class="invite-code-link">
-                        Davet Kodum Var
-                    </a>
+                    <div class="login-secondary-links">
+                        <a href="/Auth/InviteCode" class="invite-code-link">
+                            Davet Kodum Var
+                        </a>
+
+                        <a href="/Auth/ForgotPassword" class="invite-code-link">
+                            Şifremi Unuttum
+                        </a>
+                    </div>
 
                     @if (ViewBag.Error != null)
                     {
                         <div class="error">
                             @ViewBag.Error
+                        </div>
+                    }
+
+                    @if (TempData["ToastSuccess"] != null)
+                    {
+                        <div class="success">
+                            @TempData["ToastSuccess"]
                         </div>
                     }
 

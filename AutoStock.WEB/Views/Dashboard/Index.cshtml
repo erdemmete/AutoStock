@@ -52,6 +52,7 @@
     @if (isOwner || isStaff)
     {
         <link rel="stylesheet" href="~/css/release-announcement.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
     }
 
     <style>
@@ -872,6 +873,10 @@
                     display: none !important;
                 }
 
+                .page-header .s360-account-menu {
+                    display: none !important;
+                }
+
                 .mobile-topbar .s360-notification-shell {
                     z-index: 25 !important;
                 }
@@ -936,6 +941,7 @@
 
         <div class="mobile-topbar-actions">
             @await Component.InvokeAsync("NotificationBell")
+            <partial name="_AccountMenu" />
 
             <button type="button" class="mobile-menu-button" id="mobileMenuButton">
                 Menü
@@ -994,6 +1000,11 @@
             </nav>
 
             <div class="sidebar-footer">
+                <a class="nav-link" href="/Account">
+                    <span class="nav-icon">⚙</span>
+                    <span>Hesabım</span>
+                </a>
+
                 <form class="logout-form" asp-controller="Auth" asp-action="Logout" method="post">
                     @Html.AntiForgeryToken()
 
@@ -1025,6 +1036,8 @@
                     <div class="dashboard-notification-slot">
                         @await Component.InvokeAsync("NotificationBell")
                     </div>
+
+                    <partial name="_AccountMenu" />
 
                     <div class="date-badge">
                         @Model.TodayDisplayDate

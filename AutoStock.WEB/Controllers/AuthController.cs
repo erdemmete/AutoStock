@@ -255,14 +255,11 @@ namespace AutoStock.WEB.Controllers
             if (result.IsFailure || result.Data == null)
             {
                 model.ErrorMessage = result.ErrorMessage
-                    ?? "Şifre sıfırlama bağlantısı geçersiz, kullanılmış veya süresi dolmuş.";
+                    ?? "Bu şifre yenileme bağlantısı geçersiz veya süresi dolmuş. Yeni bir şifre yenileme talebi oluşturabilirsiniz.";
+                model.Token = string.Empty;
 
                 return View(model);
             }
-
-            model.FullName = result.Data.FullName;
-            model.UserName = result.Data.UserName;
-            model.WorkshopName = result.Data.WorkshopName;
 
             return View(model);
         }
@@ -286,9 +283,48 @@ namespace AutoStock.WEB.Controllers
                 return View(model);
             }
 
-            StoreAuthSession(result.Data);
+            TempData["ToastSuccess"] = "Şifreniz başarıyla yenilendi. Yeni şifrenizle giriş yapabilirsiniz.";
 
-            return RedirectAfterLogin(result.Data);
+            return RedirectToAction(nameof(Login));
+        }
+
+        [HttpGet("/Auth/ForgotPassword")]
+        public IActionResult ForgotPassword()
+        {
+            return View(new ForgotPasswordViewModel());
+        }
+
+        [HttpPost("/Auth/ForgotPassword")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            const string genericMessage =
+                "Hesap bilgileri eşleşiyorsa şifre yenileme işlemi başlatıldı. Kayıtlı e-posta adresinizi kontrol edin. Yardıma ihtiyaç duyarsanız Sente360 desteğiyle iletişime geçebilirsiniz.";
+
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var resetUrlBase = Url.Action(
+                nameof(PasswordReset),
+                "Auth",
+                values: null,
+                protocol: Request.Scheme) ?? string.Empty;
+
+            var result = await _authApiService.RequestPasswordResetAsync(model, resetUrlBase);
+
+            if (result.IsFailure)
+            {
+                _logger.LogWarning(
+                    "Forgot password request API returned failure. Error: {Error}",
+                    result.ErrorMessage);
+            }
+
+            model.IsCompleted = true;
+            model.InfoMessage = genericMessage;
+
+            ModelState.Clear();
+
+            return View(model);
         }
 
         private void StoreAuthSession(AuthResponseViewModel authResponse)

@@ -1,0 +1,28 @@
+@{
+    var fullName = Context.Session.GetString("FullName") ?? "Kullanıcı";
+    var role = Context.Session.GetString("UserRole") ?? string.Empty;
+    var firstLetter = string.IsNullOrWhiteSpace(fullName)
+        ? "S"
+        : fullName.Trim()[0].ToString().ToUpperInvariant();
+}
+
+@if (string.Equals(role, "Owner", StringComparison.OrdinalIgnoreCase) ||
+     string.Equals(role, "Staff", StringComparison.OrdinalIgnoreCase))
+{
+    <details class="s360-account-menu">
+        <summary aria-label="Hesap menüsü">
+            <span class="s360-account-avatar">@firstLetter</span>
+            <span class="s360-account-name">@fullName</span>
+            <span class="s360-account-chevron">⌄</span>
+        </summary>
+
+        <div class="s360-account-dropdown">
+            <a asp-controller="Account" asp-action="Index">Hesabım</a>
+
+            <form asp-controller="Auth" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit">Çıkış Yap</button>
+            </form>
+        </div>
+    </details>
+}

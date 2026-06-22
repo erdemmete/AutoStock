@@ -1,4 +1,5 @@
 ﻿using AutoStock.Services.Constants;
+using AutoStock.Services.Dtos.Account;
 using AutoStock.Services.Dtos.Auth;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -98,6 +99,17 @@ public class AuthController : ControllerBase
             request,
             HttpContext.Connection.RemoteIpAddress?.ToString(),
             Request.Headers.UserAgent.ToString());
+
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("password-reset/request")]
+    public async Task<IActionResult> RequestPasswordReset(
+        ForgotPasswordRequestDto request,
+        [FromServices] IAccountService accountService)
+    {
+        var result = await accountService.StartForgotPasswordAsync(request);
 
         return StatusCode(result.StatusCode, result);
     }
