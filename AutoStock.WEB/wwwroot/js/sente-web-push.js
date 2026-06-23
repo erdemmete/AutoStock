@@ -1,18 +1,18 @@
 (function () {
     let publicKeyCache = null;
     let serverReadyCache = null;
+    let initialSyncCompleted = false;
+    let subscriptionSyncFailed = false;
 
     document.addEventListener("DOMContentLoaded", async function () {
         if (!isAuthenticatedPage()) return;
 
-        registerServiceWorker();
+        await registerServiceWorker();
         bindPushControls();
         bindLogoutForms();
         bindServiceWorkerMessages();
 
-        if (isPushSupported() && Notification.permission === "granted" && await isServerConfigured()) {
-            await ensureSubscription(false);
-        }
+        await syncExistingSubscriptionOnce();
 
         await updatePushStatusUI();
     });
@@ -131,6 +131,11 @@
             const publicKey = await getPublicKey();
             let subscription = await registration.pushManager.getSubscription();
 
+            if (subscription && isApplicationServerKeyMismatch(subscription, publicKey)) {
+                await subscription.unsubscribe().catch(() => {});
+                subscription = null;
+            }
+
             if (!subscription) {
                 subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
@@ -139,17 +144,46 @@
             }
 
             await upsertSubscription(subscription);
+            subscriptionSyncFailed = false;
 
             await updatePushStatusUI("Açık");
 
             if (showMessage) {
-                showStatusMessage("Anlık bildirimler açıldı.", "success");
+                showStatusMessage("Bildirimler etkinleştirildi.", "success");
             }
         } catch (error) {
-            console.info("Sente360 web push subscription failed.", error);
+            console.info("Sente360 web push subscription failed.");
             if (showMessage) {
                 await updatePushStatusUI(error.userMessage || "Açılamadı", "Bildirimler şu anda açılamadı. Daha sonra tekrar deneyebilirsiniz.");
             }
+        }
+    }
+
+    async function syncExistingSubscriptionOnce() {
+        if (initialSyncCompleted) return;
+        initialSyncCompleted = true;
+
+        if (!isPushSupported() ||
+            !window.isSecureContext ||
+            Notification.permission !== "granted" ||
+            !await isServerConfigured()) {
+            return;
+        }
+
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.getSubscription();
+
+            if (!subscription) return;
+
+            const publicKey = await getPublicKey();
+            if (isApplicationServerKeyMismatch(subscription, publicKey)) return;
+
+            await upsertSubscription(subscription);
+            subscriptionSyncFailed = false;
+        } catch {
+            subscriptionSyncFailed = true;
+            console.info("Sente360 web push subscription sync failed.");
         }
     }
 
@@ -199,6 +233,8 @@
             error.userMessage = message;
             throw error;
         }
+
+        subscriptionSyncFailed = false;
     }
 
     async function disableCurrentDevice() {
@@ -239,32 +275,71 @@
     async function updatePushStatusUI(explicitText, explicitHint) {
         const statusNodes = document.querySelectorAll("[data-web-push-status]");
         const hintNodes = document.querySelectorAll("[data-web-push-hint]");
-        if (!statusNodes.length && !hintNodes.length) return;
+        const openButtons = document.querySelectorAll("[data-web-push-open]");
+        const closeButtons = document.querySelectorAll("[data-web-push-close-device]");
+        if (!statusNodes.length && !hintNodes.length && !openButtons.length && !closeButtons.length) return;
 
         let text = explicitText;
         let hint = explicitHint;
+        let actionText = "Bildirimleri Aç";
+        let state = "default";
 
         if (!text) {
             if (isIosBrowserTab()) {
                 text = getIosInstallStatus();
                 hint = getIosInstallHint();
+                state = "unsupported";
             } else if (!isPushSupported()) {
                 text = "Bu cihaz desteklemiyor";
                 hint = getUnsupportedMessage();
+                state = "unsupported";
             } else if (Notification.permission === "denied") {
                 text = "Tarayıcı tarafından engellendi";
-                hint = "Bildirim izni tarayıcı ayarlarından tekrar açılabilir.";
+                hint = "Bildirimler tarayıcı ayarlarından kapatılmış.";
+                state = "denied";
             } else if (Notification.permission !== "granted") {
-                text = "Kapalı";
-                hint = "Anlık destek ve fatura bildirimleri için açabilirsiniz.";
+                text = "Bildirimleri Aç";
+                hint = "Destek ve fatura işlemlerindeki gelişmelerden haberdar olun.";
+                actionText = "Bildirimleri Aç";
+                state = "default";
             } else {
                 const registration = await navigator.serviceWorker.ready;
                 const subscription = await registration.pushManager.getSubscription();
-                text = subscription ? "Açık" : "Kapalı";
-                hint = subscription
-                    ? "Bu cihazda anlık bildirimler açık."
-                    : "Anlık destek ve fatura bildirimleri için açabilirsiniz.";
+
+                if (!subscription) {
+                    text = "Bildirimleri Yeniden Etkinleştir";
+                    hint = "Cihaz izni açık, ancak bildirim bağlantısının yenilenmesi gerekiyor.";
+                    actionText = "Yeniden Etkinleştir";
+                    state = "resubscribe";
+                } else {
+                    const publicKey = await getPublicKey().catch(() => null);
+                    const keyMismatch = publicKey && isApplicationServerKeyMismatch(subscription, publicKey);
+
+                    if (!publicKey) {
+                        text = "Sunucuda yapılandırılmamış";
+                        hint = "Bildirim anahtarları henüz tanımlanmamış.";
+                        state = "unsupported";
+                    } else if (keyMismatch || subscriptionSyncFailed) {
+                        text = "Bildirimleri Yeniden Etkinleştir";
+                        hint = "Cihaz izni açık, ancak bildirim bağlantısının yenilenmesi gerekiyor.";
+                        actionText = "Yeniden Etkinleştir";
+                        state = "resubscribe";
+                    } else {
+                        text = "Açık";
+                        hint = "Bu cihazda anlık bildirimler açık.";
+                        state = "active";
+                    }
+                }
             }
+        } else if (text === "Açık") {
+            state = "active";
+        } else if (text.includes("Yeniden")) {
+            actionText = "Yeniden Etkinleştir";
+            state = "resubscribe";
+        } else if (text.includes("engellendi")) {
+            state = "denied";
+        } else if (text.includes("desteklemiyor") || text.includes("Ana Ekrana")) {
+            state = "unsupported";
         }
 
         statusNodes.forEach(node => {
@@ -273,7 +348,16 @@
         });
 
         hintNodes.forEach(node => {
-            node.textContent = hint || "Anlık destek ve fatura bildirimleri için açabilirsiniz.";
+            node.textContent = hint || "Destek ve fatura işlemlerindeki gelişmelerden haberdar olun.";
+        });
+
+        openButtons.forEach(button => {
+            button.textContent = actionText;
+            button.hidden = state === "active" || state === "denied" || state === "unsupported";
+        });
+
+        closeButtons.forEach(button => {
+            button.hidden = state !== "active";
         });
     }
 
@@ -324,6 +408,22 @@
         }
 
         return outputArray;
+    }
+
+    function isApplicationServerKeyMismatch(subscription, publicKey) {
+        const currentKey = subscription?.options?.applicationServerKey;
+        if (!currentKey || !publicKey) return false;
+
+        const expected = urlBase64ToUint8Array(publicKey);
+        const actual = new Uint8Array(currentKey);
+
+        if (actual.length !== expected.length) return true;
+
+        for (let i = 0; i < actual.length; i++) {
+            if (actual[i] !== expected[i]) return true;
+        }
+
+        return false;
     }
 
     function showStatusMessage(message, type) {

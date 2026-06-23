@@ -100,6 +100,10 @@ namespace AutoStock.Services.Services
             var existing = await _context.WebPushSubscriptions
                 .FirstOrDefaultAsync(x => x.Endpoint == endpoint);
 
+            var isNewSubscription = existing is null;
+            var previousUserId = existing?.UserId;
+            var previousWorkshopId = existing?.WorkshopId;
+
             if (existing is null)
             {
                 existing = new WebPushSubscription
@@ -121,6 +125,13 @@ namespace AutoStock.Services.Services
             existing.LastFailureAt = null;
 
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Web Push subscription {Action}. UserId: {UserId}, WorkshopId: {WorkshopId}, Reassigned: {Reassigned}",
+                isNewSubscription ? "created" : "updated",
+                userId,
+                workshopId,
+                !isNewSubscription && (previousUserId != userId || previousWorkshopId != workshopId));
 
             return ServiceResult<bool>.Success(true);
         }
