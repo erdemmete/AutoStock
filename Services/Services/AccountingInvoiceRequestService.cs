@@ -779,11 +779,35 @@ namespace AutoStock.Services.Services
                 storedFileName);
 
             var fullPath = BuildOfficialInvoiceFullPath(relativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-
-            await using (var output = File.Create(fullPath))
+            try
             {
+                Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+
+                await using var output = File.Create(fullPath);
                 await request.FileContent.CopyToAsync(output);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Official invoice upload path is not writable. InvoiceId: {InvoiceId}, WorkshopId: {WorkshopId}, StorageRoot: {StorageRoot}",
+                    accountingRequest.InvoiceId,
+                    accountingRequest.WorkshopId,
+                    GetUploadRootPath());
+
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail(
+                    "Fatura PDF dosyası sunucuya kaydedilemedi. Lütfen sistem yöneticisiyle iletişime geçin.");
+            }
+            catch (IOException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Official invoice file write failed. InvoiceId: {InvoiceId}, WorkshopId: {WorkshopId}",
+                    accountingRequest.InvoiceId,
+                    accountingRequest.WorkshopId);
+
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail(
+                    "Fatura PDF dosyası şu anda kaydedilemedi. Lütfen tekrar deneyin.");
             }
 
             var document = new OfficialInvoiceDocument
@@ -901,11 +925,35 @@ namespace AutoStock.Services.Services
                 storedFileName);
 
             var fullPath = BuildOfficialInvoiceFullPath(relativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
-
-            await using (var output = File.Create(fullPath))
+            try
             {
+                Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+
+                await using var output = File.Create(fullPath);
                 await request.FileContent.CopyToAsync(output);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Batch official invoice upload path is not writable. BatchToken: {BatchToken}, AccountingRequestId: {AccountingRequestId}, StorageRoot: {StorageRoot}",
+                    batchToken,
+                    accountingRequestId,
+                    GetUploadRootPath());
+
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail(
+                    "Fatura PDF dosyası sunucuya kaydedilemedi. Lütfen sistem yöneticisiyle iletişime geçin.");
+            }
+            catch (IOException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Batch official invoice file write failed. BatchToken: {BatchToken}, AccountingRequestId: {AccountingRequestId}",
+                    batchToken,
+                    accountingRequestId);
+
+                return ServiceResult<OfficialInvoiceDocumentDto>.Fail(
+                    "Fatura PDF dosyası şu anda kaydedilemedi. Lütfen tekrar deneyin.");
             }
 
             var document = new OfficialInvoiceDocument

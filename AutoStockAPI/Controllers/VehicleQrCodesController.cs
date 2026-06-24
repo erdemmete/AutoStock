@@ -66,7 +66,35 @@ namespace AutoStock.API.Controllers
             var result = await CreateOrReplaceAssignedQrAsync(
                 workshopIdResult.Data,
                 userIdResult.Data,
-                vehicleId);
+                vehicleId,
+                replaceExisting: true);
+
+            return ToActionResult(result);
+        }
+
+        [HttpPost("vehicles/{vehicleId:int}/ensure")]
+        public async Task<IActionResult> EnsureForVehicle(int vehicleId)
+        {
+            var workshopIdResult = GetCurrentWorkshopId();
+            if (workshopIdResult.IsFailure)
+                return UnauthorizedResult(workshopIdResult);
+
+            var userIdResult = GetCurrentUserId();
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
+            var serviceRecordLockResult = await ValidateOptionalServiceRecordLockAsync(
+                workshopIdResult.Data,
+                userIdResult.Data);
+
+            if (serviceRecordLockResult is not null)
+                return serviceRecordLockResult;
+
+            var result = await CreateOrReplaceAssignedQrAsync(
+                workshopIdResult.Data,
+                userIdResult.Data,
+                vehicleId,
+                replaceExisting: false);
 
             return ToActionResult(result);
         }
@@ -273,7 +301,8 @@ namespace AutoStock.API.Controllers
         private async Task<ServiceResult<VehicleQrCodeActionResultDto>> CreateOrReplaceAssignedQrAsync(
             int workshopId,
             int userId,
-            int vehicleId)
+            int vehicleId,
+            bool replaceExisting)
         {
             await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
 
@@ -296,6 +325,39 @@ namespace AutoStock.API.Controllers
                         HttpStatusCode.BadRequest);
                 }
 
+                var vehicle = await GetActiveWorkshopVehicleAsync(vehicleId, workshopId);
+                if (vehicle is null)
+                {
+                    return ServiceResult<VehicleQrCodeActionResultDto>.Fail(
+                        "Araç bulunamadı veya aktif değil.",
+                        HttpStatusCode.NotFound);
+                }
+
+                if (!replaceExisting)
+                {
+                    var existingQrCode = await _context.VehicleQrCodes
+                        .AsNoTracking()
+                        .Where(x =>
+                            x.WorkshopId == workshopId &&
+                            x.VehicleId == vehicle.Id &&
+                            x.Status == VehicleQrCodeStatus.Assigned)
+                        .OrderByDescending(x => x.AssignedAt)
+                        .FirstOrDefaultAsync();
+
+                    if (existingQrCode is not null)
+                    {
+                        await transaction.CommitAsync();
+
+                        return ServiceResult<VehicleQrCodeActionResultDto>.Success(new VehicleQrCodeActionResultDto
+                        {
+                            Id = existingQrCode.Id,
+                            Code = existingQrCode.Code,
+                            VehicleId = vehicle.Id,
+                            ReplacedExistingQr = false
+                        });
+                    }
+                }
+
                 var generatedQrCount = await _context.VehicleQrCodes
                     .CountAsync(x => x.WorkshopId == workshopId);
 
@@ -306,16 +368,10 @@ namespace AutoStock.API.Controllers
                         HttpStatusCode.BadRequest);
                 }
 
-                var vehicle = await GetActiveWorkshopVehicleAsync(vehicleId, workshopId);
-                if (vehicle is null)
-                {
-                    return ServiceResult<VehicleQrCodeActionResultDto>.Fail(
-                        "Araç bulunamadı veya aktif değil.",
-                        HttpStatusCode.NotFound);
-                }
-
                 var now = _dateTimeProvider.Now;
-                var retiredQrCodes = await RetireActiveVehicleQrCodesAsync(workshopId, vehicle.Id, userId, now);
+                var retiredQrCodes = replaceExisting
+                    ? await RetireActiveVehicleQrCodesAsync(workshopId, vehicle.Id, userId, now)
+                    : new List<VehicleQrCode>();
                 var code = await GenerateUniqueQrCodeAsync();
 
                 var qrCode = new VehicleQrCode

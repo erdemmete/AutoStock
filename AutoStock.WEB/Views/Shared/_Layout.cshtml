@@ -2,6 +2,10 @@
 @{
     var layoutUserRole = Context.Session.GetString("UserRole");
     var layoutUserId = Context.Session.GetInt32("UserId");
+    var hasAuthenticatedUser = layoutUserId.HasValue &&
+        (string.Equals(layoutUserRole, "Owner", StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(layoutUserRole, "Staff", StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(layoutUserRole, "Admin", StringComparison.OrdinalIgnoreCase));
     var shouldShowReleaseAnnouncement =
         layoutUserId.HasValue &&
         (string.Equals(layoutUserRole, "Owner", StringComparison.OrdinalIgnoreCase) ||
@@ -26,6 +30,11 @@
     <link rel="stylesheet" href="~/css/sente-confirm.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/sente-contact-actions.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
+    @if (hasAuthenticatedUser)
+    {
+        <link rel="stylesheet" href="~/css/sente-pwa-install.css" asp-append-version="true" />
+        <script src="~/js/sente-pwa-install.js" asp-append-version="true"></script>
+    }
     @if (shouldShowReleaseAnnouncement)
     {
         <link rel="stylesheet" href="~/css/release-announcement.css" asp-append-version="true" />
@@ -40,18 +49,14 @@
 
     @{
         var isAuthPage = Context.Request.Path.StartsWithSegments("/Auth");
-        var isAccountPage = Context.Request.Path.StartsWithSegments("/Account");
     }
 
     @if (!isAuthPage)
     {
         <partial name="_AdminQuickActions" />
-        @if (!isAccountPage)
-        {
-            <div class="layout-account-menu">
-                <partial name="_AccountMenu" />
-            </div>
-        }
+        <div class="layout-account-menu">
+            <partial name="_AccountMenu" />
+        </div>
     }
 
     <div class="container">
@@ -77,7 +82,10 @@
     <script src="~/js/sente-money.js" asp-append-version="true"></script>
     <script src="~/js/sente-confirm.js" asp-append-version="true"></script>
     <script src="~/js/sente-contact-actions.js" asp-append-version="true"></script>
-    <script src="~/js/sente-web-push.js" asp-append-version="true"></script>
+    @if (hasAuthenticatedUser)
+    {
+        <script src="~/js/sente-web-push.js" asp-append-version="true"></script>
+    }
     @if (shouldShowReleaseAnnouncement)
     {
         <script src="~/js/release-announcement.js" asp-append-version="true"></script>

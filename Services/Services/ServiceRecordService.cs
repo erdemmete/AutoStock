@@ -15,6 +15,8 @@ public class ServiceRecordService : IServiceRecordService
 {
     private const string CustomerNameCannotEqualPlateMessage =
         "Müşteri adı veya firma unvanı plaka ile aynı olamaz. Lütfen doğru müşteri bilgisini girin.";
+    private const string IssuedInvoiceMutationMessage =
+        "Bu servis kaydına ait onaylanmış bir servis hesap özeti bulunuyor. İşlem değişikliği için önce hesap özetini iptal edin.";
 
     private readonly AppDbContext _context;
     private readonly IStockItemService _stockItemService;
@@ -546,6 +548,10 @@ public class ServiceRecordService : IServiceRecordService
         if (serviceRecord is null)
             return ServiceResult<ServiceOperationDto>.Fail("Servis kaydı bulunamadı.");
 
+        var invoiceGuard = await EnsureServiceOperationsCanChangeAsync(serviceRecord.Id, workshopId);
+        if (!invoiceGuard.IsSuccess)
+            return ServiceResult<ServiceOperationDto>.Fail(invoiceGuard.ErrorMessage);
+
         if (request.ServiceRequestItemId.HasValue)
         {
             var requestItemExists = await _context.ServiceRequestItems
@@ -675,6 +681,10 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
 
         if (operation is null)
             return ServiceResult<ServiceOperationDto>.Fail("İşlem bulunamadı.");
+
+        var invoiceGuard = await EnsureServiceOperationsCanChangeAsync(operation.ServiceRecordId, workshopId);
+        if (!invoiceGuard.IsSuccess)
+            return ServiceResult<ServiceOperationDto>.Fail(invoiceGuard.ErrorMessage);
 
         var nextRequestItemId = request.ServiceRequestItemId ?? operation.ServiceRequestItemId;
 
@@ -885,6 +895,10 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
         if (operation is null)
             return ServiceResult<DeleteServiceOperationResponse>.Fail("İşlem bulunamadı.");
 
+        var invoiceGuard = await EnsureServiceOperationsCanChangeAsync(operation.ServiceRecordId, workshopId);
+        if (!invoiceGuard.IsSuccess)
+            return ServiceResult<DeleteServiceOperationResponse>.Fail(invoiceGuard.ErrorMessage);
+
         var serviceRecordId = operation.ServiceRecordId;
         var serviceRequestItemId = operation.ServiceRequestItemId;
 
@@ -1006,6 +1020,9 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
             return ServiceResult<DeleteServiceRequestItemResponse>.Fail("Talep bulunamadı.");
 
         var serviceRecordId = requestItem.ServiceRecordId;
+        var invoiceGuard = await EnsureServiceOperationsCanChangeAsync(serviceRecordId, workshopId);
+        if (!invoiceGuard.IsSuccess)
+            return ServiceResult<DeleteServiceRequestItemResponse>.Fail(invoiceGuard.ErrorMessage);
 
         var relatedOperations = await _context.ServiceOperations
             .Where(x =>
@@ -1127,6 +1144,9 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
             return ServiceResult<RestoreServiceRequestItemResponse>.Fail("Geri alınacak talep bulunamadı.");
 
         var serviceRecordId = requestItem.ServiceRecordId;
+        var invoiceGuard = await EnsureServiceOperationsCanChangeAsync(serviceRecordId, workshopId);
+        if (!invoiceGuard.IsSuccess)
+            return ServiceResult<RestoreServiceRequestItemResponse>.Fail(invoiceGuard.ErrorMessage);
 
         var relatedOperations = await _context.ServiceOperations
             .Where(x =>
@@ -1489,5 +1509,21 @@ if (operation.StockItemId.HasValue && operation.Type == OperationType.Part)
                 syncResult.ErrorMessage ?? "Taslak fatura güncellenirken hata oluştu.");
 
         return ServiceResult<bool>.Success(true);
+    }
+
+    private async Task<ServiceResult<bool>> EnsureServiceOperationsCanChangeAsync(
+        int serviceRecordId,
+        int workshopId)
+    {
+        var hasIssuedInvoice = await _context.Invoices
+            .AsNoTracking()
+            .AnyAsync(x =>
+                x.WorkshopId == workshopId &&
+                x.ServiceRecordId == serviceRecordId &&
+                x.Status == InvoiceStatus.Issued);
+
+        return hasIssuedInvoice
+            ? ServiceResult<bool>.Fail(IssuedInvoiceMutationMessage)
+            : ServiceResult<bool>.Success(true);
     }
 }

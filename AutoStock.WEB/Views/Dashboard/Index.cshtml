@@ -51,8 +51,12 @@
     <title>Sente360 | @Model.WorkshopName</title>
     @if (isOwner || isStaff)
     {
+        <link rel="manifest" href="~/manifest.webmanifest" />
+        <meta name="theme-color" content="#2563eb" />
         <link rel="stylesheet" href="~/css/release-announcement.css" asp-append-version="true" />
         <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/sente-pwa-install.css" asp-append-version="true" />
+        <script src="~/js/sente-pwa-install.js" asp-append-version="true"></script>
     }
 
     <style>
@@ -1334,6 +1338,7 @@
     @if (isOwner || isStaff)
     {
         <script src="~/js/release-announcement.js" asp-append-version="true"></script>
+        <script src="~/js/sente-web-push.js" asp-append-version="true"></script>
     }
     <script>
             const mobileMenuButton = document.getElementById("mobileMenuButton");

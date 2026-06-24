@@ -96,17 +96,55 @@
     cursor: pointer;
 }
 
-.s360-account-dropdown a:hover {
+.s360-account-dropdown a:hover,
+.s360-account-dropdown .s360-account-install:hover {
     background: #eff6ff;
     color: #1d4ed8;
 }
 
-.s360-account-dropdown button {
+.s360-account-dropdown .s360-account-logout {
     color: #b91c1c;
 }
 
-.s360-account-dropdown button:hover {
+.s360-account-dropdown .s360-account-logout:hover {
     background: #fee2e2;
+}
+
+.s360-account-dropdown .s360-account-install {
+    gap: 10px;
+    text-align: left;
+    color: #334155;
+}
+
+.s360-account-install-icon {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.s360-account-install span:last-child {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+
+.s360-account-install strong {
+    font-size: 13px;
+    line-height: 1.15;
+}
+
+.s360-account-install small {
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.25;
+    font-weight: 750;
 }
 
 @media (max-width: 640px) {

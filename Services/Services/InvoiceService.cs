@@ -357,6 +357,7 @@ namespace AutoStock.Services.Services
                 WorkshopId = invoice.WorkshopId,
                 CustomerId = invoice.CustomerId,
                 ServiceRecordId = invoice.ServiceRecordId,
+                VehicleId = invoice.ServiceRecord?.VehicleId,
                 PublicServiceQrCode = publicServiceQrCode,
 
                 Type = (int)invoice.Type,
@@ -1084,6 +1085,19 @@ namespace AutoStock.Services.Services
 
             if (activeInvoice is not null)
             {
+                if (activeInvoice.Status == InvoiceStatus.Draft)
+                {
+                    var syncResult = await SyncDraftByServiceRecordAsync(
+                        serviceRecordId,
+                        workshopId);
+
+                    if (!syncResult.IsSuccess)
+                    {
+                        return ServiceResult<InvoiceNavigationDto>.Fail(
+                            syncResult.ErrorMessage ?? "Taslak fatura servis işlemleriyle güncellenemedi.");
+                    }
+                }
+
                 return ServiceResult<InvoiceNavigationDto>.Success(new InvoiceNavigationDto
                 {
                     InvoiceId = activeInvoice.Id,

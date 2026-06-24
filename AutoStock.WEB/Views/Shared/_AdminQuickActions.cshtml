@@ -28,6 +28,13 @@
                 @await Component.InvokeAsync("NotificationBell")
             </div>
 
+            <button type="button"
+                    class="admin-quick-link admin-quick-install"
+                    data-pwa-install
+                    hidden>
+                Sente360’ı Yükle
+            </button>
+
             <form asp-controller="Auth"
                   asp-action="Logout"
                   method="post"

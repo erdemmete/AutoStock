@@ -130,19 +130,6 @@
             element.disabled = disabled;
         });
 
-        root.querySelectorAll("a[href]").forEach(function (element) {
-            if (element.matches("[data-readonly-link]")) return;
-            if (element.closest("[data-edit-lock-banner]")) return;
-            if (disabled) {
-                element.dataset.originalHref = element.getAttribute("href") || "";
-                element.removeAttribute("href");
-                element.setAttribute("aria-disabled", "true");
-            } else if (element.dataset.originalHref) {
-                element.setAttribute("href", element.dataset.originalHref);
-                element.removeAttribute("aria-disabled");
-                delete element.dataset.originalHref;
-            }
-        });
     }
 
     function showBanner(message) {

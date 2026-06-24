@@ -342,6 +342,39 @@ public class ServiceRecordsController : BaseController
         });
     }
 
+    [HttpPost("ServiceRecords/EnsureVehicleQrCode")]
+    public async Task<IActionResult> EnsureVehicleQrCode(int vehicleId)
+    {
+        if (vehicleId <= 0)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "Araç bilgisi geçersiz."
+            });
+        }
+
+        var result = await _serviceRecordApiService.EnsureVehicleQrCodeAsync(vehicleId);
+
+        if (result.IsFailure || result.Data is null)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = result.ErrorMessages.FirstOrDefault()
+                    ?? result.ErrorMessage
+                    ?? "Güvenli belge bağlantısı hazırlanamadı."
+            });
+        }
+
+        return Json(new
+        {
+            success = true,
+            code = result.Data.Code,
+            vehicleId = result.Data.VehicleId
+        });
+    }
+
     [HttpGet("ServiceRecords/VehicleQr/{vehicleId:int}/Download")]
     public async Task<IActionResult> DownloadVehicleQr(int vehicleId)
     {

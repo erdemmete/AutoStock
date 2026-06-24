@@ -376,8 +376,11 @@
 
                     @if (Model.CanUpload)
                     {
-                        <form class="upload-form" method="post" enctype="multipart/form-data" action="@Model.UploadApiUrl">
-                            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+                        <form class="upload-form"
+                              method="post"
+                              enctype="multipart/form-data"
+                              action="@Url.Action("PublicUpload", "AccountingInvoiceRequests", new { token = Model.Token })">
+                            @Html.AntiForgeryToken()
 
                             <div class="field">
                                 <label>Fatura No</label>

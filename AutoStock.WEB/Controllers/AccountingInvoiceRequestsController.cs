@@ -164,12 +164,34 @@ namespace AutoStock.WEB.Controllers
             }
 
             var model = ToPublicViewModel(result.Data);
-            model.UploadApiUrl = $"{ResolveApiBaseUrl().TrimEnd('/')}/api/accounting-invoice-requests/public/{Uri.EscapeDataString(token)}/upload";
-            model.ReturnUrl = $"{BuildPublicBaseUrl()}{Request.Path}";
             model.Uploaded = uploaded;
             model.UploadError = uploadError;
 
             return View(model);
+        }
+
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        [HttpPost("Accounting/InvoiceRequest/{token}/Upload")]
+        [RequestSizeLimit(12 * 1024 * 1024)]
+        public async Task<IActionResult> PublicUpload(
+            string token,
+            [FromForm] PublicInvoiceUploadViewModel model)
+        {
+            var result = await _accountingInvoiceRequestApiService.UploadSingleAsync(token, model);
+
+            if (result.IsFailure)
+            {
+                return RedirectToAction(
+                    nameof(Public),
+                    new
+                    {
+                        token,
+                        uploadError = result.ErrorMessage ?? "Fatura PDF'i yüklenemedi."
+                    });
+            }
+
+            return RedirectToAction(nameof(Public), new { token, uploaded = true });
         }
 
         [AllowAnonymous]

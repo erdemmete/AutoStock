@@ -44,6 +44,18 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.Host.Host.Equals("www.sente360.com", StringComparison.OrdinalIgnoreCase))
+    {
+        var canonicalUrl = $"https://sente360.com{context.Request.PathBase}{context.Request.Path}{context.Request.QueryString}";
+        context.Response.Redirect(canonicalUrl, permanent: true, preserveMethod: true);
+        return;
+    }
+
+    await next();
+});
+
 app.UseHttpsRedirection();
 
 app.UseRouting();

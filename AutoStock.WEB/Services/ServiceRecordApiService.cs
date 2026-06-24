@@ -109,6 +109,14 @@ namespace AutoStock.WEB.Services
                 "Araç QR'ı oluşturulurken hata oluştu.");
         }
 
+        public async Task<ApiResponse<VehicleQrCodeActionResultDto>> EnsureVehicleQrCodeAsync(int vehicleId)
+        {
+            return await PostJsonAsync<object, VehicleQrCodeActionResultDto>(
+                $"/api/VehicleQrCodes/vehicles/{vehicleId}/ensure",
+                new { },
+                "Güvenli belge bağlantısı hazırlanırken hata oluştu.");
+        }
+
         public async Task<(bool Success, byte[] Content, string ContentType, string? ErrorMessage)> DownloadVehicleQrPngAsync(
             int vehicleId,
             string publicBaseUrl)

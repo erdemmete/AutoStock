@@ -84,9 +84,11 @@
                         data-workshop-name="@workshopName"
                         data-document-number="@Model.InvoiceNumber"
                         data-plate="@Model.Plate"
+                        data-vehicle-id="@Model.VehicleId"
+                        data-service-record-id="@Model.ServiceRecordId"
                         data-secure-url="@secureDocumentUrl">
                     <span>✉</span>
-                    E-posta Taslağı Aç
+                    Hesap Özeti Taslağı Aç
                 </button>
             }
 
@@ -208,14 +210,78 @@
 
         document.addEventListener("click", async function (event) {
             const button = event.target.closest("[data-invoice-email-draft]");
-            if (!button) return;
+            const officialInvoiceButton = event.target.closest("[data-official-invoice-email-draft]");
+            if (!button && !officialInvoiceButton) return;
+
+            if (officialInvoiceButton) {
+                const accountSummaryButton = document.querySelector("[data-invoice-email-draft]");
+                const customerName = accountSummaryButton?.dataset.customerName || "Müşteri";
+                const recipientEmail = accountSummaryButton?.dataset.recipientEmail || "";
+                const workshopName = accountSummaryButton?.dataset.workshopName || "Sente360 Servis";
+                const plate = accountSummaryButton?.dataset.plate || "-";
+                const officialInvoiceNumber = officialInvoiceButton.dataset.officialInvoiceNumber || "";
+                const publicUrl = officialInvoiceButton.dataset.publicUrl || "";
+
+                if (!recipientEmail) {
+                    const shouldEdit = window.SenteConfirm
+                        ? await SenteConfirm.show({
+                            title: "E-posta adresi eksik",
+                            message: "Alıcı e-posta adresi eklenmeden fatura e-posta taslağı açılamaz.",
+                            confirmText: "Bilgileri Düzenle",
+                            cancelText: "Vazgeç"
+                        })
+                        : window.confirm("Alıcı e-posta adresi eksik. Bilgileri düzenlemek ister misiniz?");
+
+                    if (shouldEdit && typeof window.openCustomerModal === "function") {
+                        window.openCustomerModal();
+                    }
+
+                    return;
+                }
+
+                if (!publicUrl) {
+                    showInvoiceDraftMessage("Fatura paylaşım bağlantısı hazırlanamadı.", true);
+                    return;
+                }
+
+                const confirmed = window.SenteConfirm
+                    ? await SenteConfirm.show({
+                        title: "Fatura e-posta taslağı açılsın mı?",
+                        message: `${customerName} müşterisinin ${recipientEmail} adresine gönderilmek üzere fatura e-posta taslağı açılsın mı?`,
+                        confirmText: "E-posta Taslağını Aç",
+                        cancelText: "Vazgeç"
+                    })
+                    : window.confirm(`${customerName} müşterisinin ${recipientEmail} adresine fatura e-posta taslağı açılsın mı?`);
+
+                if (!confirmed) return;
+
+                const subject = `${workshopName} - ${officialInvoiceNumber || "Fatura"}`;
+                const body = [
+                    `Merhaba ${customerName},`,
+                    "",
+                    `${plate || "-"} plakalı aracınıza ait resmî fatura PDF'ine aşağıdaki bağlantıdan ulaşabilirsiniz:`,
+                    "",
+                    publicUrl,
+                    "",
+                    "İyi günler dileriz.",
+                    workshopName
+                ].join("\n");
+
+                window.location.href = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                showInvoiceDraftMessage(
+                    "Fatura e-posta taslağı açıldı. Göndermeden önce bilgileri kontrol edin.",
+                    false);
+                return;
+            }
 
             const customerName = button.dataset.customerName || "Müşteri";
             const recipientEmail = button.dataset.recipientEmail || "";
             const workshopName = button.dataset.workshopName || "Sente360 Servis";
             const documentNumber = button.dataset.documentNumber || "";
             const plate = button.dataset.plate || "-";
-            const secureUrl = button.dataset.secureUrl || "";
+            let secureUrl = button.dataset.secureUrl || "";
+            const vehicleId = Number(button.dataset.vehicleId || 0);
+            const serviceRecordId = Number(button.dataset.serviceRecordId || 0);
 
             if (!recipientEmail) {
                 const confirmed = window.SenteConfirm
@@ -234,11 +300,6 @@
                 return;
             }
 
-            if (!secureUrl) {
-                showInvoiceDraftMessage("Güvenli belge bağlantısı hazırlanamadı. PDF çıktısını indirip e-postaya manuel ekleyebilirsiniz.", true);
-                return;
-            }
-
             const confirmed = window.SenteConfirm
                 ? await SenteConfirm.show({
                     title: "E-posta taslağı açılsın mı?",
@@ -249,6 +310,47 @@
                 : window.confirm(`${customerName} müşterisinin ${recipientEmail} adresine e-posta taslağı açılsın mı?`);
 
             if (!confirmed) return;
+
+            if (!secureUrl) {
+                if (!vehicleId || !serviceRecordId) {
+                    showInvoiceDraftMessage(
+                        "Güvenli belge bağlantısı hazırlanamadı. Servis kaydı veya araç bilgisi eksik.",
+                        true);
+                    return;
+                }
+
+                const relatedButtons = document.querySelectorAll("[data-invoice-email-draft]");
+                relatedButtons.forEach(function (item) {
+                    item.disabled = true;
+                });
+
+                try {
+                    const response = await fetch(`/ServiceRecords/EnsureVehicleQrCode?vehicleId=${encodeURIComponent(vehicleId)}`, {
+                        method: "POST"
+                    });
+                    const result = await response.json().catch(function () {
+                        return null;
+                    });
+
+                    if (!response.ok || !result?.success || !result.code) {
+                        throw new Error(result?.message || "Güvenli belge bağlantısı hazırlanamadı.");
+                    }
+
+                    secureUrl = `${window.location.origin}/public/service-pdf/${encodeURIComponent(result.code)}/${serviceRecordId}`;
+                    relatedButtons.forEach(function (item) {
+                        item.dataset.secureUrl = secureUrl;
+                    });
+                } catch (error) {
+                    showInvoiceDraftMessage(
+                        error?.message || "Güvenli belge bağlantısı hazırlanamadı.",
+                        true);
+                    return;
+                } finally {
+                    relatedButtons.forEach(function (item) {
+                        item.disabled = false;
+                    });
+                }
+            }
 
             const subject = `${workshopName} - ${documentNumber} numaralı servis hesap özeti`;
             const body = [
@@ -265,7 +367,9 @@
             ].join("\n");
 
             window.location.href = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            showInvoiceDraftMessage("E-posta taslağı açıldı. Göndermeden önce bilgileri kontrol edin.", false);
+            showInvoiceDraftMessage(
+                "E-posta taslağı açıldı. Göndermeden önce bilgileri kontrol edin.",
+                false);
         });
 
         function showInvoiceDraftMessage(message, isError) {
@@ -772,6 +876,31 @@
         white-space: nowrap;
     }
 
+    .invoice-action-document-actions {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .invoice-action-share {
+        min-height: 36px;
+        padding: 0 13px;
+        border-radius: 12px;
+        border: 1px solid #c7d2fe;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        color: #3730a3;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 950;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
     .invoice-current-modal,
     .inv-accounting-modal {
         width: min(620px, 100%);
@@ -1150,6 +1279,13 @@
             statusBoxes.forEach(box => box.innerHTML = html);
         };
 
+        const escapeHtml = value => String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
+
         const loadStatus = async () => {
             if (!invoiceId) return;
 
@@ -1176,8 +1312,22 @@
             if (doc) {
                 const number = doc.officialInvoiceNumber || doc.OfficialInvoiceNumber || "-";
                 const docId = doc.id || doc.Id;
+                const shareToken = doc.shareToken || doc.ShareToken || "";
+                const publicUrl = shareToken
+                    ? `${window.location.origin}/Accounting/InvoiceFile/${encodeURIComponent(shareToken)}`
+                    : "";
                 subText = `Fatura yüklendi: ${number}`;
-                action = `<a class="invoice-action-download" href="/AccountingInvoiceRequests/OfficialDocument/${docId}/Download">PDF İndir</a>`;
+                action = `
+                    <div class="invoice-action-document-actions">
+                        <a class="invoice-action-download" href="/AccountingInvoiceRequests/OfficialDocument/${encodeURIComponent(docId)}">PDF İndir</a>
+                        ${publicUrl
+                            ? `<button type="button"
+                                       class="invoice-action-share"
+                                       data-official-invoice-email-draft
+                                       data-official-invoice-number="${escapeHtml(number)}"
+                                       data-public-url="${escapeHtml(publicUrl)}">Fatura E-posta Taslağı</button>`
+                            : ""}
+                    </div>`;
                 compact = `<span>Fatura</span><strong>Yüklendi</strong><small>${number}</small>`;
             } else if (lastSentAt) {
                 subText = `Son gönderim: ${new Date(lastSentAt).toLocaleString("tr-TR")} / ${lastSentToEmail || "-"}`;
@@ -1195,7 +1345,7 @@
                 box.innerHTML = `
                     <strong>${statusText}</strong>
                     <span>${subText}</span>
-                    ${action ? `<div style="margin-top:10px;">${action}</div>` : ""}`;
+                    ${action}`;
             });
         };
 

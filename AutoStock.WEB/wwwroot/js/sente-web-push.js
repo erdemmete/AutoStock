@@ -31,6 +31,11 @@
         if (!("serviceWorker" in navigator)) return;
 
         try {
+            if (window.SentePwaInstall?.ensureServiceWorker) {
+                await window.SentePwaInstall.ensureServiceWorker();
+                return;
+            }
+
             await navigator.serviceWorker.register("/sw.js", { scope: "/" });
         } catch {
             console.info("Sente360 web push service worker could not be registered.");

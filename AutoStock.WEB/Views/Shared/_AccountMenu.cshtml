@@ -19,9 +19,20 @@
         <div class="s360-account-dropdown">
             <a asp-controller="Account" asp-action="Index">Hesabım</a>
 
+            <button type="button"
+                    class="s360-account-install"
+                    data-pwa-install
+                    hidden>
+                <span class="s360-account-install-icon" aria-hidden="true">↓</span>
+                <span>
+                    <strong>Sente360’ı Yükle</strong>
+                    <small>Ana ekranınızdan hızlıca açın.</small>
+                </span>
+            </button>
+
             <form asp-controller="Auth" asp-action="Logout" method="post">
                 @Html.AntiForgeryToken()
-                <button type="submit">Çıkış Yap</button>
+                <button type="submit" class="s360-account-logout">Çıkış Yap</button>
             </form>
         </div>
     </details>

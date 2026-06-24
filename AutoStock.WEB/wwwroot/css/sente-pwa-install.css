@@ -1,0 +1,149 @@
+[data-pwa-install][hidden] {
+    display: none !important;
+}
+
+.sente-pwa-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100500;
+    display: grid;
+    place-items: center;
+    padding: max(18px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+        max(18px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+    background: rgba(15, 23, 42, .5);
+    backdrop-filter: blur(5px);
+}
+
+.sente-pwa-overlay[hidden] {
+    display: none;
+}
+
+.sente-pwa-dialog {
+    width: min(430px, 100%);
+    max-height: min(620px, calc(100dvh - 36px));
+    overflow: auto;
+    border: 1px solid #dbe3ef;
+    border-radius: 22px;
+    background: #fff;
+    color: #0f172a;
+    box-shadow: 0 28px 80px rgba(15, 23, 42, .24);
+}
+
+.sente-pwa-dialog-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 20px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+}
+
+.sente-pwa-dialog-header h2 {
+    margin: 0;
+    font-size: 21px;
+    line-height: 1.15;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.sente-pwa-close {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border: 1px solid #dbe3ef;
+    border-radius: 13px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 23px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sente-pwa-dialog-body {
+    padding: 18px 20px 22px;
+}
+
+.sente-pwa-dialog-body p {
+    margin: 0 0 14px;
+    color: #475569;
+    font-size: 14px;
+    line-height: 1.55;
+    font-weight: 700;
+}
+
+.sente-pwa-steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: sente-pwa-step;
+    display: grid;
+    gap: 10px;
+}
+
+.sente-pwa-steps li {
+    counter-increment: sente-pwa-step;
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    min-height: 54px;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 15px;
+    background: #f8fafc;
+    color: #1e293b;
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 800;
+}
+
+.sente-pwa-steps li::before {
+    content: counter(sente-pwa-step);
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.sente-pwa-toast {
+    position: fixed;
+    right: 18px;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    z-index: 100600;
+    max-width: min(360px, calc(100% - 28px));
+    padding: 12px 15px;
+    border-radius: 14px;
+    background: #0f172a;
+    color: #fff;
+    box-shadow: 0 18px 46px rgba(15, 23, 42, .22);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+body.sente-pwa-dialog-open {
+    overflow: hidden;
+}
+
+@media (max-width: 520px) {
+    .sente-pwa-overlay {
+        align-items: end;
+        padding: 0;
+    }
+
+    .sente-pwa-dialog {
+        width: 100%;
+        max-height: min(78dvh, 620px);
+        border-radius: 22px 22px 0 0;
+        border-bottom: 0;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}

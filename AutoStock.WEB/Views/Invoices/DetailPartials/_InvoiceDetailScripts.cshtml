@@ -1175,6 +1175,10 @@
                 await persistInvoice();
                 invoiceState.updateCustomerCard = false;
                 refreshCustomerCard();
+                document.querySelectorAll("[data-invoice-email-draft]").forEach(function (button) {
+                    button.dataset.customerName = invoiceState.customerTitle || "Müşteri";
+                    button.dataset.recipientEmail = invoiceState.customerEmail || "";
+                });
                 closeAllInvoiceModals();
             } catch {
                 invoiceState.updateCustomerCard = false;
