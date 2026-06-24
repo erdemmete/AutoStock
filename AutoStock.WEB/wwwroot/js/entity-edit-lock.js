@@ -21,6 +21,8 @@
         release
     };
 
+    setControlsDisabled(true);
+
     const originalFetch = window.fetch.bind(window);
     window.fetch = function (input, init) {
         const requestInit = init ? { ...init } : {};

@@ -5,6 +5,7 @@
 
     string Money(decimal value) => SenteMoney.Format(value);
     string ValueOrDash(string? value) => string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
+    string MileageText() => Model.Mileage.HasValue ? $"{Model.Mileage.Value:N0} km" : "-";
     string TaxLine()
     {
         var parts = new List<string>();
@@ -134,6 +135,31 @@
             line-height: 1.25;
             font-weight: 950;
         }
+        .vehicle-box { grid-column: 1 / -1; }
+        .vehicle-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .vehicle-heading strong { font-size: 16px; }
+        .vehicle-heading small { color: #64748b; font-size: 12px; font-weight: 850; }
+        .vehicle-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .vehicle-detail {
+            min-width: 0;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .vehicle-detail span { margin-bottom: 4px; }
+        .vehicle-detail strong {
+            overflow-wrap: anywhere;
+            font-size: 13px;
+        }
         .table-wrap { overflow-x: auto; }
         table {
             width: 100%;
@@ -231,6 +257,11 @@
         @@media(max-width: 900px) {
             .grid { grid-template-columns: 1fr; }
             .info-grid { grid-template-columns: 1fr; }
+            .vehicle-detail-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @@media(max-width: 520px) {
+            .vehicle-heading { align-items: flex-start; flex-direction: column; }
+            .vehicle-detail-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -256,7 +287,21 @@
                         <div class="info-box"><span>Fatura Kesilen</span><strong>@Model.CustomerTitle</strong></div>
                         <div class="info-box"><span>Vergi Bilgisi</span><strong>@TaxLine()</strong></div>
                         <div class="info-box"><span>Adres</span><strong>@ValueOrDash(Model.CustomerAddress)</strong></div>
-                        <div class="info-box"><span>Araç</span><strong>@ValueOrDash(Model.Plate) / @ValueOrDash(Model.VehicleText)</strong></div>
+                        <div class="info-box vehicle-box">
+                            <div class="vehicle-heading">
+                                <div>
+                                    <span>Araç Bilgileri</span>
+                                    <strong>@ValueOrDash(Model.Plate)</strong>
+                                </div>
+                                <small>@ValueOrDash(Model.VehicleText)</small>
+                            </div>
+                            <div class="vehicle-detail-grid">
+                                <div class="vehicle-detail"><span>Model Yılı</span><strong>@(Model.VehicleModelYear?.ToString() ?? "-")</strong></div>
+                                <div class="vehicle-detail"><span>Kilometre</span><strong>@MileageText()</strong></div>
+                                <div class="vehicle-detail"><span>Versiyon</span><strong>@ValueOrDash(Model.VehicleVariantName)</strong></div>
+                                <div class="vehicle-detail"><span>Şasi Numarası</span><strong>@ValueOrDash(Model.ChassisNumber)</strong></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

@@ -555,6 +555,10 @@ namespace AutoStock.Services.Services
                 .AsNoTracking()
                 .Include(x => x.Invoice)
                     .ThenInclude(x => x.Items)
+                .Include(x => x.Invoice)
+                    .ThenInclude(x => x.ServiceRecord)
+                        .ThenInclude(x => x!.Vehicle)
+                            .ThenInclude(x => x.VehicleVariant)
                 .FirstOrDefaultAsync(x => x.Token == token);
 
             if (request is null)
@@ -587,7 +591,16 @@ namespace AutoStock.Services.Services
                 CustomerTckn = invoice.CustomerTckn,
                 CustomerAddress = invoice.CustomerAddress,
                 Plate = invoice.Plate,
-                VehicleText = JoinText(invoice.VehicleBrandName, invoice.VehicleModelName, invoice.VehicleModelYear?.ToString()),
+                VehicleBrandName = invoice.VehicleBrandName,
+                VehicleModelName = invoice.VehicleModelName,
+                VehicleVariantName = invoice.ServiceRecord?.Vehicle?.VehicleVariant?.Name,
+                VehicleModelYear = invoice.VehicleModelYear ?? invoice.ServiceRecord?.Vehicle?.ModelYear,
+                Mileage = invoice.Mileage ?? invoice.ServiceRecord?.MileageSnapshot ?? invoice.ServiceRecord?.Vehicle?.Mileage,
+                ChassisNumber = FirstText(invoice.ChassisNumber, invoice.ServiceRecord?.Vehicle?.ChassisNumber),
+                VehicleText = JoinText(
+                    invoice.VehicleBrandName,
+                    invoice.VehicleModelName,
+                    invoice.ServiceRecord?.Vehicle?.VehicleVariant?.Name),
                 Subtotal = invoice.Subtotal,
                 DiscountTotal = invoice.DiscountTotal,
                 VatTotal = invoice.VatTotal,
@@ -627,6 +640,9 @@ namespace AutoStock.Services.Services
             var requests = await _context.Set<AccountingInvoiceRequest>()
                 .AsNoTracking()
                 .Include(x => x.Invoice)
+                    .ThenInclude(x => x.ServiceRecord)
+                        .ThenInclude(x => x!.Vehicle)
+                            .ThenInclude(x => x.VehicleVariant)
                 .Where(x => x.BatchToken == batchToken)
                 .OrderBy(x => x.Invoice.InvoiceDate)
                 .ThenBy(x => x.Invoice.InvoiceNumber)
@@ -660,6 +676,21 @@ namespace AutoStock.Services.Services
                     InvoiceDate = accountingRequest.Invoice.InvoiceDate,
                     CustomerTitle = accountingRequest.Invoice.CustomerTitle,
                     Plate = accountingRequest.Invoice.Plate,
+                    VehicleBrandName = accountingRequest.Invoice.VehicleBrandName,
+                    VehicleModelName = accountingRequest.Invoice.VehicleModelName,
+                    VehicleVariantName = accountingRequest.Invoice.ServiceRecord?.Vehicle?.VehicleVariant?.Name,
+                    VehicleModelYear = accountingRequest.Invoice.VehicleModelYear
+                        ?? accountingRequest.Invoice.ServiceRecord?.Vehicle?.ModelYear,
+                    Mileage = accountingRequest.Invoice.Mileage
+                        ?? accountingRequest.Invoice.ServiceRecord?.MileageSnapshot
+                        ?? accountingRequest.Invoice.ServiceRecord?.Vehicle?.Mileage,
+                    ChassisNumber = FirstText(
+                        accountingRequest.Invoice.ChassisNumber,
+                        accountingRequest.Invoice.ServiceRecord?.Vehicle?.ChassisNumber),
+                    VehicleText = JoinText(
+                        accountingRequest.Invoice.VehicleBrandName,
+                        accountingRequest.Invoice.VehicleModelName,
+                        accountingRequest.Invoice.ServiceRecord?.Vehicle?.VehicleVariant?.Name),
                     GrandTotal = accountingRequest.Invoice.GrandTotal,
                     StatusText = document is null ? "Fatura bekliyor" : "Fatura yüklendi",
                     CanUpload = canUpload && accountingRequest.Status != AccountingInvoiceRequestStatus.Cancelled,
@@ -1631,6 +1662,11 @@ namespace AutoStock.Services.Services
         private static string JoinText(params string?[] values)
         {
             return string.Join(" / ", values.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!.Trim()));
+        }
+
+        private static string? FirstText(params string?[] values)
+        {
+            return values.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x))?.Trim();
         }
 
         private static string GetAccountingRequestStatusText(AccountingInvoiceRequestStatus status, bool isExpired)

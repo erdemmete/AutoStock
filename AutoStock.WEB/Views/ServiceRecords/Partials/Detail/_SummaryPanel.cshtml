@@ -91,11 +91,13 @@
             }
             else
             {
-                <a href="/Invoices/CreateFromServiceRecord/@Model.Id"
-                   class="srx-primary-action">
+                <button type="button"
+                        class="srx-primary-action"
+                        data-action="create-invoice-draft"
+                        data-service-record-id="@Model.Id">
                     <span class="srx-action-text-full">Fatura Taslağına Geç</span>
                     <span class="srx-action-text-short">Faturaya Geç</span>
-                </a>
+                </button>
             }
 
             @if (Model.Status == 1 || Model.Status == 2)

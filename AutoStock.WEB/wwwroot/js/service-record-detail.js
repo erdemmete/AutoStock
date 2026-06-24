@@ -1075,6 +1075,79 @@ const config = window.serviceRecordDetailConfig || {};
     });
     }
 
+    async function createInvoiceDraft(button) {
+    if (!button || button.dataset.loading === "true") return;
+
+    if (!window.SenteEntityEditLock?.isEditable()) {
+    showToast("Düzenleme kilidi henüz hazır değil. Lütfen kısa süre sonra tekrar deneyin.", "error");
+    return;
+    }
+
+    const recordId = Number(button.dataset.serviceRecordId || serviceRecordId);
+
+    if (!recordId) {
+    showToast("Servis kaydı bilgisi bulunamadı.", "error");
+    return;
+    }
+
+    const originalHtml = button.innerHTML;
+    button.dataset.loading = "true";
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.textContent = "Hazırlanıyor...";
+
+    try {
+    const response = await fetch(`/Invoices/CreateDraftFromServiceRecord/${recordId}`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+    "Accept": "application/json",
+    "X-Requested-With": "XMLHttpRequest"
+    }
+    });
+
+    let payload = null;
+
+    try {
+    payload = await response.json();
+    }
+    catch {
+    payload = null;
+    }
+
+    if (!response.ok || payload?.isSuccess === false) {
+    const message =
+    payload?.errorMessage ||
+    payload?.errorMessages?.[0] ||
+    "Fatura taslağı hazırlanamadı. Lütfen tekrar deneyin.";
+
+    showToast(message, "error");
+    return;
+    }
+
+    const invoiceId = Number(payload?.data?.invoiceId || 0);
+
+    if (!invoiceId) {
+    showToast("Fatura taslağı oluşturuldu ancak yönlendirme bilgisi alınamadı.", "error");
+    return;
+    }
+
+    window.location.assign(`/Invoices/Detail/${invoiceId}`);
+    }
+    catch (error) {
+    console.error("Invoice draft creation failed:", error);
+    showToast("Fatura taslağı hazırlanırken bir sorun oluştu.", "error");
+    }
+    finally {
+    if (document.body.contains(button)) {
+    button.dataset.loading = "false";
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+    button.innerHTML = originalHtml;
+    }
+    }
+    }
+
     function bindPageActions() {
     document.addEventListener("click", e => {
     const actionElement = e.target.closest("[data-action]");
@@ -1082,6 +1155,11 @@ const config = window.serviceRecordDetailConfig || {};
     if (!actionElement) return;
 
     const action = actionElement.dataset.action;
+
+    if (action === "create-invoice-draft") {
+    createInvoiceDraft(actionElement);
+    return;
+    }
 
     if (action === "toggle-info") {
     const card = actionElement.closest(".srx-info-card");

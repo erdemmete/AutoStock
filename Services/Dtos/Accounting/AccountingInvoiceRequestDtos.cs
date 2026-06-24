@@ -85,6 +85,12 @@ namespace AutoStock.Services.Dtos.Accounting
 
         public string? Plate { get; set; }
         public string? VehicleText { get; set; }
+        public string? VehicleBrandName { get; set; }
+        public string? VehicleModelName { get; set; }
+        public string? VehicleVariantName { get; set; }
+        public int? VehicleModelYear { get; set; }
+        public int? Mileage { get; set; }
+        public string? ChassisNumber { get; set; }
 
         public decimal Subtotal { get; set; }
         public decimal DiscountTotal { get; set; }
@@ -121,6 +127,13 @@ namespace AutoStock.Services.Dtos.Accounting
         public DateTime InvoiceDate { get; set; }
         public string CustomerTitle { get; set; } = null!;
         public string? Plate { get; set; }
+        public string? VehicleText { get; set; }
+        public string? VehicleBrandName { get; set; }
+        public string? VehicleModelName { get; set; }
+        public string? VehicleVariantName { get; set; }
+        public int? VehicleModelYear { get; set; }
+        public int? Mileage { get; set; }
+        public string? ChassisNumber { get; set; }
         public decimal GrandTotal { get; set; }
         public string StatusText { get; set; } = null!;
         public bool CanUpload { get; set; }

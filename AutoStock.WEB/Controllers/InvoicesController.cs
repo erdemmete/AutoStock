@@ -52,6 +52,17 @@ public class InvoicesController : BaseController
             new { invoiceId = result.Data.InvoiceId });
     }
 
+    [HttpPost("Invoices/CreateDraftFromServiceRecord/{serviceRecordId:int}")]
+    public async Task<IActionResult> CreateDraftFromServiceRecord(int serviceRecordId)
+    {
+        var result = await _invoicePageService.CreateOrGetDraftFromServiceRecordAsync(serviceRecordId);
+        var statusCode = result.StatusCode > 0
+            ? result.StatusCode
+            : result.IsSuccess ? StatusCodes.Status200OK : StatusCodes.Status400BadRequest;
+
+        return StatusCode(statusCode, result);
+    }
+
     [HttpPost("Invoices/CreateFromServiceRecord")]
     public async Task<IActionResult> CreateFromServiceRecord([FromBody] InvoiceCreateViewModel model)
     {
