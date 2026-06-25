@@ -55,6 +55,41 @@
     margin-bottom: 18px;
 }
 
+.account-verification-alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding: 15px 17px;
+    border: 1px solid #fbbf24;
+    border-radius: 16px;
+    background: #fffbeb;
+}
+
+.account-verification-alert div {
+    display: grid;
+    gap: 4px;
+}
+
+.account-verification-alert strong {
+    color: #92400e;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.account-verification-alert span {
+    color: #78350f;
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 650;
+}
+
+.account-unverified-label {
+    color: #b45309 !important;
+    font-weight: 850 !important;
+}
+
 .account-profile-card h2 {
     margin: 0;
     font-size: 25px;
@@ -770,6 +805,16 @@ body.account-drawer-open {
 @media (max-width: 700px) {
     .account-page {
         padding: 20px 0 38px;
+    }
+
+    .account-verification-alert {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .account-verification-alert form,
+    .account-verification-alert button {
+        width: 100%;
     }
 
     .account-profile-card,

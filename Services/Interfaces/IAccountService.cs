@@ -13,6 +13,12 @@ namespace AutoStock.Services.Interfaces
 
         Task<ServiceResult<bool>> ChangePasswordAsync(int userId, ChangePasswordRequestDto request);
 
+        Task<ServiceResult<bool>> SendEmailConfirmationAsync(
+            int userId,
+            RequestEmailConfirmationDto request);
+
+        Task<ServiceResult<bool>> ConfirmEmailAsync(ConfirmEmailDto request);
+
         Task<ServiceResult<WorkshopProfileManagementDto>> GetWorkshopProfileAsync(int userId, int workshopId);
 
         Task<ServiceResult<bool>> UpdateWorkshopProfileAsync(

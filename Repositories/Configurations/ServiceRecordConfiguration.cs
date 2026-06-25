@@ -15,6 +15,13 @@ public class ServiceRecordConfiguration : IEntityTypeConfiguration<ServiceRecord
         builder.HasIndex(x => x.RecordNumber)
             .IsUnique();
 
+        builder.Property(x => x.ClientRequestId)
+            .HasMaxLength(64);
+
+        builder.HasIndex(x => new { x.WorkshopId, x.ClientRequestId })
+            .IsUnique()
+            .HasFilter("[ClientRequestId] IS NOT NULL");
+
         builder.Property(x => x.CustomerNameSnapshot)
             .IsRequired()
             .HasMaxLength(150);

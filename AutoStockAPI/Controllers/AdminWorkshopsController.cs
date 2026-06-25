@@ -3,6 +3,7 @@ using AutoStock.Services.Dtos.Admin.Workshops;
 using AutoStock.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AutoStock.API.Controllers
 {
@@ -12,10 +13,14 @@ namespace AutoStock.API.Controllers
     public class AdminWorkshopsController : ControllerBase
     {
         private readonly IAdminWorkshopService _adminWorkshopService;
+        private readonly IEntityEditLockService _entityEditLockService;
 
-        public AdminWorkshopsController(IAdminWorkshopService adminWorkshopService)
+        public AdminWorkshopsController(
+            IAdminWorkshopService adminWorkshopService,
+            IEntityEditLockService entityEditLockService)
         {
             _adminWorkshopService = adminWorkshopService;
+            _entityEditLockService = entityEditLockService;
         }
 
         [HttpGet]
@@ -56,6 +61,32 @@ namespace AutoStock.API.Controllers
             var result = await _adminWorkshopService.GetUsersAsync(workshopId);
 
             return StatusCode((int)result.StatusCode, result);
+        }
+
+        [HttpGet("{workshopId:int}/edit-locks")]
+        public async Task<IActionResult> GetEditLocks(int workshopId)
+        {
+            var result = await _entityEditLockService.GetWorkshopLocksForAdminAsync(workshopId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpDelete("{workshopId:int}/edit-locks/{entityType}/{entityId:int}")]
+        public async Task<IActionResult> ForceReleaseEditLock(
+            int workshopId,
+            string entityType,
+            int entityId)
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdValue, out var adminUserId))
+                return Unauthorized();
+
+            var result = await _entityEditLockService.ForceReleaseForAdminAsync(
+                entityType,
+                entityId,
+                workshopId,
+                adminUserId);
+
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("{workshopId:int}/users/{userId:int}")]

@@ -1,0 +1,70 @@
+@{
+    Layout = null;
+    var isSuccess = ViewBag.IsSuccess is true;
+    var message = ViewBag.Message as string ?? "E-posta doğrulama işlemi tamamlanamadı.";
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Sente360 | E-posta Doğrulama</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #0f172a;
+            background: #f6f9ff;
+        }
+        .confirmation-card {
+            width: min(480px, 100%);
+            padding: 30px;
+            border: 1px solid #dbe5f4;
+            border-radius: 20px;
+            background: #fff;
+            box-shadow: 0 18px 48px rgba(15, 23, 42, .08);
+        }
+        .confirmation-state {
+            width: 48px;
+            height: 48px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 18px;
+            border-radius: 14px;
+            color: @(isSuccess ? "#047857" : "#b91c1c");
+            background: @(isSuccess ? "#d1fae5" : "#fee2e2");
+            font-size: 24px;
+            font-weight: 900;
+        }
+        h1 { margin: 0; font-size: 26px; }
+        p { margin: 10px 0 24px; color: #64748b; line-height: 1.55; }
+        a {
+            min-height: 46px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 18px;
+            border-radius: 12px;
+            color: #fff;
+            background: #2563eb;
+            text-decoration: none;
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body>
+    <main class="confirmation-card">
+        <div class="confirmation-state">@(isSuccess ? "✓" : "!")</div>
+        <h1>@(isSuccess ? "E-posta doğrulandı" : "Doğrulama tamamlanamadı")</h1>
+        <p>@message</p>
+        <a href="/Auth/Login">Sente360'a Dön</a>
+    </main>
+</body>
+</html>

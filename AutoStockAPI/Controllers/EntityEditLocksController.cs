@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AutoStock.API.Controllers
 {
-    [Authorize(Roles = AppRoles.OwnerOrStaff)]
+    [Authorize]
     [ApiController]
     [Route("api/edit-locks")]
     public class EntityEditLocksController : BaseApiController
@@ -19,6 +19,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost("acquire")]
+        [Authorize(Roles = AppRoles.OwnerOrStaff)]
         public async Task<IActionResult> Acquire(EntityEditLockRequestDto request)
         {
             var context = GetContext();
@@ -36,6 +37,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpGet("status")]
+        [Authorize(Roles = AppRoles.OwnerOrStaff)]
         public async Task<IActionResult> Status([FromQuery] string entityType, [FromQuery] int entityId)
         {
             var context = GetContext();
@@ -52,6 +54,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost("heartbeat")]
+        [Authorize(Roles = AppRoles.OwnerOrStaff)]
         public async Task<IActionResult> Heartbeat(EntityEditLockRequestDto request)
         {
             var context = GetContext();
@@ -69,6 +72,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost("release")]
+        [Authorize(Roles = AppRoles.OwnerOrStaff)]
         public async Task<IActionResult> Release(EntityEditLockRequestDto request)
         {
             var context = GetContext();
@@ -86,7 +90,7 @@ namespace AutoStock.API.Controllers
         }
 
         [HttpPost("force-release")]
-        [Authorize(Roles = AppRoles.Owner + "," + AppRoles.Admin)]
+        [Authorize(Roles = AppRoles.Owner)]
         public async Task<IActionResult> ForceRelease(EntityEditLockRequestDto request)
         {
             var context = GetContext();

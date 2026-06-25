@@ -247,7 +247,9 @@
                     _ => "status-unknown"
                 };
 
-                var vatIncludedTotal = Math.Round(record.TotalAmount * 1.20m, 2);
+                var vatIncludedTotal = AutoStock.Services.Calculations.ServiceRecordTotalsCalculator
+                    .CalculateServiceOperations(new[] { (1m, record.TotalAmount) })
+                    .GrandTotal;
 
                 <a class="srv-card" href="/ServiceRecords/Detail/@record.Id">
                     <div class="srv-card-plate-block">

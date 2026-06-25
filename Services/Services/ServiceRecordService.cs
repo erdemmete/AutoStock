@@ -7,6 +7,7 @@ using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.ServiceRecords;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Services.Interfaces.StockItems;
 
 namespace AutoStock.Services.Services;
@@ -23,19 +24,22 @@ public class ServiceRecordService : IServiceRecordService
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IAuditLogService _auditLogService;
     private readonly IInvoiceService _invoiceService;
+    private readonly ILogger<ServiceRecordService> _logger;
 
     public ServiceRecordService(
         AppDbContext context,
         IStockItemService stockItemService,
         IDateTimeProvider dateTimeProvider,
         IAuditLogService auditLogService,
-        IInvoiceService invoiceService)
+        IInvoiceService invoiceService,
+        ILogger<ServiceRecordService> logger)
     {
         _context = context;
         _stockItemService = stockItemService;
         _dateTimeProvider = dateTimeProvider;
         _auditLogService = auditLogService;
         _invoiceService = invoiceService;
+        _logger = logger;
     }
 
     public async Task<ServiceResult<CreateServiceRecordResponse>> CreateAsync(CreateServiceRecordRequest request,int workshopId)
@@ -51,6 +55,37 @@ public class ServiceRecordService : IServiceRecordService
 
         var phoneNumber = request.CustomerPhoneNumber.Trim();
         var plate = NormalizePlate(request.Plate);
+        var clientRequestId = NormalizeClientRequestId(request.ClientRequestId);
+
+        _logger.LogInformation(
+            "Service record create started. WorkshopId: {WorkshopId}, HasClientRequestId: {HasClientRequestId}, EventType: {EventType}",
+            workshopId, clientRequestId is not null, "CREATE_START");
+
+        if (clientRequestId is not null)
+        {
+            var existingRecord = await _context.ServiceRecords
+                .AsNoTracking()
+                .Where(x => x.WorkshopId == workshopId && x.ClientRequestId == clientRequestId)
+                .Select(x => new CreateServiceRecordResponse
+                {
+                    ServiceRecordId = x.Id,
+                    RecordNumber = x.RecordNumber
+                })
+                .FirstOrDefaultAsync();
+
+            if (existingRecord is not null)
+            {
+                _logger.LogWarning(
+                    "Duplicate service record submit returned existing record. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, EventType: {EventType}",
+                    workshopId, existingRecord.ServiceRecordId, "DUPLICATE_SUBMIT");
+                return ServiceResult<CreateServiceRecordResponse>.Success(existingRecord);
+            }
+        }
+
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
 
         var customer = await _context.Customers
             .FirstOrDefaultAsync(x =>
@@ -177,6 +212,7 @@ public class ServiceRecordService : IServiceRecordService
         var serviceRecord = new ServiceRecord
         {
             RecordNumber = GenerateRecordNumber(now),
+            ClientRequestId = clientRequestId,
             WorkshopId = workshopId,
             Customer = customer,
             Vehicle = vehicle,
@@ -234,12 +270,62 @@ public class ServiceRecordService : IServiceRecordService
         });
 
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        _logger.LogInformation(
+            "Service record create transaction committed. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, EventType: {EventType}",
+            workshopId, serviceRecord.Id, "TRANSACTION_COMMITTED");
 
         return ServiceResult<CreateServiceRecordResponse>.Success(new CreateServiceRecordResponse
         {
             ServiceRecordId = serviceRecord.Id,
             RecordNumber = serviceRecord.RecordNumber
         });
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+
+            if (clientRequestId is not null)
+            {
+                _context.ChangeTracker.Clear();
+                var existingRecord = await _context.ServiceRecords
+                    .AsNoTracking()
+                    .Where(x => x.WorkshopId == workshopId && x.ClientRequestId == clientRequestId)
+                    .Select(x => new CreateServiceRecordResponse
+                    {
+                        ServiceRecordId = x.Id,
+                        RecordNumber = x.RecordNumber
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (existingRecord is not null)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Concurrent service record submit resolved by returning existing record. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, EventType: {EventType}",
+                        workshopId, existingRecord.ServiceRecordId, "DUPLICATE_RACE_RESOLVED");
+                    return ServiceResult<CreateServiceRecordResponse>.Success(existingRecord);
+                }
+            }
+
+            _logger.LogError(
+                ex,
+                "Service record create rolled back. WorkshopId: {WorkshopId}, EventType: {EventType}",
+                workshopId, "ROLLBACK");
+
+            return ServiceResult<CreateServiceRecordResponse>.Fail(
+                "Servis kaydı oluşturulamadı. Lütfen tekrar deneyin.");
+        }
+    }
+
+    private static string? NormalizeClientRequestId(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var normalized = value.Trim();
+        return normalized.Length <= 64 ? normalized : normalized[..64];
     }
 
 

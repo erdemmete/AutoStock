@@ -3,6 +3,7 @@ using AutoStock.Services.Interfaces;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using AutoStock.Services.Calculations;
 
 namespace AutoStock.Services.Services;
 
@@ -493,9 +494,7 @@ public class PdfService : IPdfService
     {
         var showPrice = operations.Any(operation =>
         {
-            var amount = operation.TotalPrice > 0
-                ? operation.TotalPrice
-                : operation.Quantity * operation.UnitPrice;
+            var amount = CalculateOperationTotal(operation);
 
             return amount > 0 || operation.UnitPrice > 0;
         });
@@ -531,9 +530,7 @@ public class PdfService : IPdfService
             foreach (var operation in operations)
             {
                 var operationName = JoinParts(operation.TypeText, operation.Name).Replace(" / ", ": ");
-                var amount = operation.TotalPrice > 0
-                    ? operation.TotalPrice
-                    : operation.Quantity * operation.UnitPrice;
+                var amount = CalculateOperationTotal(operation);
 
                 TableCell(table.Cell(), GetValue(operationName), bold: true);
                 TableCell(table.Cell(), operation.Note);
@@ -888,13 +885,30 @@ public class PdfService : IPdfService
     private static decimal CalculateGroupTotal(ServicePdfRequestGroupDto group)
     {
         var operations = group.Operations ?? new List<ServicePdfItemDto>();
-        var operationTotal = operations.Sum(x => x.TotalPrice > 0 ? x.TotalPrice : x.Quantity * x.UnitPrice);
+        var operationTotal = operations.Sum(CalculateOperationTotal);
 
         if (operationTotal > 0) return operationTotal;
 
         return group.EstimatedAmount.HasValue && group.EstimatedAmount.Value > 0
             ? group.EstimatedAmount.Value
             : 0;
+    }
+
+    private static decimal CalculateOperationTotal(ServicePdfItemDto operation)
+    {
+        var quantity = operation.Quantity > 0 ? operation.Quantity : 1;
+        var unitPrice = operation.UnitPrice;
+
+        if (unitPrice <= 0 && operation.TotalPrice > 0)
+        {
+            unitPrice = operation.TotalPrice / quantity;
+        }
+
+        return ServiceRecordTotalsCalculator.CalculateLine(new ServiceFinancialLine(
+            quantity,
+            unitPrice,
+            operation.DiscountRate,
+            operation.VatRate)).GrandTotal;
     }
 
     private static string GetValue(string? value, string fallback = "-")

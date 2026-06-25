@@ -121,6 +121,23 @@ namespace AutoStock.WEB.Services
                 "Servis kullanıcısı oluşturulurken hata oluştu.");
         }
 
+        public Task<ApiResponse<List<AdminEntityEditLockViewModel>>> GetEditLocksAsync(int workshopId)
+        {
+            return GetAsync<List<AdminEntityEditLockViewModel>>(
+                $"/api/admin/workshops/{workshopId}/edit-locks",
+                "Düzenleme kilitleri alınamadı.");
+        }
+
+        public Task<ApiResponse<bool>> ForceReleaseEditLockAsync(
+            int workshopId,
+            string entityType,
+            int entityId)
+        {
+            return DeleteAsync<bool>(
+                $"/api/admin/workshops/{workshopId}/edit-locks/{Uri.EscapeDataString(entityType)}/{entityId}",
+                "Düzenleme kilidi kaldırılamadı.");
+        }
+
         public async Task<ApiResponse<AdminWorkshopUserDetailViewModel>> GetUserDetailAsync(int workshopId, int userId)
         {
             return await GetAsync<AdminWorkshopUserDetailViewModel>(

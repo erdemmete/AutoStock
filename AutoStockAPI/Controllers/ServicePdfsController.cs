@@ -164,6 +164,7 @@ namespace AutoStock.API.Controllers
                                 Quantity = op.Quantity,
                                 UnitPrice = op.UnitPrice,
                                 TotalPrice = op.TotalPrice,
+                                VatRate = AutoStock.Services.Calculations.ServiceFinancialRules.DefaultVatRate,
                                 Note = op.Note
                             })
                             .ToList()

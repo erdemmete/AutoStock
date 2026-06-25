@@ -14,6 +14,8 @@ namespace AutoStock.Services.Dtos.Common
 
         public List<string> ErrorMessages { get; set; } = new();
 
+        public string? ErrorCode { get; set; }
+
         public int StatusCode { get; set; }
 
         public static ServiceResult<T> Success(
@@ -30,7 +32,8 @@ namespace AutoStock.Services.Dtos.Common
 
         public static ServiceResult<T> Fail(
             string? errorMessage,
-            HttpStatusCode statusCode = HttpStatusCode.BadRequest)
+            HttpStatusCode statusCode = HttpStatusCode.BadRequest,
+            string? errorCode = null)
         {
             var safeMessage = string.IsNullOrWhiteSpace(errorMessage)
                 ? "İşlem sırasında bir hata oluştu."
@@ -41,13 +44,15 @@ namespace AutoStock.Services.Dtos.Common
                 IsSuccess = false,
                 ErrorMessage = safeMessage,
                 ErrorMessages = [safeMessage],
+                ErrorCode = errorCode,
                 StatusCode = (int)statusCode
             };
         }
 
         public static ServiceResult<T> Fail(
             List<string>? errorMessages,
-            HttpStatusCode statusCode = HttpStatusCode.BadRequest)
+            HttpStatusCode statusCode = HttpStatusCode.BadRequest,
+            string? errorCode = null)
         {
             var safeMessages = errorMessages is { Count: > 0 }
                 ? errorMessages
@@ -58,6 +63,7 @@ namespace AutoStock.Services.Dtos.Common
                 IsSuccess = false,
                 ErrorMessage = safeMessages.FirstOrDefault(),
                 ErrorMessages = safeMessages,
+                ErrorCode = errorCode,
                 StatusCode = (int)statusCode
             };
         }

@@ -20,6 +20,7 @@ namespace AutoStock.WEB.Models.Account
         public string Role { get; set; } = string.Empty;
         public string WorkshopName { get; set; } = string.Empty;
         public string? Email { get; set; }
+        public bool EmailConfirmed { get; set; }
         public string? PhoneNumber { get; set; }
     }
 

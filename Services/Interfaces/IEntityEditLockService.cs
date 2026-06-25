@@ -44,6 +44,17 @@ namespace AutoStock.Services.Interfaces
             string? userRole,
             CancellationToken cancellationToken = default);
 
+        Task<ServiceResult<List<AdminEntityEditLockDto>>> GetWorkshopLocksForAdminAsync(
+            int workshopId,
+            CancellationToken cancellationToken = default);
+
+        Task<ServiceResult<bool>> ForceReleaseForAdminAsync(
+            string entityType,
+            int entityId,
+            int workshopId,
+            int adminUserId,
+            CancellationToken cancellationToken = default);
+
         Task<ServiceResult<bool>> ValidateAsync(
             string entityType,
             int entityId,

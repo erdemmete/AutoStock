@@ -1,5 +1,6 @@
 @model AutoStock.WEB.Models.ServiceRecords.ServiceRecordDetailViewModel
 @using Microsoft.AspNetCore.Http
+@using AutoStock.Services.Calculations
 
 @{
     var isOwner = string.Equals(Context.Session.GetString("UserRole"), "Owner", StringComparison.OrdinalIgnoreCase);
@@ -8,8 +9,10 @@
 
     var estimatedTotal = Model.RequestItems.Sum(x => x.EstimatedAmount ?? 0);
     var subTotal = Model.TotalAmount;
-    var vatTotal = subTotal * 0.20m;
-    var grandTotal = subTotal + vatTotal;
+    var totals = ServiceRecordTotalsCalculator.CalculateServiceOperations(
+        new[] { (1m, subTotal) });
+    var vatTotal = totals.Vat;
+    var grandTotal = totals.GrandTotal;
     var publicQrUrl = !string.IsNullOrWhiteSpace(Model.AssignedQrCode)
         ? $"{Context.Request.Scheme}://{Context.Request.Host}/qr/{Uri.EscapeDataString(Model.AssignedQrCode)}"
         : string.Empty;
@@ -26,7 +29,7 @@
 
 <aside class="srx-side-panel">
 
-    <section class="srx-summary-card">
+    <section class="srx-summary-card" data-service-vat-rate="@ServiceFinancialRules.DefaultVatRate">
 
         <div class="srx-summary-card-header">
             <h2>Servis Özeti</h2>
@@ -63,7 +66,7 @@
             </div>
 
             <div>
-                <span>KDV (%20)</span>
+                <span>KDV (%@ServiceFinancialRules.DefaultVatRate.ToString("0"))</span>
                 <strong class="summary-vat"
                         data-vat="@vatTotal">
                     @FormatMoney(vatTotal)

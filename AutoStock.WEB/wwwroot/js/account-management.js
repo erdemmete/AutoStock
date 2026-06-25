@@ -546,6 +546,7 @@
 
         const emailInput = form.querySelector('input[name="Email"]');
         if (emailInput) emailInput.value = "";
+        form.dataset.allowEmptyEmail = "true";
         form.requestSubmit();
     });
 
@@ -636,6 +637,17 @@
             event.preventDefault();
             clearError(form);
             hideUnsavedPrompt(form.closest(".account-drawer"));
+
+            if (form.dataset.accountFormType === "email") {
+                const emailInput = form.querySelector('input[name="Email"]');
+                const allowsRemoval = form.dataset.allowEmptyEmail === "true";
+
+                if (!emailInput?.value.trim() && !allowsRemoval) {
+                    showError(form, "Yeni e-posta adresini girin veya kaldırma işlemini kullanın.");
+                    emailInput?.focus();
+                    return;
+                }
+            }
 
             if (form.dataset.accountFormType === "workshop-bank-delete") {
                 const confirmed = window.SenteConfirm && typeof window.SenteConfirm.show === "function"
@@ -737,6 +749,8 @@
             } catch {
                 showError(form, "İşlem tamamlanamadı. Lütfen tekrar deneyin.");
             } finally {
+                delete form.dataset.allowEmptyEmail;
+
                 if (submitter) {
                     submitter.disabled = false;
                     submitter.textContent = originalText;

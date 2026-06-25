@@ -19,7 +19,10 @@
             </div>
         }
 
-        <form asp-action="InviteCode" asp-controller="Auth" method="post">
+        <form asp-action="InviteCode"
+              asp-controller="Auth"
+              method="post"
+              data-password-policy-form>
             @Html.AntiForgeryToken()
 
             <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
@@ -47,6 +50,7 @@
                 <input asp-for="NewPassword"
                        type="password"
                        class="form-control-custom"
+                       data-password-input
                        autocomplete="new-password"
                        placeholder="Yeni şifrenizi girin" />
                 <span asp-validation-for="NewPassword" class="validation-message"></span>
@@ -57,10 +61,13 @@
                 <input asp-for="ConfirmNewPassword"
                        type="password"
                        class="form-control-custom"
+                       data-password-confirm
                        autocomplete="new-password"
                        placeholder="Yeni şifrenizi tekrar girin" />
                 <span asp-validation-for="ConfirmNewPassword" class="validation-message"></span>
             </div>
+
+            <partial name="_PasswordRequirements" />
 
             <div class="password-note">
                 Davet kodu tek kullanımlıktır. Şifreniz oluşturulduktan sonra kod tekrar kullanılamaz.
@@ -236,4 +243,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/password-policy.js" asp-append-version="true"></script>
 }

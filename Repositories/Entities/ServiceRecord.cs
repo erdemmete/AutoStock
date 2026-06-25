@@ -6,6 +6,7 @@ namespace AutoStock.Repositories.Entities
     {
         public int Id { get; set; }
         public string RecordNumber { get; set; } = null!;
+        public string? ClientRequestId { get; set; }
 
         public int WorkshopId { get; set; }
 

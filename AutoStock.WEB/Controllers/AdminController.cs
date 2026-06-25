@@ -122,10 +122,34 @@ namespace AutoStock.WEB.Controllers
 
             var result = await _adminWorkshopApiService.GetByIdAsync(id);
 
+            if (result.IsSuccess && result.Data is not null)
+            {
+                var lockResult = await _adminWorkshopApiService.GetEditLocksAsync(id);
+                if (lockResult.IsSuccess && lockResult.Data is not null)
+                    result.Data.EditLocks = lockResult.Data;
+            }
+
             return ViewObjectResult(
                 result,
                 "Servis detayı alınırken hata oluştu.",
                 () => RedirectToAction(nameof(Workshops)));
+        }
+
+        [HttpDelete("Admin/Workshops/{workshopId:int}/EditLocks/{entityType}/{entityId:int}")]
+        public async Task<IActionResult> ForceReleaseEditLock(
+            int workshopId,
+            string entityType,
+            int entityId)
+        {
+            if (!IsAdmin)
+                return Unauthorized();
+
+            var result = await _adminWorkshopApiService.ForceReleaseEditLockAsync(
+                workshopId,
+                entityType,
+                entityId);
+
+            return StatusCode(result.StatusCode > 0 ? result.StatusCode : 200, result);
         }
 
         [HttpPost("Admin/Workshops/UpdateSubscription")]

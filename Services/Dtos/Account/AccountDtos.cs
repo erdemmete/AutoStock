@@ -9,6 +9,7 @@ namespace AutoStock.Services.Dtos.Account
         public string Role { get; set; } = string.Empty;
         public string WorkshopName { get; set; } = string.Empty;
         public string? Email { get; set; }
+        public bool EmailConfirmed { get; set; }
         public string? PhoneNumber { get; set; }
     }
 
@@ -123,5 +124,16 @@ namespace AutoStock.Services.Dtos.Account
     {
         public string UserName { get; set; } = string.Empty;
         public string ResetUrlBase { get; set; } = string.Empty;
+    }
+
+    public class RequestEmailConfirmationDto
+    {
+        public string ConfirmationUrlBase { get; set; } = string.Empty;
+    }
+
+    public class ConfirmEmailDto
+    {
+        public int UserId { get; set; }
+        public string Token { get; set; } = string.Empty;
     }
 }

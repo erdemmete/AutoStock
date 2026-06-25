@@ -452,6 +452,10 @@ public class AuthService : IAuthService
         if (!user.IsActive)
             return ServiceResult<AuthResponseDto>.Fail("Kullanıcı pasif durumda.");
 
+        var passwordValidationResult = await ValidateNewPasswordAsync(user, request.NewPassword);
+        if (passwordValidationResult.IsFailure)
+            return ServiceResult<AuthResponseDto>.Fail(passwordValidationResult.ErrorMessages);
+
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
         var markAsUsedResult = await _userSecurityTokenService.MarkAsUsedAsync(
@@ -479,11 +483,7 @@ public class AuthService : IAuthService
             {
                 await transaction.RollbackAsync();
 
-                var errors = removePasswordResult.Errors
-                    .Select(x => x.Description)
-                    .ToList();
-
-                return ServiceResult<AuthResponseDto>.Fail(errors);
+                return ServiceResult<AuthResponseDto>.Fail(MapIdentityErrors(removePasswordResult));
             }
         }
 
@@ -495,11 +495,7 @@ public class AuthService : IAuthService
         {
             await transaction.RollbackAsync();
 
-            var errors = addPasswordResult.Errors
-                .Select(x => x.Description)
-                .ToList();
-
-            return ServiceResult<AuthResponseDto>.Fail(errors);
+            return ServiceResult<AuthResponseDto>.Fail(MapIdentityErrors(addPasswordResult));
         }
 
         user.PasswordChangedAt = _dateTimeProvider.Now;
@@ -643,6 +639,10 @@ public class AuthService : IAuthService
         if (!user.IsActive)
             return ServiceResult<AuthResponseDto>.Fail("Kullanıcı pasif durumda.");
 
+        var passwordValidationResult = await ValidateNewPasswordAsync(user, request.NewPassword);
+        if (passwordValidationResult.IsFailure)
+            return ServiceResult<AuthResponseDto>.Fail(passwordValidationResult.ErrorMessages);
+
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
         var markAsUsedResult = await _userSecurityTokenService.MarkAsUsedByCodeAsync(
@@ -671,11 +671,7 @@ public class AuthService : IAuthService
             {
                 await transaction.RollbackAsync();
 
-                var errors = removePasswordResult.Errors
-                    .Select(x => x.Description)
-                    .ToList();
-
-                return ServiceResult<AuthResponseDto>.Fail(errors);
+                return ServiceResult<AuthResponseDto>.Fail(MapIdentityErrors(removePasswordResult));
             }
         }
 
@@ -687,11 +683,7 @@ public class AuthService : IAuthService
         {
             await transaction.RollbackAsync();
 
-            var errors = addPasswordResult.Errors
-                .Select(x => x.Description)
-                .ToList();
-
-            return ServiceResult<AuthResponseDto>.Fail(errors);
+            return ServiceResult<AuthResponseDto>.Fail(MapIdentityErrors(addPasswordResult));
         }
 
         user.PasswordChangedAt = _dateTimeProvider.Now;
@@ -726,5 +718,38 @@ public class AuthService : IAuthService
         await transaction.CommitAsync();
 
         return ServiceResult<AuthResponseDto>.Success(authResponse);
+    }
+
+    private async Task<ServiceResult<bool>> ValidateNewPasswordAsync(AppUser user, string password)
+    {
+        var errors = new List<IdentityError>();
+
+        foreach (var validator in _userManager.PasswordValidators)
+        {
+            var result = await validator.ValidateAsync(_userManager, user, password);
+            if (!result.Succeeded)
+                errors.AddRange(result.Errors);
+        }
+
+        return errors.Count == 0
+            ? ServiceResult<bool>.Success(true)
+            : ServiceResult<bool>.Fail(MapIdentityErrors(IdentityResult.Failed(errors.ToArray())));
+    }
+
+    private static List<string> MapIdentityErrors(IdentityResult result)
+    {
+        return result.Errors
+            .Select(error => error.Code switch
+            {
+                "PasswordTooShort" => "Şifre en az 6 karakter olmalıdır.",
+                "PasswordRequiresDigit" => "Şifre en az bir rakam içermelidir.",
+                "PasswordRequiresUpper" => "Şifre en az bir büyük harf içermelidir.",
+                "PasswordRequiresLower" => "Şifre en az bir küçük harf içermelidir.",
+                "PasswordRequiresNonAlphanumeric" => "Şifre en az bir özel karakter içermelidir.",
+                "PasswordRequiresUniqueChars" => "Şifre daha fazla farklı karakter içermelidir.",
+                _ => "Şifre belirlenen güvenlik kurallarını karşılamıyor."
+            })
+            .Distinct()
+            .ToList();
     }
 }

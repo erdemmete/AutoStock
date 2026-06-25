@@ -59,12 +59,29 @@ namespace AutoStock.WEB.Controllers
                 ? "E-posta adresiniz kaldırıldı."
                 : "E-posta adresiniz güncellendi.";
 
+            if (!string.IsNullOrWhiteSpace(model.Email))
+            {
+                var confirmationUrlBase = Url.Action(
+                    nameof(ConfirmEmail),
+                    "Account",
+                    values: null,
+                    protocol: Request.Scheme) ?? string.Empty;
+
+                var confirmationResult = await _accountApiService.SendEmailConfirmationAsync(
+                    confirmationUrlBase);
+
+                successMessage = confirmationResult.IsFailure
+                    ? "E-posta adresiniz güncellendi. Doğrulama bağlantısı gönderilemedi; Hesabım ekranından yeniden gönderebilirsiniz."
+                    : "E-posta adresiniz güncellendi. Doğrulama bağlantısı yeni adresinize gönderildi.";
+            }
+
             if (IsAjaxOrJsonRequest())
             {
                 return Json(new
                 {
                     isSuccess = true,
                     message = successMessage,
+                    reload = true,
                     email = model.Email?.Trim(),
                     emailSummary = string.IsNullOrWhiteSpace(model.Email)
                         ? "E-posta adresi eklenmemiş"
@@ -72,11 +89,47 @@ namespace AutoStock.WEB.Controllers
                 });
             }
 
-            ShowSuccess(string.IsNullOrWhiteSpace(model.Email)
-                ? "E-posta adresiniz kaldırıldı."
-                : "E-posta adresiniz güncellendi.");
+            ShowSuccess(successMessage);
 
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost("/Account/EmailConfirmation/Send")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendEmailConfirmation()
+        {
+            if (!IsOwner && !IsStaff)
+                return RedirectByRole();
+
+            var confirmationUrlBase = Url.Action(
+                nameof(ConfirmEmail),
+                "Account",
+                values: null,
+                protocol: Request.Scheme) ?? string.Empty;
+
+            var result = await _accountApiService.SendEmailConfirmationAsync(
+                confirmationUrlBase);
+
+            if (result.IsFailure)
+            {
+                ShowError(result.ErrorMessage ?? "Doğrulama e-postası gönderilemedi.");
+                return RedirectToAction(nameof(Index));
+            }
+
+            ShowSuccess("Doğrulama bağlantısı e-posta adresinize gönderildi.");
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet("/Account/ConfirmEmail")]
+        public async Task<IActionResult> ConfirmEmail(int userId, string token)
+        {
+            var result = await _accountApiService.ConfirmEmailAsync(userId, token);
+            ViewBag.IsSuccess = !result.IsFailure;
+            ViewBag.Message = result.IsFailure
+                ? result.ErrorMessage ?? "E-posta adresi doğrulanamadı."
+                : "E-posta adresiniz doğrulandı.";
+
+            return View();
         }
 
         [HttpPost("/Account/Password")]

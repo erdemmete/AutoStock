@@ -9,6 +9,18 @@ namespace AutoStock.Services.Dtos.EditLocks
         public string? LockToken { get; set; }
     }
 
+    public class AdminEntityEditLockDto
+    {
+        public string EntityType { get; set; } = string.Empty;
+        public int EntityId { get; set; }
+        public string EntityReference { get; set; } = string.Empty;
+        public string LockedByDisplayName { get; set; } = string.Empty;
+        public DateTime AcquiredAt { get; set; }
+        public DateTime LastHeartbeatAt { get; set; }
+        public DateTime ExpiresAt { get; set; }
+        public bool IsExpired { get; set; }
+    }
+
     public class EntityEditLockDto
     {
         public string EntityType { get; set; } = null!;

@@ -1016,6 +1016,49 @@ Bu bağlantı tek kullanımlıktır.";
     }
 </div>
 
+<div class="admin-card edit-locks-card" data-admin-edit-locks>
+    <div class="card-header-row">
+        <div>
+            <h2>Aktif Düzenleme Kilitleri</h2>
+            <p>Servis kullanıcılarının açık düzenleme oturumlarını yönetin.</p>
+        </div>
+    </div>
+
+    <div class="edit-lock-list" data-admin-edit-lock-list>
+        @if (Model.EditLocks.Any())
+        {
+            @foreach (var editLock in Model.EditLocks)
+            {
+                <article class="edit-lock-row"
+                         data-edit-lock-row
+                         data-entity-type="@editLock.EntityType"
+                         data-entity-id="@editLock.EntityId">
+                    <div>
+                        <strong>@(editLock.EntityType == "Invoice" ? "Servis Hesap Özeti" : "Servis Kaydı") · @editLock.EntityReference</strong>
+                        <span>@editLock.LockedByDisplayName</span>
+                    </div>
+                    <div class="edit-lock-times">
+                        <span>Alındı: @editLock.AcquiredAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        <span>Son bağlantı: @editLock.LastHeartbeatAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        <span class="@(editLock.IsExpired ? "edit-lock-expired" : "edit-lock-active")">
+                            @(editLock.IsExpired ? "Süresi dolmuş" : $"Bitiş: {editLock.ExpiresAt:HH:mm:ss}")
+                        </span>
+                    </div>
+                    <button type="button"
+                            class="btn-danger-custom"
+                            data-force-release-lock>
+                        Kilidi Kaldır
+                    </button>
+                </article>
+            }
+        }
+        else
+        {
+            <p class="text-muted" data-edit-lock-empty>Aktif düzenleme kilidi bulunmuyor.</p>
+        }
+    </div>
+</div>
+
 <div class="admin-card users-card">
     <div class="card-header-row">
         <div>
@@ -1740,6 +1783,56 @@ Bu bağlantı tek kullanımlıktır.";
     }
 }
 
+    .edit-lock-list {
+        display: grid;
+        gap: 10px;
+    }
+
+    .edit-lock-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(220px, auto) auto;
+        align-items: center;
+        gap: 16px;
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #f8fafc;
+    }
+
+    .edit-lock-row > div {
+        display: grid;
+        gap: 4px;
+    }
+
+    .edit-lock-row span {
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .edit-lock-times {
+        text-align: right;
+    }
+
+    .edit-lock-active {
+        color: #047857 !important;
+        font-weight: 800;
+    }
+
+    .edit-lock-expired {
+        color: #b45309 !important;
+        font-weight: 800;
+    }
+
+    @@media (max-width: 900px) {
+        .edit-lock-row {
+            grid-template-columns: 1fr;
+            align-items: stretch;
+        }
+
+        .edit-lock-times {
+            text-align: left;
+        }
+    }
 </style>
 
 <script>
@@ -1748,7 +1841,60 @@ Bu bağlantı tek kullanımlıktır.";
         initializeMobilePhoneInputs();
         initializeCredentialActions();
         initializeUserRows();
+        initializeEditLockActions();
     });
+
+    function initializeEditLockActions() {
+        document.querySelectorAll("[data-force-release-lock]").forEach(button => {
+            if (button.dataset.bound === "true") return;
+            button.dataset.bound = "true";
+
+            button.addEventListener("click", async function () {
+                const row = button.closest("[data-edit-lock-row]");
+                if (!row) return;
+
+                const confirmed = window.SenteConfirm
+                    ? await window.SenteConfirm.show({
+                        title: "Düzenleme kilidi kaldırılsın mı?",
+                        message: "Açık kullanıcı ekranı salt okunur duruma geçecek. Devam etmek istiyor musunuz?",
+                        confirmText: "Kilidi Kaldır",
+                        cancelText: "Vazgeç",
+                        danger: true
+                    })
+                    : window.confirm("Düzenleme kilidi kaldırılsın mı?");
+
+                if (!confirmed) return;
+
+                button.disabled = true;
+                const originalText = button.textContent;
+                button.textContent = "Kaldırılıyor...";
+
+                try {
+                    const response = await fetch(
+                        `/Admin/Workshops/@Model.Id/EditLocks/${encodeURIComponent(row.dataset.entityType)}/${encodeURIComponent(row.dataset.entityId)}`,
+                        { method: "DELETE", headers: { "Accept": "application/json" } });
+                    const payload = await response.json().catch(() => null);
+
+                    if (!response.ok || !payload?.isSuccess) {
+                        window.showToast?.(payload?.errorMessage || "Düzenleme kilidi kaldırılamadı.", "error");
+                        return;
+                    }
+
+                    row.remove();
+                    const list = document.querySelector("[data-admin-edit-lock-list]");
+                    if (list && !list.querySelector("[data-edit-lock-row]")) {
+                        list.innerHTML = '<p class="text-muted" data-edit-lock-empty>Aktif düzenleme kilidi bulunmuyor.</p>';
+                    }
+                    window.showToast?.("Düzenleme kilidi kaldırıldı.", "success");
+                } catch {
+                    window.showToast?.("Düzenleme kilidi kaldırılamadı.", "error");
+                } finally {
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            });
+        });
+    }
 
     function initializeUserRows() {
         document.querySelectorAll(".clickable-user-row").forEach(row => {

@@ -5,6 +5,8 @@ namespace AutoStock.WEB.Models.ServiceRecords
 {
     public class CreateServiceRecordViewModel
     {
+        public string? ClientRequestId { get; set; }
+
         [Required(ErrorMessage = "Telefon numarası girilmesi zorunludur.")]
         public string CustomerPhoneNumber { get; set; } = null!;
 

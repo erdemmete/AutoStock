@@ -8,7 +8,7 @@
             ? Model.WorkshopLegalTitle
             : "Sente360 Servis";
     var secureDocumentUrl = Model.ServiceRecordId.HasValue && !string.IsNullOrWhiteSpace(Model.PublicServiceQrCode)
-        ? $"{Context.Request.Scheme}://{Context.Request.Host}/public/service-pdf/{Uri.EscapeDataString(Model.PublicServiceQrCode)}/{Model.ServiceRecordId.Value}"
+        ? $"{Context.Request.Scheme}://{Context.Request.Host}/public/account-summary/{Uri.EscapeDataString(Model.PublicServiceQrCode)}/{Model.Id}"
         : null;
 }
 

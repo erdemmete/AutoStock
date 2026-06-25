@@ -85,6 +85,7 @@ namespace AutoStock.Services.Services
                 FullName = user.FullName,
                 UserName = user.UserName ?? string.Empty,
                 Email = user.Email,
+                EmailConfirmed = user.EmailConfirmed,
                 PhoneNumber = user.PhoneNumber,
                 Role = role,
                 WorkshopName = workshopName
@@ -134,8 +135,6 @@ namespace AutoStock.Services.Services
 
             if (!updateResult.Succeeded)
                 return ServiceResult<bool>.Fail(MapIdentityErrors(updateResult));
-
-            await _userManager.UpdateSecurityStampAsync(user);
 
             await WriteUserAuditAsync(user, "Kullanıcı e-posta adresini güncelledi", new
             {
@@ -219,6 +218,83 @@ namespace AutoStock.Services.Services
             await WriteUserAuditAsync(user, "Kullanıcı kendi şifresini değiştirdi", new
             {
                 PasswordChangedAt = user.PasswordChangedAt
+            });
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<bool>> SendEmailConfirmationAsync(
+            int userId,
+            RequestEmailConfirmationDto request)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+
+            if (user is null || !user.IsActive)
+                return ServiceResult<bool>.Fail("Kullanıcı bulunamadı.", HttpStatusCode.NotFound);
+
+            if (string.IsNullOrWhiteSpace(user.Email))
+                return ServiceResult<bool>.Fail("Önce hesabınıza geçerli bir e-posta adresi ekleyin.");
+
+            if (user.EmailConfirmed)
+                return ServiceResult<bool>.Success(true);
+
+            if (string.IsNullOrWhiteSpace(request.ConfirmationUrlBase))
+                return ServiceResult<bool>.Fail("E-posta doğrulama bağlantısı hazırlanamadı.");
+
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var confirmationUrl = BuildEmailConfirmationUrl(
+                request.ConfirmationUrlBase,
+                user.Id,
+                token);
+
+            var emailResult = await _emailSender.SendAsync(new EmailMessageDto
+            {
+                ToEmail = user.Email,
+                ToName = user.FullName,
+                Subject = "Sente360 E-posta Doğrulama",
+                HtmlBody = BuildEmailConfirmationBody(user.FullName, confirmationUrl)
+            });
+
+            if (emailResult.IsFailure)
+            {
+                _logger.LogWarning(
+                    "Email confirmation message could not be sent. UserId: {UserId}, Error: {Error}",
+                    user.Id,
+                    emailResult.ErrorMessage);
+
+                return ServiceResult<bool>.Fail(
+                    "Doğrulama e-postası gönderilemedi. Lütfen kısa süre sonra tekrar deneyin.");
+            }
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<bool>> ConfirmEmailAsync(ConfirmEmailDto request)
+        {
+            if (request.UserId <= 0 || string.IsNullOrWhiteSpace(request.Token))
+                return ServiceResult<bool>.Fail("E-posta doğrulama bağlantısı geçersiz.");
+
+            var user = await _userManager.FindByIdAsync(request.UserId.ToString());
+
+            if (user is null || !user.IsActive)
+                return ServiceResult<bool>.Fail("E-posta doğrulama bağlantısı geçersiz.");
+
+            if (user.EmailConfirmed)
+                return ServiceResult<bool>.Success(true);
+
+            var result = await _userManager.ConfirmEmailAsync(user, request.Token);
+
+            if (!result.Succeeded)
+                return ServiceResult<bool>.Fail(
+                    "E-posta doğrulama bağlantısı geçersiz veya süresi dolmuş.");
+
+            user.LastPasswordResetAt = null;
+            await _userManager.UpdateAsync(user);
+
+            await WriteUserAuditAsync(user, "Kullanıcı e-posta adresini doğruladı", new
+            {
+                user.Email,
+                ConfirmedAt = _dateTimeProvider.Now
             });
 
             return ServiceResult<bool>.Success(true);
@@ -623,12 +699,17 @@ namespace AutoStock.Services.Services
                 .Include(x => x.Workshop)
                 .FirstOrDefaultAsync(x => x.UserId == user.Id);
 
-            if (string.IsNullOrWhiteSpace(user.Email))
+            if (string.IsNullOrWhiteSpace(user.Email) || !user.EmailConfirmed)
             {
                 user.LastPasswordResetAt = now;
                 await _userManager.UpdateAsync(user);
 
-                await NotifyAdminsForMissingEmailAsync(user, workshopUser);
+                await NotifyAdminsForPasswordResetEmailProblemAsync(
+                    user,
+                    workshopUser,
+                    string.IsNullOrWhiteSpace(user.Email)
+                        ? "missing"
+                        : "unconfirmed");
                 return ServiceResult<bool>.Success(true);
             }
 
@@ -669,6 +750,11 @@ namespace AutoStock.Services.Services
                     "Forgot password email could not be sent. UserId: {UserId}, Error: {Error}",
                     user.Id,
                     emailResult.ErrorMessage);
+
+                await NotifyAdminsForPasswordResetEmailProblemAsync(
+                    user,
+                    workshopUser,
+                    "delivery");
             }
 
             return ServiceResult<bool>.Success(true);
@@ -726,16 +812,25 @@ namespace AutoStock.Services.Services
             });
         }
 
-        private async Task NotifyAdminsForMissingEmailAsync(AppUser user, WorkshopUser? workshopUser)
+        private async Task NotifyAdminsForPasswordResetEmailProblemAsync(
+            AppUser user,
+            WorkshopUser? workshopUser,
+            string reason)
         {
             var workshopName = workshopUser?.Workshop?.Name ?? "Servis";
+            var reasonText = reason switch
+            {
+                "unconfirmed" => "e-posta adresi doğrulanmadığı",
+                "delivery" => "şifre yenileme e-postası gönderilemediği",
+                _ => "kayıtlı e-posta adresi olmadığı"
+            };
 
             var notificationResult = await _notificationService.CreateForAdminsAsync(new CreateNotificationDto
             {
                 WorkshopId = workshopUser?.WorkshopId,
                 Type = NotificationType.System,
                 Title = "Şifre yenileme yardımı gerekli",
-                Message = $"{workshopName} servisindeki {user.FullName} kullanıcısının kayıtlı e-posta adresi olmadığı için şifre yenileme bağlantısı gönderilemedi.",
+                Message = $"{workshopName} servisindeki {user.FullName} kullanıcısının {reasonText} için şifre yenileme bağlantısı gönderilemedi.",
                 RelatedEntityType = NotificationRelatedEntityType.Workshop,
                 RelatedEntityId = workshopUser?.WorkshopId,
                 ActionUrl = workshopUser is null
@@ -746,8 +841,9 @@ namespace AutoStock.Services.Services
             if (notificationResult.IsFailure)
             {
                 _logger.LogWarning(
-                    "Admin notification for forgot password without email failed. UserId: {UserId}, Error: {Error}",
+                    "Admin notification for forgot password email problem failed. UserId: {UserId}, Reason: {Reason}, Error: {Error}",
                     user.Id,
+                    reason,
                     notificationResult.ErrorMessage);
             }
         }
@@ -780,6 +876,29 @@ namespace AutoStock.Services.Services
 
             var separator = baseUrl.Contains('?', StringComparison.Ordinal) ? "&" : "?";
             return $"{baseUrl}{separator}token={Uri.EscapeDataString(token)}";
+        }
+
+        private static string BuildEmailConfirmationUrl(
+            string confirmationUrlBase,
+            int userId,
+            string token)
+        {
+            var baseUrl = confirmationUrlBase.Trim();
+            var separator = baseUrl.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+
+            return $"{baseUrl}{separator}userId={userId}&token={Uri.EscapeDataString(token)}";
+        }
+
+        private static string BuildEmailConfirmationBody(string fullName, string confirmationUrl)
+        {
+            var safeName = HtmlEncoder.Default.Encode(fullName);
+            var safeUrl = HtmlEncoder.Default.Encode(confirmationUrl);
+
+            return $@"
+<p>Merhaba {safeName},</p>
+<p>Sente360 hesabınızdaki e-posta adresini doğrulamak için aşağıdaki bağlantıyı kullanın.</p>
+<p><a href=""{safeUrl}"">E-posta adresimi doğrula</a></p>
+<p>Bu işlemi siz başlatmadıysanız bu e-postayı dikkate almayabilirsiniz.</p>";
         }
 
         private static string BuildForgotPasswordEmailBody(string fullName, string resetUrl, DateTime expiresAt)

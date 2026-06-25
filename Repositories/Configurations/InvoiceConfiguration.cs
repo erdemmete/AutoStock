@@ -76,6 +76,11 @@ namespace AutoStock.Repositories.Configurations
                 .HasForeignKey(x => x.ServiceRecordId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasIndex(x => x.ServiceRecordId)
+                .HasDatabaseName("UX_Invoices_Active_ServiceRecordId")
+                .IsUnique()
+                .HasFilter("[ServiceRecordId] IS NOT NULL AND [Status] IN (1, 2)");
+
             builder.HasMany(x => x.Items)
                 .WithOne(x => x.Invoice)
                 .HasForeignKey(x => x.InvoiceId);

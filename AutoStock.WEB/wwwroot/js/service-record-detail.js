@@ -107,8 +107,9 @@ const config = window.serviceRecordDetailConfig || {};
 
     function updateSummaryTotal(recordTotal) {
     const subTotal = toNumber(recordTotal);
-    const vat = subTotal * 0.20;
-    const grandTotal = subTotal + vat;
+    const vatRate = Number(document.querySelector("[data-service-vat-rate]")?.dataset.serviceVatRate || 0);
+    const vat = Math.round((subTotal * vatRate / 100 + Number.EPSILON) * 100) / 100;
+    const grandTotal = Math.round((subTotal + vat + Number.EPSILON) * 100) / 100;
 
     const totalElement = document.querySelector(".summary-total");
     const vatElement = document.querySelector(".summary-vat");

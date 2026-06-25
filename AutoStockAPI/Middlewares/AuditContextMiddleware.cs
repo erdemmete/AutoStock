@@ -1,5 +1,6 @@
 ﻿using AutoStock.Services.Dtos.AuditLogs;
 using AutoStock.Services.Interfaces;
+using Serilog.Context;
 using System.Security.Claims;
 
 namespace AutoStock.API.Middlewares
@@ -34,7 +35,10 @@ namespace AutoStock.API.Middlewares
                 auditContextAccessor.Current = new AuditContextDto();
             }
 
-            await _next(httpContext);
+            using (LogContext.PushProperty("TraceId", httpContext.TraceIdentifier))
+            {
+                await _next(httpContext);
+            }
         }
 
         private static int? TryParseInt(string? value)

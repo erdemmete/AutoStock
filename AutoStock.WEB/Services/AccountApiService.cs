@@ -29,6 +29,22 @@ namespace AutoStock.WEB.Services
                 "E-posta bilgisi güncellenemedi.");
         }
 
+        public Task<ApiResponse<bool>> SendEmailConfirmationAsync(string confirmationUrlBase)
+        {
+            return PostJsonAsync<object, bool>(
+                "/api/Account/email-confirmation/request",
+                new { confirmationUrlBase },
+                "Doğrulama e-postası gönderilemedi.");
+        }
+
+        public Task<ApiResponse<bool>> ConfirmEmailAsync(int userId, string token)
+        {
+            return PostJsonAsync<object, bool>(
+                "/api/Account/email-confirmation/confirm",
+                new { userId, token },
+                "E-posta adresi doğrulanamadı.");
+        }
+
         public Task<ApiResponse<bool>> UpdatePhoneAsync(AccountPhoneFormViewModel model)
         {
             return PutJsonAsync<AccountPhoneFormViewModel, bool>(

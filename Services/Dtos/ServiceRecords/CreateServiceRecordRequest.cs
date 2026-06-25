@@ -4,6 +4,8 @@ namespace AutoStock.Services.Dtos.ServiceRecords
 {
     public class CreateServiceRecordRequest
     {
+        public string? ClientRequestId { get; set; }
+
         public string CustomerPhoneNumber { get; set; } = null!;
 
         public string CustomerName { get; set; } = null!;

@@ -38,7 +38,7 @@
             : "Sente360 Servis";
     var customerName = Model.CustomerTitle;
     var secureDocumentUrl = Model.ServiceRecordId.HasValue && !string.IsNullOrWhiteSpace(Model.PublicServiceQrCode)
-        ? $"{Context.Request.Scheme}://{Context.Request.Host}/public/service-pdf/{Uri.EscapeDataString(Model.PublicServiceQrCode)}/{Model.ServiceRecordId.Value}"
+        ? $"{Context.Request.Scheme}://{Context.Request.Host}/public/account-summary/{Uri.EscapeDataString(Model.PublicServiceQrCode)}/{Model.Id}"
         : null;
 }
 
@@ -336,7 +336,7 @@
                         throw new Error(result?.message || "Güvenli belge bağlantısı hazırlanamadı.");
                     }
 
-                    secureUrl = `${window.location.origin}/public/service-pdf/${encodeURIComponent(result.code)}/${serviceRecordId}`;
+                    secureUrl = `${window.location.origin}/public/account-summary/${encodeURIComponent(result.code)}/@Model.Id`;
                     relatedButtons.forEach(function (item) {
                         item.dataset.secureUrl = secureUrl;
                     });

@@ -7,6 +7,8 @@ using AutoStock.Services.Dtos.Invoices;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Services.Interfaces.StockItems;
+using AutoStock.Services.Calculations;
+using Microsoft.Extensions.Logging;
 
 namespace AutoStock.Services.Services
 {
@@ -16,17 +18,20 @@ namespace AutoStock.Services.Services
         private readonly IStockItemService _stockItemService;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IAuditLogService _auditLogService;
+        private readonly ILogger<InvoiceService> _logger;
 
         public InvoiceService(
             AppDbContext context,
             IStockItemService stockItemService,
             IDateTimeProvider dateTimeProvider,
-            IAuditLogService auditLogService)
+            IAuditLogService auditLogService,
+            ILogger<InvoiceService> logger)
         {
             _context = context;
             _stockItemService = stockItemService;
             _dateTimeProvider = dateTimeProvider;
             _auditLogService = auditLogService;
+            _logger = logger;
         }
 
         public async Task<ServiceResult<CreateInvoiceDraftDto>> GetCreateDraftAsync(int serviceRecordId, int workshopId)
@@ -98,7 +103,7 @@ namespace AutoStock.Services.Services
                     Unit = "Adet",
                     UnitPrice = operation.UnitPrice,
                     DiscountRate = 0,
-                    VatRate = 20
+                    VatRate = ServiceFinancialRules.DefaultVatRate
                 });
             }
 
@@ -107,6 +112,10 @@ namespace AutoStock.Services.Services
 
         public async Task<ServiceResult<CreateInvoiceResponseDto>> CreateAsync(CreateInvoiceDto request, int workshopId)
         {
+            _logger.LogInformation(
+                "Invoice create started. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, EventType: {EventType}",
+                workshopId, request.ServiceRecordId, "CREATE_START");
+
             if (request.Items is null || !request.Items.Any())
                 return ServiceResult<CreateInvoiceResponseDto>.Fail("Fatura kalemi zorunludur.");
 
@@ -117,6 +126,31 @@ namespace AutoStock.Services.Services
 
             if (serviceRecord is null)
                 return ServiceResult<CreateInvoiceResponseDto>.Fail("Servis kaydı bulunamadı.");
+
+            var existingInvoice = await _context.Invoices
+                .AsNoTracking()
+                .Where(x =>
+                    x.WorkshopId == workshopId &&
+                    x.ServiceRecordId == request.ServiceRecordId &&
+                    x.Status != InvoiceStatus.Cancelled)
+                .OrderBy(x => x.Status == InvoiceStatus.Draft ? 0 : 1)
+                .ThenByDescending(x => x.InvoiceDate)
+                .FirstOrDefaultAsync();
+
+            if (existingInvoice is not null)
+            {
+                _logger.LogInformation(
+                    "Existing active invoice returned. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, InvoiceId: {InvoiceId}, EventType: {EventType}",
+                    workshopId, request.ServiceRecordId, existingInvoice.Id, "EXISTING_RETURNED");
+
+                return ServiceResult<CreateInvoiceResponseDto>.Success(new CreateInvoiceResponseDto
+                {
+                    InvoiceId = existingInvoice.Id,
+                    ServiceRecordId = request.ServiceRecordId,
+                    InvoiceNumber = existingInvoice.InvoiceNumber,
+                    GrandTotal = existingInvoice.GrandTotal
+                });
+            }
 
             var validItems = request.Items
                 .Where(x =>
@@ -195,16 +229,13 @@ namespace AutoStock.Services.Services
                 if (discountRate < 0) discountRate = 0;
                 if (vatRate < 0) vatRate = 0;
 
-                var lineSubTotal = quantity * unitPrice;
-                var discountAmount = lineSubTotal * discountRate / 100;
-                var taxableAmount = lineSubTotal - discountAmount;
-                var vatAmount = taxableAmount * vatRate / 100;
-                var lineTotal = taxableAmount + vatAmount;
+                var line = ServiceRecordTotalsCalculator.CalculateLine(
+                    new ServiceFinancialLine(quantity, unitPrice, discountRate, vatRate));
 
-                subTotal += lineSubTotal;
-                discountTotal += discountAmount;
-                vatTotal += vatAmount;
-                grandTotal += lineTotal;
+                subTotal += line.Subtotal;
+                discountTotal += line.Discount;
+                vatTotal += line.Vat;
+                grandTotal += line.GrandTotal;
 
                 invoice.Items.Add(new InvoiceItem
                 {
@@ -216,12 +247,12 @@ namespace AutoStock.Services.Services
 
                     UnitPrice = unitPrice,
                     DiscountRate = discountRate,
-                    DiscountAmount = discountAmount,
+                    DiscountAmount = line.Discount,
 
                     VatRate = vatRate,
-                    VatAmount = vatAmount,
+                    VatAmount = line.Vat,
 
-                    LineTotal = lineTotal,
+                    LineTotal = line.GrandTotal,
                     StockItemId = item.StockItemId
                 });
             }
@@ -232,20 +263,73 @@ namespace AutoStock.Services.Services
             invoice.GrandTotal = grandTotal;
 
             _context.Invoices.Add(invoice);
-            await _context.SaveChangesAsync();
-
-            await _auditLogService.AddAsync(new AuditLogCreateDto
+            try
             {
-                WorkshopId = workshopId,
-                ActionType = AuditActionType.Create,
-                EntityType = AuditEntityType.Invoice,
-                EntityId = invoice.Id,
-                Description = $"Fatura taslağı oluşturuldu: {GetInvoiceDisplayName(invoice)}",
-                NewValues = GetInvoiceAuditValues(invoice)
-            });
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                await transaction.RollbackAsync();
+                _context.ChangeTracker.Clear();
 
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
+                var racedInvoice = await _context.Invoices
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x =>
+                        x.WorkshopId == workshopId &&
+                        x.ServiceRecordId == request.ServiceRecordId &&
+                        x.Status != InvoiceStatus.Cancelled);
+
+                if (racedInvoice is not null)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Invoice unique race resolved by returning existing invoice. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, InvoiceId: {InvoiceId}, EventType: {EventType}",
+                        workshopId, request.ServiceRecordId, racedInvoice.Id, "UNIQUE_RACE_RESOLVED");
+
+                    return ServiceResult<CreateInvoiceResponseDto>.Success(new CreateInvoiceResponseDto
+                    {
+                        InvoiceId = racedInvoice.Id,
+                        ServiceRecordId = request.ServiceRecordId,
+                        InvoiceNumber = racedInvoice.InvoiceNumber,
+                        GrandTotal = racedInvoice.GrandTotal
+                    });
+                }
+
+                _logger.LogError(
+                    ex,
+                    "Invoice create database save failed. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, EventType: {EventType}",
+                    workshopId, request.ServiceRecordId, "CREATE_FAILED");
+                return ServiceResult<CreateInvoiceResponseDto>.Fail("Servis hesap özeti oluşturulamadı.");
+            }
+
+            try
+            {
+                await _auditLogService.AddAsync(new AuditLogCreateDto
+                {
+                    WorkshopId = workshopId,
+                    ActionType = AuditActionType.Create,
+                    EntityType = AuditEntityType.Invoice,
+                    EntityId = invoice.Id,
+                    Description = $"Fatura taslağı oluşturuldu: {GetInvoiceDisplayName(invoice)}",
+                    NewValues = GetInvoiceAuditValues(invoice)
+                });
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(
+                    ex,
+                    "Invoice create rolled back after audit failure. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, EventType: {EventType}",
+                    workshopId, request.ServiceRecordId, "ROLLBACK");
+                return ServiceResult<CreateInvoiceResponseDto>.Fail("Servis hesap özeti oluşturulamadı.");
+            }
+
+            _logger.LogInformation(
+                "Invoice created. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, InvoiceId: {InvoiceId}, EventType: {EventType}",
+                workshopId, request.ServiceRecordId, invoice.Id, "CREATED");
 
             return ServiceResult<CreateInvoiceResponseDto>.Success(new CreateInvoiceResponseDto
             {
@@ -709,18 +793,14 @@ namespace AutoStock.Services.Services
                 var quantity = operation.Quantity;
                 var unitPrice = operation.UnitPrice;
                 var discountRate = 0m;
-                var vatRate = 20m;
+                var vatRate = ServiceFinancialRules.DefaultVatRate;
+                var line = ServiceRecordTotalsCalculator.CalculateLine(
+                    new ServiceFinancialLine(quantity, unitPrice, discountRate, vatRate));
 
-                var lineSubtotal = quantity * unitPrice;
-                var discountAmount = lineSubtotal * discountRate / 100;
-                var taxableAmount = lineSubtotal - discountAmount;
-                var vatAmount = taxableAmount * vatRate / 100;
-                var lineTotal = taxableAmount + vatAmount;
-
-                subtotal += lineSubtotal;
-                discountTotal += discountAmount;
-                vatTotal += vatAmount;
-                grandTotal += lineTotal;
+                subtotal += line.Subtotal;
+                discountTotal += line.Discount;
+                vatTotal += line.Vat;
+                grandTotal += line.GrandTotal;
 
                 invoice.Items.Add(new InvoiceItem
                 {
@@ -733,10 +813,10 @@ namespace AutoStock.Services.Services
                     Unit = "Adet",
                     UnitPrice = unitPrice,
                     DiscountRate = discountRate,
-                    DiscountAmount = discountAmount,
+                    DiscountAmount = line.Discount,
                     VatRate = vatRate,
-                    VatAmount = vatAmount,
-                    LineTotal = lineTotal,
+                    VatAmount = line.Vat,
+                    LineTotal = line.GrandTotal,
                     StockItemId = operation.StockItemId
                 });
             }
@@ -1093,11 +1173,17 @@ namespace AutoStock.Services.Services
 
                     if (!syncResult.IsSuccess)
                     {
+                        _logger.LogError(
+                            "Existing invoice draft synchronization failed. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, InvoiceId: {InvoiceId}, EventType: {EventType}",
+                            workshopId, serviceRecordId, activeInvoice.Id, "SYNC_FAILED");
                         return ServiceResult<InvoiceNavigationDto>.Fail(
                             syncResult.ErrorMessage ?? "Taslak fatura servis işlemleriyle güncellenemedi.");
                     }
                 }
 
+                _logger.LogInformation(
+                    "Existing active invoice selected for navigation. WorkshopId: {WorkshopId}, ServiceRecordId: {ServiceRecordId}, InvoiceId: {InvoiceId}, EventType: {EventType}",
+                    workshopId, serviceRecordId, activeInvoice.Id, "EXISTING_REDIRECTED");
                 return ServiceResult<InvoiceNavigationDto>.Success(new InvoiceNavigationDto
                 {
                     InvoiceId = activeInvoice.Id,

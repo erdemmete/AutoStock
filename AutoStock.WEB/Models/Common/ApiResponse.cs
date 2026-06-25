@@ -8,6 +8,8 @@
 
         public List<string> ErrorMessages { get; set; } = new();
 
+        public string? ErrorCode { get; set; }
+
         public bool IsSuccess { get; set; }
 
         public bool IsFailure => !IsSuccess;

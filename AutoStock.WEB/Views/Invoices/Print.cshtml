@@ -2,6 +2,7 @@
 
 @{
     Layout = null;
+    var isPublicAccountSummary = ViewData["IsPublicAccountSummary"] as bool? == true;
 
     string GetStatusText(int status)
     {
@@ -99,6 +100,9 @@
         .ToList() ?? new List<AutoStock.WEB.Models.Invoices.InvoiceBankAccountViewModel>();
 
     var itemCount = Model.Items?.Count ?? 0;
+    var remainingAmount = Model.Status == 2
+        ? Math.Max(0m, Model.InvoiceRemainingAmount)
+        : Model.GrandTotal;
 }
 
 <!DOCTYPE html>
@@ -484,32 +488,8 @@
             min-height: 8mm;
         }
 
-        .signature-area {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24mm;
-            padding-top: 6mm;
-            margin-top: auto;
-        }
-
-        .signature {
-            text-align: center;
-        }
-
-        .signature-line {
-            height: 1.3px;
-            background: var(--line);
-            margin-bottom: 2mm;
-        }
-
-        .signature span {
-            color: #334155;
-            font-size: 9.5px;
-            font-weight: 900;
-        }
-
         .legal-note {
-            margin-top: 5mm;
+            margin-top: auto;
             padding-top: 2.5mm;
             border-top: 1px solid var(--line);
             color: #334155;
@@ -559,7 +539,6 @@
 
             .payment-section,
             .after-table,
-            .signature-area,
             .legal-note {
                 page-break-inside: avoid;
             }
@@ -623,8 +602,11 @@
 
 <body>
     <div class="print-toolbar">
-        <button class="toolbar-btn" onclick="window.print()">Yazdır</button>
-        <button class="toolbar-btn secondary" onclick="window.close()">Kapat</button>
+        <button class="toolbar-btn" onclick="window.print()">Yazdır / PDF Kaydet</button>
+        @if (!isPublicAccountSummary)
+        {
+            <button class="toolbar-btn secondary" onclick="window.close()">Kapat</button>
+        }
     </div>
 
     <main class="page">
@@ -674,10 +656,9 @@
                             <tr><th>Belge No</th><td>@Model.InvoiceNumber</td></tr>
                             <tr><th>Tarih</th><td>@Model.InvoiceDate.ToString("dd.MM.yyyy HH:mm")</td></tr>
                             <tr><th>Durum</th><td>@GetStatusText(Model.Status)</td></tr>
-                            <tr><th>Servis Kaydı</th><td>@(Model.ServiceRecordId?.ToString() ?? "-")</td></tr>
                             <tr><th>Plaka</th><td>@ValueOrDash(Model.Plate)</td></tr>
                             <tr><th>Şasi</th><td>@ValueOrDash(Model.ChassisNumber)</td></tr>
-                            <tr><th>KM</th><td>@((Model.Mileage ?? 0).ToString("N0"))</td></tr>
+                            <tr><th>KM</th><td>@(Model.Mileage.HasValue ? Model.Mileage.Value.ToString("N0") : "-")</td></tr>
                         </tbody>
                     </table>
                 </section>
@@ -718,7 +699,7 @@
                             </tr>
                             <tr>
                                 <th>Yıl / KM</th>
-                                <td>@JoinText(Model.VehicleModelYear?.ToString(), (Model.Mileage ?? 0).ToString("N0"))</td>
+                                <td>@ValueOrDash(JoinText(Model.VehicleModelYear?.ToString(), Model.Mileage?.ToString("N0")))</td>
                             </tr>
                         </tbody>
                     </table>
@@ -811,7 +792,11 @@
                         <tr><th>Toplam İskonto</th><td>@FormatMoney(Model.DiscountTotal)</td></tr>
                         <tr><th>Hesaplanan KDV</th><td>@FormatMoney(Model.VatTotal)</td></tr>
                         <tr><th>Vergiler Dahil Toplam Tutar</th><td>@FormatMoney(Model.GrandTotal)</td></tr>
-                        <tr class="grand"><th>Ödenecek Tutar</th><td>@FormatMoney(Model.GrandTotal)</td></tr>
+                        @if (Model.InvoicePaidTotal > 0)
+                        {
+                            <tr><th>Tahsil Edilen</th><td>@FormatMoney(Model.InvoicePaidTotal)</td></tr>
+                        }
+                        <tr class="grand"><th>Kalan Tutar</th><td>@FormatMoney(remainingAmount)</td></tr>
                     </tbody>
                 </table>
             </section>
@@ -853,18 +838,6 @@
             }
 
             <div class="bottom-push"></div>
-
-            <section class="signature-area">
-                <div class="signature">
-                    <div class="signature-line"></div>
-                    <span>Yetkili İmza / Kaşe</span>
-                </div>
-
-                <div class="signature">
-                    <div class="signature-line"></div>
-                    <span>Müşteri İmza</span>
-                </div>
-            </section>
 
             <footer class="legal-note">
                 Bu belge resmî fatura değildir. Resmî e-Fatura/e-Arşiv ayrıca düzenlenir.

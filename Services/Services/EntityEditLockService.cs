@@ -7,6 +7,7 @@ using AutoStock.Services.Dtos.Common;
 using AutoStock.Services.Dtos.EditLocks;
 using AutoStock.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Net;
 using System.Security.Cryptography;
@@ -22,19 +23,27 @@ namespace AutoStock.Services.Services
 
         private const string MissingLockMessage = "Bu kaydı düzenlemek için aktif düzenleme kilidi gerekir. Sayfayı yenileyip tekrar deneyin.";
         private const string InvalidLockMessage = "Düzenleme kilidiniz süresi dolmuş veya geçersiz. Güncel verileri görmek için sayfayı yenileyin.";
+        public const string MissingLockCode = "EDIT_LOCK_MISSING";
+        public const string ExpiredLockCode = "EDIT_LOCK_EXPIRED";
+        public const string HeldByAnotherUserCode = "EDIT_LOCK_HELD_BY_ANOTHER_USER";
+        public const string InvalidLockCode = "EDIT_LOCK_INVALID";
+        public const string EntityNotFoundCode = "EDIT_LOCK_ENTITY_NOT_FOUND";
 
         private readonly AppDbContext _context;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IAuditLogService _auditLogService;
+        private readonly ILogger<EntityEditLockService> _logger;
 
         public EntityEditLockService(
             AppDbContext context,
             IDateTimeProvider dateTimeProvider,
-            IAuditLogService auditLogService)
+            IAuditLogService auditLogService,
+            ILogger<EntityEditLockService> logger)
         {
             _context = context;
             _dateTimeProvider = dateTimeProvider;
             _auditLogService = auditLogService;
+            _logger = logger;
         }
 
         public async Task<ServiceResult<EntityEditLockDto>> AcquireAsync(
@@ -50,7 +59,10 @@ namespace AutoStock.Services.Services
                 return ServiceResult<EntityEditLockDto>.Fail("Kilit tipi geçersiz.", HttpStatusCode.BadRequest);
 
             if (!await EntityExistsAsync(normalizedType, entityId, workshopId, cancellationToken))
-                return ServiceResult<EntityEditLockDto>.Fail("Kayıt bulunamadı.", HttpStatusCode.NotFound);
+                return ServiceResult<EntityEditLockDto>.Fail(
+                    "Kayıt bulunamadı.",
+                    HttpStatusCode.NotFound,
+                    EntityNotFoundCode);
 
             await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
             var now = _dateTimeProvider.UtcNow;
@@ -70,12 +82,27 @@ namespace AutoStock.Services.Services
                 var isSameTab = editLock.LockedByUserId == userId &&
                     string.Equals(editLock.LockToken, existingLockToken, StringComparison.Ordinal);
 
-                return ServiceResult<EntityEditLockDto>.Success(
-                    isSameTab
-                        ? ToDto(editLock, userId, now)
-                        : ToDto(editLock, -1, now));
+                if (!isSameTab)
+                {
+                    _logger.LogWarning(
+                        "Edit lock acquire denied. WorkshopId: {WorkshopId}, UserId: {UserId}, EntityType: {EntityType}, EntityId: {EntityId}, EventType: {EventType}",
+                        workshopId, userId, normalizedType, entityId, HeldByAnotherUserCode);
+                }
+
+                if (!isSameTab)
+                {
+                    var heldResult = ServiceResult<EntityEditLockDto>.Fail(
+                        $"Bu kayıt şu anda {GetDisplayName(editLock.LockedByUser)} tarafından düzenleniyor.",
+                        HttpStatusCode.Conflict,
+                        HeldByAnotherUserCode);
+                    heldResult.Data = ToDto(editLock, -1, now);
+                    return heldResult;
+                }
+
+                return ServiceResult<EntityEditLockDto>.Success(ToDto(editLock, userId, now));
             }
 
+            var isReacquire = editLock is not null;
             var token = CreateLockToken();
             var expiresAt = now.Add(LockDuration);
 
@@ -104,8 +131,49 @@ namespace AutoStock.Services.Services
                 editLock.ExpiresAt = expiresAt;
             }
 
-            await _context.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            try
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                _context.ChangeTracker.Clear();
+
+                var concurrentLock = await _context.EntityEditLocks
+                    .AsNoTracking()
+                    .Include(x => x.LockedByUser)
+                    .FirstOrDefaultAsync(x =>
+                        x.WorkshopId == workshopId &&
+                        x.EntityType == normalizedType &&
+                        x.EntityId == entityId,
+                        cancellationToken);
+
+                _logger.LogWarning(
+                    ex,
+                    "Edit lock acquire concurrency conflict. WorkshopId: {WorkshopId}, UserId: {UserId}, EntityType: {EntityType}, EntityId: {EntityId}, EventType: {EventType}",
+                    workshopId, userId, normalizedType, entityId, "ACQUIRE_CONFLICT");
+
+                if (concurrentLock is not null && concurrentLock.ExpiresAt > now)
+                {
+                    var conflict = ServiceResult<EntityEditLockDto>.Fail(
+                        $"Bu kayıt şu anda {GetDisplayName(concurrentLock.LockedByUser)} tarafından düzenleniyor.",
+                        HttpStatusCode.Conflict,
+                        HeldByAnotherUserCode);
+                    conflict.Data = ToDto(concurrentLock, -1, now);
+                    return conflict;
+                }
+
+                return ServiceResult<EntityEditLockDto>.Fail(
+                    "Düzenleme oturumu başlatılamadı. Lütfen tekrar deneyin.",
+                    HttpStatusCode.Conflict,
+                    InvalidLockCode);
+            }
+
+            _logger.LogInformation(
+                "Edit lock acquired. WorkshopId: {WorkshopId}, UserId: {UserId}, EntityType: {EntityType}, EntityId: {EntityId}, EventType: {EventType}",
+                workshopId, userId, normalizedType, entityId, isReacquire ? "REACQUIRE" : "ACQUIRE");
 
             return ServiceResult<EntityEditLockDto>.Success(ToDto(editLock, userId, now));
         }
@@ -122,7 +190,10 @@ namespace AutoStock.Services.Services
                 return ServiceResult<EntityEditLockDto>.Fail("Kilit tipi geçersiz.", HttpStatusCode.BadRequest);
 
             if (!await EntityExistsAsync(normalizedType, entityId, workshopId, cancellationToken))
-                return ServiceResult<EntityEditLockDto>.Fail("Kayıt bulunamadı.", HttpStatusCode.NotFound);
+                return ServiceResult<EntityEditLockDto>.Fail(
+                    "Kayıt bulunamadı.",
+                    HttpStatusCode.NotFound,
+                    EntityNotFoundCode);
 
             var now = _dateTimeProvider.UtcNow;
             var editLock = await _context.EntityEditLocks
@@ -147,7 +218,15 @@ namespace AutoStock.Services.Services
         {
             var validation = await ValidateLockInternalAsync(entityType, entityId, lockToken, workshopId, userId, cancellationToken);
             if (validation.IsFailure || validation.Data is null)
-                return ServiceResult<bool>.Fail(validation.ErrorMessages, HttpStatusCode.Conflict);
+            {
+                _logger.LogWarning(
+                    "Edit lock heartbeat failed. WorkshopId: {WorkshopId}, UserId: {UserId}, EntityType: {EntityType}, EntityId: {EntityId}, EventType: {EventType}",
+                    workshopId, userId, entityType, entityId, validation.ErrorCode);
+                return ServiceResult<bool>.Fail(
+                    validation.ErrorMessages,
+                    HttpStatusCode.Conflict,
+                    validation.ErrorCode);
+            }
 
             var now = _dateTimeProvider.UtcNow;
             validation.Data.LastHeartbeatAt = now;
@@ -182,7 +261,109 @@ namespace AutoStock.Services.Services
             {
                 _context.EntityEditLocks.Remove(editLock);
                 await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation(
+                    "Edit lock released. WorkshopId: {WorkshopId}, UserId: {UserId}, EntityType: {EntityType}, EntityId: {EntityId}, EventType: {EventType}",
+                    workshopId, userId, normalizedType, entityId, "RELEASE");
             }
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+        public async Task<ServiceResult<List<AdminEntityEditLockDto>>> GetWorkshopLocksForAdminAsync(
+            int workshopId,
+            CancellationToken cancellationToken = default)
+        {
+            if (!await _context.Workshops.AsNoTracking().AnyAsync(x => x.Id == workshopId, cancellationToken))
+                return ServiceResult<List<AdminEntityEditLockDto>>.Fail("Servis bulunamadı.", HttpStatusCode.NotFound);
+
+            var now = _dateTimeProvider.UtcNow;
+            var locks = await _context.EntityEditLocks
+                .AsNoTracking()
+                .Where(x => x.WorkshopId == workshopId)
+                .Select(x => new AdminEntityEditLockDto
+                {
+                    EntityType = x.EntityType,
+                    EntityId = x.EntityId,
+                    EntityReference = x.EntityType == ServiceRecordEntityType
+                        ? _context.ServiceRecords
+                            .Where(record => record.Id == x.EntityId && record.WorkshopId == workshopId)
+                            .Select(record => record.RecordNumber)
+                            .FirstOrDefault() ?? $"#{x.EntityId}"
+                        : _context.Invoices
+                            .Where(invoice => invoice.Id == x.EntityId && invoice.WorkshopId == workshopId)
+                            .Select(invoice => invoice.InvoiceNumber)
+                            .FirstOrDefault() ?? $"#{x.EntityId}",
+                    LockedByDisplayName = !string.IsNullOrWhiteSpace(x.LockedByUser.FullName)
+                        ? x.LockedByUser.FullName
+                        : x.LockedByUser.UserName ?? "Kullanıcı",
+                    AcquiredAt = x.AcquiredAt,
+                    LastHeartbeatAt = x.LastHeartbeatAt,
+                    ExpiresAt = x.ExpiresAt,
+                    IsExpired = x.ExpiresAt <= now
+                })
+                .OrderBy(x => x.IsExpired)
+                .ThenByDescending(x => x.LastHeartbeatAt)
+                .ToListAsync(cancellationToken);
+
+            return ServiceResult<List<AdminEntityEditLockDto>>.Success(locks);
+        }
+
+        public async Task<ServiceResult<bool>> ForceReleaseForAdminAsync(
+            string entityType,
+            int entityId,
+            int workshopId,
+            int adminUserId,
+            CancellationToken cancellationToken = default)
+        {
+            var normalizedType = NormalizeEntityType(entityType);
+            if (normalizedType is null)
+                return ServiceResult<bool>.Fail("Kilit tipi geçersiz.", HttpStatusCode.BadRequest);
+
+            if (!await _context.Workshops.AsNoTracking().AnyAsync(x => x.Id == workshopId, cancellationToken))
+                return ServiceResult<bool>.Fail("Servis bulunamadı.", HttpStatusCode.NotFound);
+
+            if (!await EntityExistsAsync(normalizedType, entityId, workshopId, cancellationToken))
+                return ServiceResult<bool>.Fail(
+                    "Kayıt bu servise ait değil veya bulunamadı.",
+                    HttpStatusCode.NotFound,
+                    EntityNotFoundCode);
+
+            var editLock = await _context.EntityEditLocks.FirstOrDefaultAsync(x =>
+                x.WorkshopId == workshopId &&
+                x.EntityType == normalizedType &&
+                x.EntityId == entityId,
+                cancellationToken);
+
+            if (editLock is null)
+                return ServiceResult<bool>.Success(true);
+
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            _context.EntityEditLocks.Remove(editLock);
+            await _auditLogService.AddAsync(new AuditLogCreateDto
+            {
+                WorkshopId = workshopId,
+                UserId = adminUserId,
+                UserRole = AppRoles.Admin,
+                ActionType = AuditActionType.Remove,
+                EntityType = normalizedType == InvoiceEntityType
+                    ? AuditEntityType.Invoice
+                    : AuditEntityType.ServiceRecord,
+                EntityId = entityId,
+                Description = "Admin düzenleme kilidini zorla kaldırdı.",
+                OldValues = new
+                {
+                    editLock.LockedByUserId,
+                    editLock.AcquiredAt,
+                    editLock.LastHeartbeatAt,
+                    editLock.ExpiresAt
+                }
+            }, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            _logger.LogWarning(
+                "Edit lock force released by admin. WorkshopId: {WorkshopId}, UserId: {UserId}, EntityType: {EntityType}, EntityId: {EntityId}, EventType: {EventType}",
+                workshopId, adminUserId, normalizedType, entityId, "ADMIN_FORCE_RELEASE");
 
             return ServiceResult<bool>.Success(true);
         }
@@ -252,7 +433,10 @@ namespace AutoStock.Services.Services
 
             return validation.IsSuccess
                 ? ServiceResult<bool>.Success(true)
-                : ServiceResult<bool>.Fail(validation.ErrorMessages, HttpStatusCode.Conflict);
+                : ServiceResult<bool>.Fail(
+                    validation.ErrorMessages,
+                    HttpStatusCode.Conflict,
+                    validation.ErrorCode);
         }
 
         public async Task<ServiceResult<bool>> ValidateServiceRequestItemAsync(
@@ -322,7 +506,13 @@ namespace AutoStock.Services.Services
                 return ServiceResult<EntityEditLock>.Fail("Kilit tipi geçersiz.", HttpStatusCode.BadRequest);
 
             if (string.IsNullOrWhiteSpace(lockToken))
-                return ServiceResult<EntityEditLock>.Fail(MissingLockMessage, HttpStatusCode.Conflict);
+            {
+                LogValidationFailure(workshopId, userId, normalizedType, entityId, MissingLockCode);
+                return ServiceResult<EntityEditLock>.Fail(
+                    MissingLockMessage,
+                    HttpStatusCode.Conflict,
+                    MissingLockCode);
+            }
 
             var now = _dateTimeProvider.UtcNow;
             var editLock = await _context.EntityEditLocks
@@ -334,10 +524,37 @@ namespace AutoStock.Services.Services
                     x.LockToken == lockToken,
                     cancellationToken);
 
-            if (editLock is null || editLock.ExpiresAt <= now)
-                return ServiceResult<EntityEditLock>.Fail(InvalidLockMessage, HttpStatusCode.Conflict);
+            if (editLock is null)
+            {
+                LogValidationFailure(workshopId, userId, normalizedType, entityId, InvalidLockCode);
+                return ServiceResult<EntityEditLock>.Fail(
+                    InvalidLockMessage,
+                    HttpStatusCode.Conflict,
+                    InvalidLockCode);
+            }
+
+            if (editLock.ExpiresAt <= now)
+            {
+                LogValidationFailure(workshopId, userId, normalizedType, entityId, ExpiredLockCode);
+                return ServiceResult<EntityEditLock>.Fail(
+                    "Düzenleme süreniz doldu. Kayıt başka bir kullanıcıda değilse yeniden düzenlemeye açılabilir.",
+                    HttpStatusCode.Conflict,
+                    ExpiredLockCode);
+            }
 
             return ServiceResult<EntityEditLock>.Success(editLock);
+        }
+
+        private void LogValidationFailure(
+            int workshopId,
+            int userId,
+            string entityType,
+            int entityId,
+            string eventType)
+        {
+            _logger.LogWarning(
+                "Edit lock validation failed. WorkshopId: {WorkshopId}, UserId: {UserId}, EntityType: {EntityType}, EntityId: {EntityId}, EventType: {EventType}",
+                workshopId, userId, entityType, entityId, eventType);
         }
 
         private async Task<bool> EntityExistsAsync(

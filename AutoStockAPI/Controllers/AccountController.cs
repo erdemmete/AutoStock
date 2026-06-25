@@ -44,6 +44,29 @@ namespace AutoStock.API.Controllers
             return ToActionResult(result);
         }
 
+        [HttpPost("email-confirmation/request")]
+        public async Task<IActionResult> RequestEmailConfirmation(RequestEmailConfirmationDto request)
+        {
+            var userIdResult = GetCurrentUserId();
+
+            if (userIdResult.IsFailure)
+                return UnauthorizedResult(userIdResult);
+
+            var result = await _accountService.SendEmailConfirmationAsync(
+                userIdResult.Data,
+                request);
+
+            return ToActionResult(result);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("email-confirmation/confirm")]
+        public async Task<IActionResult> ConfirmEmail(ConfirmEmailDto request)
+        {
+            var result = await _accountService.ConfirmEmailAsync(request);
+            return ToActionResult(result);
+        }
+
         [HttpPut("phone")]
         public async Task<IActionResult> UpdatePhone(UpdateAccountPhoneRequestDto request)
         {

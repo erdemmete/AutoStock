@@ -60,6 +60,20 @@
         </div>
     </section>
 
+    @if (!string.IsNullOrWhiteSpace(Model.Overview.Email) && !Model.Overview.EmailConfirmed)
+    {
+        <section class="account-verification-alert" aria-label="E-posta doğrulama uyarısı">
+            <div>
+                <strong>E-posta adresiniz doğrulanmadı</strong>
+                <span>Şifre yenileme bağlantılarını alabilmek için e-posta adresinizi doğrulayın.</span>
+            </div>
+            <form asp-controller="Account" asp-action="SendEmailConfirmation" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="account-secondary-button">Doğrulama Bağlantısı Gönder</button>
+            </form>
+        </section>
+    }
+
     <section class="account-dashboard">
         <div class="account-settings-card">
             <h2>Hesap Ayarları</h2>
@@ -74,6 +88,10 @@
                     <span class="account-setting-copy">
                         <strong>E-posta</strong>
                         <small data-account-email-summary>@emailSummary</small>
+                        @if (!string.IsNullOrWhiteSpace(Model.Overview.Email) && !Model.Overview.EmailConfirmed)
+                        {
+                            <small class="account-unverified-label">Doğrulanmadı</small>
+                        }
                     </span>
                     <span class="account-setting-chevron">›</span>
                 </button>
@@ -189,7 +207,11 @@
 
             <label>
                 <span>Yeni e-posta adresi</span>
-                <input name="Email" type="email" value="@Model.EmailForm.Email" autocomplete="email" placeholder="ornek@sente360.com" />
+                <input name="Email"
+                       type="email"
+                       value="@Model.EmailForm.Email"
+                       autocomplete="email"
+                       placeholder="ornek@sente360.com" />
             </label>
 
             <label>

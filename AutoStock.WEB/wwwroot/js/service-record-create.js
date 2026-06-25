@@ -8,6 +8,7 @@ let currentStep = 1;
 
 let isServiceRecordSaving = false;
 let isServiceRecordCreated = false;
+const SERVICE_RECORD_REQUEST_ID_KEY = "sente:service-record:create-request-id";
 let createdServiceRecordId = null;
 let suppressDraftSave = false;
 let activePrefillVehicleId = null;
@@ -2800,6 +2801,7 @@ async function saveServiceRecord(action = "detail", clickedButton = null) {
     if (!form) return;
 
     const formData = prepareFormDataForSubmit(form);
+    formData.set("ClientRequestId", getOrCreateServiceRecordRequestId());
 
     if (!validateBeforeSubmit(formData)) {
         return;
@@ -2855,6 +2857,7 @@ async function saveServiceRecord(action = "detail", clickedButton = null) {
             result.data?.ServiceRecordId;
 
         isServiceRecordCreated = true;
+        sessionStorage.removeItem(SERVICE_RECORD_REQUEST_ID_KEY);
 
         clearDrafts();
         lockCreatedForm();
@@ -2883,6 +2886,21 @@ async function saveServiceRecord(action = "detail", clickedButton = null) {
             saveButton.innerText = originalText || "Kaydı Oluştur";
         }
     }
+}
+
+function getOrCreateServiceRecordRequestId() {
+    let requestId = sessionStorage.getItem(SERVICE_RECORD_REQUEST_ID_KEY);
+
+    if (requestId) {
+        return requestId;
+    }
+
+    requestId = window.crypto?.randomUUID
+        ? window.crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    sessionStorage.setItem(SERVICE_RECORD_REQUEST_ID_KEY, requestId);
+    return requestId;
 }
 
 function lockCreatedForm() {

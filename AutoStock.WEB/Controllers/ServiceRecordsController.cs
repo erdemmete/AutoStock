@@ -11,6 +11,7 @@ using AutoStock.WEB.Models.SupportRequests;
 using AutoStock.WEB.Models.StockItems;
 using AutoStock.WEB.Services;
 using Microsoft.AspNetCore.Mvc;
+using AutoStock.Services.Calculations;
 
 namespace AutoStock.Web.Controllers;
 
@@ -559,8 +560,10 @@ public class ServiceRecordsController : BaseController
             ? requestOperations.Sum(x => x.TotalPrice)
             : fallbackRequestTotal ?? 0m;
 
-        var vatTotal = serviceTotal * 0.20m;
-        var grandTotal = serviceTotal + vatTotal;
+        var totals = ServiceRecordTotalsCalculator.CalculateServiceOperations(
+            new[] { (1m, serviceTotal) });
+        var vatTotal = totals.Vat;
+        var grandTotal = totals.GrandTotal;
 
         return new
         {

@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
+using AutoStock.WEB.Models.Validation;
+
 namespace AutoStock.WEB.Models.Auth
 {
     public class InviteCodeViewModel
@@ -14,6 +16,7 @@ namespace AutoStock.WEB.Models.Auth
 
         [Required(ErrorMessage = "Yeni şifre zorunludur.")]
         [MinLength(6, ErrorMessage = "Şifre en az 6 karakter olmalıdır.")]
+        [PasswordPolicy]
         public string NewPassword { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Şifre tekrarı zorunludur.")]
