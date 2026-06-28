@@ -1036,6 +1036,7 @@ function saveCreateFormDraft() {
     data.__customerSubType = get("CustomerSubType")?.value || "individual";
     data.__isExtraPanelOpen = get("customerExtraPanel")?.classList.contains("active") || false;
     data.__prefillVehicleId = activePrefillVehicleId || "";
+    data.__clientRequestId = sessionStorage.getItem(SERVICE_RECORD_REQUEST_ID_KEY) || "";
 
     localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
     localStorage.setItem(REQUEST_ITEMS_DRAFT_KEY, JSON.stringify(requestItems));
@@ -1061,6 +1062,10 @@ async function restoreCreateFormDraft() {
     }
 
     activePrefillVehicleId = data.__prefillVehicleId || null;
+
+    if (data.__clientRequestId) {
+        sessionStorage.setItem(SERVICE_RECORD_REQUEST_ID_KEY, data.__clientRequestId);
+    }
 
     if (data.__isExtraPanelOpen) {
         get("quickCustomerFields")?.classList.add("hidden");
@@ -1188,6 +1193,10 @@ function clearDrafts() {
     localStorage.removeItem(REQUEST_ITEMS_DRAFT_KEY);
 }
 
+function clearServiceRecordRequestId() {
+    sessionStorage.removeItem(SERVICE_RECORD_REQUEST_ID_KEY);
+}
+
 function resetCreateFormDraft() {
     if (isServiceRecordSaving) {
         showToast("Kayıt işlemi devam ederken form sıfırlanamaz.", "error");
@@ -1211,6 +1220,7 @@ function resetCreateFormDraft() {
     suppressDraftSave = true;
 
     clearDrafts();
+    clearServiceRecordRequestId();
 
     requestItems = [];
     currentStep = 1;
@@ -2857,7 +2867,7 @@ async function saveServiceRecord(action = "detail", clickedButton = null) {
             result.data?.ServiceRecordId;
 
         isServiceRecordCreated = true;
-        sessionStorage.removeItem(SERVICE_RECORD_REQUEST_ID_KEY);
+        clearServiceRecordRequestId();
 
         clearDrafts();
         lockCreatedForm();
@@ -2901,6 +2911,11 @@ function getOrCreateServiceRecordRequestId() {
 
     sessionStorage.setItem(SERVICE_RECORD_REQUEST_ID_KEY, requestId);
     return requestId;
+}
+
+function startNewServiceRecordRequestId() {
+    clearServiceRecordRequestId();
+    return getOrCreateServiceRecordRequestId();
 }
 
 function lockCreatedForm() {
@@ -2988,6 +3003,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (urlParams.has("fresh")) {
         clearDrafts();
+        clearServiceRecordRequestId();
 
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
@@ -2995,6 +3011,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (shouldApplyVehiclePrefill) {
         clearDrafts();
+        clearServiceRecordRequestId();
         activePrefillVehicleId = initialVehicleId.toString();
     }
 
@@ -3023,6 +3040,10 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     const draftRestored = await restoreCreateFormDraft();
     restoreRequestItemsDraft();
+
+    if (!draftRestored || !sessionStorage.getItem(SERVICE_RECORD_REQUEST_ID_KEY)) {
+        startNewServiceRecordRequestId();
+    }
 
     if (initialVehicleId && (!draftRestored || shouldApplyVehiclePrefill)) {
         await initializeVehiclePrefillFromQuery(initialVehicleId);
